@@ -1,9 +1,21 @@
 /**
  * Refer to <span color = "yellow">{@link ve.Component}</span> for methods or fields inherited from this Component's parent such as `.options.attributes` or `.element`.
  * 
+ * ##### Constructor:
+ * - `arg0_value`: {@link string} - The key of the log channel to display.
  * - `arg1_options`: {@link Object}
  *   - `.view_only=false`: {@link boolean}
+ *   
+ * ##### Instance:
+ * - `.v`: {@link string}
  * 
+ * ##### Methods:
+ * - <span color=00ffff>{@link ve.Log.draw|draw}</span>()
+ * - <span color=00ffff>{@link ve.Log.getChannel|getChannel}</span>() | {@link log.Channel}
+ * - <span color=00ffff>{@link ve.Log.openChannel|openChannel}</span>(arg0_log_key:{@link string})
+ * 
+ * @augments ve.Component
+ * @memberof ve.Component
  * @type {ve.Log}
  */
 ve.Log = class extends ve.Component { //[WIP] - Finish Component body
@@ -61,13 +73,17 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 		this.console_el = document.createElement("div");
 			this.console_el.id = "console";
 		this.draw();
-		
+		if (value) {
+			this.from_binding_fire_silently = true;
+			this.v = value;
+			delete this.from_binding_fire_silently;
+		}
 		if (log.Channel.instances > 0)
 			this.openChannel(log.Channel.instances[0].key);
 		ve.Log.instances.push(this);
 		
+		//Logic loop for determining max height of console
 		this.logic_loop = setInterval(() => {
-			
 			if (this.owners !== undefined)
 				if (this.owners[0] instanceof ve.Window) {
 					let offset_height = 400;
@@ -82,6 +98,46 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 		});
 	}
 	
+	/**
+	 * Returns the value of the component.
+	 * - Accessor of: {@link ve.Log}
+	 * 
+	 * @alias v
+	 * @memberof ve.Component.ve.Log
+	 * @type {string}
+	 */
+	get v () {
+		//Return statement
+		return this._open_key;
+	}
+	
+	/**
+	 * Sets the present value of the Component.
+	 * - Accessor of: {@link ve.Log}
+	 * 
+	 * @alias v
+	 * @memberof ve.Component.ve.Log
+	 * 
+	 * @param {string} arg0_channel
+	 */
+	set v (arg0_channel) {
+		//Convert from parameters
+		let channel = arg0_channel;
+		
+		if (channel === undefined) return; //Internal guard clause if channel is set to undefined
+		
+		//Open the new channel and set it
+		this.openChannel(channel);
+		this.fireFromBinding();
+	}
+	
+	/**
+	 * Draws and updates the present component.
+	 * - Method of: {@link ve.Log}
+	 * 
+	 * @alias draw
+	 * @memberof ve.Component.ve.Log
+	 */
 	draw () {
 		//Declare local instance variables
 		let components_obj;
@@ -111,34 +167,43 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 			search_select_obj[local_log_channel.key] = local_html_obj;
 		}
 		
-		components_obj = {
-			search_select: new ve.SearchSelect({
-				...search_select_obj
-			}, {
-				display: "inherit",
-				search_keys: ["_name"],
-			}),
-			console_el: new ve.HTML(this.console_el, {
-				style: {
-					height: "100%",
-					paddingBottom: 0,
-					paddingLeft: "var(--padding)",
-					paddingTop: 0
-				}
-			}),
-			type: "horizontal"
-		};
-		
 		if (!this.interface) {
+			components_obj = {
+				search_select: new ve.SearchSelect({
+					...search_select_obj
+				}, {
+					display: "inherit",
+					search_keys: ["_name"],
+				}),
+				console_el: new ve.HTML(this.console_el, {
+					style: {
+						height: "100%",
+						paddingBottom: 0,
+						paddingLeft: "var(--padding)",
+						paddingTop: 0
+					}
+				}),
+				type: "horizontal"
+			};
+			
 			this.interface = new ve.FlexInterface(components_obj);
 			this.interface.bind(this.element);
 			
 			this.components_obj = { flex_interface: this.interface };
 		} else {
-			this.interface.v = components_obj;
+			this.interface.search_select.v = search_select_obj;
 		}
 	}
 	
+	/**
+	 * Returns the currently opened channel.
+	 * - Method of: {@link ve.Log}
+	 * 
+	 * @alias getChannel
+	 * @memberof ve.Component.ve.Log
+	 * 
+	 * @returns {log.Channel}
+	 */
 	getChannel () {
 		if (!this._open_key) return undefined; //Internal guard clause if this._open_key is not defined
 		
@@ -148,6 +213,15 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 				return log.Channel.instances[i];
 	}
 	
+	/**
+	 * Opens a log channel within the current component.
+	 * - Method of: {@link ve.Log}
+	 * 
+	 * @alias openChannel
+	 * @memberof ve.Component.ve.Log
+	 * 
+	 * @param {string} arg0_log_key
+	 */
 	openChannel (arg0_log_key) {
 		//Convert from parameters
 		let log_key = (arg0_log_key) ? arg0_log_key : log.Channel.instances?.[0]?.key;
@@ -175,6 +249,8 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 		this.draw();
 	}
 };
+
+//Functional binding
 
 /**
  * @returns {ve.Log}
