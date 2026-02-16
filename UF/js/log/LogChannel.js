@@ -152,6 +152,9 @@
 		 * Updates all associated {@link ve.Log} components to ensure that they remain in-sync.
 		 */
 		static update () {
+			//Sort ve.Log.instances first
+			ve.Log.instances((a, b) => a.key.localeCompare(b.key));
+			
 			//Iterate over all ve.Log.instances and draw them
 			for (let i = 0; i < ve.Log.instances.length; i++)
 				ve.Log.instances[i].draw();
