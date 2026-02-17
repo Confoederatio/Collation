@@ -38,7 +38,6 @@
 	 * ##### Static Methods:
 	 * - <span color=00ffff>{@link ve.Log.update|update}</span>() - Updates all {@link ve.Log} instances and alphabetically sorts channel order.
 	 * 
-	 * @memberof log
 	 * @type {log.Channel}
 	 */
 	log.Channel = class {
@@ -85,27 +84,18 @@
 		/**
 		 * Clears the current console channel.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias clear
-		 * @memberof log.Channel
 		 */
 		clear () { this.log_el.innerHTML = ""; }
 		
 		/**
 		 * Closes the available console window if already open.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias close
-		 * @memberof log.Channel
 		 */
 		close () { if (this.console_window) this.console_window.close(); }
 		
 		/**
 		 * Prints an error message to the console channel, analogous to {@link console.error}.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias error
-		 * @memberof log.Channel
 		 * 
 		 * @param argn_arguments
 		 */
@@ -115,9 +105,6 @@
 		 * Prints a log message to the console channel, analogous to {@link console.log}.
 		 * - Method of: {@link log.Channel}
 		 * 
-		 * @alias log
-		 * @memberof log.Channel
-		 * 
 		 * @param argn_arguments
 		 */
 		log (...argn_arguments) { this.print("log", argn_arguments); }
@@ -125,9 +112,6 @@
 		/**
 		 * Opens a UI for the given console channel. DOM-facing.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias open
-		 * @memberof log.Channel
 		 */
 		open () {
 			if (this.console_window) this.console_window.close();
@@ -143,9 +127,6 @@
 		/**
 		 * Prints a warning message to the console channel, analogous to {@link console.warn}.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias warn
-		 * @memberof log.Channel
 		 *
 		 * @param argn_arguments
 		 */
@@ -154,9 +135,6 @@
 		/**
 		 * Prints a message to the given console channel.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias print
-		 * @memberof log.Channel
 		 * 
 		 * @param {string} arg0_type - The console type. Either 'log'/'warn'/'error'.
 		 * @param {any[]} argn_arguments - The arguments passed to the log function
@@ -229,9 +207,6 @@
 		/**
 		 * Removes the given console channel.
 		 * - Method of: {@link log.Channel}
-		 * 
-		 * @alias remove
-		 * @memberof log.Channel
 		 */
 		remove () {
 			//Iterate over all channels and remove it
