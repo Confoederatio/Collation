@@ -7,7 +7,12 @@
 		 * @namespace log
 		 */
 		global.log = {};
-		
+	
+	/**
+	 * Creates a new log channel that can be accessed by log.<channel_key>() for logging. Should ideally be initialised upon startup.
+	 * 
+	 * @type {log.Channel}
+	 */
 	log.Channel = class {
 		static instances = [];
 		
@@ -38,6 +43,8 @@
 			//Internal guard clause if duplicate
 			if (!log[key]) {
 				log[key] = this.log.bind(this);
+				log[`${key}_error`] = this.error.bind(this);
+				log[`${key}_warn`] = this.warn.bind(this);
 			} else {
 				console.warn(`log.${key} already exists as a custom logging channel. It cannot be overridden.`);
 			}
@@ -153,7 +160,7 @@
 		 */
 		static update () {
 			//Sort ve.Log.instances first
-			ve.Log.instances((a, b) => a.key.localeCompare(b.key));
+			ve.Log.instances.sort((a, b) => a.key.localeCompare(b.key));
 			
 			//Iterate over all ve.Log.instances and draw them
 			for (let i = 0; i < ve.Log.instances.length; i++)
