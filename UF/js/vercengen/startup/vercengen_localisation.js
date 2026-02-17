@@ -1086,9 +1086,12 @@ ve.registry.localisation = {
 	List_shift_right: "Shift Right",
 	
 	//Log
-	Log_enter_console_command: "Enter console command ...",
+	Log_enter_console_command: "Enter console command ..",
+	Log_clear_console: "Clear Console",
 	Log_clear_console_confirmation: "Are you sure you want to clear the present console?",
 	Log_large_object_confirmation: "Are you sure you want to view this large object? It has a length of £1£ character(s).",
+	Log_send: "Send",
+	Log_show_large_object: "Show large object ..",
 	
 	//ObjectEditor
 	ObjectEditor_add_array_info: "Select the type of item to push to the array.",
@@ -2125,9 +2128,12 @@ ve.registry.localisation = {
 	List_shift_right_de: "Nach rechts verschieben",
 	
 	//Log
+	Log_clear_console_de: "Konsole leeren",
 	Log_clear_console_confirmation_de: "Sind Sie sicher, dass Sie die aktuelle Konsole leeren möchten?",
 	Log_enter_console_command_de: "Konsolenbefehl eingeben ...",
 	Log_large_object_confirmation_de: "Sind Sie sicher, dass Sie dieses große Objekt anzeigen möchten? Es hat eine Länge von £1£ Zeichen.",
+	Log_send_de: "Senden",
+	Log_show_large_object_de: "Großes Objekt anzeigen ..",
 	
 	//ObjectEditor
 	ObjectEditor_add_array_info_de: "Wählen Sie den Typ des Elements, das dem Array hinzugefügt werden soll.",
@@ -3164,9 +3170,12 @@ ve.registry.localisation = {
 	List_shift_right_fr: "Décaler à droite",
 	
 	//Log
+	Log_clear_console_fr: "Effacer la console",
 	Log_clear_console_confirmation_fr: "Êtes-vous sûr de vouloir effacer la console actuelle ?",
 	Log_enter_console_command_fr: "Entrer une commande...",
 	Log_large_object_confirmation_fr: "Êtes-vous sûr de vouloir afficher cet objet volumineux ? Il a une longueur de £1£ caractère(s).",
+	Log_send_fr: "Envoyer",
+	Log_show_large_object_fr: "Afficher un objet volumineux ..",
 	
 	//ObjectEditor
 	ObjectEditor_add_array_info_fr: "Sélectionnez le type d'élément à ajouter au tableau.",

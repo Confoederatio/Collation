@@ -185,7 +185,7 @@
 						
 						if (local_object_inspector.element.innerHTML.length > this.options.large_object_limit) {
 							let placeholder = document.createElement("button");
-							placeholder.innerText = "Show large object ..";
+							placeholder.innerText = loc("ve.registry.localisation.Log_show_large_object");
 							placeholder.onclick = () => {
 								let local_confirm_modal = new ve.Confirm(loc("ve.registry.localisation.Log_large_object_confirmation", String.formatNumber(local_object_inspector.element.innerHTML.length)), {
 									special_function: () => {

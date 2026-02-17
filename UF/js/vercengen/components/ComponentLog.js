@@ -61,7 +61,7 @@ ve.Log = class extends ve.Component { //[WIP] - Finish Component body
 				} catch (e) {
 					log_obj.error(e);
 				}
-			}, { name: "Send" }),
+			}, { name: loc("ve.registry.localisation.Log_send") }),
 			clear_console: new ve.Button(() => {
 				let local_confirm_modal = new ve.Confirm(loc("ve.registry.localisation.Log_enter_console_confirmation"), {
 					special_function: () => { try { this.getChannel().clear(); } catch (e) {} }
