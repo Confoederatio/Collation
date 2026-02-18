@@ -7,7 +7,12 @@
 		 * @namespace Blacktraffic
 		 */
 		global.Blacktraffic = {};
-		
+	
+	/**
+	 * Returns the current operating system. Either 'lin'/'mac'/'win'.
+	 * 
+	 * @returns {string}
+	 */
 	Blacktraffic.getOS = function () {
 		//Declare local instance variables
 		let process_platform = process.platform;
@@ -18,6 +23,14 @@
 		return "mac";
 	};
 	
+	/**
+	 * Executes a shell command.
+	 * 
+	 * @param {string} arg0_command
+	 * @param argn_arguments
+	 * 
+	 * @returns {{stderr: string, stdout: string}}
+	 */
 	Blacktraffic.execCommand = function (arg0_command, ...argn_arguments) {
 		//Convert from parameters
 		let command = arg0_command;
@@ -32,6 +45,14 @@
 		return { stderr: stderr, stdout: stdout };
 	};
 	
+	/**
+	 * Executes a shell command asynchronously.
+	 * 
+	 * @param {string} arg0_command
+	 * @param argn_arguments
+	 * 
+	 * @returns {Promise<{stderr: string, stdout: string}>}
+	 */
 	Blacktraffic.execCommandAsync = async function (arg0_command, ...argn_arguments) {
 		//Convert from parameters
 		let command = arg0_command;

@@ -5,6 +5,16 @@
 	Blacktraffic.R_compile_error_string = `[R]: Compile Error: `;
 	Blacktraffic.R_not_found_string = `[R]: Binary could not be found. See www.r-project.org for installation.`;
 	
+	/**
+	 * Calls an R function located in an external script with parameters and returns the result.
+	 * 
+	 * @param {string} arg0_input_file_path
+	 * @param {string} arg1_method_name
+	 * @param {any[]} arg2_params
+	 * @param {string|undefined} arg3_R_path
+	 * 
+	 * @returns {string}
+	 */
 	Blacktraffic.R_callMethod = function (arg0_input_file_path, arg1_method_name, arg2_params, arg3_R_path) {
 		//Convert from parameters
 		let input_file_path = arg0_input_file_path;
@@ -25,6 +35,16 @@
 		return output;
 	};
 	
+	/**
+	 * Calls an R function located in an external script with parameters and returns the result asynchronously.
+	 * 
+	 * @param {string} arg0_input_file_path
+	 * @param {string} arg1_method_name
+	 * @param {any[]} arg2_params
+	 * @param {string|undefined} arg3_R_path
+	 * 
+	 * @returns {Promise<string>}
+	 */
 	Blacktraffic.R_callMethodAsync = function (arg0_input_file_path, arg1_method_name, arg2_params, arg3_R_path) {
 		//Convert from parameters
 		let input_file_path = arg0_input_file_path;
@@ -48,6 +68,15 @@
 		});
 	};
 	
+	/**
+	 * Calls a standard R function with parameters and returns the result.
+	 * 
+	 * @param {string} arg0_method_name
+	 * @param {any[]} arg1_params
+	 * @param {string|undefined} arg2_R_path
+	 * 
+	 * @returns {string}
+	 */
 	Blacktraffic.R_callStandardMethod = function (arg0_method_name, arg1_params, arg2_R_path) {
 		//Convert from parameters
 		let method_name = arg0_method_name;
@@ -65,6 +94,14 @@
 		return Blacktraffic.R_execCommand(`print(${method_syntax})`, R_path);
 	};
 	
+	/**
+	 * Converts a JS method syntax to a string. Internal helper function.
+	 * 
+	 * @param {string} arg0_method_name
+	 * @param {any[]} arg1_params
+	 * 
+	 * @returns {string}
+	 */
 	Blacktraffic.R_convertMethodSyntaxToString = function (arg0_method_name, arg1_params) {
 		//Convert from parameters
 		let method_name = arg0_method_name;
@@ -96,6 +133,13 @@
 		return method_syntax;
 	};
 	
+	/**
+	 * Formats the parameters so that R can read them.
+	 * 
+	 * @param {any[]} arg0_params
+	 * 
+	 * @returns {string}
+	 */
 	Blacktraffic.R_convertParamsArray = function (arg0_params) {
 		//Convert from parameters
 		let params = arg0_params;
@@ -123,6 +167,14 @@
 		return method_syntax;
 	};
 	
+	/**
+	 * Executes a specific 1-line command for R.
+	 * 
+	 * @param {string} arg0_command
+	 * @param {string|undefined} arg1_R_path
+	 * 
+	 * @returns {any[]}
+	 */
 	Blacktraffic.R_execCommand = function (arg0_command, arg1_R_path) {
 		//Convert from parameters
 		let command = arg0_command;
@@ -149,6 +201,14 @@
 		return output;
 	};
 	
+	/**
+	 * Executes a specific 1-line command for R asynchronously.
+	 * 
+	 * @param {string} arg0_command
+	 * @param {string|undefined} arg1_R_path
+	 * 
+	 * @returns {Promise<any[]>}
+	 */
 	Blacktraffic.R_execCommandAsync = async function (arg0_command, arg1_R_path) {
 		//Convert from parameters
 		let command = arg0_command;
@@ -171,6 +231,16 @@
 		});
 	};
 	
+	/**
+	 * Executes all the commands in a file specified by the given `arg0_input_file_path`.
+	 * 
+	 * **Note.** The function reads only variables printed to stdout by the cat() or print() function. It is recommended to use the print() function instead of cat() to avoid line break issues. If you use cat(), remember to add the newline character `"\n"` at the end of each cat: for example, `cat("...\n")`. 
+	 * 
+	 * @param {string} arg0_input_file_path
+	 * @param {string|undefined} arg1_R_path
+	 * 
+	 * @returns {any[]}
+	 */
 	Blacktraffic.R_execScript = function (arg0_input_file_path, arg1_R_path) {
 		//Convert from parameters
 		let input_file_path = arg0_input_file_path;
@@ -199,31 +269,29 @@
 		return output;
 	};
 	
+	/**
+	 * Filters the multiline output from {@link Blacktraffic.R_execCommand} and {@link Blacktraffic.R_execScript} functions using RegEx and cast filtering.
+	 * 
+	 * @param {string} arg0_command_result
+	 * 
+	 * @returns {any[]}
+	 */
 	Blacktraffic.R_filterMultiline = function (arg0_command_result) {
 		//Convert from parameters
 		let command_result = arg0_command_result;
 		
 		//Declare local instance variables
-		let current_os = Blacktraffic.getOS();
 		let data;
 		
 		//Command result parsing based off Windows or Linux/MacOS
-		command_result = command_result.replace(/\[\d+\] /g, "");
-		
-		if (current_os === "win") {
-			command_result = command_result.replace(/\t*\s*[\r\n]*$/g, "");
-			command_result = command_result.replace(/[\s\t]+/g, "\r\n");
-		} else {
-			command_result = command_result.replace(/\t*\s*\n*$/g, "");
-			command_result = command_result.replace(/[\s\t]+/g, "\n");
-		}
+		command_result = command_result.replace(/\[\d+\] /g, "").trim();
 		
 		//Check if data is JSON parseable
 		try {
 			data = [JSON.parse(command_result)];
 		} catch (e) {
 			//The result if not JSON parseable > split
-			data = (current_os === "win") ? command_result.split(/[\r\n]+/) : command_result.split(/[\n]+/);
+			data = command_result.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
 			
 			//Find undefined or NaN and remove quotes
 			for (let i = 0; i < data.length; i++)
@@ -231,6 +299,8 @@
 					data[i] = undefined;
 				} else if (data[i] === "NaN") {
 					data[i] = NaN;
+				} else if (!isNaN(parseFloat(data[i]))) {
+					data[i] = parseFloat(data[i]);
 				} else {
 					data[i] = data[i].replace(/\"/g, "");
 				}
