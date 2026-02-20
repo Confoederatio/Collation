@@ -13,7 +13,8 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.onload`: {@link function}
  *   - `.user_data_folder`: {@link string} - Refers to a Chrome profile necessary for spoofing.
  *   - 
- *   - `.connection_attempts_threshold=3` - The number of connection attempts to use when opening the browser.
+ *   - `.connection_attempts_threshold=3`: {@link number} - The number of connection attempts to use when opening the browser.
+ *   - `.log_channel="console"`: {@link string}
  * 
  * @type {Blacktraffic.AgentBrowserPuppeteer}
  */
@@ -26,13 +27,16 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 		let options = (arg1_options) ? arg1_options : {};
 		
 		//Initialise options
+		if (options.debug_console === undefined) options.debug_console = false;
 		if (options.headless === undefined) options.headless = false;
 		
 		options.connection_attempts_threshold = Math.returnSafeNumber(options.connection_attempts_threshold, 3);
 		
 		//Declare local instance variables
+		this.updateLogChannel(options.log_channel);
 		this.key = key;
 		this.options = options;
+		this.tabs = {};
 		
 		//Initialise and push to instances
 		this.open().then(() => {
@@ -40,6 +44,23 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 				this.options.onload.call(this);
 		});
 		Blacktraffic.AgentBrowserPuppeteer.instances.push(this);
+	}
+	
+	async captureConsoleToChannel (arg0_tab_key, arg1_channel_key) {
+		//Convert from parameters
+		let tab = arg0_tab_key;
+		let channel_key = arg1_channel_key;
+		
+		//Declare local instance variables
+		let log_obj = log.getLoggingFunctions(channel_key);
+		
+		//Set listener on tab page if possible
+		tab.on("console", async (message) => {
+			let args = await Promise.all(message.args().map((local_arg) => local_arg.jsonValue()));
+			let type = message.type();
+			
+			log_obj.log_fn(`${tab.url()} [${type.toUpperCase()}]:`, ...args);
+		});
 	}
 	
 	/**
@@ -66,18 +87,33 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 					browserURL: `http://localhost:${target_port}`,
 					defaultViewport: null
 				});
-				console.log(`Blacktraffic.AgentBrowserPuppeteer: ${this.key} connected to port ${target_port}.`);
+				this.log_fn(`Blacktraffic.AgentBrowserPuppeteer: ${this.key} connected to port ${target_port}.`);
 				break;
 			} catch (e) {
 				attempts++;
-				console.warn(`Port collision or launch failure, retrying .. ${attempts}/${this.options.connection_attempts_threshold}`);
+				this.warn_fn(`Port collision or launch failure, retrying .. ${attempts}/${this.options.connection_attempts_threshold}`);
 				await Blacktraffic.sleep(500);
 			}
 		
-		if (!this.browser) console.error(`Blacktraffic.AgentBrowserPuppeteer: ${this.key} failed to connect to a browser.`);
+		if (!this.browser) this.error_fn(`Blacktraffic.AgentBrowserPuppeteer: ${this.key} failed to connect to a browser.`);
 		
 		//Return statement
 		return this;
+	}
+	
+	/**
+	 * Updates the default logging channel for the current agent.
+	 * 
+	 * @param {string} arg0_channel_key
+	 */
+	updateLogChannel (arg0_channel_key) {
+		//Convert from parameters
+		let channel_key = arg0_channel_key;
+		
+		this.log_obj = log.getLoggingFunctions(channel_key);
+			this.error_fn = this.log_obj.error_fn;
+			this.log_fn = this.log_obj.log_fn;
+			this.warn_fn = this.log_obj.warn_fn;
 	}
 };
 
