@@ -8,6 +8,7 @@ global.JSDOM = require("jsdom").JSDOM;
 global.JSON5 = require("json5");
 global.mathjs = require("mathjs");
 global.ml_matrix = require("ml-matrix");
+global.net = require("net");
 global.netcdfjs = require("netcdfjs");
 global.path = require("path");
 global.pngjs = require("pngjs");
