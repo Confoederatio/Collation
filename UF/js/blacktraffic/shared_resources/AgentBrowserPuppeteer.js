@@ -121,6 +121,59 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 	}
 	
 	/**
+	 * Focuses the specified tab.
+	 *
+	 * @param {Object|string} arg0_tab_key
+	 *
+	 * @returns {Promise<Object|undefined>}
+	 */
+	async focusTab (arg0_tab_key) {
+		//Convert from parameters
+		let tab_key = arg0_tab_key;
+		
+		//Declare local instance variables
+		let tab_obj = this.getTab(tab_key);
+		
+		//Focus the current tab
+		if (tab_obj) {
+			await tab_obj.bringToFront();
+		} else {
+			this.warn_fn(`Blacktraffic.AgentBrowserPuppeteer: Could not focus ${tab_key}, as it doesn't exist.`)
+		}
+		
+		//Return statement
+		return tab_obj;
+	}
+	
+	/**
+	 * Fetches a specific element handle using CSS selectors.
+	 * 
+	 * @param {Object|string} arg0_tab_key
+	 * @param {string} arg1_selector
+	 * @param {Object} [arg2_options]
+	 *  @param {number} [arg2_options.timeout=10000]
+	 * 
+	 * @returns {Promise<HTMLElement>}
+	 */
+	async getElement (arg0_tab_key, arg1_selector, arg2_options) {
+		//Convert from parameters
+		let tab_obj = this.getTab(arg0_tab_key);
+		let selector = arg1_selector;
+		let options = (arg2_options) ? arg2_options : {};
+		
+		//Initialise options
+		options.timeout = Math.returnSafeNumber(options.timeout, 10000);
+		
+		//Wait for the element to be located and visible
+		let element = await tab_obj.wait(until.elementLocated(By.css(selector)), options.timeout);
+			await tab_obj.wait(until.elementIsVisible(element), options.timeout);
+			await tab_obj.wait(until.elementIsEnabled(element), options.timeout);
+		
+		//Return statement
+		return element;
+	}
+	
+	/**
 	 * Returns a tab object based on its key.
 	 * 
 	 * @param {Object|string} arg0_tab_key
@@ -146,31 +199,6 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 		//Return statement
 		if (this.browser)
 			return await this.browser.pages();
-	}
-	
-	/**
-	 * Focuses the specified tab.
-	 * 
-	 * @param {Object|string} arg0_tab_key
-	 * 
-	 * @returns {Promise<Object|undefined>}
-	 */
-	async focusTab (arg0_tab_key) {
-		//Convert from parameters
-		let tab_key = arg0_tab_key;
-		
-		//Declare local instance variables
-		let tab_obj = this.getTab(tab_key);
-		
-		//Focus the current tab
-		if (tab_obj) {
-			await tab_obj.bringToFront();
-		} else {
-			this.warn_fn(`Blacktraffic.AgentBrowserPuppeteer: Could not focus ${tab_key}, as it doesn't exist.`)
-		}
-		
-		//Return statement
-		return tab_obj;
 	}
 	
 	/**
@@ -337,6 +365,93 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 	}
 	
 	/**
+	 * Takes multi-page or full-page screenshots from a Puppeteer instance. A4 page format by default, hence strange px values.
+	 *
+	 * @param {Object} arg0_tab_key
+	 * @param {string} arg1_path
+	 * @param {Object} [arg2_options]
+	 *  @param {boolean} [arg2_options.full_page=false]
+	 *  @param {number} [arg2_options.height=794]
+	 *  @param {number} [arg2_options.width=1531]
+	 *  @param {number} [arg2_options.margin_bottom=20]
+	 */
+	async screenshotHTML (arg0_tab_key, arg1_path, arg2_options) {
+		//Convert from parameters
+		let tab_obj = this.getTab(arg0_tab_key);
+		let path = arg1_path;
+		let options = (arg2_options) ? arg2_options : {};
+		
+		//Initialise options
+		if (options.height === undefined) options.height = 794;
+		if (options.width === undefined) options.width = 1531;
+		
+		if (options.margin_bottom === undefined) options.margin_bottom = 20;
+		if (options.margin_left === undefined) options.margin_left = 20;
+		if (options.margin_top === undefined) options.margin_top = 20;
+		if (options.margin_right === undefined) options.margin_right = 20;
+		
+		//Function body
+		try {
+			await tab_obj.setViewport({ width: options.width, height: options.height });
+			
+			if (!options.full_page) {
+				let body_handle = await tab_obj.$("body");
+				let { height } = await body_handle.boundingBox();
+				await body_handle.dispose();
+				
+				let line_positions = await tab_obj.evaluate(() => {
+					let lines = [];
+					let node;
+					let walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+					
+					while (node = walker.nextNode()) {
+						let range = document.createRange();
+						range.selectNodeContents(node);
+						let rects = range.getClientRects();
+						for (let rect of rects) lines.push(rect.top);
+					}
+					return lines;
+				});
+				
+				let split_points = [0];
+				for (let i = 1; i < line_positions.length; i++)
+					if (line_positions[i] - split_points[split_points.length - 1] > options.height)
+						split_points.push(line_positions[i - 1]);
+				split_points.push(height);
+				
+				for (let i = 0; i < split_points.length - 1; i++) {
+					let clip_height = split_points[i + 1] - split_points[i];
+					let screenshot_buffer = await tab_obj.screenshot({
+						clip: {
+							x: 0,
+							y: split_points[i],
+							width: await (tab_obj.evaluate(() => document.body.clientWidth)),
+							height: clip_height
+						}
+					});
+					
+					let padded_screenshot_buffer = await CURL.addMarginsToScreenshot(screenshot_buffer, {
+						height: clip_height + options.margin_top + options.margin_bottom,
+						width: options.width,
+						margin_bottom: options.margin_bottom,
+						margin_left: options.margin_left,
+						margin_right: options.margin_right,
+						margin_top: options.margin_top
+					});
+					
+					fs.writeFileSync(`${path}_${i + 1}.png`, padded_screenshot_buffer);
+				}
+			} else {
+				let height = await tab_obj.evaluate(() => document.documentElement.scrollHeight);
+				await tab_obj.setViewport({ width: options.width, height: Math.ceil(height) + 48 });
+				await tab_obj.screenshot({ path: `${path}_full.png` });
+			}
+		} catch (e) {
+			console.error(`Error taking A4 screenshots: ${e}`);
+		}
+	}
+	
+	/**
 	 * Updates the default logging channel for the current agent.
 	 * 
 	 * @param {string} arg0_channel_key
@@ -366,7 +481,7 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 		
 		//Wait for function inside of tab should it exist
 		if (tab_obj) {
-			let state_key = `_Blacktraffic_stable_${selector.replace(/[^a-z]/gi, "")}`;
+			let state_key = `_Blacktraffic_stable_${selector}`;
 			
 			await tab_obj.waitForFunction((selector, state_key) => {
 				let local_els = document.querySelectorAll(selector);
