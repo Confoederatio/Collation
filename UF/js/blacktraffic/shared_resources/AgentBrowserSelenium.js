@@ -22,7 +22,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * @memberof Blacktraffic.AgentBrowser
  * @type {Blacktraffic.AgentBrowserSelenium}
  */
-Blacktraffic.AgentBrowserSelenium = class extends Blacktraffic.AgentBrowser {
+Blacktraffic.AgentBrowserSelenium = class extends Blacktraffic.AgentBrowser { //[WIP] - Finish documentation and method refactoring
 	static instances = [];
 	
 	constructor (arg0_key, arg1_options) {

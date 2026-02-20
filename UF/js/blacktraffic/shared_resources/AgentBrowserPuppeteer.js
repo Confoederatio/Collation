@@ -1,6 +1,8 @@
 if (!global.Blacktraffic) global.Blacktraffic = {};
 
 /**
+ * Refer to <span color = "yellow">{@link Blacktraffic.AgentBrowser}</span> for methods or fields inherited from automatic destructuring.
+ * 
  * Creates a new Puppeteer browser agent (Chrome) used for scraping tasks and purposes. Requires npm puppeteer.
  * 
  * ##### Constructor:
@@ -16,11 +18,18 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.connection_attempts_threshold=3`: {@link number} - The number of connection attempts to use when opening the browser.
  *   - `.log_channel="console"`: {@link string}
  * 
+ * ##### Methods:
+ * - <span color=00ffff>{@link Blacktraffic.AgentBrowserPuppeteer.captureConsoleToChannel|captureConsoleToChannel}</span>(arg0_tab_key:{@link Object}|{@link string}, arg1_channel_key:{@link string})
+ * - <span color=00ffff>{@link Blacktraffic.AgentBrowserPuppeteer.close|close}</span>() | {@link Blacktraffic.AgentBrowserPuppeteer}
+ * - <span color=00ffff>{@link Blacktraffic.AgentBrowserPuppeteer.closeTab|closeTab}</span>(arg0_tab_key:{@link Object}|{@link string}) | {@link Blacktraffic.AgentBrowserPuppeteer}
+ * - <span color=00ffff>{@link Blacktraffic.AgentBrowserPuppeteer.closeUserTabs|closeUserTabs}</span>() | {@link Blacktraffic.AgentBrowserPuppeteer}
+ * 
+ * 
  * @augments Blacktraffic.AgentBrowser
  * @memberof Blacktraffic.AgentBrowser
  * @type {Blacktraffic.AgentBrowserPuppeteer}
  */
-Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
+Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser { //[WIP] - Finish documentation
 	static instances = [];
 	
 	constructor (arg0_key, arg1_options) {

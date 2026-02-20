@@ -8,7 +8,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * @namespace Blacktraffic.AgentBrowser
  * @type {Blacktraffic.AgentBrowser}
  */
-Blacktraffic.AgentBrowser = class {
+Blacktraffic.AgentBrowser = class { //[WIP] - Finish documentation
 	//Declare local static variables
 	
 	/**
