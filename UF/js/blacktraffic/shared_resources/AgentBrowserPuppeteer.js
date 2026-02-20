@@ -1,7 +1,7 @@
 if (!global.Blacktraffic) global.Blacktraffic = {};
 
 /**
- * Creates a new Puppeteer browser agent used for scraping tasks and purposes.
+ * Creates a new Puppeteer browser agent used for scraping tasks and purposes. Requires npm puppeteer.
  * 
  * ##### Constructor:
  * - `arg0_key=Class.generateRandomID(Blacktraffic.AgentBrowserPuppeteer)`: {@link string} - The key to use for the given browser agent. Used for ID.
@@ -13,12 +13,12 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.onload`: {@link function}
  *   - `.user_data_folder`: {@link string} - Refers to a Chrome profile necessary for spoofing.
  *   - 
- *   - `.connection_attempts_threshold=3`: {@link number} - The number of connection attempts to use when opening the browser.
+ *   - `.connection_attempts_threshold=1`: {@link number} - The number of connection attempts to use when opening the browser.
  *   - `.log_channel="console"`: {@link string}
  * 
  * @type {Blacktraffic.AgentBrowserPuppeteer}
  */
-Blacktraffic.AgentBrowserPuppeteer = class {
+Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
 	static instances = [];
 	
 	constructor (arg0_key, arg1_options) {
@@ -269,13 +269,13 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 				let target_port = await Blacktraffic.getFreePort();
 				
 				//1. Run launch command
-				this.launch_cmd = `"${Blacktraffic.getChromeBinaryPath()}" --remote-debugging-port=${Math.returnSafeNumber(this.options.debugging_port, target_port)}${(this.options.user_data_folder) ? ` --user-data-dir="${this.options.user_data_folder}"` : ""}`;
+				this.launch_cmd = `"${Blacktraffic.getChromeBinaryPath()}" --remote-debugging-port=${Math.returnSafeNumber(this.options.debugging_port, target_port)}${(this.options.user_data_folder) ? ` --user-data-dir="${this.options.user_data_folder}" --remote-allow-origins=*` : ""}`;
 				exec(this.launch_cmd);
 				
 				//2. Connect to browser instance
-				await Blacktraffic.sleep(1500);
+				await Blacktraffic.sleep(3500);
 				this.browser = await puppeteer.connect({
-					browserURL: `http://localhost:${target_port}`,
+					browserURL: `http://127.0.0.1:${target_port}`,
 					defaultViewport: null
 				});
 				this.log_fn(`Blacktraffic.AgentBrowserPuppeteer: ${this.key} connected to port ${target_port}.`);

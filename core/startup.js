@@ -13,6 +13,7 @@ global.netcdfjs = require("netcdfjs");
 global.path = require("path");
 global.pngjs = require("pngjs");
 global.polylabel = require("polylabel");
+global.puppeteer = require("puppeteer");
 global.util = require("util");
 
 global.h1 = "./histmap/1.data_scraping/";
