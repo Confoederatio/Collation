@@ -36,7 +36,7 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 		this.updateLogChannel(options.log_channel);
 		this.key = key;
 		this.options = options;
-		this.tabs = {};
+		this.tab_obj = {};
 		
 		//Initialise and push to instances
 		this.open().then(() => {
@@ -48,7 +48,7 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 	
 	async captureConsoleToChannel (arg0_tab_key, arg1_channel_key) {
 		//Convert from parameters
-		let tab = arg0_tab_key;
+		let tab = this.getTab(arg0_tab_key);
 		let channel_key = arg1_channel_key;
 		
 		//Declare local instance variables
@@ -61,6 +61,32 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 			
 			log_obj.log_fn(`${tab.url()} [${type.toUpperCase()}]:`, ...args);
 		});
+	}
+	
+	async close () {
+		//Close browser first
+		if (this.browser) await this.browser.close();
+		this.browser = undefined;
+		
+		//Return statement
+		return this;
+	}
+	
+	/**
+	 * Returns a tab object based on its key.
+	 * 
+	 * @param {Object|string} arg0_tab_key
+	 * 
+	 * @returns {Object}
+	 */
+	getTab (arg0_tab_key) {
+		//Convert from parameters
+		let tab_key = arg0_tab_key;
+		
+		if (typeof tab_key === "object") return tab_key; //Internal guard clause if tab_key is already a tab object
+		
+		//Return statement
+		return this.tab_obj[tab_key];
 	}
 	
 	/**
@@ -99,6 +125,30 @@ Blacktraffic.AgentBrowserPuppeteer = class {
 		
 		//Return statement
 		return this;
+	}
+	
+	/**
+	 * Opens a tab at the corresponding URL. Corresponding URLs are optional.
+	 * 
+	 * @param {string} [arg0_tab_key=Object.generateRandomID(this.tab_obj)]
+	 * @param {string} arg1_url
+	 * 
+	 * @returns {Promise<Object>}
+	 */
+	async openTab (arg0_tab_key, arg1_url) {
+		//Convert from parameters
+		let tab_key = (arg0_tab_key) ? arg0_tab_key : Object.generateRandomID(this.tab_obj);
+		let url = arg1_url;
+		
+		//Open tab first
+		if (!this.browser) await this.open();
+		this.tab_obj[tab_key] = await this.browser.newPage();
+		let tab_obj = this.tab_obj[tab_key];
+		
+		if (url) await tab_obj.goto(url, { waitUntil: "networkidle2" });
+		
+		//Return statement
+		return this.tab_obj[tab_key];
 	}
 	
 	/**
