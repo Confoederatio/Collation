@@ -1,7 +1,7 @@
 if (!global.Blacktraffic) global.Blacktraffic = {};
 
 /**
- * Creates a new Puppeteer browser agent used for scraping tasks and purposes. Requires npm puppeteer.
+ * Creates a new Puppeteer browser agent (Chrome) used for scraping tasks and purposes. Requires npm puppeteer.
  * 
  * ##### Constructor:
  * - `arg0_key=Class.generateRandomID(Blacktraffic.AgentBrowserPuppeteer)`: {@link string} - The key to use for the given browser agent. Used for ID.
@@ -13,9 +13,11 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.onload`: {@link function}
  *   - `.user_data_folder`: {@link string} - Refers to a Chrome profile necessary for spoofing.
  *   - 
- *   - `.connection_attempts_threshold=1`: {@link number} - The number of connection attempts to use when opening the browser.
+ *   - `.connection_attempts_threshold=3`: {@link number} - The number of connection attempts to use when opening the browser.
  *   - `.log_channel="console"`: {@link string}
  * 
+ * @augments Blacktraffic.AgentBrowser
+ * @memberof Blacktraffic.AgentBrowser
  * @type {Blacktraffic.AgentBrowserPuppeteer}
  */
 Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
