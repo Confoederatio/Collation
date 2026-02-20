@@ -25,6 +25,7 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
 		//Convert from parameters
 		let key = (arg0_key) ? arg0_key : Class.generateRandomID(Blacktraffic.AgentBrowserPuppeteer);
 		let options = (arg1_options) ? arg1_options : {};
+			super(key, options);
 		
 		//Initialise options
 		if (options.debug_console === undefined) options.debug_console = false;
@@ -46,6 +47,14 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
 		Blacktraffic.AgentBrowserPuppeteer.instances.push(this);
 	}
 	
+	/**
+	 * Captures the current tab's console and feeds it into a {@link log.Channel}.
+	 * 
+	 * @param {Object|string} arg0_tab_key
+	 * @param {string} arg1_channel_key
+	 * 
+	 * @returns {Promise<void>}
+	 */
 	async captureConsoleToChannel (arg0_tab_key, arg1_channel_key) {
 		//Convert from parameters
 		let tab = this.getTab(arg0_tab_key);
@@ -362,6 +371,24 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser {
 		//Return statement
 		if (!options.strict && tab_obj) return true;
 		if (options.strict && is_connected) return true;
+	}
+	
+	/**
+	 * Removes the current {@link Blacktraffic.AgentBrowser}.
+	 */
+	async remove () {
+		await this.close(); //Close browser first
+		super.remove();
+		
+		//Iterate over all Blacktraffic.AgentBrowserPuppeteer.instances and remove the current instance
+		for (let i = 0; i < Blacktraffic.AgentBrowserPuppeteer.instances.length; i++) {
+			let local_browser = Blacktraffic.AgentBrowserPuppeteer.instances[i];
+			
+			if (local_browser.key === this.key) {
+				Blacktraffic.AgentBrowserPuppeteer.instances.splice(i, 1);
+				break;
+			}
+		}
 	}
 	
 	/**
