@@ -17,9 +17,6 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * ##### Static Fields:
  * - `.instances`: {@link Array}<{@link Blacktraffic.AgentBrowser}>
  * 
- * @class
- * @memberof Blacktraffic
- * @namespace Blacktraffic.AgentBrowser
  * @type {Blacktraffic.AgentBrowser}
  */
 Blacktraffic.AgentBrowser = class { //[WIP] - Finish documentation
