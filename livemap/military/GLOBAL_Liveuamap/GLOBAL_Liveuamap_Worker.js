@@ -36,6 +36,7 @@ global.GLOBAL_Liveuamap_Worker = class {
 				await this.draw();
 			}
 		});
+		this.webapi = Blacktraffic.AgentBrowser.webapi;
 	}
 	
 	async draw () {
@@ -48,7 +49,7 @@ global.GLOBAL_Liveuamap_Worker = class {
 		this.layer = new maptalks.VectorLayer("liveuamap").addTo(map);
 		
 		//0. Load pre-load scripts
-		this.browser.injectScriptOnload(liveuamap_tab, this.static._captureLeaflet);
+		this.browser.injectScriptOnload(liveuamap_tab, this.webapi.Leaflet.captureMaps);
 		
 		//Iterate over all_regions until regions_threshold
 		for (let i = 0; i < regions_threshold; i++) try {
@@ -66,17 +67,7 @@ global.GLOBAL_Liveuamap_Worker = class {
 			if (!is_paid) {
 				let geometries = await liveuamap_tab.evaluate(function () {
 					//Declare functions
-					let getGeometryType = (geometry) => {
-						if (geometry instanceof L.Polygon) {
-							return 'polygon';
-						} else if (geometry instanceof L.Polyline) {
-							// Note: Polygons are instances of Polylines, 
-							// so we check Polygon first.
-							return 'line';
-						} else if (geometry instanceof L.Marker || geometry instanceof L.CircleMarker) {
-							return 'point';
-						}
-					};
+					let getGeometryType = this.webapi.Leaflet.getGeometryType;
 					
 					//Declare local instance variables
 					let current_map = getMaps()[0];
@@ -125,8 +116,6 @@ global.GLOBAL_Liveuamap_Worker = class {
 						}
 					}
 					
-					console.log(geometries);
-					
 					//Return statement
 					return geometries;
 				});
@@ -145,43 +134,6 @@ global.GLOBAL_Liveuamap_Worker = class {
 	
 	remove () {
 		
-	}
-	
-	static _captureLeaflet = function () {
-		(function () {
-			"use strict";
-			
-			// This array will hold all map instances found on the page
-			window.captured_maps = [];
-			
-			let leafletBackend;
-			
-			// We define a getter/setter on window.L to catch the moment Leaflet loads
-			Object.defineProperty(window, "L", {
-				get: function () {
-					return leafletBackend;
-				},
-				set: function (newLeaflet) {
-					leafletBackend = newLeaflet;
-					
-					// Ensure we have the Map object and haven't hooked it yet
-					if (leafletBackend && leafletBackend.Map && !leafletBackend._hooked) {
-						leafletBackend._hooked = true;
-						
-						console.log("Leaflet detected! Injecting initialization hook...");
-						
-						leafletBackend.Map.addInitHook(function () {
-							window.captured_maps.push(this);
-							console.log("New Leaflet map instance captured:", this);
-						});
-					}
-				},
-				configurable: true,
-			});
-			
-			// Optional: Expose a helper function to the console to interact with maps
-			window.getMaps = () => window.captured_maps;
-		})();
 	}
 	
 	/**

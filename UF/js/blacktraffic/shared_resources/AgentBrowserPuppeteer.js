@@ -17,6 +17,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - 
  *   - `.connection_attempts_threshold=3`: {@link number} - The number of connection attempts to use when opening the browser.
  *   - `.log_channel="console"`: {@link string}
+ *   - `.unique_ports=false`: {@link boolean}
  *   
  * ##### Instance:
  * - `.key`: {@link string}
@@ -63,6 +64,7 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser { /
 		//Initialise options
 		if (options.debug_console === undefined) options.debug_console = false;
 		if (options.headless === undefined) options.headless = false;
+		if (options.unique_ports === undefined) options.unique_ports = false;
 		
 		options.connection_attempts_threshold = Math.returnSafeNumber(options.connection_attempts_threshold, 3);
 		
@@ -347,10 +349,22 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser { /
 		//Iterate over all attempts until threshold or the for loop exits
 		for (let i = 0; i < this.options.connection_attempts_threshold; i++)
 			try {
-				let target_port = await Blacktraffic.getFreePort();
+				let target_port = (!this.options.unique_ports) ? 
+					9222 : await Blacktraffic.getFreePort();
+					
+				let flags = [
+					`--remote-debugging-port=${Math.returnSafeNumber(this.options.debugging_port, target_port)}`,
+					`--no-first-run`,
+					`--no-default-browser-check`
+				];
+				
+				if (this.options.user_data_folder) {
+					flags.push(`--user-data-dir="${this.options.user_data_folder}"`);
+					flags.push(`--remote-allow-origins=*`);
+				}
 				
 				//1. Run launch command
-				this.launch_cmd = `"${Blacktraffic.getChromeBinaryPath()}" --remote-debugging-port=${Math.returnSafeNumber(this.options.debugging_port, target_port)}${(this.options.user_data_folder) ? ` --user-data-dir="${this.options.user_data_folder}" --remote-allow-origins=*` : ""}`;
+				this.launch_cmd = `"${Blacktraffic.getChromeBinaryPath()}" ${flags.join(" ")}`;
 				exec(this.launch_cmd);
 				
 				//2. Connect to browser instance
@@ -396,6 +410,28 @@ Blacktraffic.AgentBrowserPuppeteer = class extends Blacktraffic.AgentBrowser { /
 			this.tab_obj[tab_key][`_blacktraffic_key`] = tab_key;
 		let tab_obj = this.tab_obj[tab_key];
 		
+		//Load WebAPI in tab
+		let serialised_api = Object.serialise(Blacktraffic.AgentBrowser.webapi);
+		
+		await tab_obj.evaluateOnNewDocument((encoded_api) => {
+			//HELPER: Recursive Rehydrator
+			const rehydrate = (obj) => {
+				if (obj === null || typeof obj !== "object") return obj;
+				
+				if (obj.__type === "function") {
+					// Reconstruct the function/class using indirect eval
+					return (0, eval)(`(${obj.source})`);
+				}
+				
+				const result = Array.isArray(obj) ? [] : {};
+				for (const key in obj) {
+					result[key] = rehydrate(obj[key]);
+				}
+				return result;
+			};
+			
+			window.webapi = rehydrate(encoded_api);
+		}, serialised_api);
 		if (url) await tab_obj.goto(url, { waitUntil: "networkidle2" });
 		
 		//Return statement
