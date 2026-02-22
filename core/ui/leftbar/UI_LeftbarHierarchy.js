@@ -62,7 +62,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 					value: [{ type: "FeatureTileLayer", create_tile_layer: { id: feature_id } }]
 				});
 			}, { name: "<icon>view_module</icon>", tooltip: "Create New Tile Layer" })
-		}, { 
+		}, {
 			disabled: true,
 			style: {
 				".nst-content": {
@@ -70,17 +70,17 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				}
 			}
 		});
-			actions_bar.element.classList.add("actions-bar");
+		actions_bar.element.classList.add("actions-bar");
 		let geometries_at_top = (global?.main?.settings?.hierarchy_ordering === "geometries_at_top");
-			
+		
 		this.hierarchy_obj = {};
-			if (!geometries_at_top) {
-				this.drawFeatures();
-				this.drawGeometries();
-			} else {
-				this.drawGeometries();
-				this.drawFeatures();
-			}
+		if (!geometries_at_top) {
+			this.drawFeatures();
+			this.drawGeometries();
+		} else {
+			this.drawGeometries();
+			this.drawFeatures();
+		}
 		
 		let current_hierarchy = new ve.Hierarchy({
 			actions_bar: actions_bar,
@@ -91,18 +91,6 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				let instance = e.on_stop_data.movedNode?.instance?.options?.instance;
 				let old_parent = e.on_stop_data.originalParentItem?.instance?.options?.instance;
 				let new_parent = e.on_stop_data.newParentItem?.instance?.options?.instance;
-				
-				if (new_parent === undefined && instance) {
-					if (instance.parent && instance.parent.entities)
-						for (let i = instance.parent.entities.length - 1; i >= 0; i--)
-							if (instance.parent.entities[i].class_name === instance.class_name && instance.parent.entities[i].id === instance.id) {
-								instance.parent.entities.splice(i, 1);
-								break;
-							}
-					//Remove instance._parent
-					instance.parent = undefined;
-					this.refresh();
-				}
 				
 				//1. Check if allow_reassignment[0] is true
 				{
@@ -142,7 +130,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				//2. Check if user is attempting to drag it before the control element
 				let all_sibling_li_els = e.on_stop_data.movedNode.parentElement.children;
 				
-				for (let i = 0; i < all_sibling_li_els.length; i++) 
+				for (let i = 0; i < all_sibling_li_els.length; i++)
 					if (all_sibling_li_els[i].classList.contains("actions-bar"))
 						if (i > 0) {
 							veToast(`You cannot drag an item before the actions bar.`);
@@ -162,7 +150,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 									local_feature.entities.splice(x, 1);
 					}
 					
-					//3.2. Reconstruct new_parent.entities
+					//3.2. Handle Root/Parent assignment and Sorting
 					if (new_parent && new_parent.entities) {
 						let new_parent_entity_els = e.on_stop_data.newParentItem.querySelectorAll("ol > li[component='ve-hierarchy-datatype']");
 						
@@ -171,6 +159,26 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 							new_parent.entities.push(new_parent_entity_els[i].instance.options.instance);
 						} catch (e) { console.warn(e); }
 						instance.parent = new_parent;
+					} else {
+						// Moved to the base level
+						instance.parent = undefined;
+						
+						// Reorder the global instance arrays based on the new root-level DOM order
+						let root_level_els = current_hierarchy.element.querySelectorAll(":scope > ol > li[component='ve-hierarchy-datatype']");
+						let root_instances = Array.from(root_level_els).map(el => el.instance.options.instance);
+						
+						// Sort Features and Geometries globally based on their index in the visual hierarchy
+						const sortFn = (a, b) => {
+							let indexA = root_instances.indexOf(a);
+							let indexB = root_instances.indexOf(b);
+							if (indexA === -1 || indexB === -1) return 0;
+							return indexA - indexB;
+						};
+						
+						naissance.Feature.instances.sort(sortFn);
+						if (naissance.Geometry?.instances) naissance.Geometry.instances.sort(sortFn);
+						
+						this.refresh();
 					}
 				} else {
 					veToast(`${allow_reassignment[1]} cannot nest itself.`);
