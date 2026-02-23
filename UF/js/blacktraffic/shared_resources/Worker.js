@@ -12,7 +12,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * 
  * @type {Blacktraffic.Worker}
  */
-Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled.
+Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled. Need to add job interval to contract.
 	static browser_obj;
 	
 	/**
@@ -174,5 +174,9 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 			let index = worker_array.indexOf(this);
 			if (index > -1) worker_array.splice(index, 1);
 		}
+	}
+	
+	async run () {
+		
 	}
 };
