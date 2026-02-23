@@ -46,7 +46,7 @@ global.GLOBAL_Liveuamap_Worker = class {
 		let regions_threshold = (this.options.top_regions > 0) ? 
 			this.options.top_regions : all_regions.length;
 		
-		this.layer = new maptalks.VectorLayer("liveuamap").addTo(map);
+		this.layer = new maptalks.VectorLayer("liveuamap", { zIndex: 101 }).addTo(map);
 		
 		//0. Load pre-load scripts
 		this.browser.injectScriptOnload(liveuamap_tab, this.webapi.Leaflet.captureMaps);

@@ -29,6 +29,22 @@
 	};
 	
 	/**
+	 * Converts an image, preferably `.png`, to a Base64 string for inline embedding.
+	 * @alias File.convertImageToBase64
+	 * 
+	 * @param {string} arg0_file_path
+	 * 
+	 * @returns {string}
+	 */
+	File.convertImageToBase64 = function (arg0_file_path) {
+		//Convert from parameters
+		let file_buffer = fs.readFileSync(arg0_file_path);
+		
+		//Return statement
+		return file_buffer.toString("base64");
+	};
+	
+	/**
 	 * Returns all drives in the current operating system.
 	 * @alias File.getAllDrives
 	 * 
