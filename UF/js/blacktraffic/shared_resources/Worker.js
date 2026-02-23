@@ -7,7 +7,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.config_file_path`: {@link string} - The config JSON5 file to load. Accessible at `.config`.
  *   - `.do_not_close_tab`: {@link boolean}
  *   - `.log_channel="${worker}_type"`: {@link string}
- *   - `.special_function`: {@link function} | {@link Array}<{@link Ontology}>
+ *   - `.special_function`: {@link function}(arg0_tab_obj:{@link Object}, arg1_instance:this) | {@link Array}<{@link Ontology}>
  *   - `.tags=[]`: {@link Array}<{@link string}>
  * 
  * @type {Blacktraffic.Worker}
@@ -94,6 +94,35 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 	
 	getCurrentStatus () { return this.current_job_status; }
 	
+	getCurrentStatusElement () {
+		//Declare local instance variables
+		let last_job = this.jobs[this.jobs.length - 1];
+		let status = this.getCurrentStatus();
+		let status_el = document.createElement("span");
+		
+		//Set innerText and colour based off status
+		if (status === "done") {
+			status_el.innerText = "Done";
+			status_el.style.color = "lime";
+		} else if (status === "failed") {
+			status_el.innerText = "Failed";
+			status_el.style.color = "red;"
+		} else if (status === "idle") {
+			status_el.innerText = "Idle";
+			status_el.style.color = "lightgrey";
+		} else if (status === "partially_failed") {
+			status_el.innerText = "Partially Failed";
+			status_el.style.color = "orange";
+		} else if (status === "running") {
+			let time_string = (last_job) ? new Date(last_job.timestamp).toLocaleTimeString() : ' ..'; //[WIP] - Add time elapsed later
+			status_el.innerText = `Running (Time Elapsed) - Started [${time_string}]`;
+			status_el.style.color = "cyan";
+		}
+		
+		//Return statement
+		return status_el;
+	}
+	
 	getCurrentTimeStatus () {
 		//Declare local instance variables
 		let current_status;
@@ -109,6 +138,14 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 			status: current_status,
 			timestamp: (last_job) ? last_job.timestamp : Date.now()
 		};
+	}
+	
+	getJobList () { return this.jobs; }
+	
+	getLastSuccessfulJob () {
+		//Return statement
+		for (let i = this.jobs.length - 1; i >= 0; i--)
+			if (this.jobs[i].status === "done") return new Date(this.jobs[i].timestamp);
 	}
 	
 	async getTab () {
@@ -129,5 +166,13 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 	
 	getTabID () { return `${this.type}_${this.worker_id}`; }
 	
-	
+	remove () {
+		//Declare local instance variables
+		let worker_array = this.static.workers_obj[this.type];
+		
+		if (worker_array) {
+			let index = worker_array.indexOf(this);
+			if (index > -1) worker_array.splice(index, 1);
+		}
+	}
 };
