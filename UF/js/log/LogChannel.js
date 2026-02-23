@@ -75,6 +75,7 @@
 			if (!log[key]) {
 				log[key] = this.log.bind(this);
 				log[`${key}_error`] = this.error.bind(this);
+				log[`${key}_instance`] = this;
 				log[`${key}_warn`] = this.warn.bind(this);
 			} else {
 				console.warn(`log.${key} already exists as a custom logging channel. It cannot be overridden.`);
@@ -236,6 +237,9 @@
 			
 			//Remove log[key]
 			delete log[this.key];
+			delete log[`${this.key}_error`];
+			delete log[`${this.key}_instance`];
+			delete log[`${this.key}_warn`];
 			log.Channel.update();
 		}
 		

@@ -18,7 +18,7 @@
 	 * 
 	 * @returns {Promise<string|undefined>}
 	 */
-	Blacktraffic.promptLMStudio = async function (arg0_prompt, arg1_options) {
+	Blacktraffic.LMStudio_prompt = async function (arg0_prompt, arg1_options) {
 		//Convert from parameters
 		let prompt = arg0_prompt;
 		let options = (arg1_options) ? arg1_options : {};
@@ -71,7 +71,7 @@
 	 *  
 	 * @returns {Promise<string|undefined>}
 	 */
-	Blacktraffic.promptLMStudioImage = async function (arg0_prompt, arg1_image_path, arg2_options) {
+	Blacktraffic.LMStudio_promptImage = async function (arg0_prompt, arg1_image_path, arg2_options) {
 		//Convert from parameters
 		let prompt = arg0_prompt;
 		let image_path = arg1_image_path;
@@ -88,20 +88,18 @@
 		//1. Build the payload matching the Vision API format
 		let payload = {
 			model: "vision-model", // LM Studio uses whichever vision model is loaded
-			messages: [
-				{
-					role: "user",
-					content: [
-						{ type: "text", text: prompt },
-						{
-							type: "image_url",
-							image_url: {
-								url: `data:image/${extension};base64,${base64_image}`,
-							},
+			messages: [{
+				role: "user",
+				content: [
+					{ type: "text", text: prompt },
+					{
+						type: "image_url",
+						image_url: {
+							url: `data:image/${extension};base64,${base64_image}`,
 						},
-					],
-				},
-			],
+					},
+				],
+			}],
 			max_tokens: options.max_tokens,
 		};
 		
