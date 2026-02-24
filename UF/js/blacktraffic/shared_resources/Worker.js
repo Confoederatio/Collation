@@ -2,7 +2,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
 
 /**
  * ##### Constructor:
- * - `arg0_type`: {@link string}
+ * - `arg0_type`: {@link string} - The worker type to identify with.
  * - `arg1_options`: {@link Object}
  *   - `.config_file_path`: {@link string} - The config JSON5 file to load. Accessible at `.config`.
  *   - `.do_not_close_tab`: {@link boolean}
@@ -26,6 +26,7 @@ Blacktraffic.Worker = class {
 	static input_chrome_profile = Blacktraffic.getChromeDefaultProfilePath();
 	
 	/**
+	 * [WIP] - Should probably really be set to a default like ./settings/Blacktraffic/workers.
 	 * @type {string}
 	 */
 	static saves_folder = `./livemap/1.workers/dashboard/`;
