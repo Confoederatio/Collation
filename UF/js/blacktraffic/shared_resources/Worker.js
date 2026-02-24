@@ -131,6 +131,7 @@ Blacktraffic.Worker = class {
 			status_el.innerText = `Running (Time Elapsed) - Started [${time_string}]`;
 			status_el.style.color = "cyan";
 		}
+		status_el.classList.add(`data-status-${status}`);
 		
 		//Return statement
 		return status_el;
