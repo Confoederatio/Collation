@@ -9,10 +9,15 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  *   - `.log_channel="${worker}_type"`: {@link string}
  *   - `.special_function`: {@link function}(arg0_tab_obj:{@link Object}, arg1_instance:this) | {@link Array}<{@link Ontology}>
  *   - `.tags=[]`: {@link Array}<{@link string}>
+ *   - 
+ *   - `.console_persistence=false`: {@link boolean} - Whether console outputs should persist between worker jobs.
  * 
  * @type {Blacktraffic.Worker}
  */
-Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled. Need to add job interval to contract.
+Blacktraffic.Worker = class {
+	//[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled. Need to add job interval to contract.
+	//[WIP] - Should probably use a dual-channel logging system: a temporary log just for the worker, and a permanent log for all workers of the same type. This needs a wrapper to function, [REVISIT].
+	
 	static browser_obj;
 	
 	/**
@@ -27,6 +32,11 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 	static saves_folder = `./livemap/1.workers/dashboard/`;
 	
 	/**
+	 * @type {{ "<worker_type_key>": number }}
+	 */
+	static workers_id_obj = {};
+	
+	/**
 	 * @type {{ "<worker_type_key>": Object[] }}
 	 */
 	static workers_obj = {};
@@ -37,6 +47,7 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 		let options = (arg1_options) ? arg1_options : {};
 		
 		//Initialise options
+		if (options.console_persistence === undefined) options.console_persistence = false;
 		if (options.do_not_close_tab === undefined) options.do_not_close_tab = false;
 		options.log_channel = (options.log_channel) ? options.log_channel : `worker_${type}`;
 		options.tags = (options.tags) ? options.tags : [];
@@ -55,11 +66,13 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 		this.jobs = []; //Internal job history
 		
 		//Append to workers_obj
+		Object.modifyValue(this.static.workers_id_obj, type, 1); //Ensure unique ID
+		
 		if (!this.static.workers_obj[type]) this.static.workers_obj[type] = [];
 			let worker_array = this.static.workers_obj[type];
 			worker_array.push(this);
-			this.worker_id = structuredClone(worker_array.length)
-		this.name = `${type} #${this.worker_id}`;
+			this.worker_id = structuredClone(this.static.workers_id_obj[type]);
+		this.name = `${type} ${this.worker_id}`;
 	}
 	
 	async disable () {
@@ -106,7 +119,7 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 			status_el.style.color = "lime";
 		} else if (status === "failed") {
 			status_el.innerText = "Failed";
-			status_el.style.color = "red;"
+			status_el.style.color = "red";
 		} else if (status === "idle") {
 			status_el.innerText = "Idle";
 			status_el.style.color = "lightgrey";
@@ -177,6 +190,67 @@ Blacktraffic.Worker = class { //[WIP] - Should be refactored in future to work w
 	}
 	
 	async run () {
+		if (!this.is_enabled) return []; //Internal guard clause if disabled
 		
+		//Declare local instance variables
+		let log_folder = path.join(this.static.saves_folder, "logs", this.type);
+			if (!fs.existsSync(log_folder)) fs.mkdirSync(log_folder, { recursive: true });
+		let start_time = Date.now();
+		
+		let log_file_name = `${this.name}_${start_time}.log`;
+		let log_path = path.join(log_folder, log_file_name);
+		
+		this.current_job_status = "running";
+		let job_obj = {
+			log_file_path: log_path,
+			status: "running",
+			time_elapsed: 0,
+			timestamp: start_time
+		};
+		
+		//Initialise job; begin logging to console
+		if (this.console && !this.options.console_persistence) this.console.clear();
+		this.jobs.push(job_obj);
+		this.console.log(`[${this.name}] Executing run() at ${new Date(start_time).toISOString()}.`);
+		
+		try {
+			let ontologies = [];
+			let tab_obj = await this.getTab();
+			
+			//Execute worker logic
+			if (typeof this.options.special_function === "function") {
+				ontologies = await this.options.special_function(tab_obj, this);
+			} else if (Array.isArray(this.options.special_function)) {
+				ontologies = this.options.special_function;
+			}
+			
+			//Job is only successful if it returns Ontology[]
+			if (!Array.isArray(ontologies)) {
+				this.console.warn(`[${this.name}] Worker failed to return Ontology[], returned:`, ontologies);
+				job_obj.status = "partially_failed";
+				this.current_job_status = "partially_failed";
+			} else {
+				job_obj.status = "done";
+				this.current_job_status = "done";
+			}
+			
+			if (!this.options.do_not_close_tab) await tab_obj.close();
+			
+			//Return statement
+			return ontologies;
+		} catch (e) {
+			this.console.error(`[${this.name}] Worker failed to execute properly:`, (e.stack || e));
+			job_obj.status = "failed";
+			this.current_job_status = "failed";
+		} finally {
+			job_obj.time_elapsed = Date.now() - start_time;
+			this.console.log(`[${this.name}] Worker finished in ${job_obj.time_elapsed}ms`);
+			
+			try {
+				this.console.save(log_path, { format: "plaintext" }); //Save the console in plaintext form
+			} catch (e) {
+				this.console.error(`[${this.name}] Failed to write worker log to ${log_path}:`, (e.stack || e));
+			}
+		}
 	}
 };
