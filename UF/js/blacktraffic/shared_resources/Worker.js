@@ -8,6 +8,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * - `arg1_options`: {@link Object}
  *   - `.config_file_path`: {@link string} - The config JSON5 file to load. Accessible at `.config`.
  *   - `.do_not_close_tab`: {@link boolean}
+ *   - `.interval`: {@link number} - The interval in ms at which to execute run().
  *   - `.log_channel="${worker}_type"`: {@link string}
  *   - `.special_function`: {@link function}(arg0_tab_obj:{@link Object}, arg1_instance:this) | {@link Array}<{@link Ontology}>
  *   - `.tags=[]`: {@link Array}<{@link string}>
@@ -36,6 +37,8 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * - <span color=00ffff>{@link Blacktraffic.Worker.print|print}</span>(arg0_type:{@link string}, argn_arguments:{@link any})
  * - <span color=00ffff>{@link Blacktraffic.Worker.remove|remove}</span>()
  * - <span color=00ffff>{@link Blacktraffic.Worker.run|run}</span>()
+ * - <span color=00ffff>{@link Blacktraffic.Worker.startInterval|startInterval}</span>()
+ * - <span color=00ffff>{@link Blacktraffic.Worker.stopInterval|stopInterval}</span>()
  * - <span color=00ffff>{@link Blacktraffic.Worker.warn|warn}</span>(argn_arguments:{@link any})
  *   
  * ##### Static Fields:
@@ -48,7 +51,7 @@ if (!global.Blacktraffic) global.Blacktraffic = {};
  * @type {Blacktraffic.Worker}
  */
 Blacktraffic.Worker = class {
-	//[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled. Need to add job interval to contract.
+	//[WIP] - Should be refactored in future to work with multiple browsers. Requires multiple copychecks and passes to ensure the contract is fulfilled.
 	
 	/**
 	 * @type {Blacktraffic.AgentBrowserPuppeteer}
@@ -84,6 +87,7 @@ Blacktraffic.Worker = class {
 		//Initialise options
 		if (options.console_persistence === undefined) options.console_persistence = false;
 		if (options.do_not_close_tab === undefined) options.do_not_close_tab = false;
+		options.interval = Math.returnSafeNumber(options.interval);
 		options.log_channel = (options.log_channel) ? options.log_channel : `worker_${type}`;
 		options.tags = (options.tags) ? options.tags : [];
 		
@@ -95,6 +99,7 @@ Blacktraffic.Worker = class {
 		this.static = Blacktraffic.Worker;
 		this.type = type;
 		
+		this._interval_timer = null;
 		this.current_job_status = "idle";
 		this.jobs = []; //Internal job history
 		
@@ -112,6 +117,9 @@ Blacktraffic.Worker = class {
 			new log.Channel(options.log_channel) : log[`${options.log_channel}_instance`];
 		this.console_local = (!log[this.name]) ? 
 			new log.Channel(this.name) : log[`${this.name}_instance`];
+		
+		//Start interval loop if provided
+		if (this.options.interval > 0) this.startInterval();
 	}
 	
 	/**
@@ -127,6 +135,7 @@ Blacktraffic.Worker = class {
 		//Declare local instance variables
 		let current_tab = await this.getTab();
 		this.is_enabled = false;
+		this.stopInterval();
 		
 		//Close any currently open tasks
 		if (current_tab) await current_tab.close();
@@ -143,7 +152,10 @@ Blacktraffic.Worker = class {
 	 * @returns {Promise<void>}
 	 */
 	async enable () {
+		//Declare local instance variables
 		this.is_enabled = true;
+		if (this.options.interval > 0) this.startInterval();
+		
 		if (this.console) this.log(`${this.name} enabled.`);
 	}
 	
@@ -381,6 +393,10 @@ Blacktraffic.Worker = class {
 	 */
 	async run () {
 		if (!this.is_enabled) return []; //Internal guard clause if disabled
+		if (this.current_job_status === "running") {
+			this.warn(`[${this.name}] Worker is already running. Are you sure your jobs are scheduled correctly? Aborting most recent request.`);
+			return []; //Internal guard clause if already running
+		}
 		
 		//Declare local instance variables
 		let log_folder = path.join(this.static.saves_folder, "logs", this.type);
@@ -441,6 +457,40 @@ Blacktraffic.Worker = class {
 			} catch (e) {
 				this.error(`[${this.name}] Failed to write worker log to ${log_path}:`, (e.stack || e));
 			}
+		}
+	}
+	
+	/**
+	 * Starts the interval timer for the worker.
+	 * - Method of: {@link Blacktraffic.Worker}
+	 * 
+	 * @alias startInterval
+	 * @memberof Blacktraffic.Worker
+	 */
+	startInterval () {
+		//Clear interval first before starting a new one
+		if (this._interval_timer) clearInterval(this._interval_timer);
+		if (this.options.interval > 0)
+			this._interval_timer = setInterval(async () => {
+				//Only trigger run() if the previous one finished
+				if (this.current_job_status !== "running") {
+					await this.run();
+				}
+			}, this.options.interval);
+	}
+	
+	/**
+	 * Stops the interval timer for the worker.
+	 * - Method of: {@link Blacktraffic.Worker}
+	 *
+	 * @alias stopInterval
+	 * @memberof Blacktraffic.Worker
+	 */
+	stopInterval () {
+		//Clear interval
+		if (this._interval_timer) {
+			clearInterval(this._interval_timer);
+			this._interval_timer = null;
 		}
 	}
 	
