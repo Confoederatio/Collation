@@ -113,8 +113,16 @@ Blacktraffic.Worker = class {
 		this.name = `${type} ${this.worker_id}`;
 		
 		//Declare consoles
+		/**
+		 * @type {log.Channel}
+		 * @memberof Blacktraffic.Worker
+		 */
 		this.console = (!log[options.log_channel]) ?
 			new log.Channel(options.log_channel) : log[`${options.log_channel}_instance`];
+		/**
+		 * @type {log.Channel}
+		 * @memberof Blacktraffic.Worker
+		 */
 		this.console_local = (!log[this.name]) ? 
 			new log.Channel(this.name) : log[`${this.name}_instance`];
 		
@@ -325,7 +333,6 @@ Blacktraffic.Worker = class {
 	 * Prints an error to both logging channels.
 	 * - Method of: {@link Blacktraffic.Worker}
 	 * 
-	 * @alias error
 	 * @memberof Blacktraffic.Worker
 	 * 
 	 * @param argn_arguments
@@ -336,7 +343,6 @@ Blacktraffic.Worker = class {
 	 * Prints a log to both logging channels.
 	 * - Method of: {@link Blacktraffic.Worker}
 	 *
-	 * @alias log
 	 * @memberof Blacktraffic.Worker
 	 * 
 	 * @param argn_arguments
@@ -347,7 +353,6 @@ Blacktraffic.Worker = class {
 	 * Prints a message type to both logging channels.
 	 * - Method of: {@link Blacktraffic.Worker}
 	 *
-	 * @alias print
 	 * @memberof Blacktraffic.Worker
 	 * 
 	 * @param {string} arg0_type - Either 'error'/'log'/'warn'.
@@ -367,7 +372,6 @@ Blacktraffic.Worker = class {
 	 * Removes the current worker.
 	 * - Method of: {@link Blacktraffic.Worker}
 	 *
-	 * @alias remove
 	 * @memberof Blacktraffic.Worker
 	 */
 	remove () {
@@ -498,7 +502,6 @@ Blacktraffic.Worker = class {
 	 * Logs a warning to both logging channels.
 	 * - Method of: {@link Blacktraffic.Worker}
 	 *
-	 * @alias warn
 	 * @memberof Blacktraffic.Worker
 	 * 
 	 * @param argn_arguments
