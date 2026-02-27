@@ -24,6 +24,9 @@
 			let type = (arg0_type) ? arg0_type : "Ontology";
 			let state_array = (arg1_state_array) ? arg1_state_array : [];
 			let options = (arg2_options) ? arg2_options : {};
+			
+			//Declare local instance variables
+			
 		}
 	};
 }
