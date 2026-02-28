@@ -55,6 +55,8 @@
 	 * 
 	 * ##### Static Methods:
 	 * - <span color=00ffff>{@link Ontology.applyMutations|applyMutations}</span>(arg0_resolved_data:{@link Object}, arg1_mutations:{@link Object}) | {@link Object}
+	 * - <span color=00ffff>{@link Ontology.getOntologyID|getOntologyID}</span>() | {@link string}
+	 * - <span color=00ffff>{@link Ontology.initialise|initialise}</span>()
 	 * 
 	 * @type {Ontology}
 	 */
@@ -118,12 +120,11 @@
 		
 		/**
 		 * Given an array of fully-resolved snapshots (one per keyframe, indexed automatically to `this.state`), rewrite every keyframe's data so that the last entry is the full snapshot and every earlier entry is a negative diff against its successor.
+		 * @private
 		 * 
 		 * @param {Object[]} arg0_snapshots
 		 * 
 		 * @returns {Object}
-		 * 
-		 * @private
 		 */
 		_rebuildDiffsFromSnapshots (arg0_snapshots) {
 			//Convert from parameters
@@ -157,10 +158,9 @@
 		
 		/**
 		 * Fully resolve every keyframe, return the array of snapshots.
+		 * @private
 		 * 
 		 * @returns {Object[]}
-		 * 
-		 * @private
 		 */
 		_resolveAllSnapshots () {
 			//Declare local instance variables
@@ -176,12 +176,11 @@
 		
 		/**
 		 * Resolves the state at a given index and returns it.
+		 * @private
 		 * 
 		 * @param {number} [arg0_index=0]
 		 * 
 		 * @returns {Object}
-		 * 
-		 * @private
 		 */
 		_resolveStateAtIndex (arg0_index) {
 			//Convert from parameters
@@ -212,6 +211,7 @@
 		
 		/**
 		 * Sorts `this.state` in ascending order by `.date`. Last = head.
+		 * @private
 		 */
 		_sortState () { this.state.sort((a, b) => a.date - b.date); }
 		
@@ -616,6 +616,7 @@
 		 * 
 		 * Order per category: set > add > remove.
 		 * @alias #applyMutations
+		 * @memberof Ontology
 		 * 
 		 * @param {Object} arg0_resolved_data
 		 * @param {Object} arg1_mutations
@@ -657,11 +658,25 @@
 			return data;
 		}
 		
+		/**
+		 * Returns an Ontology ID/hash reflective of the current date.
+		 * 
+		 * @alias #getOntologyID
+		 * @memberof Ontology
+		 * 
+		 * @returns {string}
+		 */
 		static getOntologyID () {
 			//Return statement
 			return `${Date.now()}_${this.queue.length}`;
 		}
 		
+		/**
+		 * Initialises Ontology logic at the global level.
+		 * 
+		 * @alias #initialise
+		 * @memberof Ontology
+		 */
 		static initialise () {
 			Ontology.initialised = true;
 			Ontology.logic_loop = setInterval(() => {
