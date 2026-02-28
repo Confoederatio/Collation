@@ -42,6 +42,7 @@
 	 * - <span color=00ffff>{@link Ontology.getState|getState}</span>(arg0_date:{@link Date}) | {@link Object}
 	 * - <span color=00ffff>{@link Ontology.getTimelineElement|getTimelineElement}</span>(arg0_options:{@link Object})
 	 * - <span color=00ffff>{@link Ontology.jumpToKeyframe|jumpToKeyframe}</span>(arg0_date:{@link Date}) | {@link Object}|{@link null}
+	 * - <span color=00ffff>{@link Ontology.mergeState|mergeState}</span>(arg0_state:{@link Array}<{@link Object}>)
 	 * - <span color=00ffff>{@link Ontology.moveKeyframe|moveKeyframe}</span>(arg0_date:{@link Date}, arg1_date:{@link Date}) | {@link boolean}
 	 * - <span color=00ffff>{@link Ontology.remove|remove}</span>()
 	 * - <span color=00ffff>{@link Ontology.removeRelation|removeRelation}</span>(arg0_relation:{@link string}, arg1_date:{@link Date})
@@ -66,7 +67,6 @@
 		 * - static fromDatabase()
 		 * - static getOntologyFromDatabase(arg0_ontology_id)
 		 * - saveToDatabase()
-		 * [WIP] - Ontologies with the same ID when constructed should have their states diffed and merged.
 		 * [WIP] - Modify logic loop to also save current Ontologies to databases.
 		 */
 		
@@ -104,6 +104,17 @@
 			this.type = type;
 			
 			this.id = (this.options.id) ? this.options.id : Ontology.getOntologyID();
+			
+			//Existing instance state
+			let existing_instance = (
+				Ontology.instances.find((local_ontology) => local_ontology.id === this.id) || 
+				Ontology.queue.find((local_ontology) => local_ontology.id === this.id)
+			);
+			if (existing_instance) {
+				existing_instance.mergeState(state_array);
+				return existing_instance; //Return the old instance; new instance is discarded
+			}
+			
 			this.geometries = [];
 			this.state = (state_array) ? state_array : [];
 				if (!Array.isArray(this.state)) {
@@ -497,6 +508,7 @@
 		 * Jumps to a specific keyframe and calls the draw function for the Ontology.
 		 * 
 		 * @param arg0_date
+		 * 
 		 * @returns {{data: Object, date: Date, index: number}|null}
 		 */
 		jumpToKeyframe (arg0_date) {
@@ -529,6 +541,54 @@
 				date: this.state[best_index].date,
 				index: best_index
 			};
+		}
+		
+		/**
+		 * Merges an incoming state array into the current Ontology. Resolves both snates to snapshots, merges them, and rebuilds the diff chain.
+		 * 
+		 * @param {Object[]} arg0_state_array
+		 */
+		mergeState (arg0_state_array) {
+			//Convert from parameters
+			let state = (arg0_state_array) ? arg0_state_array : [];
+				if (state.length === 0) return; //Internal guard clause if state being merged doesn't exist
+			
+			//Declare local instance variables
+			let current_snapshots = this._resolveAllSnapshots();
+			let snapshot_map = {};
+		
+			//Iterate over the current state and populate snapshot_map
+			for (let i = 0; i < this.state.length; i++)
+				snapshot_map[this.state[i].date] = current_snapshots[i];
+			
+			//Resolve incoming snapshots with a temp_context to reuse resolution logic without affecting this instance
+			let temp_context = {
+				state: state,
+				_resolveStateAtIndex: this._resolveStateAtIndex
+			};
+			temp_context._resolveAllSnapshots = this._resolveAllSnapshots.bind(temp_context);
+			temp_context._resolveStateAtIndex = this._resolveStateAtIndex.bind(temp_context);
+			
+			let incoming_snapshots = temp_context._resolveAllSnapshots();
+			
+			//Merge snapshots into the map (incoming takes precedence)
+			for (let i = 0; i < state.length; i++) {
+				let local_date = state[i].date;
+				
+				if (snapshot_map[local_date]) {
+					snapshot_map[local_date] = Object.assign(snapshot_map[local_date], incoming_snapshots[i]);
+				} else {
+					snapshot_map[local_date] = incoming_snapshots[i];
+				}
+			}
+			
+			//Reconstruct state skeleton
+			let sorted_dates = Object.keys(snapshot_map).map(Number).sort((a, b) => a - b);
+			
+			this.state = sorted_dates.map((date) => ({ date: date, data: {} }));
+			
+			let final_snapshots = sorted_dates.map((date) => snapshot_map[date]);
+			this._rebuildDiffsFromSnapshots(final_snapshots);
 		}
 		
 		/**
@@ -565,7 +625,7 @@
 			let index = Ontology.instances.indexOf(this);
 				if (index !== -1) Ontology.instances.splice(index, 1);
 			let queue_index = Ontology.queue.indexOf(this);
-				if (queue_index !== -1) Ontology.queue.splice(index, 1);
+				if (queue_index !== -1) Ontology.queue.splice(queue_index, 1);
 			
 			//Remove geometries from any map layer
 			for (let local_geometry of this.geometries)

@@ -274,6 +274,22 @@
 	};
 	
 	/**
+	 * Returns the modern timestamp (UNIX-based) for a given date.
+	 * @alias Date.getModernTimestamp
+	 * 
+	 * @param {Date|any} arg0_date
+	 * 
+	 * @returns {number}
+	 */
+	Date.getModernTimestamp = function (arg0_date) {
+		//Convert from parameters
+		let date = Date.getDate(arg0_date);
+		
+		//Return statement
+		return date.getTime();
+	};
+	
+	/**
 	 * Returns a numeric timestamp from a specific Date object. Number of minutes from 1 January, 00:00 on 1AD.
 	 * @alias Date.getTimestamp
 	 * 
