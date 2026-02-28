@@ -26,11 +26,35 @@
 	 * - `.state`: {@link Array}<{@link Object}>
 	 * - `.worker_type`: {@link string}
 	 * 
+	 * ##### Methods:
+	 * - <span color=00ffff>{@link Ontology._rebuildDiffsFromSnapshots|_rebuildDiffsFromSnapshots}</span> | {@link Object}(arg0_snapshots:{@link Array}<{@link Object}>)
+	 * - <span color=00ffff>{@link Ontology._resolveAllSnapshots|_resolveAllSnapshots}</span>() | {@link Array}<{@link Object}>
+	 * - <span color=00ffff>{@link Ontology._resolveStateAtIndex|_resolveStateAtIndex}</span>(arg0_index:{@link number}) | {@link Object}
+	 * - <span color=00ffff>{@link Ontology._sortState|_sortState}</span>()
+	 * - <span color=00ffff>{@link Ontology.addKeyframe|addKeyframe}</span>(arg0_date:{@link Date}, arg1_date:{@link Date}) | {@link Object}
+	 * - <span color=00ffff>{@link Ontology.addRelation|addRelation}</span>(arg0_date:{@link Date}, arg1_relation_obj:{@link Object}) | {@link Object}
+	 * - <span color=00ffff>{@link Ontology.deleteKeyframe|deleteKeyframe}</span>(arg0_date:{@link Date}) | {@link boolean}
+	 * - <span color=00ffff>{@link Ontology.draw|draw}</span>() | {@link Array}<{@link maptalks.Geometry}>
+	 * - <span color=00ffff>{@link Ontology.getElement|getElement}</span>() | {@link HTMLElement}
+	 * - <span color=00ffff>{@link Ontology.getFirstKeyframeWithProperty|getFirstKeyframeWithProperty}</span>(arg0_property:{@link Object})
+	 * - <span color=00ffff>{@link Ontology.getLastKeyframeWithProperty|getLastKeyframeWithProperty}</span>(arg0_property:{@link Object})
+	 * - <span color=00ffff>{@link Ontology.getTimelineElement|getTimelineElement}</span>(arg0_options:{@link Object}) | {@link HTMLElement}
+	 * - <span color=00ffff>{@link Ontology.getState|getState}</span>(arg0_date:{@link Date}) | {@link Object}
+	 * - <span color=00ffff>{@link Ontology.getTimelineElement|getTimelineElement}</span>(arg0_options:{@link Object})
+	 * - <span color=00ffff>{@link Ontology.jumpToKeyframe|jumpToKeyframe}</span>(arg0_date:{@link Date}) | {@link Object}|{@link null}
+	 * - <span color=00ffff>{@link Ontology.moveKeyframe|moveKeyframe}</span>(arg0_date:{@link Date}, arg1_date:{@link Date}) | {@link boolean}
+	 * - <span color=00ffff>{@link Ontology.remove|remove}</span>()
+	 * - <span color=00ffff>{@link Ontology.removeRelation|removeRelation}</span>(arg0_relation:{@link string}, arg1_date:{@link Date})
+	 * - <span color=00ffff>{@link Ontology.removeRleations|removeRelations}</span>(arg0_relations:{@link Array}<{@link string}>, arg1_date:{@link Date})
+	 * 
 	 * ##### Static Fields:
 	 * - `.initialised=false`: {@link boolean}
 	 * - `.instances`: {@link Array}<{@link Ontology}>
 	 * - `.ontology_folder_path=""`: {@link string}
 	 * - `.queue`: {@link Array}<{@link Ontology}> - Queued Ontologies waiting to be saved and passed into `.instances`.
+	 * 
+	 * ##### Static Methods:
+	 * - <span color=00ffff>{@link Ontology.applyMutations|applyMutations}</span>(arg0_resolved_data:{@link Object}, arg1_mutations:{@link Object}) | {@link Object}
 	 * 
 	 * @type {Ontology}
 	 */
@@ -71,7 +95,7 @@
 			let options = (arg2_options) ? arg2_options : {};
 			
 			//Initialise Ontology first
-			if (!Ontology._initialised) Ontology.initialise();
+			if (!Ontology.initialised) Ontology.initialise();
 			
 			//Declare local instance variables
 			this.options = options;
@@ -150,6 +174,15 @@
 			return snapshots;
 		}
 		
+		/**
+		 * Resolves the state at a given index and returns it.
+		 * 
+		 * @param {number} [arg0_index=0]
+		 * 
+		 * @returns {Object}
+		 * 
+		 * @private
+		 */
 		_resolveStateAtIndex (arg0_index) {
 			//Convert from parameters
 			let index = Math.returnSafeNumber(arg0_index);
@@ -251,13 +284,13 @@
 		/**
 		 * Adds a relation object to the selected date.
 		 * 
-		 * @param {{id: string, data: Object}} arg0_relation_obj
-		 * @param {Date|any} arg1_date
+		 * @param {Date|any} arg0_date
+		 * @param {{id: string, data: Object}} arg1_relation_obj
 		 */
-		addRelation (arg0_relation_obj, arg1_date) {
+		addRelation (arg0_date, arg1_relation_obj) {
 			//Convert from parameters
-			let relation_obj = arg0_relation_obj;
-			let date = (arg1_date) ? Date.getDate(arg1_date).getTime() : Date.now();
+			let date = (arg0_date) ? Date.getDate(arg0_date).getTime() : Date.now();
+			let relation_obj = arg1_relation_obj;
 			
 			if (!relation_obj) return; //Internal guard clause if relation is null
 			
@@ -386,52 +419,6 @@
 		}
 		
 		/**
-		 * Returns an {@link HTMLElement} representing this Ontology's timeline.
-		 * 
-		 * @param {Object} [arg0_options]
-		 *  @param {Date|any} [arg0_options.start_date]
-		 *  @param {Date|any} [arg0_options.end_date]
-		 *  
-		 * @returns {HTMLElement}
-		 */
-		getTimelineElement (arg0_options) {
-			//Convert from parameters
-			let options = (arg0_options) ? arg0_options : {};
-			
-			//Initialise options
-			options.end_date = (options.end_date !== undefined) ?
-				Date.getDate(options.end_date).getTime() : -Infinity;
-			options.start_date = (options.start_date !== undefined) ? 
-				Date.getDate(options.start_date).getTime() : -Infinity;
-			
-			//Declare local instance variables
-			let timeline_el = document.createElement("div");
-				timeline_el.classList.add("ontology-timeline");
-				
-			//Iterate over all keyframes in state
-			for (let i = 0; i < this.state.length; i++) {
-				let local_keyframe = this.state[i];
-				if (local_keyframe.date < options.start_date || local_keyframe.date > options.end_date) continue;
-				
-				let local_keyframe_el = document.createElement("div");
-					local_keyframe_el.classList.add("ontology-keyframe");
-					local_keyframe.dataset.date = local_keyframe.date;
-					local_keyframe.dataset.index = i.toString();
-				
-				let label_el = document.createElement("span");
-					label_el.classList.add("ontology-keyframe-date");
-					label_el.textContent = new Date(local_keyframe.date).toISOString();
-					local_keyframe_el.appendChild(label_el);
-				
-				if (i === this.state.length - 1) local_keyframe_el.classList.add("ontology-keyframe-head");
-				timeline_el.appendChild(local_keyframe_el);
-			}
-			
-			//Return statement
-			return timeline_el;
-		}
-		
-		/**
 		 * Returns the fully-resolved state at a given date. If the date fails between two keyframes, the earlier keyframe's resolved state is returned. If the date is past the head, the head snapshot is returned. If before all keyframes, an empty object is returned.
 		 *
 		 * @param {Date|any} arg0_date
@@ -458,6 +445,52 @@
 			
 			//Return statement
 			return this._resolveStateAtIndex(target_index);
+		}
+		
+		/**
+		 * Returns an {@link HTMLElement} representing this Ontology's timeline.
+		 * 
+		 * @param {Object} [arg0_options]
+		 *  @param {Date|any} [arg0_options.start_date]
+		 *  @param {Date|any} [arg0_options.end_date]
+		 *  
+		 * @returns {HTMLElement}
+		 */
+		getTimelineElement (arg0_options) {
+			//Convert from parameters
+			let options = (arg0_options) ? arg0_options : {};
+			
+			//Initialise options
+			options.end_date = (options.end_date !== undefined) ?
+				Date.getDate(options.end_date).getTime() : Infinity;
+			options.start_date = (options.start_date !== undefined) ? 
+				Date.getDate(options.start_date).getTime() : -Infinity;
+			
+			//Declare local instance variables
+			let timeline_el = document.createElement("div");
+				timeline_el.classList.add("ontology-timeline");
+				
+			//Iterate over all keyframes in state
+			for (let i = 0; i < this.state.length; i++) {
+				let local_keyframe = this.state[i];
+				if (local_keyframe.date < options.start_date || local_keyframe.date > options.end_date) continue;
+				
+				let local_keyframe_el = document.createElement("div");
+					local_keyframe_el.classList.add("ontology-keyframe");
+					local_keyframe_el.dataset.date = local_keyframe.date;
+					local_keyframe_el.dataset.index = i.toString();
+				
+				let label_el = document.createElement("span");
+					label_el.classList.add("ontology-keyframe-date");
+					label_el.textContent = new Date(local_keyframe.date).toISOString();
+					local_keyframe_el.appendChild(label_el);
+				
+				if (i === this.state.length - 1) local_keyframe_el.classList.add("ontology-keyframe-head");
+				timeline_el.appendChild(local_keyframe_el);
+			}
+			
+			//Return statement
+			return timeline_el;
 		}
 		
 		/**
@@ -530,7 +563,9 @@
 		remove () {
 			//Declare local instance variables
 			let index = Ontology.instances.indexOf(this);
-				if (index !== -1) Ontology.instances.splice(i, 1);
+				if (index !== -1) Ontology.instances.splice(index, 1);
+			let queue_index = Ontology.queue.indexOf(this);
+				if (queue_index !== -1) Ontology.queue.splice(index, 1);
 			
 			//Remove geometries from any map layer
 			for (let local_geometry of this.geometries)
@@ -580,6 +615,7 @@
 		 * Applies relation/tag mutation fields onto a fully-resolved data object and returns the result (input is not mutated).
 		 * 
 		 * Order per category: set > add > remove.
+		 * @alias #applyMutations
 		 * 
 		 * @param {Object} arg0_resolved_data
 		 * @param {Object} arg1_mutations
@@ -597,7 +633,7 @@
 			
 			//Relations
 			if (mutations.set_relations)
-				data._relations = structuredClone(mutations._relations);
+				data._relations = structuredClone(mutations.set_relations);
 			if (mutations.add_relations)
 				for (let local_relation of mutations.add_relations)
 					if (!data._relations.find((r) => (r.id === local_relation.id)))
@@ -627,12 +663,12 @@
 		}
 		
 		static initialise () {
-			Ontology._initialised = true;
+			Ontology.initialised = true;
 			Ontology.logic_loop = setInterval(() => {
 				for (let i = 0; i < Ontology.queue.length; i++)
 					Ontology.instances.push(Ontology.queue[i]);
 				Ontology.queue = [];
-			});
+			}, 100);
 		}
 	};
 }
