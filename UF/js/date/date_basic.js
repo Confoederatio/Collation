@@ -315,11 +315,11 @@
 		
 		//Normalise minor overflows
 		if (date_obj.minute >= 60) {
-			date_obj.hour += Math.floor(date_obj.minute / 60);
+			date_obj.hour += Math.floor(date_obj.minute/60);
 			date_obj.minute %= 60;
 		}
 		if (date_obj.hour >= 24) {
-			date_obj.day += Math.floor(date_obj.hour / 24);
+			date_obj.day += Math.floor(date_obj.hour/24);
 			date_obj.hour %= 24;
 		}
 		while (date_obj.month > 12) {
