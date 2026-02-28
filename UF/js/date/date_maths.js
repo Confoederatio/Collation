@@ -1,5 +1,13 @@
 //Initialise functions
 {
+	/**
+	 * The number of milliseconds ago a Date was from the present timestamp.
+	 * @alias Date.getMillisecondsAgo
+	 *
+	 * @param {Date|any} arg0_date
+	 *
+	 * @returns {number}
+	 */
 	Date.getMillisecondsAgo = function (arg0_date) {
 		//Convert from parameters
 		let timestamp = Date.getModernTimestamp(arg0_date);

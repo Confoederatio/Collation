@@ -17,7 +17,7 @@ global.GLOBAL_Navy_AISFriends_Worker = class {
 		this.layer = new maptalks.VectorLayer("AISFriends").addTo(map);
 		
 		for (let i = 0; i < all_vessels.length; i++) try {
-			if (this.getDaysAgo(all_vessels[i].timestamp_of_position) > this.options.days_ago_threshold) continue; //Internal guard clause for recency
+			if (Date.getDaysAgo(all_vessels[i].timestamp_of_position) > this.options.days_ago_threshold) continue; //Internal guard clause for recency
 			
 			let local_marker = new maptalks.Marker([all_vessels[i].longitude, all_vessels[i].latitude], {
 				symbol: [{
@@ -37,28 +37,6 @@ global.GLOBAL_Navy_AISFriends_Worker = class {
 			});
 			local_marker.addTo(this.layer);
 		} catch (e) { console.error(e); }
-	}
-	
-	getDaysAgo (arg0_timestamp) {
-		//Convert from parameters
-		let timestamp = arg0_timestamp;
-		
-		// Current time in milliseconds
-		const now = Date.now();
-		
-		// Convert input timestamp from seconds to milliseconds
-		const targetTime = timestamp * 1000;
-		
-		// Calculate the difference in milliseconds
-		const differenceInMs = now - targetTime;
-		
-		// Define constants for time conversion
-		const msInADay = 1000 * 60 * 60 * 24;
-		
-		// Calculate days and round down to the nearest whole number
-		const daysAgo = Math.floor(differenceInMs / msInADay);
-		
-		return daysAgo;
 	}
 	
 	async fetchVesselData () {
