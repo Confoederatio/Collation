@@ -95,6 +95,7 @@
 			if (!Ontology.initialised) Ontology.initialise();
 			
 			//Declare local instance variables
+			this.is_ontology = true;
 			this.options = options;
 			this.type = type;
 			
@@ -337,7 +338,24 @@
 		/**
 		 * Draws the Ontology. Should be overridden by subclasses.
 		 */
-		draw () { return this.geometries; }
+		draw () {
+			try {
+				let subontology_found = false;
+				
+				if (global[`Ontology_${this.type}`] && this.type !== "Ontology") {
+					let local_class = global[`Ontology_${this.type}`];
+					
+					if (local_class.is_ontology) {
+						this.geometries = global[`Ontology_${this.type}`].draw();
+						subontology_found = true;
+					}
+					
+					//Check if subontology was found
+					if (!subontology_found)
+						console.warn(`No subontology of type ${this.type} could be found.`);
+				}
+			} catch (e) { console.error(e); }
+		}
 		
 		/**
 		 * Returns an HTMLElement representing this Ontology.
