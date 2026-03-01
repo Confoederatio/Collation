@@ -67,7 +67,7 @@ Blacktraffic.Worker = class {
 	 * [WIP] - Should probably really be set to a default like ./settings/Blacktraffic/workers.
 	 * @type {string}
 	 */
-	static saves_folder = `./livemap/1.workers/dashboard/`;
+	static saves_folder = ve.registry.settings.Blacktraffic.worker_saves_folder;
 	
 	/**
 	 * @type {{ "<worker_type_key>": number }}

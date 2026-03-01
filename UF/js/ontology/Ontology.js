@@ -66,14 +66,6 @@
 	 */
 	global.Ontology = class {
 		/**
-		 * [WIP] - Ontology needs a way to stream data to/from daily files.
-		 * - static fromDatabase()
-		 * - static getOntologyFromDatabase(arg0_ontology_id)
-		 * - saveToDatabase()
-		 * [WIP] - Modify logic loop to also save current Ontologies to databases.
-		 */
-		
-		/**
 		 * @type {boolean}
 		 */
 		static initialised = false;
@@ -86,7 +78,7 @@
 		/**
 		 * @type {string}
 		 */
-		static ontology_folder_path = ve.registry.Ontology.database_folder;
+		static ontology_folder_path = ve.registry.settings.Blacktraffic.ontology_saves_folder;
 		
 		/**
 		 * @type {Ontology[]}

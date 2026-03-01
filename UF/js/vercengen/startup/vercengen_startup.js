@@ -59,12 +59,37 @@ global.path = require("path");
 					
 					//Component-wide settings
 					
+					Blacktraffic: {
+						/**
+						 * The folder path in which Ontology databases are stored.
+						 * @type {string}
+						 */
+						ontology_saves_folder: "settings/Blacktraffic_ontology/",
+						/**
+						 * The folder path where worker statuses are stored.
+						 * @type {string}
+						 */
+						worker_saves_folder: "settings/Blacktraffic_workers/"
+					},
+					
 					Channel: {
-						default_bg_colour: "#2196F3",
+						/**
+						 * The default background colour for consoles.
+						 * @type {string}
+						 */
+						default_bg_colour: "#2196f3",
+						/**
+						 * The default text colour for consoles.
+						 * @type {string} - Either 'auto' or on actual colour.
+						 */
 						default_text_colour: "auto"
 					},
 					
 					Log: {
+						/**
+						 * Determines the default console height.
+						 * @type {string}
+						 */
 						default_console_height: "40vh"
 					},
 					
@@ -87,10 +112,6 @@ global.path = require("path");
 						 * @type {boolean|string}
 						 */
 						save_file: "settings/NodeEditor_settings.json"
-					},
-					
-					Ontology: {
-						database_folder: "settings/Ontology_databases"
 					},
 					
 					/**

@@ -23,7 +23,17 @@ global.h4 = "./histmap/4.data_processing/";
 global.h5 = "./histmap/5.data_post_processing/";
 global.h6 = "./histmap/6.data_visualisation/";
 
-global.l2 = "./livemap/military/";
+global.l1d = "./livemap/1.workers/dashboard/";
+global.l1e = "./livemap/1.workers/types/economics/";
+global.l1m = "./livemap/1.workers/types/military/";
+global.l1p = "./livemap/1.workers/types/politics/";
+global.l2 = "./livemap/2.ontology/";
+global.l3e = "./livemap/3.models/economics/";
+global.l3m = "./livemap/3.models/military/";
+global.l3p = "./livemap/3.models/politics/";
+global.l4e = "./livemap/4.view/economics/";
+global.l4m = "./livemap/4.view/military/";
+global.l4p = "./livemap/4.view/politics/";
 
 //Initialise functions
 {
