@@ -769,47 +769,81 @@
 		 * @memberof Ontology
 		 */
 		//[QUARANTINE]
-		static fromDatabase () {
-			const fs = require("fs");
+		static async fromDatabase () {
+			const fs_promises = require("fs").promises;
 			const path = require("path");
-			if (!fs.existsSync(Ontology.ontology_folder_path)) return;
 			
-			let files = fs.readdirSync(Ontology.ontology_folder_path)
-				.filter(f => f.endsWith(".ontology"))
-				.sort((a, b) => {
-					// Correctly parse DD.MM.YYYY.ontology
-					let parts_a = a.split(".");
-					let parts_b = b.split(".");
-					let date_a = new Date(Number(parts_a[2]), Number(parts_a[1]) - 1, Number(parts_a[0]));
-					let date_b = new Date(Number(parts_b[2]), Number(parts_b[1]) - 1, Number(parts_b[0]));
-					return date_a - date_b;
-				});
+			// 1. Check if the directory exists
+			try {
+				await fs_promises.access(Ontology.ontology_folder_path);
+			} catch (e) {
+				console.warn(`[Ontology] Database folder not found at ${Ontology.ontology_folder_path}`);
+				return;
+			}
+			
+			// 2. Get and sort files chronologically (DD.MM.YYYY.ontology)
+			let files = (await fs_promises.readdir(Ontology.ontology_folder_path))
+			.filter((f) => f.endsWith(".ontology"))
+			.sort((a, b) => {
+				let parts_a = a.split(".");
+				let parts_b = b.split(".");
+				let date_a = new Date(Number(parts_a[2]), Number(parts_a[1]) - 1, Number(parts_a[0]));
+				let date_b = new Date(Number(parts_b[2]), Number(parts_b[1]) - 1, Number(parts_b[0]));
+				return date_a - date_b;
+			});
 			
 			let database_states = {}; // Map<id, state_array>
 			
+			// 3. Process files asynchronously
 			for (let file of files) {
-				let content = fs.readFileSync(path.join(Ontology.ontology_folder_path, file), "utf8");
-				let lines = content.split("\n");
-				
-				for (let line of lines) {
-					if (!line.trim()) continue;
-					let space_index = line.indexOf(" ");
-					let id = line.substring(0, space_index);
-					let data_string = line.substring(space_index + 1);
+				try {
+					let filePath = path.join(Ontology.ontology_folder_path, file);
+					let content = await fs_promises.readFile(filePath, "utf8");
+					let lines = content.split("\n");
 					
-					try {
-						if (!database_states[id]) database_states[id] = [];
-						database_states[id].push(JSON.parse(data_string));
-					} catch (e) {
-						console.error(`Failed to parse ontology line for ${id}`);
+					for (let line of lines) {
+						if (!line.trim()) continue;
+						
+						let space_index = line.indexOf(" ");
+						if (space_index === -1) continue;
+						
+						let id = line.substring(0, space_index);
+						let data_string = line.substring(space_index + 1);
+						
+						try {
+							let keyframe = JSON.parse(data_string);
+							// Mark as saved so we don't immediately try to write it back to disk
+							keyframe._saved = true;
+							
+							if (!database_states[id]) database_states[id] = [];
+							database_states[id].push(keyframe);
+						} catch (e) {
+							console.error(`[Ontology] Failed to parse JSON for ID ${id} in ${file}`);
+						}
 					}
+				} catch (e) {
+					console.error(`[Ontology] Failed to read file ${file}:`, e);
 				}
 			}
 			
-			// Hydrate instances (Constructor handles merge/sort/diffing)
+			// 4. Hydrate instances
+			// We determine the class type by looking at the 'type' field in the keyframe data
 			for (let id in database_states) {
-				new Ontology("Ontology", database_states[id], { id: id });
+				let state_array = database_states[id];
+				if (state_array.length === 0) continue;
+				
+				// Look for a type in the keyframes, default to "Ontology"
+				let type = state_array[0].type || "Ontology";
+				
+				// Attempt to find a registered subclass (e.g., global.Ontology_Event)
+				let target_class = global[`Ontology_${type}`] || Ontology;
+				
+				// Instantiate. The constructor handles merging, sorting, and diffing.
+				// If an instance with this ID already exists, it will merge the data.
+				new target_class(type, state_array, { id: id });
 			}
+			
+			console.log(`[Ontology] Successfully hydrated ${Object.keys(database_states).length} ontologies from database.`);
 		}
 		
 		/**

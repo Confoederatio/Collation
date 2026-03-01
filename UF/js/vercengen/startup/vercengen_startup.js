@@ -336,6 +336,7 @@ global.path = require("path");
 	 * - `.load_files`: {@link Array}<{@link string}> - The sequence of files to load. `!` should be used as an exclusion prefix, whilst `*` functions as a wildcard pattern.
 	 * - `.is_browser=true`: {@link boolean} - Whether the imports are for the Browser/Electron. Imports are assumed to be eval/Node.js otherwise.
 	 * - `.is_node=false`: {@link boolean} - Whether the imports are for Node.js. Overridden by `.is_browser`. Inputs are assumed to be for eval if false.
+	 * - `.ontology_function`: {@link function}(arg0_ontologies:{@link Array}<{@link Ontology}>) - The function to execute once Ontology instances are loaded from DBs.
 	 * - `.special_function`: {@link function} - The function to execute upon startup and Vercengen initialisation.
 	 *
 	 * @returns Array<string>
@@ -467,6 +468,13 @@ global.path = require("path");
 			try {
 				ve.initialiseThemes();
 				ve.initialise();
+				
+				//Load ontologies
+				Ontology.fromDatabase().then(() => {
+					if (options.ontology_function)
+						options.ontology_function(Ontology.instances);
+				});
+				
 				clearInterval(global.initialise_ve_loop);
 				
 				if (options.special_function)
