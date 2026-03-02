@@ -56,7 +56,9 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 				
 				let is_paid = await tab.evaluate(() => {
 					let modal = document.querySelector(`.modalWrapCont`);
-					return modal && modal.innerHTML.includes("in free version");
+					
+					//Return statement
+					return modal?.innerHTML.includes("in free version");
 				});
 				
 				if (is_paid) {
@@ -166,7 +168,10 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 			await tab.waitForSelector(`a#menu_languages`);
 			await tab.click(`a#menu_languages`);
 			
-			let regions = await tab.$$eval(`div.rg-list > a`, els => els.map(el => ({ name: el.getAttribute("title"), url: el.href })));
+			let regions = await tab.$$eval(`div.rg-list > a`, (els) => els.map((el) => ({ 
+				name: el.getAttribute("title"), 
+				url: el.href
+			})));
 			
 			if (!fs.existsSync(path.dirname(json_path))) 
 				fs.mkdirSync(path.dirname(json_path), { recursive: true });
