@@ -149,13 +149,16 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 		//Declare local instance variables
 		let json_path = this.static.input_auto_regions_json;
 		
+		//Return statement if valid cache exists
 		if (fs.existsSync(json_path)) {
 			let age = Date.now() - fs.statSync(json_path).mtimeMs;
-			if (age < this.static._update_regions_interval * 1000) return JSON.parse(fs.readFileSync(json_path, "utf8"));
+			
+			if (age < this.static._update_regions_interval*1000) 
+				return JSON.parse(fs.readFileSync(json_path, "utf8"));
 		}
-		this.log("Refreshing regions cache...");
 		
 		//Make sure tab for worker is open
+		this.log("Refreshing regions cache ...");
 		let tab = await this.getTab();
 		
 		try {
