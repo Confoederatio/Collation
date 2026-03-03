@@ -78,6 +78,22 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 			}
 	}
 	
+	setGeometries (arg0_geometries) {
+		//Convert from parameters
+		let geometries = (arg0_geometries) ? arg0_geometries : [];
+		let mapmode_layer = main.layers[`mapmode_${this.options.layer}_layer`];
+		
+		//Iterate over all present this.geometries
+		for (let i = 0; i < this.geometries.length; i++)
+			this.geometries[i].remove();
+		for (let i = 0; i < geometries.length; i++)
+			geometries[i].addTo(mapmode_layer);
+		this.geometries = geometries;
+		
+		//Return statement
+		return this.geometries;
+	}
+	
 	show () {
 		if (!main.user.mapmodes.includes(this.id)) main.user.mapmodes.push(this.id);
 		naissance.Mapmode.draw();
@@ -135,7 +151,7 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 				}
 				
 				//Push local_value as new mapmode
-				new naissance.Mapmode(local_key, local_value);
+				config.mapmodes[local_key].instance = new naissance.Mapmode(local_key, local_value);
 			});
 		main.interfaces.mapmodes_ui.draw();
 	}

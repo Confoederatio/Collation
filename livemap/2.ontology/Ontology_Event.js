@@ -3,6 +3,8 @@
  * @extends Ontology
  */
 global.Ontology_Event = class extends Ontology {
+	static draw_hours_ago = 48;
+	
 	constructor (arg0_state, arg1_options) {
 		// Pass 'Event' as the type to the base Ontology class
 		super("Event", arg0_state, arg1_options);
@@ -24,7 +26,7 @@ global.Ontology_Event = class extends Ontology {
 		let skip_draw = false;
 		
 		if (current_state) try {
-			if (current_state.type === "point" && Date.getDaysAgo(current_state.timestamp) > 2) 
+			if (current_state.type === "point" && Date.getHoursAgo(current_state.timestamp) > Ontology_Event.draw_hours_ago) 
 				skip_draw = true;
 		} catch (e) {}
 		
@@ -64,13 +66,6 @@ global.Ontology_Event = class extends Ontology {
 						} catch (e) { console.error(e); }
 					}
 				});
-				
-				// 5. Add to the designated map layer
-				if (typeof map !== "undefined") {
-					// Use a specific layer for Liveuamap events
-					let layer = map.getLayer("liveuamap") || new maptalks.VectorLayer("liveuamap", { zIndex: 101 }).addTo(map);
-					geometry.addTo(layer);
-				}
 				
 				// 6. Track the geometry so we can remove/update it later
 				this.geometries.push(geometry);
