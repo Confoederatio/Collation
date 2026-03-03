@@ -81,9 +81,10 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 		});
 		
 		try {
-			map.removeLayer(this.layer);
+			main.layers.group_tile_layers.addTo(map);
+			main.layers.group_tile_layers.removeLayer(this.layer);
 			if (this._is_visible)
-				map.addLayer(this.layer);
+				main.layers.group_tile_layers.addLayer(this.layer); //[WIP] - This needs to be changed in terms of z-index management
 		} catch (e) {}
 	}
 	

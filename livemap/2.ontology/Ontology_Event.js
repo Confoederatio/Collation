@@ -12,15 +12,14 @@ global.Ontology_Event = class extends Ontology {
 	 * Overrides the draw method to plot the current state onto the map.
 	 */
 	draw () {
-		// 1. Clean up existing geometries for this specific ontology instance
-		if (this.geometries) {
-			for (let local_geometry of this.geometries) {
+		//Clean up existing geometries for this specific ontology instance
+		if (this.geometries)
+			for (let local_geometry of this.geometries)
 				if (local_geometry && local_geometry.remove) local_geometry.remove();
-			}
-		}
+		
 		this.geometries = [];
 		
-		// 2. Resolve the current state (latest snapshot)
+		//Resolve the current state (latest snapshot)
 		let current_state = this.getState(Date.now());
 		let skip_draw = false;
 		
@@ -31,13 +30,10 @@ global.Ontology_Event = class extends Ontology {
 		
 		if (current_state && current_state.geometry && !skip_draw) {
 			try {
-				// 3. Convert GeoJSON to maptalks geometry
 				let geometry = maptalks.GeoJSON.toGeometry(current_state.geometry);
-				
-				// 4. Apply the symbol (styling)
-				if (current_state.symbol) {
+				if (current_state.symbol)
 					geometry.updateSymbol(current_state.symbol);
-				}
+				
 				geometry.addEventListener("click", (e) => {
 					if (!current_state.title && current_state.html) current_state.title = current_state.html; //Accept HTML as fallback
 					if (current_state.title) {
