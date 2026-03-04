@@ -16,7 +16,7 @@
 		let now = Date.now();
 		
 		//Return statement
-		return now - timestamp;
+		return now - timestamp*1000;
 	};
 	
 	/**

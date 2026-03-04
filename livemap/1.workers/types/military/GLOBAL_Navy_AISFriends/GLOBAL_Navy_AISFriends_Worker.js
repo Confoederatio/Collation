@@ -14,7 +14,8 @@ global.GLOBAL_Navy_AISFriends_Worker = class {
 	
 	async draw () {
 		let all_vessels = await this.fetchVesselData();
-		this.layer = new maptalks.VectorLayer("AISFriends").addTo(map);
+		console.log(`All vessels:`, all_vessels);
+		this.layer = new maptalks.VectorLayer("AISFriends", { zIndex: 1000 }).addTo(map);
 		
 		for (let i = 0; i < all_vessels.length; i++) try {
 			if (Date.getDaysAgo(all_vessels[i].timestamp_of_position) > this.options.days_ago_threshold) continue; //Internal guard clause for recency
@@ -40,33 +41,49 @@ global.GLOBAL_Navy_AISFriends_Worker = class {
 	}
 	
 	async fetchVesselData () {
-		const url =
+		const targetUrl =
 			"https://www.aisfriends.com/vessels/bounding-box?lon_min=-180&lat_min=-90&lon_max=180&lat_max=90&zoom=12&types=4";
 		
-		try {
-			const response = await fetch(url, {
-				method: "GET",
-				headers: {
-					Accept: "application/json",
-					"User-Agent": "Node.js Script",
-				},
-			});
-			
-			// Check if the request was successful
-			if (!response.ok) {
-				throw new Error(`HTTP error! Status: ${response.status}`);
+		// List of proxies to try in order
+		const proxyAttempts = [
+			`https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+			`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+		];
+		
+		for (const url of proxyAttempts) {
+			try {
+				console.log(`Attempting fetch via: ${url}`);
+				const response = await fetch(url, {
+					method: "GET",
+					headers: {
+						Accept: "application/json",
+					},
+				});
+				
+				if (!response.ok) throw new Error(`Status ${response.status}`);
+				
+				let data = await response.json();
+				
+				// AllOrigins wraps content in a .contents string, others return raw JSON
+				if (data && data.contents) {
+					try {
+						data = JSON.parse(data.contents);
+					} catch (e) {
+						/* Not JSON string */
+					}
+				}
+				
+				if (Array.isArray(data)) return data;
+				if (data && Array.isArray(data.vessels)) return data.vessels;
+			} catch (err) {
+				console.warn(`Proxy failed (${url}): ${err.message}`);
+				// Continue to next proxy in the loop
 			}
-			
-			// Parse the response body as JSON
-			const data = await response.json();
-			
-			// Now 'data' is your Array<Object>
-			console.log("Successfully retrieved data:");
-			console.log(data);
-			
-			return data;
-		} catch (error) {
-			console.error("Error fetching or parsing data:", error.message);
 		}
+		
+		// FINAL FALLBACK: If all proxies fail, the browser console cannot bypass Cloudflare's 
+		// VPN block. We return an empty array to prevent the script from crashing.
+		console.error("All fetch attempts failed (403/522). Cloudflare is blocking the VPN/Proxies.");
+		return [];
 	}
 };
