@@ -3,7 +3,7 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 	static input_auto_regions_json = path.join(this.bf, "Liveuamap_auto_regions.json");
 	static _update_regions_interval = 86400*7;
 	
-	constructor(arg0_options) {
+	constructor (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
 		
@@ -36,18 +36,21 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 		let regions_threshold = Math.returnSafeNumber(this.options.top_regions, all_regions.length);
 		let webapi = Blacktraffic.AgentBrowser.webapi;
 		
+		//Prepare and shuffle regions
+		let regions_to_process = Array.shuffle(all_regions.slice(0, regions_threshold));
+		
 		if (!tab._scripts_injected) {
 			await tab.evaluateOnNewDocument(webapi.Leaflet.captureMaps);
 			tab._scripts_injected = true;
 		}
 		
-		//Iterate over all regions within regions_threshold
-		for (let i = 0; i < regions_threshold; i++) {
+		//Iterate over all regions in shuffled order
+		for (let i = 0; i < regions_to_process.length; i++) {
 			try {
-				let local_region = all_regions[i];
+				let local_region = regions_to_process[i];
 				if (!local_region) continue;
 				
-				this.log(`[${i + 1}/${regions_threshold}] Polling region: ${local_region.name} ..`);
+				this.log(`[${i + 1}/${regions_to_process.length}] Polling region: ${local_region.name} ..`);
 				
 				//Check if region is paid
 				await tab.goto(local_region.url, { waitUntil: "networkidle2" });
@@ -120,7 +123,7 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 											fields_obj.timestamp = local_value.timestamp;
 										}
 									}
-										
+								
 								
 								symbol_obj = {
 									markerFile: structuredClone(local_geometry._icon?.getAttribute("src")),
@@ -182,7 +185,7 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 				//Sleep to bypass rate limit
 				await Blacktraffic.sleep(Math.randomNumber(10000, 15000));
 			} catch (e) {
-				this.error(`Error processing region ${i}:`, e);
+				this.error(`Error processing region index ${i}:`, e);
 			}
 		}
 		

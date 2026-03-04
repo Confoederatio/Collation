@@ -13,9 +13,9 @@ global.GLOBAL_Navy_AISFriends_Worker = class {
 	}
 	
 	async draw () {
+		//Declare local instance variables
 		let all_vessels = await this.fetchVesselData();
-		console.log(`All vessels:`, all_vessels);
-		this.layer = new maptalks.VectorLayer("AISFriends", { zIndex: 1000 }).addTo(map);
+		this.layer = new maptalks.VectorLayer("AISFriends").addTo(map);
 		
 		for (let i = 0; i < all_vessels.length; i++) try {
 			if (Date.getDaysAgo(all_vessels[i].timestamp_of_position) > this.options.days_ago_threshold) continue; //Internal guard clause for recency
