@@ -77,9 +77,9 @@ global.l4p = "./livemap/4.view/politics/";
 			},
 			layers: {
 				//Foreground layers
-				overlay_layer: new maptalks.VectorLayer("overlay_layer", [], { hitDetect: true, interactive: true, zIndex: 99 }),
-				cursor_layer: new maptalks.VectorLayer("cursor_layer", [], { hitDetect: false, interactive: false, zIndex: 98 }),
-				label_layer: new maptalks.VectorLayer("label_layer", [], { hitDetect: false, interactive: false, zIndex: 97 }),
+				overlay_layer: new maptalks.VectorLayer("overlay_layer", [], { hitDetect: true, interactive: true, zIndex: 8 }),
+				cursor_layer: new maptalks.VectorLayer("cursor_layer", [], { hitDetect: false, interactive: false, zIndex: 7 }),
+				label_layer: new maptalks.VectorLayer("label_layer", [], { hitDetect: false, interactive: false, zIndex: 6 }),
 				
 				//Background layers
 				selection_layer: new maptalks.VectorLayer("selection_layer", [], { hitDetect: false, interactive: false, zIndex: 5 }),
