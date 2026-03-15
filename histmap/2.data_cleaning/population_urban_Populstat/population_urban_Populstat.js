@@ -197,8 +197,22 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 		return populstat_obj;
 	}
 	
+	/**
+	 * Wipes current Populstat coords so they can be re-geolocated.
+	 * 
+	 * @returns {Promise<Object>}
+	 */
 	static async E_cleanPopulstatCoords () {
+		//Iterate over this.populstat_obj
+		Object.iterate(this.populstat_obj, (local_country_key, local_country_value) => {
+			Object.iterate(local_country_value, (local_city_key, local_city_value) => {
+				if (typeof local_city_value === "object")
+					delete local_city_value.coords;
+			});
+		});
 		
+		//Return statement
+		return this.populstat_obj;
 	}
 	
 	static async F_geolocateAllPopulstatCities () {
