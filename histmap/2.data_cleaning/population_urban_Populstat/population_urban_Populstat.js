@@ -220,7 +220,56 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 	}
 	
 	static async F_geolocatePopulstatCountryCities (arg0_country_key) {
+		//Convert from parameters
+		let country_key = arg0_country_key;
 		
+		//Declare local instance variables
+		let config_obj = this.A_getConfig();
+		let country_obj = this.populstat_obj[country_key];
+		
+		let all_cities = Object.keys(country_obj);
+		
+		console.log(`Processing ${country_key} (${config_obj.countries[country_key]}), with ${all_cities.length} cities ..`);
+		
+		Object.iterate(country_obj, async (local_city_key, local_city_value, local_city_index) => {
+			try {
+				//Save every 100 geolocated cities
+				if (local_city_index % 100 === 0 && local_city_index !== 0) 
+					fs.writeFileSync(this.intermediate_cities_json, JSON.stringify(local_city_value), "utf8");
+				
+				let local_country_name = config_obj.countries[country_key];
+					local_country_name = Array.toArray(local_country_name)[0];
+				
+				//Skip if coords already exist
+				if (!local_city_value.coords) {
+					console.log(`- ${local_city_value.name}`);
+					
+					if (local_city_value.name) {
+						//.other_names handling
+						let city_names = [`${local_city_value.name}, ${local_country_name}`];
+						
+						if (local_city_value.other_names)
+							for (let i = 0; i < local_city_value.other_names.length; i++)
+								city_names.push(`${local_city_value.other_names[x]}, ${local_country_name}`);
+						
+						console.log(` - Processing ${local_city_value.name}:`, city_names.join(", "));
+						
+						//Iterate over all city_names until a valid latlng coord is found
+						for (let i = 0; i < city_names.length; i++) try {
+							let local_coords = await Geospatiale.getGoogleMapsCityCoords(city_names[i]);
+							
+							if (local_coords[0] !== 0 && local_coords[1] !== 0) {
+								console.log(` - Found ${city_names[i]} at (${local_coords[0]}, ${local_coords[1]}), (${i + 1}/${all_cities.length})`);
+								local_city_value.coords = local_coords;
+								break;
+							} else {
+								console.log(` - Failed to find ${city_names[i]} at (${local_coords[0]}, ${local_coords[1]}), (${i + 1}/${all_cities.length})`);
+							}
+						} catch (e) { console.error(e); }
+					}
+				}
+			} catch (e) { console.error(e); }
+		});
 	}
 	
 	static async G_removeDuplicatePopulstatCoords () {

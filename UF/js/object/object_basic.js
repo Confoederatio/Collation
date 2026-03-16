@@ -716,61 +716,89 @@
 	 *   @param {string} [arg2_options.sort_mode.key] - Refers to a subobject key to iterate by.
 	 *   @param {string} [arg2_options.sort_mode.type="descending"] - Either 'ascending'/'descending'.
 	 */
+	/**
+	 * Iterates over an object, with similar conventions to other Object static methods.
+	 * @alias Object.iterate
+	 *
+	 * @param {Object} arg0_object
+	 * @param {function(arg0_local_key, arg1_local_value, arg2_index)|function(arg0_local_value)} arg1_function
+	 * @param {Object} [arg2_options]
+	 *  @param {Object|string} [arg2_options.sort_mode] - Either 'ascending'/'descending'. Sorts object keys.
+	 *   @param {string} [arg2_options.sort_mode.key] - Refers to a subobject key to iterate by.
+	 *   @param {string} [arg2_options.sort_mode.type="descending"] - Either 'ascending'/'descending'.
+	 */
 	Object.iterate = function (arg0_object, arg1_function, arg2_options) {
 		//Convert from parameters
 		let object = arg0_object;
 		let local_function = arg1_function;
-		let options = (arg2_options) ? arg2_options : {};
+		let options = arg2_options ? arg2_options : {};
 		
 		//Internal guard clauses
 		if (typeof object !== "object")
 			console.error("arg0_object is not of type Object.", object);
-		if (!local_function)
-			throw new Error("arg1_function is not defined.");
+		if (!local_function) throw new Error("arg1_function is not defined.");
 		if (local_function.length === 0)
 			throw new Error("Invalid number of arguments accepted for arg1_function. Should either be (arg0_local_key, arg1_local_value), or less preferably, (arg0_local_value).");
 		
 		//Declare local instance variables
 		let all_local_keys = Object.keys(object);
-			if (typeof options.sort_mode === "object") {
-				let sort_key = options.sort_mode.key;
-				let sort_type = (options.sort_mode.type) ? options.sort_mode.type : "descending";
+		if (typeof options.sort_mode === "object") {
+			let sort_key = options.sort_mode.key;
+			let sort_type = (options.sort_mode.type) 
+				? options.sort_mode.type : "descending";
+			
+			all_local_keys = all_local_keys.sort((a, b) => {
+				//Declare local instance variables
+				let value_a = Object.getValue(object[a], sort_key);
+				let value_b = Object.getValue(object[b], sort_key);
 				
+				//Make local comparison
+				let comparison = 0;
+				if (value_a < value_b) comparison = -1;
+				if (value_a > value_b) comparison = 1;
+				
+				//Return statement
+				if (sort_type === "descending") return comparison * -1;
+				return comparison;
+			});
+		} else if (typeof options.sort_mode === "string") {
+			//Sort all_local_keys by .sort_mode
+			if (["ascending", "date_ascending"].includes(options.sort_mode)) {
 				all_local_keys = all_local_keys.sort((a, b) => {
-					//Declare local instance variables
-					let value_a = Object.getValue(object[a], sort_key);
-					let value_b = Object.getValue(object[b], sort_key);
-					
-					//Make local comparison
-					let comparison = 0;
-						if (value_a < value_b) comparison = -1;
-						if (value_a > value_b) comparison = 1;
-						
-					//Return statement
-					if (sort_type === "descending")
-						return comparison*-1;
-					return comparison;
+					return parseInt(a) - parseInt(b);
 				});
-			} else if (typeof options.sort_mode === "string") {
-				//Sort all_local_keys by .sort_mode
-				if (["ascending", "date_ascending"].includes(options.sort_mode)) {
-					all_local_keys = all_local_keys.sort((a, b) => {
-						return parseInt(a) - parseInt(b);
-					});
-				} else if (["date_descending", "descending"].includes(options.sort_mode)) {
-					all_local_keys = all_local_keys.sort((a, b) => {
-						return parseInt(b) - parseInt(a);
-					});
-				}
+			} else if (["date_descending", "descending"].includes(options.sort_mode)) {
+				all_local_keys = all_local_keys.sort((a, b) => {
+					return parseInt(b) - parseInt(a);
+				});
 			}
+		}
+		
+		//Check if the function is asynchronous
+		const is_async = local_function.constructor.name === "AsyncFunction";
 		
 		//Call functions
-		if (local_function.length === 1) {
-			for (let i = 0; i < all_local_keys.length; i++)
-				local_function(object[all_local_keys[i]]);
+		if (is_async) {
+			return (async () => {
+				for (let i = 0; i < all_local_keys.length; i++) {
+					const key = all_local_keys[i];
+					const value = object[key];
+					
+					if (local_function.length === 1) {
+						await local_function(value);
+					} else {
+						await local_function(key, value, i);
+					}
+				}
+			})();
 		} else {
-			for (let i = 0; i < all_local_keys.length; i++)
-				local_function(all_local_keys[i], object[all_local_keys[i]], i);
+			if (local_function.length === 1) {
+				for (let i = 0; i < all_local_keys.length; i++)
+					local_function(object[all_local_keys[i]]);
+			} else {
+				for (let i = 0; i < all_local_keys.length; i++)
+					local_function(all_local_keys[i], object[all_local_keys[i]], i);
+			}
 		}
 	};
 	
