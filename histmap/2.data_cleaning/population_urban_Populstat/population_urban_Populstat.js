@@ -4,8 +4,8 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 	
 	static config_obj;
 	static input_config_json = `${this.bf}/populstat_config.json5`;
-	static intermediate_cities_json = `${this.bf}/populstat_cities.json`;
-	static intermediate_raw_cities_json = `${this.sf}/populstat_cities.json`;
+	static intermediate_cities_json = `${this.sf}/populstat_cities.json`;
+	static intermediate_raw_cities_json = `${this.bf}/populstat_cities.json`;
 	
 	static A_getConfig () {
 		//Declare local instance variables
@@ -46,7 +46,9 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 		//Iterate over all_populstat_town_links
 		for (let i = 0; i < all_populstat_town_links.length; i++) {
 			let local_key = all_populstat_town_links[i].split("/");
-				local_key = local_key[local_key.length - 1].replace("t.htm", "");
+				local_key = local_key[local_key.length - 1]
+					.replace("t.html", "")
+					.replace("t.htm", "");
 			
 			return_obj[local_key] = await this.C_getPopulstatTownData(all_populstat_town_links[i]);
 		}
@@ -72,6 +74,7 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 		let is_population_body = false;
 		let population_header = [];
 		let population_table_el = dom_document.querySelector(`table[border=""]`);
+			if (!population_table_el) return {}; //Internal guard clause if table is missing
 		let population_table_rows = population_table_el.querySelectorAll("tr");
 		
 		//Iterate over all population_table_rows
@@ -138,11 +141,9 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 				}
 				
 				//Check if we have reached the population body
-				if (all_cells.length === 1)
+				if (all_cells.length >= 1)
 					if (all_cells[0].textContent.trim() === "")
 						is_population_body = true;
-				if (all_cells[0].textContent.trim() === "")
-					is_population_body = true;
 			}
 		
 		//Return statement
@@ -241,7 +242,7 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 		
 		console.log(`Processing ${country_key} (${config_obj.countries[country_key]}), with ${all_cities.length} cities ..`);
 		
-		Object.iterate(country_obj, async (local_city_key, local_city_value, local_city_index) => {
+		await Object.iterate(country_obj, async (local_city_key, local_city_value, local_city_index) => {
 			try {
 				//Save every 100 geolocated cities
 				if (local_city_index % 100 === 0 && local_city_index !== 0) 
@@ -337,7 +338,36 @@ global.population_urban_Populstat = class { //[WIP] - Finish class body
 		return remove_coords_keys;
 	}
 	
-	static F_getPopulstatObject () {
+	static async H_getPopulstatObject () {
+		//Declare local instance variables; this.populstat_obj
+		this.config_obj = this.A_getConfig();
 		
+		if (fs.existsSync(this.intermediate_cities_json)) {
+			this.populstat_obj = JSON.parse(fs.readFileSync(this.intermediate_cities_json, "utf8"));
+		} else {
+			await this.C_getAllPopulstatTownData();
+			await this.D_loadPopulstatData();
+			await this.E_cleanPopulstatCoords();
+			await this.F_geolocateAllPopulstatCities();
+		}
+		
+		//Iterate over this.populstat_obj and normalise it
+		let flattened_populstat_obj = {};
+		
+		Object.iterate(this.populstat_obj, (local_country_key, local_country_value) => {
+			let local_country_name = this.config_obj.countries[local_country_key];
+			
+			Object.iterate(local_country_value, (local_city_key, local_city_value) => {
+				if (local_city_value.population)
+					local_city_value.population = Object.multiply(local_city_value.population, 1000);
+				
+				flattened_populstat_obj[`${local_city_key}-${local_country_name}`] = local_city_value;
+			});
+		})
+		
+		this.populstat_obj = flattened_populstat_obj;
+		
+		//Return statement
+		return this.populstat_obj;
 	}
 };

@@ -716,17 +716,6 @@
 	 *   @param {string} [arg2_options.sort_mode.key] - Refers to a subobject key to iterate by.
 	 *   @param {string} [arg2_options.sort_mode.type="descending"] - Either 'ascending'/'descending'.
 	 */
-	/**
-	 * Iterates over an object, with similar conventions to other Object static methods.
-	 * @alias Object.iterate
-	 *
-	 * @param {Object} arg0_object
-	 * @param {function(arg0_local_key, arg1_local_value, arg2_index)|function(arg0_local_value)} arg1_function
-	 * @param {Object} [arg2_options]
-	 *  @param {Object|string} [arg2_options.sort_mode] - Either 'ascending'/'descending'. Sorts object keys.
-	 *   @param {string} [arg2_options.sort_mode.key] - Refers to a subobject key to iterate by.
-	 *   @param {string} [arg2_options.sort_mode.type="descending"] - Either 'ascending'/'descending'.
-	 */
 	Object.iterate = function (arg0_object, arg1_function, arg2_options) {
 		//Convert from parameters
 		let object = arg0_object;
@@ -775,14 +764,14 @@
 		}
 		
 		//Check if the function is asynchronous
-		const is_async = local_function.constructor.name === "AsyncFunction";
+		let is_async = (local_function.constructor.name === "AsyncFunction");
 		
 		//Call functions
 		if (is_async) {
 			return (async () => {
 				for (let i = 0; i < all_local_keys.length; i++) {
-					const key = all_local_keys[i];
-					const value = object[key];
+					let key = all_local_keys[i];
+					let value = object[key];
 					
 					if (local_function.length === 1) {
 						await local_function(value);
