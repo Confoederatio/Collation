@@ -2,6 +2,7 @@ global.population_urban_WorldCityPop = class {
 	static _cache_dom;
 	static input_population_html = `${h1}/population_urban_WorldCityPop/_worldcitypop.htm`;
 	static intermediate_worldcitypop_json = `${h2}/population_urban_WorldCityPop/worldcitypop.json`;
+	static worldcitypop_obj;
 	
 	static async A_getWorldCityPopObject () {
 		//Declare local instance variables
@@ -51,8 +52,10 @@ global.population_urban_WorldCityPop = class {
 	}
 	
 	static async B_geolocateWorldCityPopObject () {
-		if (fs.existsSync(this.intermediate_worldcitypop_json))
-			return JSON.parse(fs.readFileSync(this.intermediate_worldcitypop_json, "utf8")); //Internal guard clause 
+		if (fs.existsSync(this.intermediate_worldcitypop_json)) { //Internal guard clause 
+			this.worldcitypop_obj = JSON.parse(fs.readFileSync(this.intermediate_worldcitypop_json, "utf8"));
+			return this.worldcitypop_obj;
+		}
 			
 		//Declare local instance variables
 		let world_city_pop_obj = await this.A_getWorldCityPopObject();
@@ -90,6 +93,8 @@ global.population_urban_WorldCityPop = class {
 		fs.writeFileSync(this.intermediate_worldcitypop_json, JSON.stringify(world_city_pop_obj), "utf8");
 		console.log(`Wrote geolocated file to (2/2): ${this.intermediate_worldcitypop_json}`);
 		
+		this.worldcitypop_obj = world_city_pop_obj;
+		
 		//Return statement
 		return world_city_pop_obj;
 	}
@@ -97,5 +102,8 @@ global.population_urban_WorldCityPop = class {
 	static async processRasters () {
 		//1. Fetch world city population object
 		await this.B_geolocateWorldCityPopObject();
+		
+		//Return statement
+		return this.worldcitypop_obj;
 	}
 };

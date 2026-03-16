@@ -296,6 +296,95 @@
 	};
 	
 	/**
+	 * Interpolates and normalises data given an absolute Ground Truth (GT) and an absolute, but relativistic rates map.
+	 * @alias Object.interpolateGT
+	 *
+	 * @param {Object<number>} arg0_object - The Ground Truth (GT) map
+	 * @param {Object<number>} arg1_object - The Relativistic Rates (RR) map
+	 */
+	//[QUARANTINE]
+	Object.interpolateGT = function (arg0_object, arg1_object) {
+		// Convert from parameters
+		let object = { ...arg0_object };
+		let ot_object = arg1_object;
+		
+		// Declare local instance variables
+		let object_keys = Object.keys(object)
+		.map(Number)
+		.sort((a, b) => a - b);
+		let ot_object_keys = Object.keys(ot_object)
+		.map(Number)
+		.sort((a, b) => a - b);
+		let return_obj = {};
+		
+		// Handle extraneous values:
+		// If RR contains years outside the GT range, add them to our GT anchors
+		let min_gt = object_keys[0];
+		let max_gt = object_keys[object_keys.length - 1];
+		
+		for (let i = 0; i < ot_object_keys.length; i++) {
+			let current_rr_year = ot_object_keys[i];
+			if (current_rr_year < min_gt || current_rr_year > max_gt) {
+				object[current_rr_year] = ot_object[current_rr_year];
+			}
+		}
+		
+		// Re-evaluate object keys after adding extraneous RR values
+		let all_anchor_keys = Object.keys(object)
+		.map(Number)
+		.sort((a, b) => a - b);
+		
+		let getRRValue = (ot_key) => {
+			if (ot_object[ot_key] !== undefined) return ot_object[ot_key];
+			if (ot_key <= ot_object_keys[0]) return ot_object[ot_object_keys[0]];
+			if (ot_key >= ot_object_keys[ot_object_keys.length - 1])
+				return ot_object[ot_object_keys[ot_object_keys.length - 1]];
+			
+			let lower_key = ot_object_keys.findLast((local_key) => local_key < ot_key);
+			let upper_key = ot_object_keys.find((local_key) => local_key > ot_key);
+			let weight = (ot_key - lower_key) / (upper_key - lower_key);
+			
+			return (
+				ot_object[lower_key] + weight * (ot_object[upper_key] - ot_object[lower_key])
+			);
+		};
+		
+		// Iterate through GT segments (including augmented RR anchors)
+		for (let i = 0; i < all_anchor_keys.length - 1; i++) {
+			let start_key = all_anchor_keys[i];
+			let end_key = all_anchor_keys[i + 1];
+			
+			let start_value_gt = object[start_key];
+			let end_value_gt = object[end_key];
+			
+			let start_value_rr = getRRValue(start_key);
+			let end_value_rr = getRRValue(end_key);
+			
+			// Calculate the correction ratios at anchor points
+			// If the anchor came from RR (extraneous), the ratio will be 1
+			let start_ratio = start_value_gt / start_value_rr;
+			let end_ratio = end_value_gt / end_value_rr;
+			
+			for (let x = start_key; x <= end_key; x++) {
+				// If we already processed this year in a previous segment, skip it
+				if (x === start_key && i > 0) continue;
+				
+				let current_rr = getRRValue(x);
+				let progress = (x - start_key) / (end_key - start_key);
+				
+				// Linearly interpolate the discrepancy ratio
+				let interpolated_ratio =
+					start_ratio + progress * (end_ratio - start_ratio);
+				
+				return_obj[x] = current_rr * interpolated_ratio;
+			}
+		}
+		
+		// Return statement
+		return return_obj;
+	};
+	
+	/**
 	 * Interpolates negative values by carrying over the last positive value found.
 	 * @alias Object.interpolateNegatives
 	 *
