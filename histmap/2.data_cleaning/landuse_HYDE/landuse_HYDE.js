@@ -424,16 +424,21 @@ global.landuse_HYDE = class {
 		}
 	}
 	
-	static async processRasters () {
+	static async processRasters (arg0_options) {
+		let options = (arg0_options) ? arg0_options : {};
+		
+		if (!options.exclude) options.exclude = [];
+		
 		//1. Convert equirectangular rasters
-		await this.A_convertToPNGs(this.input_rasters_equirectangular, this.intermediate_rasters_equirectangular, {
-			mode: "number"
-		});
+		if (!options.exclude.includes("A"))
+			await this.A_convertToPNGs(this.input_rasters_equirectangular, this.intermediate_rasters_equirectangular, {
+				mode: "number"
+			});
 		//2. Interpolate missing years
-		await this.B_interpolateHYDEYearRasters();
+		if (!options.exclude.includes("B")) await this.B_interpolateHYDEYearRasters();
 		//3. Clamp to McEvedy
-		await this.C_clampHYDEToMcEvedy();
+		if (!options.exclude.includes("C")) await this.C_clampHYDEToMcEvedy();
 		//4. Clamp to global population estimates
-		await this.D_scaleRastersToGlobalEstimates();
+		if (!options.exclude.includes("D")) await this.D_scaleRastersToGlobalEstimates();
 	}
 };
