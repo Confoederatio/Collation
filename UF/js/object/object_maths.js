@@ -876,4 +876,64 @@
 		//Return statement
 		return Object.operateObjects(object, ot_object, `i = i - x`, options);
 	};
+	
+	/**
+	 * Trims a specific value from the start and/or end of an object map.
+	 * @alias Object.trimValue
+	 *
+	 * @param {Object<number>} arg0_object
+	 * @param {Object} [arg1_options]
+	 *  @param {boolean} [arg1_options.trim_start=true] - Remove leading target values.
+	 *  @param {boolean} [arg1_options.trim_end=true] - Remove trailing target values.
+	 *  @param {number} [arg1_options.value=0] - The value to trim.
+	 */
+	Object.trimValue = function (arg0_object, arg1_options) {
+		// Convert from parameters
+		let object = arg0_object ? arg0_object : {};
+		let options = arg1_options ? arg1_options : {};
+		
+		if (options.trim_start === undefined) options.trim_start = true;
+		if (options.trim_end === undefined) options.trim_end = true;
+		options.value =
+			typeof Math.returnSafeNumber === "function"
+				? Math.returnSafeNumber(options.value)
+				: options.value || 0;
+		
+		// Declare local instance variables
+		let all_keys = Object.keys(object)
+		.map(Number)
+		.sort((a, b) => a - b);
+		let return_obj = {};
+		
+		let start_index = 0;
+		let end_index = all_keys.length - 1;
+		
+		// Find the first index that is NOT the target value
+		if (options.trim_start) {
+			while (
+				start_index < all_keys.length &&
+				object[all_keys[start_index]] === options.value
+				) {
+				start_index++;
+			}
+		}
+		
+		// Find the last index that is NOT the target value
+		if (options.trim_end) {
+			while (
+				end_index >= start_index &&
+				object[all_keys[end_index]] === options.value
+				) {
+				end_index--;
+			}
+		}
+		
+		// Build the new object from the sliced range
+		for (let i = start_index; i <= end_index; i++) {
+			let current_key = all_keys[i];
+			return_obj[current_key] = object[current_key];
+		}
+		
+		return return_obj;
+	};
 }

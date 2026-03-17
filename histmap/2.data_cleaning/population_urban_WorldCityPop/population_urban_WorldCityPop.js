@@ -46,6 +46,10 @@ global.population_urban_WorldCityPop = class {
 				expand_max: false,
 				value: 0 
 			});
+			local_population_obj = Object.trimValue(local_population_obj, {
+				trim_end: false,
+				value: 0
+			});
 			
 			pop_obj[local_key] = {
 				name: pop_dataframe[i][0],
@@ -121,7 +125,7 @@ global.population_urban_WorldCityPop = class {
 			};
 		});
 		
-		fs.writeFileSync(this.intermediate_worldcitypop_json, JSON.stringify(return_obj), "utf8");
+		fs.writeFileSync(this.intermediate_worldcitypop_json, JSON.stringify(return_obj, null, 2), "utf8");
 		console.log(`Wrote hybrid object file: ${this.intermediate_worldcitypop_json}`);
 		
 		this.worldcitypop_obj = return_obj;

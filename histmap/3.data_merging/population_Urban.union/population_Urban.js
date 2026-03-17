@@ -75,7 +75,6 @@ global.population_Urban = class {
 				//Iterate over all chandler_modelski_duplicate_keys and merge their RRs into GT
 				for (let i = 0; i < chandler_modelski_duplicate_keys.length; i++) {
 					let local_city = chandler_modelski_obj[chandler_modelski_duplicate_keys[i]];
-					let local_population_keys = Object.keys(local_city.population).map(Number);
 					
 					//Iterate over local_population, if RR is less than the equivalent GT, average GT with RR
 					Object.iterate(local_population, (local_population_key, local_population_value) => {
@@ -94,16 +93,11 @@ global.population_Urban = class {
 					local_population = Object.operate(local_population, `Math.round(n)`);
 				}
 				
-				//If GT is before first non-interpolated value, is interpolated, and has a population >=100k, delete the value
-				Object.iterate(local_population, (local_population_key, local_population_value) => {
-					if (local_value.links && local_value.links.length > 0)
-						if (parseInt(local_population_key) < local_value.links[0] && local_population_value >= 100000 && local_value.is_interpolated)
-							delete local_population[local_population_key];
-				});
-				
 				let new_city_obj = structuredClone(local_value);
+					//Legacy handling - Start
 					new_city_obj.latitude = local_value.coords[0];
 					new_city_obj.longitude = local_value.coords[1];
+					//Legacy handling - End
 					new_city_obj.population = local_population;
 				
 				return_obj[local_key] = new_city_obj;
