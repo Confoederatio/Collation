@@ -391,15 +391,19 @@ ve.Window = class extends ve.Feature {
 		let x = arg0_x;
 		let y = arg1_y;
 		
+		let coords_obj = HTML.getCSSPosition(this.options.anchor, x, y);
+		
 		//Set element X, Y position
 		this.element.style.position = "absolute";
 		this.element.style.bottom = "";
 		this.element.style.left = "";
 		this.element.style.right = "";
 		this.element.style.top = "";
-		HTML.applyTelestyle(this.element, {
-			...HTML.getCSSPosition(this.options.anchor, x, y)
-		});
+		
+		if (coords_obj.bottom) this.element.style.bottom = coords_obj?.bottom;
+		if (coords_obj.left) this.element.style.left = coords_obj?.left;
+		if (coords_obj.right) this.element.style.right = coords_obj?.right;
+		if (coords_obj.top) this.element.style.top = coords_obj?.top;
 	}
 	
 	/**
