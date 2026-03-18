@@ -14,7 +14,9 @@ global.UI_Mapmodes = class extends ve.Class {
 						style: { marginLeft: "var(--cell-padding)" }
 					}),
 					mapmode_settings: veButton(() => {
-						
+						if (!main.interfaces.mapmodes_ui_settings)
+							main.interfaces.mapmodes_ui_settings = new UI_Mapmodes_Settings();
+						main.interfaces.mapmodes_ui_settings.open();
 					}, {
 						name: "<icon>settings</icon>",
 						tooltip: "Mapmode Settings",
