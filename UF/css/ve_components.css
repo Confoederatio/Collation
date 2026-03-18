@@ -216,11 +216,6 @@
     width: 100%;
 }
 
-/* -- ve.Hierarchy -- */
-[component="ve-hierarchy"] {
-    overflow: clip;
-}
-
 /* -- ve.Interface -- */
 [component="ve-interface"] {
     height: 100%;

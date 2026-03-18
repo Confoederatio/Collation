@@ -233,9 +233,9 @@
 	 * Applies a persistent Telestyle {@link Object} to an element.
 	 *
 	 * Root-level static styles are applied inline (preserving specificity).
-	 * Descendant static styles are compiled into a scoped <style> sheet.
-	 * :nth-parent static styles are applied inline via applyParentTelestyles.
-	 * Dynamic styles are applied via JS with a MutationObserver.
+	 * Descendant static styles are compiled into a scoped <style> sheet
+	 * appended as a child of the element to ensure it is garbage collected
+	 * when the element is removed.
 	 *
 	 * @param {HTMLElement} arg0_el
 	 * @param {Object} arg1_style_obj
@@ -252,8 +252,7 @@
 		
 		//Declare local instance variables
 		let mutated_style_obj = style_obj;
-		let split_styles =
-			HTML.splitStaticDynamicTelestyle(mutated_style_obj);
+		let split_styles = HTML.splitStaticDynamicTelestyle(mutated_style_obj);
 		let static_styles = split_styles.static;
 		let dynamic_styles = split_styles.dynamic;
 		let registry = HTML.ve_css_registry;
@@ -276,10 +275,7 @@
 		
 		//Apply root-level static properties inline (preserves specificity)
 		Object.iterate(static_styles, (local_key, local_value) => {
-			if (
-				typeof local_value !== "object" ||
-				Array.isArray(local_value)
-			) {
+			if (typeof local_value !== "object" || Array.isArray(local_value)) {
 				let val_str = local_value.toString();
 				
 				if (local_key.startsWith("--")) {
@@ -293,16 +289,15 @@
 		});
 		
 		//Compile descendant static styles into a native CSS stylesheet
-		let css_rules = HTML.compileTelestyleCSS(
-			scope_selector,
-			static_styles
-		);
+		let css_rules = HTML.compileTelestyleCSS(scope_selector, static_styles);
 		
 		if (css_rules.length > 0) {
 			let style_el = document.createElement("style");
 			style_el.setAttribute("data-telestyle-scope", scope_id);
 			style_el.textContent = css_rules.join("\n");
-			(document.head || document.documentElement).appendChild(style_el);
+			
+			//Append to the element itself so it dies when the element is removed
+			el.appendChild(style_el);
 			el._telestyleSheet = style_el;
 		}
 		
@@ -332,8 +327,7 @@
 					if (local_mutation.type === "childList") {
 						//Iterate over all added nodes; apply dynamic styles
 						for (let local_added_node of local_mutation.addedNodes) {
-							if (!(local_added_node instanceof HTMLElement))
-								continue;
+							if (!(local_added_node instanceof HTMLElement)) continue;
 							
 							let nodes_to_check = [
 								local_added_node,
@@ -351,10 +345,7 @@
 										) {
 											try {
 												if (node.matches(selector))
-													HTML.applyDynamicTelestyle(
-														node,
-														local_value
-													);
+													HTML.applyDynamicTelestyle(node, local_value);
 											} catch (err) {}
 										}
 									}
@@ -372,7 +363,7 @@
 				is_applying = false;
 			});
 			
-			//Only observe childList — no attributes needed
+			//Only observe childList
 			observer.observe(el, {
 				childList: true,
 				subtree: true,
@@ -383,8 +374,7 @@
 	};
 	
 	/**
-	 * Removes all Telestyle artefacts from an element (sheet, observer,
-	 * scope).
+	 * Removes all Telestyle artefacts from an element (sheet, observer, scope).
 	 *
 	 * @param {HTMLElement} arg0_el
 	 */
@@ -397,6 +387,7 @@
 		
 		if (!el) return;
 		
+		//Remove sheet if reference exists (it might have already been removed by DOM clear)
 		if (el._telestyleSheet) {
 			el._telestyleSheet.remove();
 			el._telestyleSheet = null;
@@ -408,8 +399,7 @@
 		
 		el.removeAttribute("data-telestyle");
 		
-		if (HTML.ve_css_registry?.has(el))
-			HTML.ve_css_registry.delete(el);
+		if (HTML.ve_css_registry?.has(el)) HTML.ve_css_registry.delete(el);
 	};
 	
 	/**
