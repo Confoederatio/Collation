@@ -54,8 +54,8 @@
 		
 		//Declare local instance variables
 		let return_obj = {};
-		let x_string = (typeof x_coord === "string") ? x_coord : `${x_coord}px`;
-		let y_string = (typeof y_coord === "string") ? y_coord : `${y_coord}px`;
+		let x_string = (typeof x_coord === "string") ? `calc(${x_coord})` : `${x_coord}px`;
+		let y_string = (typeof y_coord === "string") ? `calc(${y_coord})` : `${y_coord}px`;
 		
 		//Set return_obj styles based on anchor
 		if (anchor === "top_left") {
