@@ -141,16 +141,17 @@ global.population_KK10LUH2 = class {
 			let output_file_path = `${this.intermediate_kk10_luh2_rasters}KK10LUH2_${hyde_years[i]}.png`;
 			
 			//Fallback handling
-			if (!fs.existsSync(input_file_path) && options.fallback_mode === "kk10luh2_domain") {
-				input_file_path = `${this.intermediate_kk10_luh2_greyscale_rasters}KK10LUH2_${this.input_kk10luh2_domain[0]}.png`;
-			} else {
-				//Simply copy over the original HYDE raster otherwise
-				let hyde_file_path = `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
-				
-				console.log(`- Copying HYDE-McEvedy for GeoPNG for ${hyde_years[i]} ..`);
-				fs.copyFileSync(hyde_file_path, output_file_path);
-				continue;
-			}
+			if (!fs.existsSync(input_file_path)) 
+				if (options.fallback_mode === "kk10luh2_domain") {
+					input_file_path = `${this.intermediate_kk10_luh2_greyscale_rasters}KK10LUH2_${this.input_kk10luh2_domain[0]}.png`;
+				} else {
+					//Simply copy over the original HYDE raster otherwise
+					let hyde_file_path = `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
+					
+					console.log(`- Copying HYDE-McEvedy for GeoPNG for ${hyde_years[i]} ..`);
+					fs.copyFileSync(hyde_file_path, output_file_path);
+					continue;
+				}
 			
 			//Regular non-fallback handling
 			if (fs.existsSync(input_file_path)) {
