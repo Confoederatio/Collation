@@ -127,9 +127,7 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 		//Set date
 		if (json.date)
 			if (main.map.settings.autoload_last_date) {
-				console.log(json.date);
 				main.date = JSON.parse(json.date);
-				console.log(main.date)
 			} else if (main.map.settings.constant_load_date) {
 				main.date = main.map.settings.constant_load_date
 			}

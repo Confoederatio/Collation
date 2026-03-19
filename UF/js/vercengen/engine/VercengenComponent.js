@@ -209,7 +209,6 @@ ve.Component = class {
 			
 			//Add getter/setter
 			Object.addGetterSetter(initial_object, variable_string, {
-				get_function: () => this.v,
 				set_function: (arg0_value) => {
 					//Convert from parameters
 					let local_value = arg0_value;
@@ -234,7 +233,6 @@ ve.Component = class {
 								if (typeof local_options.onprogramchange === "function") //Fire onprogramchange (unidirectional)
 									local_options.onprogramchange(this.owners[i].v, this.owners[i]);
 							}
-					console.log(initial_object, variable_string, `I'M FIRING!!!`)
 					
 					if (typeof this.options.onchange === "function") //Fire onchange (bidirectional)
 						this.options.onchange(local_value, this);
