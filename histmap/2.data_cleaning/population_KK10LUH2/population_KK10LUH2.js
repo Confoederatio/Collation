@@ -4,6 +4,7 @@ global.population_KK10LUH2 = class {
 	static luh2_variables = ["c3ann", "c3nfx", "c3per", "c4ann", "c4per", "pasture", "urban"];
 	
 	static _cache_nelson_data_obj;
+	static input_kk10luh2_domain = [-6000, 2018];
 	static input_luh2_folder = `${h1}/population_KK10LUH2/LUH2/`;
 	static input_kk10_folder = `${h1}/population_KK10LUH2/KK10/`;
 	static input_nelson_json = `${h2}/population_KK10LUH2/config/nelson_data.json5`;
@@ -12,9 +13,9 @@ global.population_KK10LUH2 = class {
 	static input_owid_json = `${h2}/population_KK10LUH2/config/owid_colourmap.json5`;
 	static input_owid_raster = `${h2}/population_KK10LUH2/config/owid_continents.png`;
 	static intermediate_luh2_rasters = `${h2}/population_KK10LUH2/rasters_LUH2_anthropogenic_mean/`;
-	static intermediate_kk10_luh2_greyscale_rasters = `${h2}/population_KK10LUH2/rasters_KK10_LUH2_greyscale/`;
-	static intermediate_kk10_luh2_rasters = `${h2}/population_KK10LUH2/rasters_KK10_LUH2/`;
-	static intermediate_kk10_luh2_regional_rasters = `${h2}/population_KK10LUH2/rasters_KK10_LUH2_1._regional_scaling/`;
+	static intermediate_kk10_luh2_greyscale_rasters = `${h2}/population_KK10LUH2/rasters_KK10LUH2_greyscale/`;
+	static intermediate_kk10_luh2_rasters = `${h2}/population_KK10LUH2/rasters_KK10LUH2/`;
+	static intermediate_kk10_luh2_regional_rasters = `${h2}/population_KK10LUH2/rasters_KK10LUH2_1._regional_scaling/`;
 	static output_kk10_luh2_global_rasters = `${h2}/population_KK10LUH2/rasters_KK10LUH2_2._global_scaling/`;
 	
 	static async A_getNelsonDataObject () {
@@ -123,7 +124,13 @@ global.population_KK10LUH2 = class {
 		} catch (e) { console.error(e); }
 	}
 	
-	static async C_convertKK10LUH2RastersToRGBA () {
+	static async C_convertKK10LUH2RastersToRGBA (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		if (!options.fallback_mode) options.fallback_mode = "kk10luh2_domain";
+		
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.hyde_years;
 		let world_pop_obj = population_Global.A_getWorldPopulationObject();
@@ -133,6 +140,19 @@ global.population_KK10LUH2 = class {
 			let input_file_path = `${this.intermediate_kk10_luh2_greyscale_rasters}KK10LUH2_${hyde_years[i]}.png`;
 			let output_file_path = `${this.intermediate_kk10_luh2_rasters}KK10LUH2_${hyde_years[i]}.png`;
 			
+			//Fallback handling
+			if (!fs.existsSync(input_file_path) && options.fallback_mode === "kk10luh2_domain") {
+				input_file_path = `${this.intermediate_kk10_luh2_greyscale_rasters}KK10LUH2_${this.input_kk10luh2_domain[0]}.png`;
+			} else {
+				//Simply copy over the original HYDE raster otherwise
+				let hyde_file_path = `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
+				
+				console.log(`- Copying HYDE-McEvedy for GeoPNG for ${hyde_years[i]} ..`);
+				fs.copyFileSync(hyde_file_path, output_file_path);
+				continue;
+			}
+			
+			//Regular non-fallback handling
 			if (fs.existsSync(input_file_path)) {
 				let greyscale_image = GeoPNG.loadImage(input_file_path);
 				let greyscale_sum = 0;
@@ -164,12 +184,6 @@ global.population_KK10LUH2 = class {
 						return (greyscale_image.data[local_index]/255)*population_per_pixel;
 					}
 				});
-			} else {
-				//Simply copy over the original HYDE raster otherwise
-				let hyde_file_path = `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
-				
-				console.log(`- Copying HYDE-McEvedy for GeoPNG for ${hyde_years[i]} ..`);
-				fs.copyFileSync(hyde_file_path, output_file_path);
 			}
 		}
 	}
@@ -253,7 +267,7 @@ global.population_KK10LUH2 = class {
 				}
 			});
 			
-			console.log(`- Finished scaling KK10_LUH2 ${hyde_years[i]} to regional HYDE aggregates ..`)
+			console.log(`- Finished scaling KK10LUH2 ${hyde_years[i]} to regional HYDE aggregates ..`)
 		}
 	}
 	
@@ -413,18 +427,23 @@ global.population_KK10LUH2 = class {
 		}
 	}
 	
-	static async processRasters () {
+	static async processRasters (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		if (!options.exclude) options.exclude = [];
+		
 		//1. Average greyscales from KK10/LUH2 climate models
-		await this.A_averageLUH2Rasters();
+		if (!options.exclude.includes("A")) await this.A_averageLUH2Rasters();
 		//2. Convert greyscale images to GeoPNGs
-		await this.B_generateKK10LUH2Rasters();
+		if (!options.exclude.includes("B")) await this.B_generateKK10LUH2Rasters();
 		//3. Convert greyscale images to RGBA
-		await this.C_convertKK10LUH2RastersToRGBA();
+		if (!options.exclude.includes("C")) await this.C_convertKK10LUH2RastersToRGBA();
 		//4. Scale KK10LUH2 to regional totals from HYDE
-		await this.D_scaleKK10LUH2RastersToHYDE();
+		if (!options.exclude.includes("D")) await this.D_scaleKK10LUH2RastersToHYDE();
 		//5. Scale KK10LUH2 to regional totals from OWID
-		await this.E_scaleKK10LUH2RastersToOWID();
+		if (!options.exclude.includes("E")) await this.E_scaleKK10LUH2RastersToOWID();
 		//6. Scale KK10LUH2 to global totals
-		await this.F_scaleKK10LUH2RastersToGlobal();
+		if (!options.exclude.includes("F")) await this.F_scaleKK10LUH2RastersToGlobal();
 	}
 };
