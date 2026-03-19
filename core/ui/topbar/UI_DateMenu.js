@@ -10,7 +10,7 @@ global.UI_DateMenu = class extends ve.Class {
 			
 			//Split up directional flows to prevent accessor race conditions
 			onprogramchange: (v) => {
-				//console.trace("date, onprogramchange");
+				console.trace("date, onprogramchange", v);
 				DALS.Timeline.parseAction({
 					options: { name: "Refresh Date", key: "load_date" },
 					value: [{ type: "global", refresh_date: true }]

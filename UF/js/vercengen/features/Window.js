@@ -393,7 +393,7 @@ ve.Window = class extends ve.Feature {
 		
 		let coords_obj = HTML.getCSSPosition(this.options.anchor, x, y);
 		
-		//Set element X, Y position
+		//Set element X, Y position; reset position first
 		this.element.style.position = "absolute";
 		this.element.style.bottom = "";
 		this.element.style.left = "";
