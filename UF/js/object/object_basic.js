@@ -18,7 +18,7 @@
 	 *  @param {function} [arg2_options.get_function]
 	 *  @param {function} [arg2_options.set_function]
 	 *
-	 * @returns {*}
+	 * @returns {Proxy}
 	 */
 	Object.addGetterSetter = function (
 		arg0_object,

@@ -248,7 +248,7 @@ global.population_KK10LUH2 = class {
 					
 					//Return statement
 					if (local_region?.scalar !== undefined)
-						return Math.round(local_value*local_region.scalar);
+						return Math.ceil(local_value*local_region.scalar);
 					return local_value;
 				}
 			});
@@ -400,7 +400,7 @@ global.population_KK10LUH2 = class {
 								file_path: `${this.output_kk10_luh2_global_rasters}/popc_${hyde_years[i]}.png`,
 								width: 4320,
 								height: 2160,
-								function: (local_index) => Math.round(local_input_png.data[local_index]*local_scalar)
+								function: (local_index) => Math.ceil(local_input_png.data[local_index]*local_scalar)
 							});
 							
 							console.log(`- ${hyde_years[i]} - Input Population: ${local_input_sum}, Scalar: ${local_scalar}`);
