@@ -289,6 +289,8 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 	 * - `.hide_polygon`: {@link boolean}
 	 * - `.remove_from_polygon`: {@link Object}
 	 *   - `.geometry`: {@link string}
+	 * - `.set_polygon`: {@link Object}
+	 *   - `.geometry`: {@link Object}|{@link string}
 	 * - `.show_polygon`: {@link boolean}
 	 * - `.simplify_polygon`: {@link number} - The amount to simplify the Polygon by.
 	 */
@@ -348,6 +350,15 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					polygon_obj.addKeyframe(main.date, (turf_difference) ? 
 						Geospatiale.convertTurfToMaptalks(turf_difference).toJSON() : null);
 				}
+			}
+			
+			//set_polygon
+			if (json.set_polygon && json.set_polygon.geometry) {
+				let new_geometry = json.set_polygon.geometry;
+				
+				if (typeof new_geometry === "string")
+					new_geometry = JSON.parse(new_geometry);
+				polygon_obj.addKeyframe(main.date, new_geometry);
 			}
 			
 			//simplify_polygon

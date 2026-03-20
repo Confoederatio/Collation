@@ -53,16 +53,39 @@ global.polities_Cliopatria_UI = class {
 						local_geometry.addEventListener("click", (e) => {
 							//if (main.settings.disable_mapmode_interactivity) return;
 							if (this.polity_window) this.polity_window.close();
-							this.polity_window = veWindow([
-								`<b>Components:</b> ${local_properties.Components}`,
-								`<b>Member of:</b> ${local_properties.MemberOf}`,
-								`<b>Geometry Domain:</b> ${local_properties.FromYear}-${local_properties.ToYear}`,
-								`<b>Type:</b> ${local_properties.Type}`,
-								`<b>Pole of Inaccessibility:</b> ${[
-									`Lat: ${Math.roundNumber(local_properties.poi[0], 2)}`, 
-									`Lng: ${Math.roundNumber(local_properties.poi[1], 2)}`
-								].join(", ")}`
-							].join("<br>"), {
+							this.polity_window = veWindow({
+								actions_bar: veRawInterface({
+									move_geometry_to_brush: veButton(() => {
+										let selected_geometry = main.brush.selected_geometry;
+										
+										if (selected_geometry && selected_geometry instanceof naissance.GeometryPolygon) {
+											DALS.Timeline.parseAction({
+												options: { name: "Add to Polygon", key: "add_to_polygon" },
+												value: [{
+													type: "GeometryPolygon",
+													
+													geometry_id: selected_geometry.id,
+													set_polygon: { geometry: local_geometry.toJSON() }
+												}]
+											});
+										} else {
+											veToast(`<icon>warning</icon> You must select a GeometryPolygon before being able to copy this geometry.`);
+										}
+									}, { name: "Move Geometry to Brush" })
+								}, {
+									style: { display: "flex" }
+								}),
+								description: veHTML([
+									`<b>Components:</b> ${local_properties.Components}`,
+									`<b>Member of:</b> ${local_properties.MemberOf}`,
+									`<b>Geometry Domain:</b> ${local_properties.FromYear}-${local_properties.ToYear}`,
+									`<b>Type:</b> ${local_properties.Type}`,
+									`<b>Pole of Inaccessibility:</b> ${[
+										`Lat: ${Math.roundNumber(local_properties.poi[0], 2)}`,
+										`Lng: ${Math.roundNumber(local_properties.poi[1], 2)}`
+									].join(", ")}`
+								].join("<br>"))
+							}, {
 								name: local_properties.Name,
 								can_rename: false,
 								width: "16rem"
