@@ -444,7 +444,7 @@ global.population_KK10LUH2 = class {
 		if (!options.exclude.includes("B")) await this.B_generateKK10LUH2Rasters();
 		//3. Convert greyscale images to RGBA
 		if (!options.exclude.includes("C")) await this.C_convertKK10LUH2RastersToRGBA({
-			fallback_mode: "hyde"
+			fallback_mode: "kk10luh2_domain"
 		});
 		//4. Scale KK10LUH2 to regional totals from HYDE
 		if (!options.exclude.includes("D")) await this.D_scaleKK10LUH2RastersToHYDE();

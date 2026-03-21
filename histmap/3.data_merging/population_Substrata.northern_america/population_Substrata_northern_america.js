@@ -213,7 +213,7 @@ global.population_Substrata_northern_america = class {
 	static bf = `${h3}/population_Substrata.northern_america/`;
 	static ef = `${h3}/population_Substrata.outlier_removal/`;
 	static input_rasters_regions = `${this.bf}/rasters_regions/`;
-	static output_rasters = `${this.ef}rasters_2.northern_america/`;
+	static output_rasters = `${this.ef}rasters_1.northern_america/`;
 	
 	static async A_getNorthernAmericaPopulationObject () {
 		//Declare local instance variables
@@ -464,6 +464,10 @@ global.population_Substrata_northern_america = class {
 							
 							console.log(`- Finished processing ${local_output_file_path} for ${hyde_years[i]}. Total Northern America sum for category: ${String.formatNumber(total_sum_for_year)}`);
 						}
+					
+					//Force a yield, perform GC
+					await new Promise(resolve => setImmediate(resolve));
+					if (global.gc) global.gc();
 				}
 			}
 		}
@@ -472,6 +476,5 @@ global.population_Substrata_northern_america = class {
 	static async processRasters () {
 		//1. Process Northern America rasters into main outliers folder
 		await this.A_generateStadesterNorthernAmericaRasters();
-		await this.A_generateStadesterNorthernAmericaRasters({ hyde_years: [1600] }); //Temporary patch for 1600AD due to out of memory alloc
 	}
 }
