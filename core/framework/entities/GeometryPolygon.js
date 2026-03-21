@@ -217,6 +217,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				"data-is-selected": this.selected,
 				"data-is-visible": (is_visible) ? "true" : "false",
 				"data-selected-geometry": (main.brush.selected_geometry?.id === this.id),
+				"data-type": "GeometryPolygon"
 			},
 			instance: this,
 			name: this.name,
@@ -226,14 +227,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				},
 				onuserchange: (v) => {
 					this.name = v;
-				}
-			},
-			style: {
-				".nst-content": {
-					paddingRight: 0
-				},
-				"[component='ve-button'] > button": {
-					border: 0
 				}
 			}
 		});

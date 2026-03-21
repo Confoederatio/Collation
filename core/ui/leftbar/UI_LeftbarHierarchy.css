@@ -22,4 +22,10 @@
             outline: dashed 3px var(--accent-secondary-colour);
         }
     }
+    
+    /* -- naissance.GeometryPolygon -- */
+    [data-type="GeometryPolygon"] {
+        [component="ve-button"] > button { border: 0; }
+        .nst-content { padding-right: 0; }
+    }
 }
