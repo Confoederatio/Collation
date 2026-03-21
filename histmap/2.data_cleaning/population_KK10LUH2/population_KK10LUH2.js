@@ -10,6 +10,7 @@ global.population_KK10LUH2 = class {
 	static input_nelson_json = `${h2}/population_KK10LUH2/config/nelson_data.json5`;
 	static input_nelson_raster = `${h2}/population_KK10LUH2/config/nelson_regions.png`;
 	static input_owid_csv = `${h2}/population_KK10LUH2/config/owid_data.csv`;
+	static input_owid_domain = [1800, 2023];
 	static input_owid_json = `${h2}/population_KK10LUH2/config/owid_colourmap.json5`;
 	static input_owid_raster = `${h2}/population_KK10LUH2/config/owid_continents.png`;
 	static intermediate_luh2_rasters = `${h2}/population_KK10LUH2/rasters_LUH2_anthropogenic_mean/`;
@@ -327,6 +328,9 @@ global.population_KK10LUH2 = class {
 		
 		//Iterate over all hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
+			//Check for valid domain
+			if (!(hyde_years[i] >= this.input_owid_domain[0] && hyde_years[i] <= this.input_owid_domain[1])) continue;
+			
 			//Adjust raster image to OWID/HYDE
 			let local_input_file_path = `${this.intermediate_kk10_luh2_regional_rasters}popc_${hyde_years[i]}.png`;
 			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path);
@@ -397,7 +401,144 @@ global.population_KK10LUH2 = class {
 		}
 	}
 	
-	static async F_scaleKK10LUH2RastersToGlobal () {
+	//[QUARANTINE] - Duplicated code
+	static async F_scaleKK10LUH2RastersToStatista () {
+		//Declare local instance variables
+		let hyde_years = landuse_HYDE.hyde_years;
+		let regions_mask = GeoPNG.loadImage(
+			population_Substrata_outlier_removal.statista_regions_raster,
+		);
+		let regions_map = {};
+		let statista_obj = JSON.parse(
+			JSON.stringify(population_Substrata_outlier_removal.statista_obj),
+		);
+		
+		let global_min_year = Infinity;
+		let global_max_year = -Infinity;
+		
+		//1. Prepare mapping and interpolate missing years in the Statista dataset
+		Object.keys(statista_obj).forEach((key) => {
+			let region = statista_obj[key];
+			let color_key = region.colour.join(",");
+			
+			let all_local_years = Object.keys(region.population)
+			.map(Number)
+			.sort((a, b) => a - b);
+			let local_mask_domain = [
+				all_local_years[0],
+				all_local_years[all_local_years.length - 1],
+			];
+			
+			if (local_mask_domain[0] < global_min_year)
+				global_min_year = local_mask_domain[0];
+			if (local_mask_domain[1] > global_max_year)
+				global_max_year = local_mask_domain[1];
+			
+			let years_to_interpolate = [];
+			for (let x = 0; x < hyde_years.length; x++) {
+				if (
+					hyde_years[x] >= local_mask_domain[0] &&
+					hyde_years[x] <= local_mask_domain[1] &&
+					region.population[hyde_years[x]] === undefined
+				) {
+					years_to_interpolate.push(hyde_years[x]);
+				}
+			}
+			
+			if (years_to_interpolate.length > 0)
+				region.population = Object.cubicSplineInterpolation(region.population, {
+					years: years_to_interpolate,
+				});
+			
+			regions_map[color_key] = {
+				key: key,
+				domain: local_mask_domain,
+				...region,
+			};
+		});
+		
+		//2. Iterate over all hyde_years to apply scaling
+		for (let i = 0; i < hyde_years.length; i++) {
+			let year = hyde_years[i];
+			let file_path = `${this.intermediate_kk10_luh2_regional_rasters}popc_${year}.png`;
+			
+			if (fs.existsSync(file_path)) {
+				//Skip if year is entirely outside the Statista domain
+				if (year < global_min_year || year > global_max_year) continue;
+				
+				console.log(`- Scaling KK10LUH2 to Statista regions for year ${year} ..`);
+				let current_raster = GeoPNG.loadNumberRasterImage(file_path);
+				let regional_sums = {};
+				let regional_scalars = {};
+				
+				//Calculate current pixel sums per Statista region
+				for (let x = 0; x < current_raster.data.length; x++) {
+					let val = current_raster.data[x];
+					if (val > 0) {
+						let byte_index = x * 4;
+						let color_key = [
+							regions_mask.data[byte_index],
+							regions_mask.data[byte_index + 1],
+							regions_mask.data[byte_index + 2],
+						].join(",");
+						
+						let region_match = regions_map[color_key];
+						if (region_match)
+							regional_sums[region_match.key] =
+								(regional_sums[region_match.key] || 0) + val;
+					}
+				}
+				
+				//Calculate scalars per region based on interpolated Statista targets
+				Object.keys(statista_obj).forEach((region_key) => {
+					let region_data = statista_obj[region_key];
+					let color_key = region_data.colour.join(",");
+					let mapped_region = regions_map[color_key];
+					let current_sum = regional_sums[region_key] || 0;
+					
+					if (year >= mapped_region.domain[0] && year <= mapped_region.domain[1]) {
+						let target_pop =
+							(mapped_region.population[year] || 0) * mapped_region.scalar;
+						regional_scalars[region_key] =
+							current_sum > 0 ? target_pop / current_sum : 1;
+					} else {
+						regional_scalars[region_key] = 1;
+					}
+				});
+				
+				//Apply regional scaling and overwrite the regional raster
+				GeoPNG.saveNumberRasterImage({
+					file_path: file_path,
+					height: current_raster.height,
+					width: current_raster.width,
+					function: (index) => {
+						let val = current_raster.data[index];
+						if (val === 0) return 0;
+						
+						let byte_index = index * 4;
+						let color_key = [
+							regions_mask.data[byte_index],
+							regions_mask.data[byte_index + 1],
+							regions_mask.data[byte_index + 2],
+						].join(",");
+						
+						let region_match = regions_map[color_key];
+						if (region_match) {
+							return Math.ceil(val * regional_scalars[region_match.key]);
+						}
+						
+						return val;
+					},
+				});
+				
+				//Force a yield, perform GC
+				await new Promise(resolve => setImmediate(resolve));
+				if (global.gc) global.gc();
+			}
+		}
+	}
+	
+	static async G_scaleKK10LUH2RastersToGlobal () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.hyde_years;
 		let world_pop_obj = population_Global.A_getWorldPopulationObject();
@@ -448,9 +589,11 @@ global.population_KK10LUH2 = class {
 		});
 		//4. Scale KK10LUH2 to regional totals from HYDE
 		if (!options.exclude.includes("D")) await this.D_scaleKK10LUH2RastersToHYDE();
-		//5. Scale KK10LUH2 to regional totals from OWID
+		//5. Scale KK10LUH2 to regional totals from OWID; Statista
 		if (!options.exclude.includes("E")) await this.E_scaleKK10LUH2RastersToOWID();
+		if (!options.exclude.includes("F")) await this.F_scaleKK10LUH2RastersToStatista();
+		
 		//6. Scale KK10LUH2 to global totals
-		if (!options.exclude.includes("F")) await this.F_scaleKK10LUH2RastersToGlobal();
+		if (!options.exclude.includes("G")) await this.G_scaleKK10LUH2RastersToGlobal();
 	}
 };

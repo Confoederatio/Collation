@@ -1,6 +1,7 @@
 global.population_Substrata_outlier_removal = class {
 	static bf = `${h3}/population_Substrata.outlier_removal/`;
 	static input_outlier_rasters = `${this.bf}rasters_outliers/`;
+	static input_outlier_rasters_to_scale = `${this.bf}rasters_outliers_to_scale/`;
 	static intermediate_outliers_removed_rasters = `${this.bf}rasters_outliers_removed/`;
 	static intermediate_rasters_northern_america = `${this.bf}rasters_1.northern_america/`;
 	static intermediate_rasters_scaled_to_statista = `${this.bf}rasters_2.scaled_to_regions/`;
@@ -299,17 +300,23 @@ global.population_Substrata_outlier_removal = class {
 	};
 	static statista_regions_raster = `${this.bf}/config/statista_regions.png`;
 	
-	static async A_getHYDEOutlierMasksObject () {
+	static async A_getHYDEOutlierMasksObject (arg0_folder) {
 		//Declare local instance variables
-		let all_files = fs.readdirSync(this.input_outlier_rasters);
+		let input_folder = (arg0_folder) ? 
+			arg0_folder : this.input_outlier_rasters;
+		
+		//Check if folder exists before reading
+		if (!fs.existsSync(input_folder)) return {};
+		
+		let all_files = fs.readdirSync(input_folder);
 		let return_obj = {};
 		
 		//Iterate over all_files and fetch time domains per file_path
 		for (let i = 0; i < all_files.length; i++) {
-			let local_file_path = path.join(this.input_outlier_rasters, all_files[i]);
+			let local_file_path = path.join(input_folder, all_files[i]);
 			
 			if (!fs.statSync(local_file_path).isDirectory() && local_file_path.endsWith(".png")) {
-				let split_file_name = local_file_path.replace(".png", "").split("_");
+				let split_file_name = path.basename(local_file_path).replace(".png", "").split("_");
 				
 				if (split_file_name.length >= 2) {
 					let end_year = parseInt(split_file_name[split_file_name.length - 1]);
@@ -418,7 +425,7 @@ global.population_Substrata_outlier_removal = class {
 	
 	//[QUARANTINE]
 	static async B_scaleProcessedHYDEToStatistaRegions () {
-		//Declare local instance variables
+		// Declare local instance variables
 		let hyde_years = landuse_HYDE.hyde_years;
 		let regions_mask = GeoPNG.loadImage(this.statista_regions_raster);
 		let regions_map = {};
@@ -427,7 +434,7 @@ global.population_Substrata_outlier_removal = class {
 		let global_min_year = Infinity;
 		let global_max_year = -Infinity;
 		
-		//Create color-to-region mapping and determine domains
+		// Create color-to-region mapping and determine domains
 		Object.keys(statista_obj).forEach((key) => {
 			let region = statista_obj[key];
 			let color_key = region.colour.join(",");
@@ -466,52 +473,81 @@ global.population_Substrata_outlier_removal = class {
 			};
 		});
 		
-		//Iterate over all hyde_years
+		// Fetch outlier mask metadata from both directories
+		let standard_outlier_masks = await this.A_getHYDEOutlierMasksObject(this.input_outlier_rasters);
+		let scalable_outlier_masks = await this.A_getHYDEOutlierMasksObject(this.input_outlier_rasters_to_scale);
+		
+		// Iterate over all hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
 			let year = hyde_years[i];
 			let input_path = `${this.intermediate_rasters_northern_america}popc_${year}.png`;
 			let fallback_path = `${this.intermediate_outliers_removed_rasters}popc_${year}.png`;
 			let output_path = `${this.intermediate_rasters_scaled_to_statista}popc_${year}.png`;
 			
-			//Determine source path based on availability
-			let source_path = fs.existsSync(input_path) ? input_path : (fs.existsSync(fallback_path) ? fallback_path : null);
+			let source_path = fs.existsSync(input_path)
+				? input_path
+				: fs.existsSync(fallback_path)
+					? fallback_path
+					: null;
 			
 			if (source_path) {
-				//If year is outside domain, simply copy forward to next stage to avoid zeroing data
 				if (year < global_min_year || year > global_max_year) {
-					console.log(`- Year ${year} outside Statista domain. Copying from ${source_path === input_path ? "Northern America" : "Outlier Removal"} stage ..`);
 					fs.copyFileSync(source_path, output_path);
 					continue;
 				}
 				
-				console.log(`- Scaling Statista regions for year ${year} (Source: ${source_path === input_path ? "N. America" : "Outlier Fallback"}) ..`);
+				console.log(`- Scaling Statista regions for year ${year} ..`);
+				
 				let current_raster = GeoPNG.loadNumberRasterImage(source_path);
+				
+				// Helper to filter active masks for current year
+				let get_active_rasters = (mask_obj) => {
+					let active = [];
+					Object.values(mask_obj).forEach((m) => {
+						if (year >= m.start_year && year <= m.end_year) active.push(GeoPNG.loadImage(m.file_path));
+					});
+					return active;
+				};
+				
+				let active_standard_rasters = get_active_rasters(standard_outlier_masks);
+				let active_scalable_rasters = get_active_rasters(scalable_outlier_masks);
+				
 				let regional_sums = {};
 				let regional_scalars = {};
 				
-				//1. Calculate current pixel sums per region
+				// 1. Calculate current pixel sums per region
 				for (let x = 0; x < current_raster.data.length; x++) {
 					let val = current_raster.data[x];
 					if (val > 0) {
 						let byte_index = x * 4;
-						let color_key = [
-							regions_mask.data[byte_index],
-							regions_mask.data[byte_index + 1],
-							regions_mask.data[byte_index + 2],
-						].join(",");
 						
-						let region_match = regions_map[color_key];
-						if (region_match)
-							regional_sums[region_match.key] =
-								(regional_sums[region_match.key] || 0) + val;
+						// Check if pixel is a standard outlier
+						let is_standard_outlier = active_standard_rasters.some(r =>
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+						);
+						// Check if pixel is explicitly marked to be scaled
+						let is_scalable_outlier = active_scalable_rasters.some(r =>
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+						);
+						
+						// Logic: If it is a standard outlier and NOT explicitly scalable, exclude it from the sum
+						if (!is_standard_outlier || is_scalable_outlier) {
+							let color_key = [
+								regions_mask.data[byte_index],
+								regions_mask.data[byte_index + 1],
+								regions_mask.data[byte_index + 2],
+							].join(",");
+							
+							let region_match = regions_map[color_key];
+							if (region_match)
+								regional_sums[region_match.key] = (regional_sums[region_match.key] || 0) + val;
+						}
 					}
 				}
 				
-				//2. Calculate scalars per region
+				// 2. Calculate scalars per region
 				Object.keys(statista_obj).forEach((region_key) => {
-					let region_data = statista_obj[region_key];
-					let color_key = region_data.colour.join(",");
-					let mapped_region = regions_map[color_key];
+					let mapped_region = regions_map[statista_obj[region_key].colour.join(",")];
 					let current_sum = regional_sums[region_key] || 0;
 					
 					if (year >= mapped_region.domain[0] && year <= mapped_region.domain[1]) {
@@ -522,7 +558,7 @@ global.population_Substrata_outlier_removal = class {
 					}
 				});
 				
-				//3. Apply regional scaling and save
+				// 3. Apply regional scaling
 				GeoPNG.saveNumberRasterImage({
 					file_path: output_path,
 					height: current_raster.height,
@@ -530,8 +566,18 @@ global.population_Substrata_outlier_removal = class {
 					function: (index) => {
 						let val = current_raster.data[index];
 						if (val === 0) return 0;
-						
 						let byte_index = index * 4;
+						
+						let is_standard_outlier = active_standard_rasters.some(r =>
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+						);
+						let is_scalable_outlier = active_scalable_rasters.some(r =>
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+						);
+						
+						// If it's an outlier that isn't in the "to scale" folder, return original value
+						if (is_standard_outlier && !is_scalable_outlier) return val;
+						
 						let color_key = [
 							regions_mask.data[byte_index],
 							regions_mask.data[byte_index + 1],
@@ -540,14 +586,12 @@ global.population_Substrata_outlier_removal = class {
 						
 						let region_match = regions_map[color_key];
 						if (region_match) {
-							return Math.ceil(val * regional_scalars[region_match.key]);
+							return Math.ceil(val * (regional_scalars[region_match.key] || 1));
 						}
 						
 						return val;
 					},
 				});
-			} else {
-				console.warn(`- No source raster found for year ${year} in Stage B1 (${this.intermediate_rasters_northern_america}) or Fallback Stage A (${this.intermediate_outliers_removed_rasters}).`);
 			}
 		}
 	}

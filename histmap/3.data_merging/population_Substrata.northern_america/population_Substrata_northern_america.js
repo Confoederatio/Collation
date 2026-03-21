@@ -302,6 +302,7 @@ global.population_Substrata_northern_america = class {
 			let total_sum_for_year = 0;
 			
 			//Copy to local_output_file_path first for handling
+			if (!fs.existsSync(local_input_file_path)) continue; //Internal guard clause if local_input_file_path doesn't exist
 			fs.copyFileSync(local_input_file_path, local_output_file_path);
 			
 			//Iterate over all_mask_keys; process local_mask for all_png_files in raster_obj
