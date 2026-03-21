@@ -487,7 +487,6 @@ naissance.Geometry = class extends ve.Class {
 			
 			//move_keyframe
 			if (json.move_keyframe) {
-				console.log(geometry_obj.history.moveKeyframe);
 				geometry_obj.history.moveKeyframe(json.move_keyframe.date, json.move_keyframe.ot_date);
 				geometry_obj.history.draw();
 				geometry_obj.keyframes_ui.v = geometry_obj.history.interface.v;

@@ -165,7 +165,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			
 			//5. Add bindings
 			if (this.geometry) {
-				this.keyframes_ui.v = this.history.interface.v;
 				this.geometry.addEventListener("click", (e) => {
 					if (!["fill_tool", "node", "node_override"].includes(main.brush.mode))
 						super.open("instance", { name: this.name, ...this.window_options });
@@ -181,6 +180,9 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					this.label_geometries[i].remove();
 			if (this.selected_geometry) this.selected_geometry.remove();
 		}
+		
+		//7. Render keyframes
+		try { this.keyframes_ui.v = this.history.interface.v; } catch (e) {}
 	}
 	
 	drawHierarchyDatatype () {
