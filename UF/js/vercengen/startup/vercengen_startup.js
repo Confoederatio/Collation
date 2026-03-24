@@ -142,8 +142,14 @@ global.path = require("path");
 						
 						/**
 						 * Whether manual commits are toggled on by default.
+						 * @type {boolean}
 						 */
-						manual_commits: false
+						manual_commits: false,
+						/**
+						 * The default name for manual commits.
+						 * @type {string} 
+						 */
+						manual_commit_name: "Manual"
 					}
 				}
 			}

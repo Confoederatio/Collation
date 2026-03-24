@@ -50,34 +50,49 @@ ve.UndoRedo = class extends ve.Component {
 		this.html_list_el = document.createElement("div");
 		
 		//Create a ve.PageMenu with this.html_list_el, this.canvas_container_el, and mount it to this.element
+		let settings_obj = ve.registry.settings.UndoRedo;
+		
 		let actions_bar = () => new ve.RawInterface({
 			row_one: new ve.RawInterface({
+				commit_name: new ve.Text(settings_obj.manual_commit_name, {
+					name: "Commit Name",
+					onuserchange: (v) => {
+						settings_obj.manual_commit_name = v;
+						this.saveSettings();
+					}
+				}),
 				save_commit: new ve.Button(() => {
 					try {
 						let state_obj = DALS.Timeline.saveState();
 						
 						//Add new DALS Action under load_save
 						new DALS.Action({
-							options: { name: `Save Commit`, key: `save_commit_${Date.now()}` },
+							options: { 
+								name: `Save Commit ${(settings_obj.manual_commit_name) ? `(${settings_obj.manual_commit_name})` : ""}`, 
+								key: `save_commit_${Date.now()}` 
+							},
 							value: {
 								type: "global",
 								load_save: state_obj
 							}
 						});
 					} catch (e) { console.warn(e); }
-				}, { name: "Save Commit" })
+				}, { 
+					name: "Save Commit",
+					style: { marginLeft: `var(--padding)` }
+				})
 			}, {
-				limit: () => (ve.registry.settings.UndoRedo.manual_commits)
+				limit: () => (settings_obj.manual_commits)
 			}),
 			row_two: new ve.RawInterface({
 				undo_button: new ve.Button(() => DALS.Timeline.undo(), {
 					name: "<icon>undo</icon>", tooltip: "Undo" }),
 				redo_button: new ve.Button(() => DALS.Timeline.redo(), {
 					name: "<icon>redo</icon>", tooltip: "Redo" }),
-				manual_commits: new ve.Toggle(ve.registry.settings.UndoRedo.manual_commits, {
+				manual_commits: new ve.Toggle(settings_obj.manual_commits, {
 					name: "Manual Commits",
 					onuserchange: (v) => {
-						ve.registry.settings.UndoRedo.manual_commits = v;
+						settings_obj.manual_commits = v;
 						this.saveSettings();
 					},
 					style: {
