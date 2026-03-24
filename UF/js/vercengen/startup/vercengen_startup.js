@@ -79,8 +79,8 @@ global.path = require("path");
 						 */
 						default_bg_colour: "#2196f3",
 						/**
-						 * The default text colour for consoles.
-						 * @type {string} - Either 'auto' or on actual colour.
+						 * The default text colour for consoles. Either 'auto' or on actual colour.
+						 * @type {string}
 						 */
 						default_text_colour: "auto"
 					},
