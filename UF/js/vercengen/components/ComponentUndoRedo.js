@@ -13,6 +13,8 @@
  * ##### Methods:
  * - <span color=00ffff>{@link ve.UndoRedo.draw|draw}</span>() - Redraws both HTML/canvas-side elements.
  * - <span color=00ffff>{@link ve.UndoRedo.handleEvents|handleEvents}</span>() - Handles events for zooming/panning around canvas.
+ * - <span color=00ffff>{@link ve.UndoRedo.loadSettings|loadSettings}</span>() - Loads settings from registry file.
+ * - <span color-00ffff>{@link ve.UndoRedo.saveSettings|saveSettings}</span>() - Saves settings to registry file.
  * 
  * @augments ve.Component
  * @memberof ve.Component
@@ -181,7 +183,7 @@ ve.UndoRedo = class extends ve.Component {
 	
 	/**
 	 * Redraws the current interface.
-	 * - Method of: {@link ve.Interface}
+	 * - Method of: {@link ve.UndoRedo}
 	 *
 	 * @alias draw
 	 * @memberof ve.Component.ve.UndoRedo
@@ -567,7 +569,7 @@ ve.UndoRedo = class extends ve.Component {
 	
 	/**
 	 * Handles events for {@link this.canvas_container_el}.
-	 * - Method of: {@link ve.Interface}
+	 * - Method of: {@link ve.UndoRedo}
 	 *
 	 * @alias handleEvents
 	 * @memberof ve.Component.ve.UndoRedo
@@ -626,6 +628,13 @@ ve.UndoRedo = class extends ve.Component {
 		}
 	}
 	
+	/**
+	 * Saves settings to registry file.
+	 * - Method of: {@link ve.UndoRedo}
+	 *
+	 * @alias loadSettings
+	 * @memberof ve.Component.ve.UndoRedo
+	 */
 	loadSettings () {
 		//Declare local instance variables
 		let settings_obj = ve.registry.settings.UndoRedo;
@@ -637,6 +646,13 @@ ve.UndoRedo = class extends ve.Component {
 			} catch (e) {}
 	}
 	
+	/**
+	 * Saves settings to registry file.
+	 * - Method of: {@link ve.UndoRedo}
+	 * 
+	 * @alias saveSettings
+	 * @memberof ve.Component.ve.UndoRedo
+	 */
 	saveSettings () {
 		//Declare local instance variables
 		let settings_obj = ve.registry.settings.UndoRedo;
