@@ -128,6 +128,22 @@ global.path = require("path");
 						 * @type {boolean}
 						 */
 						share_settings_across_instances: true
+					},
+					
+					/**
+					 * Component settings for {@link ve.UndoRedo}.
+					 */
+					UndoRedo: {
+						/**
+						 * Either false if no automatic save file is declared, or the file path to save settings in.
+						 * @type {boolean|string}
+						 */
+						save_file: "settings/UndoRedo_settings.json",
+						
+						/**
+						 * Whether manual commits are toggled on by default.
+						 */
+						manual_commits: false
 					}
 				}
 			}

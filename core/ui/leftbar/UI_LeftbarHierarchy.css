@@ -37,7 +37,7 @@
     /* -- naissance.FeatureGroup -- */
     [data-type="FeatureGroup"] {
         [component="ve-button"] > button { border: 0; }
-        .nst-content: { padding-right: 0; }
+        .nst-content { padding-right: 0; }
     }
     /* -- naissance.GeometryPolygon -- */
     [data-type="GeometryPolygon"] {

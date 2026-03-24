@@ -286,17 +286,20 @@ ve.Component = class {
 		this.limit_function = arg0_function;
 		
 		if (this.limit_function !== undefined) {
-			this.limit_logic_loop = setInterval(() => {
+			let evaluateLimit = () => {
 				if (!this.limit) {
-					this.removeComponent();
+					this.element.classList.add("ve-display-none");
 					if (this.element.getAttribute("data-debug-limit"))
 						console.log(`- .limit: Removing component:`, this);
 				} else {
-					this.addComponent();
+					this.element.classList.remove("ve-display-none");
 					if (this.element.getAttribute("data-debug-limit"))
 						console.log(`- .limit: Adding component:`, this);
 				}
-			}, 100);
+			};
+			
+			evaluateLimit(); //Evaluate once immediately to prevent flickering (i.e. waiting 100ms)
+			this.limit_logic_loop = setInterval(() => evaluateLimit(), 100);
 		} else {
 			delete this.limit_function;
 			clearInterval(this.limit_logic_loop);
