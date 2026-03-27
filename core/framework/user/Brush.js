@@ -247,7 +247,7 @@ naissance.Brush = class extends ve.Class {
 								let current_keyframe = all_layer_geometries[i].history.getKeyframe();
 								
 								if (current_keyframe) {
-									if (current_keyframe.value[0] !== undefined && Object.keys(current_keyframe.value[0]).length)
+									if (current_keyframe.value[0] && Object.keys(current_keyframe.value[0]).length)
 										is_visible = true;
 									if (current_keyframe.value[2] !== undefined && current_keyframe.value[2].hidden)
 										is_visible = false;
