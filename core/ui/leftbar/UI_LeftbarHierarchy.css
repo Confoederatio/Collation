@@ -45,3 +45,20 @@
         .nst-content { padding-right: 0; }
     }
 }
+
+#feature-body:has([naissance-ui="LeftbarHierarchy"]) {
+    padding-bottom: 0;
+    padding-right: 0; 
+}
+[naissance-ui="LeftbarHierarchy"] {
+    .actions-bar .nst-content {
+        padding: 0;
+    }
+    .topbar {
+        backdrop-filter: blur(10px);
+        padding-top: var(--cell-padding);
+        position: sticky;
+        top: 0;
+        z-index: 99;
+    }
+}

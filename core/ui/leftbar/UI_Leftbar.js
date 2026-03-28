@@ -4,6 +4,7 @@ global.UI_Leftbar = class extends ve.Class {
 		
 		//Declare local instance variables
 		let navbar_el = document.querySelector(".ve.navbar");
+		
 		this.page_menu = new ve.PageMenu({
 			file_explorer: {
 				name: "File",
@@ -59,13 +60,20 @@ global.UI_Leftbar = class extends ve.Class {
 				components_obj: { undo_redo: veUndoRedo() }
 			}
 		}, { 
+			do_not_wrap: true,
 			starting_page: "hierarchy",
 			style: {
-				".navbar": {
-					backdropFilter: "blur(10px)",
-					position: "sticky",
-					top: "0.5rem",
-					zIndex: 99
+				display: "flex",
+				overflow: "hidden",
+				flexDirection: "column",
+				height: `calc(100% - var(--padding)*2)`,
+				
+				"#component-body": {
+					flexGrow: 1,
+					minHeight: 0,
+					overflow: "auto",
+					scrollbarColor: "white transparent",
+					scrollbarWidth: "thin"
 				}
 			}
 		});
@@ -73,6 +81,7 @@ global.UI_Leftbar = class extends ve.Class {
 		//Open UI
 		super.open("instance", {
 			anchor: "top_left",
+			do_not_wrap: true,
 			mode: "static_ui",
 			height: `calc(100dvh${(navbar_el) ? " - " + navbar_el.offsetHeight + "px" : ""} - 16px)`,
 			width: "24rem",

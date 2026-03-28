@@ -6,7 +6,12 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 		this.groups = {};
 		this.hierarchy_obj = {};
 		this.items = {};
-		this.value = new ve.HTML("Loading ..", { style: { padding: 0 } });
+		this.value = new ve.HTML("Loading ..", { 
+			attributes: {
+				"naissance-ui": "LeftbarHierarchy"
+			},
+			style: { padding: 0 } 
+		});
 		this.refresh();
 		
 		UI_LeftbarHierarchy.instances.push(this);
@@ -64,8 +69,14 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				});
 			}, { name: "<icon>view_module</icon>", tooltip: "Create New Tile Layer" })
 		}, {
+			attributes: {
+				"ve-hierarchy-actions-bar": "true",
+				"ve-sticky": "true"
+			},
 			disabled: true,
 			style: {
+				listStyle: "none",
+				".nst-handle": { display: "none" },
 				".nst-content": {
 					paddingRight: 0
 				}
@@ -84,6 +95,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 			this.drawFeatures();
 		}
 		
+		//Init pattern for top actions bar, since it is being manually moved out in UI_Leftbar
 		let current_hierarchy = new ve.Hierarchy({
 			actions_bar: actions_bar,
 			...this.hierarchy_obj
@@ -258,6 +270,19 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 		}
 		
 		this.value.element.innerHTML = "";
+		
+		//Lift this.hierarchy.element searchbar, actions bar to root element
+		let leftbar_hierarchy_el = this.hierarchy.element;
+		let topbar_el = document.createElement("div");
+			topbar_el.classList.add("topbar");
+		
+		let searchbar_el = leftbar_hierarchy_el.querySelector(`[ve-hierarchy-searchbar="true"]`);
+			if (searchbar_el) searchbar_el.instance.bind(topbar_el);
+		let actions_bar_el = leftbar_hierarchy_el.querySelector(`[ve-hierarchy-actions-bar="true"]`);
+			if (actions_bar_el) topbar_el.appendChild(actions_bar_el);
+		
+		//Render rest of hierarchy
+		this.value.element.appendChild(topbar_el);
 		this.value.element.appendChild(current_hierarchy.element);
 	}
 	
