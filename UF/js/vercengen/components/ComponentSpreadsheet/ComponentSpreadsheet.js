@@ -74,7 +74,7 @@ ve.Spreadsheet = class extends ve.Component {
 		
 		this.initialisation_loop = setInterval(() => {
 			try {
-				if (this.value.is_snapshot) {
+				if (this.value?.is_snapshot) {
 					this.fromJSON(this.value);
 				} else {
 					this.v = this.value;
