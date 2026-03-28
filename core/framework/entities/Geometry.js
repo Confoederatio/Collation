@@ -545,15 +545,18 @@ naissance.Geometry = class extends ve.Class {
 			
 			//set_name
 			if (json.set_name) {
-				if (typeof json.set_name === "object") {
-					let date = (json.set_name.date) ? json.set_name.date : main.date;
-					let new_name = json.set_name.name;
+				let date = main.date;
+					if (typeof json.set_name === "object" && json.set_name.date !== undefined)
+						date = json.set_name.date;
+				let new_name;
+					if (typeof json.set_name === "object") {
+						new_name = json.set_name.name;
+					} else if (typeof json.set_name === "string") {
+						new_name = json.set_name;
+					}
+					
+				if (new_name !== geometry_obj.name)
 					geometry_obj.history.addKeyframe(date, undefined, undefined, { name: new_name });
-					geometry_obj.draw();
-				} else if (typeof json.set_name === "string") {
-					geometry_obj.history.addKeyframe(main.date, undefined, undefined, { name: json.set_name });
-					geometry_obj.draw();
-				}
 				
 				//Refresh .instance_window .name if visible
 				if (geometry_obj.instance_window) {
