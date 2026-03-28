@@ -95,33 +95,40 @@
 		static queue = [];
 		
 		constructor (arg0_type, arg1_state_array, arg2_options) {
-			let type = (arg0_type) ? arg0_type : "Ontology";
-			let state_array = (arg1_state_array) ? arg1_state_array : [];
-			let options = (arg2_options) ? arg2_options : {};
+			let type = arg0_type ? arg0_type : 'Ontology';
+			let state_array = arg1_state_array ? arg1_state_array : [];
+			let options = arg2_options ? arg2_options : {};
 			
 			if (!Ontology.initialised) Ontology.initialise();
 			
 			this.is_ontology = true;
 			this.options = options;
 			this.type = type;
-			this.id = (this.options.id) ? this.options.id : Ontology.getOntologyID();
+			this.id = this.options.id ? this.options.id : Ontology.getOntologyID();
 			
-			// Check if ID exists in the base instance list OR the current active queue
-			let existing_instance = (
-				Ontology.instances.find((i) => i.id === this.id) ||
-				Ontology.queue.find((i) => i.id === this.id)
-			);
+			// Detect if the incoming data is already marked as saved
+			let is_clean_load = state_array.length > 0 && state_array.every(kf => kf._saved);
+			
+			let existing_instance =
+				Ontology.instances.find((local_ontology) => local_ontology.id === this.id) ||
+				Ontology.queue.find((local_ontology) => local_ontology.id === this.id);
 			
 			if (existing_instance) {
-				existing_instance.mergeState(state_array);
+				existing_instance.mergeState(state_array, is_clean_load);
 				return existing_instance;
 			}
 			
 			this.geometries = [];
-			this.state = (state_array) ? state_array : [];
-			this.worker_type = (this.options.worker_type) ? this.options.worker_type : "";
+			this.state = state_array;
+			this.worker_type = this.options.worker_type ? this.options.worker_type : '';
 			
 			this._sortState();
+			
+			// If it's a new user-created instance (not clean), mark it dirty
+			if (!is_clean_load) {
+				Ontology.dirty_instances.add(this);
+			}
+			
 			Ontology.queue.push(this);
 		}
 		
@@ -133,27 +140,30 @@
 		 * 
 		 * @returns {Object}
 		 */
-		_rebuildDiffsFromSnapshots (arg0_snapshots) {
-			//Convert from parameters
-			let snapshots = (arg0_snapshots) ? arg0_snapshots : [];
+		_rebuildDiffsFromSnapshots(arg0_snapshots, arg1_is_clean) {
+			let snapshots = arg0_snapshots ? arg0_snapshots : [];
+			if (snapshots.length === 0) return;
 			
-			if (snapshots.length === 0) return; //Internal guard clause
-			
-			//Declare local instance variables
 			let last_index = snapshots.length - 1;
 			
-			//Head = full snapshot
+			// Re-calculate the negative diff chain
 			this.state[last_index].data = structuredClone(snapshots[last_index]);
+			for (let i = last_index - 1; i >= 0; i--) {
+				this.state[i].data = Object.computeNegativeDiff(
+					snapshots[i],
+					snapshots[i + 1]
+				);
+			}
 			
-			//Every earlier keyframe = negative diff against next resolved state
-			for (let i = last_index - 1; i >= 0; i--)
-				this.state[i].data = Object.computeNegativeDiff(snapshots[i], snapshots[i + 1]);
-			
-			//Strip mutation fields - they've already been baked in
-			if (!Ontology.is_loading)
+			/**
+			 * Only mark as dirty if this is NOT a clean load from the database.
+			 * If arg1_is_clean is true, we preserve the existing _saved flags.
+			 */
+			if (!arg1_is_clean) {
 				for (let local_keyframe of this.state) {
-					delete local_keyframe._saved; //Mark as dirty for the logic loop
+					delete local_keyframe._saved; // Now the logic loop will pick this up
 					
+					// Clean up mutation metadata
 					delete local_keyframe.add_relations;
 					delete local_keyframe.add_tags;
 					delete local_keyframe.remove_relations;
@@ -161,9 +171,9 @@
 					delete local_keyframe.set_relations;
 					delete local_keyframe.set_tags;
 				}
-			Ontology.dirty_instances.add(this);
+				Ontology.dirty_instances.add(this);
+			}
 			
-			//Return statement
 			return this.state;
 		}
 		
@@ -559,51 +569,52 @@
 		}
 		
 		/**
-		 * Merges an incoming state array into the current Ontology. Resolves both snates to snapshots, merges them, and rebuilds the diff chain.
+		 * Merges an incoming state array into the current Ontology. Resolves both states to snapshots, merges them, and rebuilds the diff chain.
 		 * 
 		 * @param {Object[]} arg0_state_array
 		 */
-		mergeState (arg0_state_array) {
-			//Convert from parameters
-			let state = (arg0_state_array) ? arg0_state_array : [];
-				if (state.length === 0) return; //Internal guard clause if state being merged doesn't exist
+		mergeState (arg0_state_array, arg1_is_clean) {
+			let state = arg0_state_array ? arg0_state_array : [];
+			if (state.length === 0) return;
 			
-			//Declare local instance variables
 			let current_snapshots = this._resolveAllSnapshots();
 			let snapshot_map = {};
-		
-			//Iterate over the current state and populate snapshot_map
+			
 			for (let i = 0; i < this.state.length; i++)
 				snapshot_map[this.state[i].date] = current_snapshots[i];
 			
-			//Resolve incoming snapshots with a temp_context to reuse resolution logic without affecting this instance
+			// Logic to resolve incoming state snapshots
 			let temp_context = {
 				state: state,
-				_resolveStateAtIndex: this._resolveStateAtIndex
+				_resolveStateAtIndex: this._resolveStateAtIndex,
 			};
 			temp_context._resolveAllSnapshots = this._resolveAllSnapshots.bind(temp_context);
 			temp_context._resolveStateAtIndex = this._resolveStateAtIndex.bind(temp_context);
-			
 			let incoming_snapshots = temp_context._resolveAllSnapshots();
 			
-			//Merge snapshots into the map (incoming takes precedence)
 			for (let i = 0; i < state.length; i++) {
 				let local_date = state[i].date;
-				
 				if (snapshot_map[local_date]) {
-					snapshot_map[local_date] = Object.assign(snapshot_map[local_date], incoming_snapshots[i]);
+					Object.assign(snapshot_map[local_date], incoming_snapshots[i]);
 				} else {
 					snapshot_map[local_date] = incoming_snapshots[i];
 				}
 			}
 			
-			//Reconstruct state skeleton
-			let sorted_dates = Object.keys(snapshot_map).map(Number).sort((a, b) => a - b);
+			let sorted_dates = Object.keys(snapshot_map)
+			.map(Number)
+			.sort((a, b) => a - b);
 			
-			this.state = sorted_dates.map((date) => ({ date: date, data: {} }));
+			this.state = sorted_dates.map((date) => {
+				// Look for an existing keyframe to preserve the _saved flag if it exists
+				let existing = state.find((s) => s.date === date);
+				return { date: date, data: {}, _saved: existing?._saved };
+			});
 			
 			let final_snapshots = sorted_dates.map((date) => snapshot_map[date]);
-			this._rebuildDiffsFromSnapshots(final_snapshots);
+			
+			// Pass the "clean" flag
+			this._rebuildDiffsFromSnapshots(final_snapshots, arg1_is_clean);
 		}
 		
 		/**
@@ -771,7 +782,7 @@
 		 * @memberof Ontology
 		 */
 		//[QUARANTINE]
-		static async fromDatabase() {
+		static async fromDatabase () {
 			let ipcRenderer = electron.ipcRenderer;
 			
 			// Set the hydration guard to prevent the Logic Loop from writing to disk
@@ -912,7 +923,6 @@
 							Ontology._instances_set.add(local_instance);
 							Ontology.instances.push(local_instance);
 							
-							// Also push to the subclass static 'instances' if it exists
 							let sub_class = local_instance.constructor;
 							if (sub_class !== Ontology && Array.isArray(sub_class.instances)) {
 								if (!sub_class.instances.includes(local_instance))
@@ -922,21 +932,46 @@
 					}
 					Ontology.queue = [];
 					
-					// 2. DISK SAVE GUARD: Early-exit if we are still loading or nothing is dirty
-					if (Ontology.is_loading || Ontology.dirty_instances.size === 0) return;
+					// Exit early if there are no dirty instances
+					if (Ontology.dirty_instances.size === 0) return;
 					
-					// 3. Perform batch writes
+					//2. IMPORTANT: Move current dirty items to a temporary "work set", and clear the main set immediately.
+					let work_set = new Set(Ontology.dirty_instances);
+					Ontology.dirty_instances.clear();
+					
+					//Perform batch writes using the snapshot
 					let batch_map = new Map();
-					for (let local_instance of Ontology.dirty_instances)
+					
+					for (let local_instance of work_set)
 						local_instance.saveToDatabase(batch_map);
 					
 					let write_promises = [];
+					
 					for (let [filename, { lines, keyframes }] of batch_map) {
 						let file_path = path.join(Ontology.ontology_folder_path, filename);
-						write_promises.push(
-							fs.promises.appendFile(file_path, lines.join(""), "utf8")
-							.then(() => { for (let kf of keyframes) kf._saved = true; })
-						);
+						
+						write_promises.push((async () => {
+							let last_error = null;
+							let max_retries = 5;
+							
+							for (let attempt = 0; attempt < max_retries; attempt++) {
+								try {
+									await fs.promises.appendFile(file_path, lines.join(""), "utf8");
+									
+									//Mark keyframes as saved on success
+									for (let kf of keyframes) kf._saved = true;
+									return;
+								} catch (err) {
+									last_error = err;
+									// Exponential backoff
+									await new Promise((resolve) =>
+										setTimeout(resolve, 20*(attempt + 1)),
+									);
+								}
+							}
+							
+							console.error(`Ontology: Failed to write to ${filename} after ${max_retries} attempts.`, last_error);
+						})());
 					}
 					await Promise.all(write_promises);
 				} finally {

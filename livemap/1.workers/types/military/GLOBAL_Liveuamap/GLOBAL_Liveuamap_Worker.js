@@ -160,27 +160,47 @@ global.GLOBAL_Liveuamap_Worker = class extends Blacktraffic.Worker {
 				
 				let current_scrape_time = Date.now();
 				
-				for (let i = 0; i < geometries.length; i++) try {
-					if (!geometries[i]?.geometry?.geometry?.coordinates) continue; //Make sure coordinates exist
-					
-					let coord_string = JSON.stringify(geometries[i].geometry.geometry.coordinates);
-					let event_id = `liveuamap_${local_region.name}_${String.hash(coord_string)}`;
-					let ontology_obj = new Ontology_Event([{
-						date: current_scrape_time,
-						data: {
-							region: local_region.name,
-							region_url: local_region.url,
-							...geometries[i]
-						}
-					}], {
-						id: event_id,
-						worker_type: "Liveuamap"
-					});
-					
-					//Draw the instance immediately
-					ontology_obj.draw();
-					ontologies.push(ontology_obj);
-				} catch (e) { this.error(e); }
+				for (let i = 0; i < geometries.length; i++)
+					try {
+						if (!geometries[i]?.geometry?.geometry?.coordinates) continue; //Make sure coordinates exist
+						
+						let coord_string = JSON.stringify(
+							geometries[i].geometry.geometry.coordinates,
+						);
+						let event_id = `liveuamap_${local_region.name}_${String.hash(
+							coord_string,
+						)}`;
+						
+						// Check if the event_id exists within the instances array
+						let is_existing = Ontology_Event.instances.some(
+							(inst) => inst.id === event_id,
+						);
+						
+						if (is_existing) continue;
+						
+						let ontology_obj = new Ontology_Event(
+							[
+								{
+									date: current_scrape_time,
+									data: {
+										region: local_region.name,
+										region_url: local_region.url,
+										...geometries[i],
+									},
+								},
+							],
+							{
+								id: event_id,
+								worker_type: "Liveuamap",
+							},
+						);
+						
+						//Draw the instance immediately
+						ontology_obj.draw();
+						ontologies.push(ontology_obj);
+					} catch (e) {
+						this.error(e);
+					}
 				
 				//Sleep to bypass rate limit
 				await Blacktraffic.sleep(Math.randomNumber(10000, 15000));
