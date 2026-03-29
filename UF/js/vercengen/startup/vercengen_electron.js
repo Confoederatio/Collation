@@ -1,106 +1,94 @@
+//Import libraries
 if (!global.ve) global.ve = {};
-let electron = require("electron");
-let fs = require("fs");
-let ipcMain = electron.ipcMain;
-let path = require("path");
-let readline = require("readline");
+if (!global.electron) try { electron = require("electron"); } catch (e) {}
+if (!global.fs) try { fs = require("fs"); } catch (e) {}
+if (!global.path) try { path = require("path"); } catch (e) {}
+if (!global.readline) try { readline = require("readline"); } catch (e) {}
+
+if (!global.file_read) try { file_read = require("../../file/file_read"); } catch (e) {}
 
 //Initialise functions
 {
 	/**
-	 * Utility to read a file line-by-line backwards without loading it all into memory.
-	 * This prevents the OOM crash.
+	 * Initialises IPC handlers.
+	 * 
+	 * ontology:initialise - Initialises Ontology streaming.
+	 * - ontology:stream-batch - DB sends batch to render.
+	 * - ontology:stream-done - Marks all streaming as finished (loaded into memory).
+	 * - ontology:stream-next - Render requests batch from DB.
+	 * 
+	 * @param {Object} [arg0_options]
+	 *  @param {number} [arg0_options.ontology_stream_size=256] - The stream packet size for Ontologies from DB.
 	 */
-	async function* readLinesBackwards(filePath) {
-		const stats = fs.statSync(filePath);
-		const fd = fs.openSync(filePath, 'r');
-		const bufferSize = 64 * 1024; // 64KB chunks
-		const buffer = Buffer.alloc(bufferSize);
-		let pos = stats.size;
-		let leftover = '';
+	ve.initialiseIPC = function (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
 		
-		while (pos > 0) {
-			const end = pos;
-			pos = Math.max(0, pos - bufferSize);
-			const length = end - pos;
+		//Initialise options
+		options.ontology_stream_size = (options.ontology_stream_size > 0) ?
+			options.ontology_stream_size : 256;
+		
+		//Declare local instance variables
+		let ipc_main = electron.ipcMain;
+		
+		ipc_main.on("ontology:initialise", async (event, folder_path) => {
+			//Declare local instance variables
+			let all_files = fs.readdirSync(folder_path)
+				.filter((f) => f.endsWith(".ontology"))
+				.sort((a, b) => b.localeCompare(a));
+			let web_contents = event.sender;
 			
-			fs.readSync(fd, buffer, 0, length, pos);
-			let chunk = buffer.toString('utf8', 0, length) + leftover;
-			let lines = chunk.split(/\r?\n/);
-			
-			//The first line in the chunk might be incomplete (split across buffers)
-			leftover = lines.shift();
-			
-			//Yield lines from the end of this chunk (which is newer in the file)
-			for (let i = lines.length - 1; i >= 0; i--) {
-				yield lines[i];
-			}
-		}
-		if (leftover) yield leftover;
-		fs.closeSync(fd);
-	}
-	
-	ve.initialiseIPC = function () {
-		ipcMain.on("ontology:initialise", async (event, folderPath) => {
-			const webContents = event.sender;
-			
-			// 1. Sort files descending (YYYY.MM.DD)
-			const files = fs.readdirSync(folderPath)
-			.filter(f => f.endsWith('.ontology'))
-			.sort((a, b) => b.localeCompare(a));
-			
-			async function* getOntologyBatches() {
+			async function* getOntologyBatches () {
 				let batch = {};
 				let count = 0;
 				
-				for (const file of files) {
-					const filePath = path.join(folderPath, file);
+				for (let local_file of all_files) {
+					let local_file_path = path.join(folder_path, local_file);
 					
-					// 2. Process each file backwards line-by-line
-					for await (const line of readLinesBackwards(filePath)) {
-						if (!line.trim()) continue;
+					//Process each file backwards line-by-line
+					for await (let local_line of global.file_read.readLinesBackwards(local_file_path)) {
+						if (!local_line.trim()) continue;
 						
-						const json_start = line.indexOf('{');
+						let json_start = local_line.indexOf("{");
 						if (json_start === -1) continue;
 						
-						const id = line.substring(0, json_start).trim();
+						let id = local_line.substring(0, json_start).trim();
 						try {
-							const kf = JSON.parse(line.substring(json_start));
-							kf._saved = true;
+							let local_keyframe = JSON.parse(local_line.substring(json_start));
+								local_keyframe._saved = true;
 							
 							if (!batch[id]) batch[id] = [];
-							batch[id].push(kf);
+							batch[id].push(local_keyframe);
 							count++;
 							
-							// Smaller batch size (256) is better for IPC stability
-							if (count >= 256) {
+							//Smaller batch size (256) is better for IPC stability
+							if (count >= options.ontology_stream_size) {
 								yield batch;
 								batch = {};
 								count = 0;
 							}
 						} catch (e) {}
 					}
-					
-					console.log(`Finished reading ${file}`);
 				}
 				if (Object.keys(batch).length > 0) yield batch;
 			}
 			
-			const currentStream = getOntologyBatches();
-			
-			const sendNext = async () => {
-				const { value, done } = await currentStream.next();
+			let currentStream = getOntologyBatches();
+			let sendNextBatch = async () => {
+				let { value, done } = await currentStream.next();
+				
 				if (done) {
-					webContents.send('ontology:stream-done');
-					ipcMain.removeListener('ontology:stream-next', sendNext);
+					web_contents.send('ontology:stream-done');
+					ipc_main.removeListener('ontology:stream-next', sendNextBatch);
 				} else {
-					webContents.send('ontology:stream-batch', value);
+					web_contents.send('ontology:stream-batch', value);
 				}
 			};
 			
-			ipcMain.removeAllListeners('ontology:stream-next');
-			ipcMain.on('ontology:stream-next', sendNext);
-			sendNext();
+			//Stream in batches
+			ipc_main.removeAllListeners('ontology:stream-next');
+			ipc_main.on('ontology:stream-next', sendNextBatch);
+			await sendNextBatch();
 		});
 	};
 }
