@@ -256,7 +256,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			
 			let cursor_turf_geometry = Geospatiale.convertMaptalksToTurf(e.geometry);
 			let ot_turf_geometry = Geospatiale.convertMaptalksToTurf(from_geometry.geometry);
-			let turf_geometry = Geospatiale.convertMaptalksToTurf(this.geometry);
+			let turf_geometry = (this.geometry) ? Geospatiale.convertMaptalksToTurf(this.geometry) : null;
 			
 			let turf_intersection = (main.brush.node_editor.mode === "add") ?
 				turf.intersect(turf.featureCollection([ot_turf_geometry, cursor_turf_geometry])) :
