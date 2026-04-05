@@ -4,6 +4,9 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 		let layer_obj = arg0_layer_obj;
 			super();
 			
+		//Declare local instance variables
+		this.layer = layer_obj;
+			
 		//Draw interface
 	}
 	
@@ -11,6 +14,30 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 		//Declare local instance variables
 		let table_array = []; //[[select_button, index, geometry_name, actions_bar]];
 		
-		//Populate table_array from entities in 
+		//Populate table_array from entities in this.layer
+		let all_entities = this.layer.getAllGeometries();
+		
+		//Iterate over all_entities and push it to table_array
+		for (let i = 0; i < all_entities.length; i++) {
+			let local_array = [];
+			let local_geometry = all_entities[i];
+			let local_geometry_name = local_geometry.name;
+				if (!local_geometry_name)
+					if (local_geometry.class_name) {
+						local_geometry_name = local_geometry.class_name;
+					} else {
+						local_geometry_name = `Geometry`;
+					}
+			
+			//Set local_actions_bar_el
+			let local_actions_bar_el = document.createElement("div");
+				
+			local_array[1] = i;
+			local_array[2] = local_geometry_name;
+			table_array.push(local_array);
+		}
+		
+		//Return statement
+		return table_array;
 	}
 }

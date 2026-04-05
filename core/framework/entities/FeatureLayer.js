@@ -9,6 +9,7 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		this.class_name = "FeatureLayer";
 		this.entities = (arg0_entities) ? arg0_entities : [];
 		this.options = (arg1_options) ? arg1_options : {};
+		this.window = new UI_FeatureLayerWindow(this);
 		
 		//Declare local instance variables
 		this._name = "New Layer";
@@ -250,7 +251,7 @@ naissance.FeatureLayer = class extends naissance.Feature {
 	/**
 	 * Returns an array of all {@link naissance.Geometry} instances housed in the FeatureLayer.
 	 *
-	 * @param {naissance.FeatureLayer} arg0_object
+	 * @param {naissance.FeatureLayer} [arg0_object]
 	 *
 	 * @returns {naissance.Geometry[]}
 	 */

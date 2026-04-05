@@ -460,6 +460,26 @@ naissance.Geometry = class extends ve.Class {
 	}
 	
 	/**
+	 * Returns a map of all `naissance.Geometry.instances`.
+	 * 
+	 * @returns {{"<geometry_id>": naissance.Geometry}}
+	 */
+	static getObject () {
+		//Declare local instance variables
+		let return_obj = {};
+		
+		//Iterate over all naissance.Geometry.instances
+		for (let i = 0; i < naissance.Geometry.instances.length; i++) {
+			let local_geometry = naissance.Geometry.instances[i];
+			
+			return_obj[local_geometry.id] = local_geometry;
+		}
+		
+		//Return statement
+		return return_obj;
+	}
+	
+	/**
 	 * Parses a JSON action for a target Geometry.
 	 * - Static method of: {@link naissance.Geometry}
 	 * 
