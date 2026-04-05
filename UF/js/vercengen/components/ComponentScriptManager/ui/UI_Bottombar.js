@@ -58,7 +58,7 @@ ve.ScriptManager.UI_Bottombar = class extends ve.Component {
    * @alias v
 	 * @memberof ve.ScriptManager.UI_Bottombar
 	 *
-	 * @param {string} arg0_value
+	 * @param {string|string[]} arg0_value
    */
   set v (arg0_value) {
     //Convert from parameters
