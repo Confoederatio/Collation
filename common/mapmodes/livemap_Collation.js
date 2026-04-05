@@ -1,6 +1,18 @@
 config.mapmodes.livemap_Collation = {
 	name: "Collation (Livemap)",
 	icon: "visibility",
+
+  onhide: function (v) {
+    //Declaree local instance variables
+		let config_obj = config.mapmodes.livemap_Collation;
+
+    //Iterate over all config_obj.geometries
+    for (let i = 0; i < config_obj.geometries.length; i++)
+      config_obj.geometries[i].remove();
+    config_obj.geometries = [];
+
+    config_obj.instance.setGeometries([]);
+  },
 	
 	redraw: function (arg0_options) {
 		//Convert from parameters

@@ -8,9 +8,10 @@ if (!global.naissance) global.naissance = {};
  *   - `.name`: {@link string}
  *   - `.layer="bottom"`: {@link string} - Either 'bottom'/'top', targets `main.layers.mapmode_<key>_layer`.
  *   - 
+ *   - `.onhide`: {@link function} - Called upon mapmode being hidden.
  *   - `.node_editor_file`: {@link string}
  *   - `.node_editor_value`: {@link Object}
- *   - `.special_function`: {@link function} | {@link maptalks.Geometry}[]
+ *   - `.special_function`: {@link function} | {@link maptalks.Geometry}[] - Called upon mapmode being shown or drawn.
  * 
  * @type {naissance.Mapmode}
  */
@@ -73,6 +74,7 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 		//Remove mapmode from main.user.mapmodes
 		for (let i = 0; i < main.user.mapmodes.length; i++)
 			if (main.user.mapmodes[i] === this.id) {
+        if (this.options.onhide) this.options.onhide(this);
 				main.user.mapmodes.splice(i, 1);
 				break;
 			}
