@@ -214,7 +214,11 @@ ve.Table = class extends ve.Component {
 			
 			row_data.forEach((cell_data) => {
 				let local_td_el = document.createElement("td");
-					local_td_el.innerHTML = cell_data;
+					if (cell_data instanceof HTMLElement) {
+						local_td_el.appendChild(cell_data);
+					} else {
+						local_td_el.innerHTML = cell_data;
+					}
 				local_tr_el.appendChild(local_td_el);
 			});
 			tbody_el.appendChild(local_tr_el);
