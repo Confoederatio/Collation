@@ -9,6 +9,8 @@
  *   - Nested arrays: [n1] - Sheet, [n2] - Row
  * - `arg1_options`: {@link Object}
  *   - `.non_sortable_columns`: {@link number} - The indices that shouldn't be sortable.
+ *   - `.oncellclick`: {@link function}(v:{@link Array}<{@link any}>, e:{@link Event})
+ *   - `.onrowclick`: {@link function}(v:{@link any}, e:{@link Event})
  *   - `.page_sizes=ve.registry.settings.Table.page_sizes`: {@link number[]} - Set by default to [10, 20, 50, 100].
  *   - `.page_size=50`: {@link number}
  *   - `.sortable=true`: {@link boolean}
@@ -220,14 +222,30 @@ ve.Table = class extends ve.Component {
 			let local_tr_el = document.createElement("tr");
 			
 			row_data.forEach((cell_data) => {
+				//Push cell
 				let local_td_el = document.createElement("td");
 					if (cell_data instanceof HTMLElement) {
 						local_td_el.appendChild(cell_data);
 					} else {
 						local_td_el.innerHTML = cell_data;
 					}
+					
+				//oncellclick handler
+				if (this.options.oncellclick)
+					local_td_el.addEventListener("click", (e) => {
+						this.options.oncellclick(cell_data, e);
+					});
+				
+				//Push row
 				local_tr_el.appendChild(local_td_el);
 			});
+			
+			//onrowclick handler
+			if (this.options.onrowclick)
+				local_tr_el.addEventListener("click", (e) => {
+					this.options.onrowclick(row_data, e);
+				});
+			
 			tbody_el.appendChild(local_tr_el);
 		});
 		table_el.appendChild(tbody_el);

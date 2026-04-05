@@ -10,6 +10,10 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 		//Draw interface
 	}
 	
+	filterGeometryTable (arg0_options) {
+		
+	}
+	
 	getGeometryTable () {
 		//Declare local instance variables
 		let table_array = []; //[[select_button, index, geometry_type, geometry_name, actions_bar]];
