@@ -8,6 +8,7 @@
  * - `arg0_value`: {@link Array}<{@link Array}<{@link any}>> 
  *   - Nested arrays: [n1] - Sheet, [n2] - Row
  * - `arg1_options`: {@link Object}
+ *   - `.non_sortable_columns`: {@link number} - The indices that shouldn't be sortable.
  *   - `.page_sizes=ve.registry.settings.Table.page_sizes`: {@link number[]} - Set by default to [10, 20, 50, 100].
  *   - `.page_size=50`: {@link number}
  *   - `.sortable=true`: {@link boolean}
@@ -48,6 +49,7 @@ ve.Table = class extends ve.Component {
 		
 		//Initialise options
 		options.attributes = (options.attributes) ? options.attributes : {};
+		options.non_sortable_columns = (options.non_sortable_columns) ? options.non_sortable_columns : [];
 		options.page_size = Math.returnSafeNumber(options.page_size, 50);
 		options.page_sizes = ve.registry.settings.Table.page_sizes;
 		options.sortable = (options.sortable !== undefined) ? options.sortable : true;
@@ -197,7 +199,7 @@ ve.Table = class extends ve.Component {
 				local_th_el.innerHTML = local_text;
 				
 			//Sortable handling
-			if (this.options.sortable) {
+			if (this.options.sortable && !this.options.non_sortable_columns.includes(i)) {
 				local_th_el.style.cursor = "pointer";
 				local_th_el.addEventListener("click", () => this.sort(i));
 				if (this.options.sort_column === i)
@@ -316,7 +318,8 @@ ve.Table = class extends ve.Component {
 		//Convert from parameters
 		let index = Math.returnSafeNumber(arg0_index);
 		
-		if (!this.options.sortable) return; //Internal guard clause if table is not sortable
+		if (!this.options.sortable || !this.options.non_sortable_columns.includes(index)) 
+			return; //Internal guard clause if table is not sortable
 		
 		//Declare local instance variables
 		if (this.options.sort_column === index) {

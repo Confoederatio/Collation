@@ -247,20 +247,13 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		this.type = (json.type) ? json.type : "default";
 	}
 	
-	hasEntity (arg0_naissance_obj) {
-		//Convert from parameters
-		let naissance_obj = arg0_naissance_obj;
-		
-		//Iterate over this.entities and flag anything with the same .id
-		for (let i = 0; i < this.entities.length; i++)
-			if (
-				this.entities[i].class_name === naissance_obj.class_name &&
-				this.entities[i].id === naissance_obj.id
-			)
-				//Return statement
-				return true;
-	}
-	
+	/**
+	 * Returns an array of all {@link naissance.Geometry} instances housed in the FeatureLayer.
+	 *
+	 * @param {naissance.FeatureLayer} arg0_object
+	 *
+	 * @returns {naissance.Geometry[]}
+	 */
 	getAllGeometries (arg0_object) {
 		//Convert from parameters
 		let object = (arg0_object) ? arg0_object : this;
@@ -279,6 +272,20 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		
 		//Return statement
 		return all_entities;
+	}
+	
+	hasEntity (arg0_naissance_obj) {
+		//Convert from parameters
+		let naissance_obj = arg0_naissance_obj;
+		
+		//Iterate over this.entities and flag anything with the same .id
+		for (let i = 0; i < this.entities.length; i++)
+			if (
+				this.entities[i].class_name === naissance_obj.class_name &&
+				this.entities[i].id === naissance_obj.id
+			)
+				//Return statement
+				return true;
 	}
 	
 	removeEntity (arg0_naissance_obj) {
