@@ -258,7 +258,7 @@ ve.Table = class extends ve.Component {
 	 * - Method of: {@link ve.Table}
 	 * 
 	 * @alias drawPages
-	 * @memberof ve.Component.ve.drawPages
+	 * @memberof ve.Component.ve.Table
 	 * 
 	 * @returns {ve.Table}
 	 */
@@ -342,27 +342,72 @@ ve.Table = class extends ve.Component {
 	}
 	
 	/**
+	 * Returns the current view state of the component.
+	 * - Method of: {@link ve.Table}
+	 * 
+	 * @alias getViewState
+	 * @memberof ve.Component.ve.Table
+	 * 
+	 * @returns {{current_page: number, items_per_page: number, sort_ascending: boolean, sort_column: number|undefined}}
+	 */
+	getViewState () {
+		//Return statement
+		return {
+			current_page: this.current_page,
+			items_per_page: this.options.page_size,
+			sort_ascending: this.options.sort_ascending,
+			sort_column: this.options.sort_column
+		};
+	}
+	
+	/**
+	 * Sets the view state from an existing view object.
+	 * 
+	 * @param {Object} arg0_view_obj
+	 */
+	setViewState (arg0_view_obj) {
+		//Convert from parameters
+		let view_obj = (arg0_view_obj) ? arg0_view_obj : {};
+		
+		//Set options and render
+		if (view_obj.current_page !== undefined) this.current_page = view_obj.current_page;
+		if (view_obj.items_per_page !== undefined) this.options.page_size = view_obj.items_per_page;
+		if (view_obj.sort_column !== undefined) {
+			if (view_obj.sort_ascending !== undefined) this.options.sort_ascending = view_obj.sort_ascending;
+			this.sort(view_obj.sort_column, { do_not_change_sort_order: true });
+		} else {
+			this.draw();
+		}
+	}
+	
+	/**
 	 * Sorts the current Table component and calls this.draw().
 	 * - Method of: {@link ve.Table}
 	 * 
 	 * @alias sort
-	 * @memberof ve.Component.ve.sort
+	 * @memberof ve.Component.ve.Table
 	 * 
-	 * @param {number} arg0_index
+	 * @param {number} [arg0_index]
+	 * @param {Object} [arg1_options]
+	 *  @param {boolean} [arg1_options.do_not_change_sort_order=false]
 	 */
-	sort (arg0_index) {
+	sort (arg0_index, arg1_options) {
 		//Convert from parameters
 		let index = Math.returnSafeNumber(arg0_index);
+		let options = (arg1_options) ? arg1_options : {};
 		
 		if (!this.options.sortable || this.options.non_sortable_columns.includes(index)) 
 			return; //Internal guard clause if table is not sortable
 		
 		//Declare local instance variables
 		if (this.options.sort_column === index) {
-			this.options.sort_ascending = (!this.options.sort_ascending);
+			if (!options.do_not_change_sort_order)
+				this.options.sort_ascending = (!this.options.sort_ascending);
 		} else {
 			this.options.sort_column = index;
-			this.options.sort_ascending = true;
+			
+			if (!options.do_not_change_sort_order)
+				this.options.sort_ascending = true;
 		}
 		
 		//Sort rows
