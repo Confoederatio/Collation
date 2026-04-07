@@ -381,7 +381,7 @@ ve.Table = class extends ve.Component {
 	}
 	
 	/**
-	 * Sorts the current Table component and calls this.draw().
+	 * Sorts the current Table component and calls this.draw(). If the value is an HTMLElement with attribute 'data-value', it will use that to sort instead of innerHTML.
 	 * - Method of: {@link ve.Table}
 	 * 
 	 * @alias sort
@@ -400,6 +400,24 @@ ve.Table = class extends ve.Component {
 			return; //Internal guard clause if table is not sortable
 		
 		//Declare local instance variables
+    let getSortValue = (local_value) => {
+      //Declare local instance variables
+      let sort_value = local_value;
+
+      if (local_value instanceof HTMLElement) {
+        let data_value = local_value.getAttribute("data-value");
+
+        if (data_value) {
+          sort_value = data_value;
+        } else {
+          sort_value = local_value.innerHTML;
+        }
+      }
+
+      //Return statement
+      return sort_value;
+    };
+
 		if (this.options.sort_column === index) {
 			if (!options.do_not_change_sort_order)
 				this.options.sort_ascending = (!this.options.sort_ascending);
@@ -412,8 +430,8 @@ ve.Table = class extends ve.Component {
 		
 		//Sort rows
 		this._rows.sort((a, b) => {
-			let a_value = a[index];
-			let b_value = b[index];
+			let a_value = getSortValue(a[index]);
+			let b_value = getSortValue(b[index]);
 			
 			//Attempt numeric sort if possible
 			let a_number = parseFloat(a_value);

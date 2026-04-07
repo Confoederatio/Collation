@@ -9,12 +9,29 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 			
 		//Draw interface
 	}
+
+  /**
+   * Returns an {@link Object}<{@link ve.Component}> representing the current UI_FeatureLayerWIndow element that can be bound; removes the previous `.interface` if present.
+   */
+  draw () {
+
+  }
 	
 	filterGeometryTable (arg0_options) {
 		
 	}
 	
-	getGeometryTable () {
+  /**
+   * Returns a {@link naissance.Geometry} Table array that can be passed to {@link ve.Table}.
+   * - Method of: {@link UI_FeatureLayerWindow}
+   * 
+   * @param {Object} [arg0_options]
+   *  @param {boolean} [arg0_options.view_tags=false]
+   */
+	getGeometryTable (arg0_options) {
+    //Convert from parameters
+    let options = (arg0_options) ? arg0_options : {};
+
 		//Declare local instance variables
 		let table_array = []; //[[select_button, index, geometry_type, geometry_name, actions_bar]];
 		
@@ -22,7 +39,11 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 		let all_entities = this.layer.getAllGeometries();
 		
 		//Initalise heeader
-		table_array.push(["Selected", "Index", "Type", "Name", "Actions"]);
+    if (!options.view_tags) {
+		  table_array.push(["Selected", "Index", "Type", "Name", "Actions"]);
+    } else {
+      table_array.push(["Selected", "Index", "Type", "Name", "Tags", "Actions"]);
+    }
 		
 		//Iterate over all_entities and push it to table_array
 		for (let i = 0; i < all_entities.length; i++) {
@@ -37,11 +58,47 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 					}
 			
 			//Set local_array
-			local_array[0] = veCheckbox().element;
-			local_array[1] = i;
-			local_array[2] = (local_geometry.class_name) ? local_geometry.class_name : "Geometry";
-			local_array[3] = local_geometry_name;
-			local_array[4] = local_geometry.getActionsBarElement();
+      //Select column
+      {
+        let select_component = veCheckbox(local_geometry.selected, { //[WIP] - onprogramchange doesn't fire, no binding
+          attributes: {
+            "data-value": String(local_geometry.selected)
+          },
+          onuserchange: (v, e) => {
+            e.element.setAttribute("data-value", String(v));
+            local_geometry.selected = v;
+          }
+        });
+
+			  local_array.push(select_component.element);
+      }
+			local_array.push(i);
+			local_array.push((local_geometry.class_name) ? local_geometry.class_name : "Geometry");
+      //Name column
+      {
+        let name_component = veText(local_geometry_name, { //[WIP] - onprogramchange doesn't fire, no binding
+          attributes: { 
+            "data-value": local_geometry_name
+          },
+          onprogramchange: (v, e) => {
+            e.element.setAttribute("data-value", v);
+            e.v = v;
+          },
+          onuserchange: (v, e) => {
+            e.element.setAttribute("data-value", v);
+            local_geometry.name = v;
+          }
+        });
+
+        local_array.push(name_component.element);
+      }
+			
+      if (options.view_tags) {
+        let local_geometry_tags = local_geometry?.metadata?.tags;
+
+        local_array.push(local_geometry_tags.join(", "));
+      }
+			local_array.push(local_geometry.getActionsBarElement());
 			
 			//Push local_array to table_array
 			table_array.push(local_array);
