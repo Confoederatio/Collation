@@ -6,15 +6,31 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
 			
 		//Declare local instance variables
 		this.layer = layer_obj;
-			
-		//Draw interface
 	}
 
   /**
    * Returns an {@link Object}<{@link ve.Component}> representing the current UI_FeatureLayerWIndow element that can be bound; removes the previous `.interface` if present.
    */
   draw () {
+    super.close("instance");
+    if (this.interface) this.interface.remove();
 
+    //Declare local instance variables
+    let geometry_table_array = this.getGeometryTable({ view_tags: true });
+
+    this.interface = veInterface({
+      geometry_table: veTable(geometry_table_array, {
+        onrowclick: (v, e) => console.log(v, e)
+      })
+    }, { is_folder: false });
+
+    super.open("instance", { 
+      can_rename: false, //[WIP] - Should be able to rename layers from here in future
+      name: (this.layer.name) ? this.layer.name : "Layer" 
+    });
+
+    //Return statement
+    return this.interface;
   }
 	
 	filterGeometryTable (arg0_options) {
@@ -96,7 +112,11 @@ global.UI_FeatureLayerWindow = class extends ve.Class { //[WIP] - Finish class b
       if (options.view_tags) {
         let local_geometry_tags = local_geometry?.metadata?.tags;
 
-        local_array.push(local_geometry_tags.join(", "));
+        if (local_geometry_tags && Array.isArray(local_geometry_tags)) {
+          local_array.push(local_geometry_tags.join(", "));
+        } else {
+          local_array.push("");
+        }
       }
 			local_array.push(local_geometry.getActionsBarElement());
 			
