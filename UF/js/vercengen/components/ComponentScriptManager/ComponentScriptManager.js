@@ -785,9 +785,13 @@ ve.ScriptManager = class extends ve.Component {
 						this.element.style.removeProperty("--ve-sm-background-image");
 						this.element.removeAttribute("data-background-image");
 					}
-				if (settings_obj.project_folder)
-					settings_obj.project_folder = (fs.existsSync(settings_obj.project_folder) && fs.statSync(settings_obj.project_folder).isDirectory()) ?
+				if (settings_obj.project_folder) {
+          let project_folder = (fs.existsSync(settings_obj.project_folder) && fs.statSync(settings_obj.project_folder).isDirectory()) ?
 						settings_obj.project_folder : "none";
+          
+					settings_obj.project_folder = project_folder;
+          this.config.project_folder = project_folder;
+        }
 				if (settings_obj.monaco_theme)
 					this.setCodeEditorTheme(settings_obj.monaco_theme);
 				if (settings_obj.hide_blockly !== undefined) {
