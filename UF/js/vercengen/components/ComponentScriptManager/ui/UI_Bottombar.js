@@ -86,7 +86,7 @@ ve.ScriptManager.UI_Bottombar = class extends ve.Component {
         //Load file upon click
         local_el.addEventListener("click", (e) => {
           if (this.options.script_manager)
-            if (this.options.script_manager._file_path !== value[i])
+            if (this.options.script_manager._file_path !== value[i] && value[i])
               this.options.script_manager.loadFile(value[i]);
         });
       let local_html_obj = new ve.HTML(local_el, {
