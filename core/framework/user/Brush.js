@@ -132,6 +132,7 @@ naissance.Brush = class extends ve.Class {
 			from_geometry: new UI_GeometryDatalist(undefined, {
 				name: "From Geometry",
 				binding: "this.from_geometry_id",
+        filter_types: ["GeometryLine", "GeometryPolygon"],
 				limit: () => this.mode === "node_transfer",
 				width: 2,
 				x: 0, y: 3
