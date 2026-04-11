@@ -9,7 +9,7 @@
  *   - Nested arrays: [n1] - Sheet, [n2] - Row
  * - `arg1_options`: {@link Object}
  *   - `.disable_hide_columns=[]`: {@link Array}<{@link number}> - The indices of columns to disable hiding for.
- *   - `.hide_columns=[]`: {@link Array}<{@link number}> - The indices of columns to hide.
+ *   - `.hide_columns=[]`: {@link Array}<{@link number}>|{@link string} - The indices of columns to hide. If set to 'all', columns are not able to be hidden.
  *   - `.non_sortable_columns`: {@link number} - The indices that shouldn't be sortable.
  *   - `.ondraw`: {@link function}(v:{@link ve.Table})
  *   - `.oncellclick`: {@link function}(v:{@link Array}<{@link any}>, e:{@link Event})
@@ -222,7 +222,8 @@ ve.Table = class extends ve.Component {
 			}
 			header_row_el.appendChild(local_th_el);
 		});
-    header_row_el.addEventListener("contextmenu", () => this.openViewSettings());
+    if (this.options.hide_columns !== "all")
+      header_row_el.addEventListener("contextmenu", () => this.openViewSettings());
 
 		thead_el.appendChild(header_row_el);
 		table_el.appendChild(thead_el);
