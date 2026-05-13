@@ -14,8 +14,10 @@ config.mapmodes.image_overlay = {
 		//Declare local instance variables
 		let config_obj = config.mapmodes.image_overlay;
 		
-		config_obj._layer.setImages([]);
-		config_obj._layer.remove();
+		if (config_obj._layer) {
+			config_obj._layer.setImages([]);
+			config_obj._layer.remove();
+		}
 	},
 	onshow: function (v) {
 		//Declare local instance variables
@@ -54,7 +56,8 @@ config.mapmodes.image_overlay = {
 			}),
 		}, {
 			name: "Image Overlay",
-			can_rename: false
+			can_rename: false,
+			width: "20rem"
 		})
 	},
 	
