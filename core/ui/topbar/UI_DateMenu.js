@@ -15,7 +15,7 @@ global.UI_DateMenu = class extends ve.Class {
 		this.date = veDate(undefined, {
 			binding: "main.date",
 			name: " ",
-			tooltip: "BC are negative.",
+			tooltip: "BC years are negative.",
 			onprogramchange: (v) => {
 				console.log("onprogramchange");
 				if (this.is_playing) return;
