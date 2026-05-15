@@ -87,7 +87,8 @@ global.UI_DateMenu = class extends ve.Class {
 		});
 	}
 	
-	playTimelapse () {
+	//[QUARANTINE]
+	playTimelapse() {
 		// Clean up any existing system-wide loop
 		if (UI_DateMenu.logic_loop) clearTimeout(UI_DateMenu.logic_loop);
 		
@@ -98,34 +99,72 @@ global.UI_DateMenu = class extends ve.Class {
 			let next = { ...main.date };
 			let step = this.time_step || { year: 1 };
 			
-			// Apply increments
+			// 1. Apply increments
 			next.minute = (next.minute || 0) + (step.minute || 0);
 			next.hour = (next.hour || 0) + (step.hour || 0);
 			next.day = (next.day || 1) + (step.day || 0);
 			next.month = (next.month || 1) + (step.month || 0);
 			next.year = (next.year || 0) + (step.year || 0);
 			
-			// Normalize BC and Overflows
-			if (next.minute >= 60) { next.hour += Math.floor(next.minute / 60); next.minute %= 60; }
-			if (next.hour >= 24) { next.day += Math.floor(next.hour / 24); next.hour %= 24; }
-			while (next.month > 12) { next.month -= 12; next.year += 1; }
-			while (next.month < 1) { next.month += 12; next.year -= 1; }
+			// 2. Normalise units
+			if (next.minute >= 60) {
+				next.hour += Math.floor(next.minute / 60);
+				next.minute %= 60;
+			}
+			if (next.hour >= 24) {
+				next.day += Math.floor(next.hour / 24);
+				next.hour %= 24;
+			}
+			// Basic day-to-month normalisation (assuming 30 days for simplicity, 
+			// or replace with a proper calendar check if needed)
+			while (next.day > 30) {
+				next.day -= 30;
+				next.month += 1;
+			}
+			while (next.month > 12) {
+				next.month -= 12;
+				next.year += 1;
+			}
+			while (next.month < 1) {
+				next.month += 12;
+				next.year -= 1;
+			}
 			
-			// Termination logic
+			// 3. Robust Termination logic
 			if (this.end_date) {
-				const isPast = next.year > this.end_date.year ||
-					(next.year === this.end_date.year && next.month > (this.end_date.month || 1));
+				const d1 = next;
+				const d2 = this.end_date;
+				
+				// Cascading comparison from largest to smallest unit
+				const isPast =
+					d1.year > d2.year ||
+					(d1.year === d2.year && (d1.month || 1) > (d2.month || 1)) ||
+					(d1.year === d2.year &&
+						(d1.month || 1) === (d2.month || 1) &&
+						(d1.day || 1) > (d2.day || 1)) ||
+					(d1.year === d2.year &&
+						(d1.month || 1) === (d2.month || 1) &&
+						(d1.day || 1) === (d2.day || 1) &&
+						(d1.hour || 0) > (d2.hour || 0)) ||
+					(d1.year === d2.year &&
+						(d1.month || 1) === (d2.month || 1) &&
+						(d1.day || 1) === (d2.day || 1) &&
+						(d1.hour || 0) === (d2.hour || 0) &&
+						(d1.minute || 0) > (d2.minute || 0));
+				
 				if (isPast) {
 					this.is_playing = false;
 					return;
 				}
 			}
 			
-			// Update global state
+			// Update global state and UI
 			main.date = next;
-			naissance.Geometry.instances.forEach((local_geometry) => local_geometry.draw());
+			naissance.Geometry.instances.forEach((local_geometry) =>
+				local_geometry.draw(),
+			);
 			
-			// Schedule next tick using current tick_speed
+			// Schedule next tick
 			UI_DateMenu.logic_loop = setTimeout(tick, this.tick_speed);
 		};
 		
