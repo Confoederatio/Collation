@@ -116,6 +116,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 							this.value[2].label_geometries : [];
 						let label_name = (this.value[2].label_name) ? 
 							this.value[2].label_name : this.value[2].name;
+						let z_index = (this.geometry) ? this.geometry.getArea() : -1;
 						
 						//1. .label_coordinates
 						if (label_geometries.length === 0) {
@@ -150,7 +151,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 								if (main.settings.hide_labels_by_default)
 									this.label_geometries[i].hide();
 							}
-								
+							this.label_geometries[i].setZIndex(-z_index);
 							this.label_geometries[i].addTo(main.layers.label_layer);
 						}
 					}
