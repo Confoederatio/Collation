@@ -294,13 +294,13 @@ global.polities_Cliopatria = class {
 		let options = (arg1_options) ? arg1_options : {};
 		
 		//Set date; then process year
-		main.date = {
+		UI_DateMenu.setDate({
 			year: year,
 			month: 1,
 			day: 1,
 			hour: 0,
 			minute: 0
-		}
+		});
 		await GeoPNG.kNNBin(`${h2}polities_Cliopatria/rasters_equirectangular/${year}.png`, `${h2}polities_Cliopatria/rasters_colourmap/${year}.png`, {
 			bin_colours: [[5, 7, 8, 255], [2, 4, 1, 255], [0, 0, 255, 255], /*[255, 0, 0, 255],*/ [2, 5, 4, 255], [5, 7, 2, 255], [2, 4, 6, 255]],
 			ignore_colours: [[182, 220, 244, 255],  [217, 237, 249, 255], [0, 0, 0, 255]]

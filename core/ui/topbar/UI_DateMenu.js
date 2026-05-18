@@ -13,19 +13,9 @@ global.UI_DateMenu = class extends ve.Class {
 		this.time_step = { year: 1 };
 		
 		this.date = veDate(undefined, {
-			binding: "main.date",
 			name: " ",
 			tooltip: "BC years are negative.",
-			onprogramchange: (v) => {
-				console.log("onprogramchange");
-				if (this.is_playing) return;
-				DALS.Timeline.parseAction({
-					options: { name: "Refresh Date", key: "load_date" },
-					value: [{ type: "global", refresh_date: true }]
-				}, true);
-			},
 			onuserchange: (v) => {
-				console.log("onuserchange");
 				if (this.is_playing) return;
 				DALS.Timeline.parseAction({
 					options: { name: "Set Date", key: "load_date" },
@@ -56,11 +46,11 @@ global.UI_DateMenu = class extends ve.Class {
 			settings: veButton(() => {
 				if (this.time_controls_window) this.time_controls_window.close();
 				this.time_controls_window = veWindow({
-					start_date: veDate(this.start_date || main.date, {
+					start_date: veDate(this.start_date || structuredClone(main.date), {
 						name: "Start Date",
 						onuserchange: (v) => this.start_date = v
 					}),
-					end_date: veDate(this.end_date || main.date, {
+					end_date: veDate(this.end_date || structuredClone(main.date), {
 						name: "End Date",
 						onuserchange: (v) => this.end_date = v
 					}),
@@ -73,12 +63,19 @@ global.UI_DateMenu = class extends ve.Class {
 						min: 0,
 						onuserchange: (v) => this.tick_speed = v
 					})
-				}, { name: "Time Controls", width: "20rem" });
+				}, { 
+					can_rename: false, 
+					name: "Time Controls", 
+					width: "20rem" 
+				});
 			}, { name: "<icon>settings</icon>", tooltip: "Settings" }),
 		});
 		
 		super.open("instance", {
 			anchor: "top_right",
+			attributes: {
+				"data-do-not-toggle-ui": "true"
+			},
 			mode: "static_window",
 			name: "Date",
 			width: "24rem",
@@ -88,10 +85,15 @@ global.UI_DateMenu = class extends ve.Class {
 	}
 	
 	//[QUARANTINE]
-	playTimelapse() {
+	playTimelapse () {
 		// Clean up any existing system-wide loop
 		if (UI_DateMenu.logic_loop) clearTimeout(UI_DateMenu.logic_loop);
+		if (this.end_date === undefined) 
+			this.end_date = Date.convertTimestampToDate(JSON.parse(JSON.stringify((main.date))));
+		if (this.start_date === undefined) 
+			this.start_date = Date.convertTimestampToDate(JSON.parse(JSON.stringify((main.date))));
 		
+		UI_DateMenu.setDate(this.start_date);
 		const tick = () => {
 			// Stop if this specific instance is no longer playing
 			if (!this.is_playing) return;
@@ -154,12 +156,13 @@ global.UI_DateMenu = class extends ve.Class {
 				
 				if (isPast) {
 					this.is_playing = false;
+					console.log(`Quit playing.`, this.start_date, this.end_date);
 					return;
 				}
 			}
 			
 			// Update global state and UI
-			main.date = next;
+			UI_DateMenu.setDate(next);
 			naissance.Geometry.instances.forEach((local_geometry) =>
 				local_geometry.draw(),
 			);
@@ -169,5 +172,19 @@ global.UI_DateMenu = class extends ve.Class {
 		};
 		
 		tick();
+	}
+	
+	static setDate (arg0_date) {
+		//Convert from parameters
+		let date = (arg0_date !== undefined) ? arg0_date : main.interfaces.date_ui.date.v;
+			date = Date.convertTimestampToDate(date);
+		
+		//Set date
+		main.date = date;
+		main.interfaces.date_ui.date.v = date;
+		DALS.Timeline.parseAction({
+			options: { name: "Refresh Date", key: "load_date" },
+			value: [{ type: "global", refresh_date: true }]
+		}, true);
 	}
 };
