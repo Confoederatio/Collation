@@ -18,7 +18,8 @@
 				if (json.value[i].set_date) {
 					UI_DateMenu.setDate(json.value[i].set_date);
 				} else if (json.value[i].refresh_date === true) {
-					naissance.Geometry.instances.forEach((local_geometry) => local_geometry.draw());
+					Object.iterate(naissance.Geometry.instances, (local_key, local_value) => 
+						local_value.draw());
 				}
 				continue;
 			}
@@ -53,13 +54,13 @@
 				main._layers.provinces.clear();
 			
 			//Clear geometries
-			for (let i = 0; i < naissance.Geometry.instances.length; i++)
-				naissance.Geometry.instances[i].remove();
+			Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => 
+				local_geometry.remove());
 			
 			//Clear scene
 			scene.map_component.clear();
 			naissance.Feature.instances = [];
-			naissance.Geometry.instances = [];
+			naissance.Geometry.instances = {};
 		}
 		
 		//1. Handle main map
@@ -71,7 +72,9 @@
 		Object.iterate(json, (local_key, local_value) => {
 			if (local_value.class_name && local_value.type === "geometry") {
 				let geometry_obj = new naissance[local_value.class_name]();
-				if (local_value.id) geometry_obj.id = local_value.id;
+				
+				//ID/History/Metadata deserialisation
+				if (local_value.id) geometry_obj.setID(local_value.id);
 				geometry_obj.history.fromJSON(local_value.history);
 				if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
 				try {
@@ -120,8 +123,7 @@
 		} catch (e) { console.error(e); }
 		
 		//Iterate over all naissance.Geometry.instances and serialise them
-		for (let i = 0; i < naissance.Geometry.instances.length; i++) {
-			let local_geometry = naissance.Geometry.instances[i];
+		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
 			json_obj[local_geometry.id] = {
 				id: local_geometry.id,
 				class_name: local_geometry.class_name,
@@ -129,7 +131,7 @@
 				metadata: local_geometry.metadata,
 				type: "geometry"
 			};
-		}
+		});
 		
 		//Iterate over all naissance.Feature.instances and serialise them
 		for (let i = 0; i < naissance.Feature.instances.length; i++) {

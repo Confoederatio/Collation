@@ -35,12 +35,9 @@ naissance.Renderer = class extends ve.Class {
 			}
 			
 			//Iterate over all naissance.Geometry.instances
-			for (let i = 0; i < naissance.Geometry.instances.length; i++) {
-				let local_geometry = naissance.Geometry.instances[i];
-				
-				if (!local_geometry.parent)
-					rendering_order.push(local_geometry);
-			}
+			Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
+				if (!local_geometry.parent) rendering_order.push(local_geometry);
+			});
 		}
 		//2. naissance.Feature handling
 		else {

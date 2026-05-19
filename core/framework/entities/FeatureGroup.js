@@ -173,16 +173,11 @@ naissance.FeatureGroup = class extends naissance.Feature {
 			}
 			
 			//Check naissance.Geometry.instances
-			for (let i = 0; i < naissance.Geometry.instances.length; i++) {
-				let local_geometry = naissance.Geometry.instances[i];
+			if (naissance.Geometry.instances[entity_def.id]) {
+				let local_geometry = naissance.Geometry.instances[entity_def.id];
 				
-				if (
-					entity_def.class_name === local_geometry.class_name &&
-					entity_def.id === local_geometry.id
-				) {
+				if (entity_def.class_name === local_geometry.class_name)
 					this.addEntity(local_geometry, true);
-					break;
-				}
 			}
 		}
 		

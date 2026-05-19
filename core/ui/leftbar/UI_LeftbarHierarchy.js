@@ -131,12 +131,10 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	
 	drawGeometries () {
 		//Iterate over all naissance.Geometries and render them at base
-		for (let i = 0; i < naissance.Geometry.instances.length; i++) {
-			let local_geometry = naissance.Geometry.instances[i];
-			
+		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
 			if (!local_geometry.parent && local_geometry.drawHierarchyDatatype)
 				this.hierarchy_obj[`${local_geometry.class_name}-${local_geometry.id}`] = local_geometry.drawHierarchyDatatype();
-		}
+		});
 	}
 	
 	drawHierarchy () {
