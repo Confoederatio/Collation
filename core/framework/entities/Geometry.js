@@ -419,7 +419,7 @@ naissance.Geometry = class extends ve.Class {
 					}
 				
 				if (!is_duplicate)
-					all_names.push({ name: local_properties.name, timestamp: local_value?.timestamp });
+					all_names.push({ name: local_properties.name, timestamp: local_value.timestamp });
 			}
 		}, { sort_mode: "descending" });
 		
