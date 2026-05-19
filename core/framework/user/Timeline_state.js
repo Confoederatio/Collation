@@ -59,7 +59,7 @@
 			
 			//Clear scene
 			scene.map_component.clear();
-			naissance.Feature.instances = [];
+			naissance.Feature.instances = {};
 			naissance.Geometry.instances = {};
 		}
 		
@@ -90,18 +90,16 @@
 					metadata: local_value.metadata
 				});
 				
-				if (local_value.id) feature_obj.id = local_value.id;
+				if (local_value.id) feature_obj.setID(local_value.id);
 				if (local_value.value) feature_obj.json = local_value.value;
 			}
 		});
-		for (let i = 0; i < naissance.Feature.instances.length; i++) {
-			let local_feature = naissance.Feature.instances[i];
-			
+		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
 			local_feature.fromJSON(local_feature.json);
 			try {
 				if (local_feature.draw) local_feature.draw();
 			} catch (e) { console.warn(e); }
-		}
+		});
 		
 		//4. Force all UI_LeftbarHierarchy instances to .refresh()
 		setTimeout(() => {
@@ -134,8 +132,7 @@
 		});
 		
 		//Iterate over all naissance.Feature.instances and serialise them
-		for (let i = 0; i < naissance.Feature.instances.length; i++) {
-			let local_feature = naissance.Feature.instances[i];
+		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
 			json_obj[local_feature.id] = {
 				id: local_feature.id,
 				class_name: local_feature.class_name,
@@ -143,7 +140,7 @@
 				type: "feature",
 				value: local_feature.toJSON()
 			};
-		}
+		});
 		
 		//Return statement
 		return json_obj;

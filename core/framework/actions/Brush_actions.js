@@ -13,9 +13,7 @@ naissance.Brush.parseAction = function (arg0_json) {
 	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
 	
 	if (typeof json.select_feature_id === "string") {
-		let feature_obj = naissance.Feature.instances.filter((v) => v.id === json.select_feature_id);
-		if (feature_obj) feature_obj = feature_obj[0];
-		main.brush.selected_feature = feature_obj;
+		main.brush.selected_feature = naissance.Feature.instances[json.select_feature_id];
 		if (main.brush.selected_feature) main.brush.selected_feature.draw();
 	} else if (json.select_feature_id === false) {
 		main.brush.selected_feature = undefined;

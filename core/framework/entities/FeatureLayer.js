@@ -284,17 +284,10 @@ naissance.FeatureLayer = class extends naissance.Feature {
 			let entity_def = json.entities[x];
 			
 			//Check naissance.Feature.instances
-			for (let i = 0; i < naissance.Feature.instances.length; i++) {
-				let local_feature = naissance.Feature.instances[i];
-				
-				if (
-					entity_def.class_name === local_feature.class_name &&
-					entity_def.id === local_feature.id
-				) {
-					this.addEntity(local_feature, true);
-					break;
-				}
-			}
+			let local_feature = naissance.Feature.instances[entity_def.id];
+			
+			if (entity_def.class_name === local_feature?.class_name)
+				this.addEntity(local_feature, true);
 			
 			//Check naissance.Geometry.instances
 			if (naissance.Geometry.instances[entity_def.id]) {
