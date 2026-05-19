@@ -324,7 +324,8 @@ naissance.History = class extends ve.Class {
 			
 			let all_keyframes = this.getTimestamps();
 			
-			if (all_keyframes[0] > timestamp) return return_keyframe; //Internal guard clause
+			if (all_keyframes[0] > timestamp) 
+				if (!options.refresh_localisation) return return_keyframe; //Internal guard clause
 			for (let i = 0; i < all_keyframes.length; i++) {
 				let local_keyframe = this.keyframes[all_keyframes[i]];
 				
@@ -357,7 +358,9 @@ naissance.History = class extends ve.Class {
 							//If the value is null or a primitive, it overwrites the previous accumulated state
 							return_keyframe.value[x] = local_keyframe.value[x];
 						}
-				} else { break; }
+				} else { 
+					if (!options.refresh_localisation) break; 
+				}
 			}
 			
 			//Return statement
