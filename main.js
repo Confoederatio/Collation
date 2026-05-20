@@ -1,5 +1,5 @@
 //Import libraries
-let { app, BrowserWindow, dialog, ipcMain, session, shell } = require("electron");
+let { app, BrowserWindow, dialog, ipcMain, Menu, session, shell } = require("electron");
 let fs = require("fs");
 let path = require("path");
 let readline = require("readline");
@@ -83,10 +83,50 @@ let win;
       console.warn(e);
     }
   }
+  
+  function initCache () {
+    const baseDataPath = path.join(app.getPath('appData'), "naissance");
+    const currentPid = process.pid;
+    
+    // 1. Ensure the base directory exists
+    if (!fs.existsSync(baseDataPath)) {
+      fs.mkdirSync(baseDataPath, { recursive: true });
+    }
+    
+    // 2. Clean up old folders
+    const files = fs.readdirSync(baseDataPath);
+    files.forEach((file) => {
+      if (file.startsWith('instance-')) {
+        const folderPath = path.join(baseDataPath, file);
+        const folderPid = parseInt(file.replace('instance-', ''), 10);
+        
+        try {
+          // process.kill(pid, 0) throws an error if the process does not exist.
+          // It doesn't actually kill the process.
+          process.kill(folderPid, 0);
+          // If no error, the process is still running. Leave it alone.
+        } catch (e) {
+          // Process is dead, attempt to delete the folder
+          try {
+            fs.rmSync(folderPath, { recursive: true, force: true });
+            console.log(`Cleaned up orphaned folder: ${file}`);
+          } catch (err) {
+            // Folder might be locked by a closing process, skip it for now
+          }
+        }
+      }
+    });
+    
+    // 3. Set the path for the current instance
+    const newPath = path.join(baseDataPath, `instance-${currentPid}`);
+    app.setPath('userData', newPath);
+  }
 }
 
 //App handling
 {
+  initCache();
+  
   app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
   app.commandLine.appendSwitch('js-flags', '--max-old-space-size=32128 --expose-gc');
   

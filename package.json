@@ -1,5 +1,5 @@
 {
-  "name": "naissance-hgis",
+  "name": "naissance",
   "version": "1.8.0",
   "description": "Historical GIS project for 3D map editing, geoprocessing, visualisation, and simulation over the long run.",
   "main": "main.js",
