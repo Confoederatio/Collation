@@ -1,3 +1,5 @@
+if (!global.naissance) global.naissance = {};
+
 /**
  * Parses a JSON action for a target FeatureLayer.
  * - Static method of: {@link naissance.FeatureLayer}
@@ -26,7 +28,7 @@ naissance.FeatureLayer.parseAction = function (arg0_json) {
 	if (json.create_layer)
 		if (json.create_layer.id) {
 			let new_layer = new naissance.FeatureLayer();
-			new_layer.id = json.create_layer.id;
+				new_layer.setID(json.create_layer.id);
 			
 			if (!json.create_layer.do_not_refresh)
 				UI_LeftbarHierarchy.refresh();

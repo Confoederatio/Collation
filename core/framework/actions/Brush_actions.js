@@ -1,3 +1,5 @@
+if (!global.naissance) global.naissance = {};
+
 /**
  * Parses a JSON action for the target Brush.
  * - Static method of: {@link naissance.Brush}

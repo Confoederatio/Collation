@@ -1,3 +1,5 @@
+if (!global.naissance) global.naissance = {};
+
 /**
  * Parses a JSON action for a target FeatureGroup.
  * - Static method of: {@link naissance.FeatureGroup}
@@ -21,7 +23,7 @@ naissance.FeatureGroup.parseAction = function (arg0_json) {
 	if (json.create_group)
 		if (json.create_group.id) {
 			let new_group = new naissance.FeatureGroup();
-			new_group.id = json.create_group.id;
+				new_group.setID(json.create_group.id);
 			
 			if (!json.create_group.do_not_refresh)
 				UI_LeftbarHierarchy.refresh();
