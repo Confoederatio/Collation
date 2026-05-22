@@ -85,41 +85,37 @@ let win;
   }
   
   function initCache () {
-    const baseDataPath = path.join(app.getPath('appData'), "naissance");
-    const currentPid = process.pid;
+    //Declare local instance variables
+    let base_data_path = path.join(app.getPath('appData'), "naissance");
+    let current_pid = process.pid;
     
-    // 1. Ensure the base directory exists
-    if (!fs.existsSync(baseDataPath)) {
-      fs.mkdirSync(baseDataPath, { recursive: true });
-    }
+    //1. Ensure the base directory exists
+    if (!fs.existsSync(base_data_path))
+      fs.mkdirSync(base_data_path, { recursive: true });
     
-    // 2. Clean up old folders
-    const files = fs.readdirSync(baseDataPath);
+    //2. Clean up old folders
+    let files = fs.readdirSync(base_data_path);
     files.forEach((file) => {
       if (file.startsWith('instance-')) {
-        const folderPath = path.join(baseDataPath, file);
-        const folderPid = parseInt(file.replace('instance-', ''), 10);
+        let folder_path = path.join(base_data_path, file);
+        let folder_pid = parseInt(file.replace('instance-', ''), 10);
         
         try {
-          // process.kill(pid, 0) throws an error if the process does not exist.
-          // It doesn't actually kill the process.
-          process.kill(folderPid, 0);
-          // If no error, the process is still running. Leave it alone.
+          //Throws an error if the process does not exist, doesn't actually kill the process.
+          process.kill(folder_pid, 0);
         } catch (e) {
-          // Process is dead, attempt to delete the folder
+          //Process is dead, attempt to delete the folder
           try {
-            fs.rmSync(folderPath, { recursive: true, force: true });
+            fs.rmSync(folder_path, { recursive: true, force: true });
             console.log(`Cleaned up orphaned folder: ${file}`);
-          } catch (err) {
-            // Folder might be locked by a closing process, skip it for now
-          }
+          } catch (e) {}
         }
       }
     });
     
-    // 3. Set the path for the current instance
-    const newPath = path.join(baseDataPath, `instance-${currentPid}`);
-    app.setPath('userData', newPath);
+    //3. Set the path for the current instance
+    let new_path = path.join(base_data_path, `instance-${current_pid}`);
+    app.setPath('userData', new_path);
   }
 }
 
