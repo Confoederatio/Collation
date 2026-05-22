@@ -1,11 +1,27 @@
 //Import libraries
 if (!global.ve) global.ve = {};
+
 if (!global.electron) try { electron = require("electron"); } catch (e) {}
+if (!global.file_read) try { file_read = require("../../file/file_read"); } catch (e) {}
 if (!global.fs) try { fs = require("fs"); } catch (e) {}
+if (!global.os) global.os = require("node:os");
 if (!global.path) try { path = require("path"); } catch (e) {}
 if (!global.readline) try { readline = require("readline"); } catch (e) {}
+if (!global.v8) global.v8 = require("node:v8");
+let { Worker } = require("node:worker_threads");
 
-if (!global.file_read) try { file_read = require("../../file/file_read"); } catch (e) {}
+//Math utils - [WIP] - Override at a later date
+{
+	if (!global.Math) global.Math = {};
+	Math.returnSafeNumber = function (arg0_number, arg1_default) {
+		//Convert from parameters
+		let number = parseFloat(arg0_number);
+		let default_value = (arg1_default !== undefined) ? arg1_default : 0;
+		
+		//Return statement
+		return (!isNaN(number) && isFinite(number)) ? number : default_value;
+	};
+}
 
 //Initialise functions
 {
@@ -92,8 +108,105 @@ if (!global.file_read) try { file_read = require("../../file/file_read"); } catc
 			await sendNextBatch();
 		});
 	};
+	
+	/**
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {number} [arg1_options.ram_threshold=0.50] - Percentage of RAM dedicated to loading NDJSON when running.
+	 * 
+	 * @returns {Promise<void>}
+	 */
+	ve.loadNDJSON = async function (arg0_file_path, arg1_options) {
+		//Convert from parameters		
+		let file_path = path.resolve(arg0_file_path);
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Initialise options
+		options.dynamic_chunk_size = Math.returnSafeNumber(options.dynamic_chunk_size, 64*1024*1024);
+		options.dynamic_max_workers = Math.returnSafeNumber(options.dynamic_max_workers, os.cpus().length - 1);
+		options.ram_threshold = Math.returnSafeNumber(options.ram_threshold, 0.50);
+		
+		//Declare local instance variables
+		let _dynamic_chunk_size = structuredClone(options.dynamic_chunk_size);
+		let _dynamic_max_workers = structuredClone(options.dynamic_max_workers);
+		let heap_limit = v8.getHeapStatistics().heap_size_limit;
+		let stats = await fs.promises.stat(file_path);
+		
+		let active_workers = 0;
+		let current_offset = 0;
+		let global_depth = 0;
+		let write_stream = fs.createWriteStream(`${file_path}.ndjson`);
+		
+		//Initialisee logic functions
+		let refreshLimits = () => {
+			let memory = process.memoryUsage();
+			let memory_usage = memory.heapUsed;
+			
+			let available_buffer = (heap_limit*options.ram_threshold) - memory_usage; //50% of RAM heap by default
+			
+			//If we are exceeding n% of --max-old-space-size, throttle down
+			if (available_buffer < 0) {
+				_dynamic_chunk_size = Math.max(1024*1024, _dynamic_chunk_size - 1); //Floor at 1MB
+				_dynamic_max_workers = Math.max(1, _dynamic_max_workers - 1);
+			} else {
+				//If we have plenty of room, scale back up to CPU limits
+				_dynamic_chunk_size = Math.min(128*1024*1024, Math.floor(available_buffer/2));
+				_dynamic_max_workers = Math.min(os.cpus().length - 1, _dynamic_max_workers + 1);
+			}
+		};
+		
+		//Return statement
+		return new Promise((resolve, reject) => {
+			let processNextChunk = () => {
+				if (current_offset >= stats.size) {
+					if (active_workers === 0) {
+						write_stream.end();
+						resolve(`${file_path}.ndjson`);
+					}
+					return;
+				}
+				
+				//Re-evaluatee RAM ceiling before spawning
+				refreshLimits();
+				if (active_workers < _dynamic_max_workers) {
+					let start = current_offset;
+					let end = Math.min(start + _dynamic_chunk_size - 1, stats.size - 1);
+					
+					active_workers++;
+					current_offset = end + 1;
+					
+					let worker = new Worker("./worker_vercengen_ndjson.js", {
+						workerData: { file_path, start, end, initial_depth: global_depth }
+					});
+						worker.on("message", (message) => {
+							global_depth = message.final_depth;
+							
+							let can_write = write_stream.write(message.transformed_data);
+							let continueProcessing = () => {
+								active_workers--;
+								processNextChunk();
+							}
+							
+							if (!can_write) {
+								write_stream.once("drain", continueProcessing);
+							} else {
+								setImmediate(continueProcessing);
+							}
+						});
+						worker.on("error", reject);
+					
+					//Try to saturate the updated _dynamic_max_workeers
+					if (active_workers < _dynamic_max_workers) processNextChunk();
+				}
+			};
+			
+			processNextChunk(); //Initialise next chunk processing
+		});
+	};
 }
 
 module.exports = { 
-	initialiseIPC: ve.initialiseIPC 
+	initialiseIPC: ve.initialiseIPC,
+	loadNDJSON: ve.loadNDJSON
 };

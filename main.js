@@ -11,7 +11,7 @@ let naissance_version = "1.8b Guinea";
 let title_update_interval;
 let win;
 
-//Initialise functions
+//Initialise functions - Startup
 {
   function createWindow () {
     //Declare local instance variables
