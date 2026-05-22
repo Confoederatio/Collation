@@ -1,11 +1,11 @@
-//Import libraries
+const { parentPort } = require("node:worker_threads");
+const fs = require("node:fs");
+const readline = require("readline");
+
 if (!global.ve) global.ve = {};
 
-if (!global.fs) try { fs = require("fs"); } catch (e) {}
-if (!global.readline) try { global.readline = require("readline"); } catch (e) {}
-let { parentPort } = require("node:worker_threads");
-
 //Declare worker variables
+const NL_LEN = 1;
 let file_index = new Map(); //Map<key, { start: number, end: number }>
 let indexed_mtime = 0;
 
@@ -14,34 +14,47 @@ let indexed_mtime = 0;
 	ve.NDJSON_resolveStateAtTimestamp = function (arg0_keyframes, arg1_timestamp) {
 		//Convert from parameters
 		let keyframes = arg0_keyframes;
-		let timestamp = arg1_timestamp;
+		let timestamp = parseInt(arg1_timestamp);
 		
 		//Declare local instance variables
-		let all_timestamps = Object.keys(keyframes).map(Number)
-			.sort((a, b) => a - b);
+		let all_timestamps = Object.keys(keyframes).map(Number).sort((a, b) => a - b);
 		let result_value = [];
 		
-		for (let local_timestamp of all_timestamps) {
+		for (let i = 0; i < all_timestamps.length; i++) {
+			let local_timestamp = all_timestamps[i];
 			if (local_timestamp > timestamp) break;
-			let local_value = keyframes[local_timestamp].value;
 			
-			for (let x = 0; x < local_value.length; x++) {
-				let current_value = local_value[x];
-				
-				if (typeof current_value === "object" && current_value !== null) {
-					if (!result_value[x]) result_value[x] = { variables: {} };
-					let old_variables = (result_value[x].variables || {});
-					
-					result_value[x] = { ...result_value[x], ...current_value };
-					if (current_value.variables)
-						result_value[x].variables = {
-							...old_variables,
-							...current_value.variables
-						};
-				} else if (current_value !== undefined && current_value !== "undefined") {
-					result_value[x] = current_value;
-				}
-			}
+			let local_payload = keyframes[local_timestamp.toString()];
+			if (local_payload)
+				if (local_payload.value)
+					for (let x = 0; x < local_payload.value.length; x++) {
+						let current_val = local_payload.value[x];
+						
+						if (typeof current_val === "object" && current_val !== null) {
+							//Handle Object Merging
+							let old_variables = (result_value[x] && result_value[x].variables) ?
+								result_value[x].variables : {};
+							
+							if (!result_value[x]) result_value[x] = {};
+							
+							result_value[x] = {
+								...result_value[x],
+								...current_val
+							};
+							
+							//Handle nested .variables
+							if (current_val.variables)
+								result_value[x].variables = {
+									...old_variables,
+									...current_val.variables
+								};
+						} else if (current_val !== undefined) {
+							if (current_val === "undefined") continue;
+							if (x !== 0 && current_val === null) continue;
+							
+							result_value[x] = current_val;
+						}
+					}
 		}
 		
 		//Return statement
@@ -50,62 +63,8 @@ let indexed_mtime = 0;
 }
 
 parentPort.on("message", async (task) => {
+	//Declare local instance variables
 	let { type, file_path, start, end, task_id, timestamp, id, mtime } = task;
-	
-	//type: diff - returns { key, value } (diffed state)
-	if (type === "diff") {
-		let target = file_index.get(id);
-		if (!target) return parentPort.postMessage({ task_id, results: null }); //Internal guard clause if no target
-		
-		let stream = fs.createReadStream(file_path, { start, end });
-		let rl = readline.createInterface({ input: stream, terminal: false });
-		
-		//Iterate over all lines in partition
-		for await (let local_line of rl) {
-			let trimmed = local_line.trim();
-				if (trimmed.endsWith(",")) trimmed = trimmed.slice(0, -1);
-				
-			let json_start = trimmed.indexOf(":");
-			try {
-				let data = JSON.parse(trimmed.substring(json_start + 1));
-				if (data.history && data.history.keyframes) {
-					let diffed_value = ve.NDJSON_resolveStateAtTimestamp(data.history.keyframes, timestamp);
-					
-					//Return statement
-					return parentPort.postMessage({ task_id, results: { key: id, value: diffed_value } });
-				}
-			} catch (e) {
-				//Return statement
-				return parentPort.postMessage({ task_id, results: null });
-			}
-		}
-	}
-	
-	//type: get_value - returns a value by its key (ID)
-	if (type === "get_value") {
-		let target = file_index.get(id);
-		if (!target) return parentPort.postMessage({ task_id, results: null }); //Internal guard clause if no target
-		
-		let stream = fs.createReadStream(file_path, { start, end });
-		let rl = readline.createInterface({ input: stream, terminal: false });
-		
-		//Iterate over all lines in partition
-		for await (let local_line of rl) {
-			let trimmed = local_line.trim();
-				if (trimmed.endsWith(",")) trimmed = trimmed.slice(0, -1);
-			
-			let json_start = trimmed.indexOf(":");
-			
-			try {
-				let data = JSON.parse(trimmed.substring(json_start + 1));
-				
-				//Reeturn statement
-				return parentPort.postMessage({ task_id, results: data });
-			} catch (e) {
-				return parentPort.postMessage({ task_id, results: null });
-			}
-		}
-	}
 	
 	//type: index - map IDs to byte offsets
 	if (type === "index") {
@@ -115,34 +74,92 @@ parentPort.on("message", async (task) => {
 			indexed_mtime = mtime;
 		}
 		
-		//Declare local instance variables
 		let current_offset = start;
 		let stream = fs.createReadStream(file_path, { start, end });
 		let rl = readline.createInterface({ input: stream, terminal: false });
+		let is_first_line = true;
 		
-		//Iterate over all lines in partition
-		for await (let local_line of rl) {
-			let line_byte_length = Buffer.byteLength(local_line, "utf8") + 1; //+1 for \n
-			let trimmed = local_line.trim();
+		for await (let line of rl) {
+			let line_len = Buffer.byteLength(line, "utf8") + NL_LEN;
 			
-			if (trimmed && trimmed !== "{" && trimmed !== "}") {
-				let json_start = trimmed.indexOf(":");
-				if (json_start !== -1) {
-					let key = trimmed.substring(0, json_start)
-						.replace(/["']/g, "").trim();
-					file_index.set(key, {
-						start: current_offset,
-						end: current_offset + line_byte_length
-					});
-				}
+			//Skip partial lines at chunk starts
+			if (start > 0 && is_first_line) {
+				current_offset += line_len;
+				is_first_line = false;
+				continue;
 			}
+			is_first_line = false;
 			
-			current_offset += line_byte_length;
+			let trimmed = line.trim();
+			let match = trimmed.match(/^"([^"]+)"\s*:/);
+			
+			if (match)
+				file_index.set(match[1], {
+					start: current_offset,
+					end: current_offset + line_len
+				});
+			
+			current_offset += line_len;
 		}
 		
 		//Return statement
-		return parentPort.postMessage({ task_id, status: "indexed" });
+		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size });
+	}
+	
+	//type: diff_all/diff
+	if (type === "diff" || type === "diff_all") {
+		let results_list = [];
+		let targets = [];
+		
+		if (type === "diff") {
+			targets = [[id, file_index.get(id)]];
+		} else {
+			targets = Array.from(file_index.entries());
+		}
+		
+		//Iterate over all targets
+		for (let i = 0; i < targets.length; i++) {
+			let local_id = targets[i][0];
+			let target = targets[i][1];
+			
+			if (target) {
+				try {
+					const line = await new Promise((resolve) => {
+						let s = fs.createReadStream(file_path, { start: target.start, end: target.end });
+						let r = readline.createInterface({ input: s });
+						r.on("line", (l) => { resolve(l); r.close(); });
+					});
+					
+					let json_start = line.indexOf(":");
+					let raw_json = line.substring(json_start + 1).trim();
+					
+					if (raw_json.endsWith(",")) raw_json = raw_json.slice(0, -1);
+					if (raw_json.endsWith("}}"))
+						if (!raw_json.includes('{"id"'))
+							raw_json = raw_json.slice(0, -1);
+					
+					let data = JSON.parse(raw_json);
+					let history_obj = (typeof data.history === "string") ?
+						JSON.parse(data.history) : data.history;
+					
+					if (history_obj)
+						if (history_obj.keyframes) {
+							let diffed_val = ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, timestamp);
+							
+							if (type === "diff")
+								return parentPort.postMessage({
+									task_id,
+									results: { key: local_id, value: diffed_val }
+								});
+							
+							results_list.push({ key: local_id, value: diffed_val });
+						}
+				} catch (e) {}
+			}
+		}
+		
+		//Return statement
+		let final_results = (type === "diff") ? null : results_list;
+		parentPort.postMessage({ task_id, results: final_results });
 	}
 });
-	
-	

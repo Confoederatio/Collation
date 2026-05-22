@@ -4,6 +4,7 @@ let fs = require("fs");
 let path = require("path");
 let readline = require("readline");
 let { performance } = require("perf_hooks");
+const ve = require("./UF/js/vercengen/engine/vercengen_electron");
 
 //Metadata - Title
 let latest_fps = 0;
@@ -149,4 +150,10 @@ let win;
 {
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
+  
+  ve.NDJSON_diffAll("./saves/atlas.naissance.ndjson", { timestamp: 1005088321 })
+    .then((v) => {
+      for (let i = 0; i < v.length; i++) console.log(v[i].key, v[i].value);
+      console.log("Active Workers:", ve.NDJSON_getWorkerPool());
+    });
 }
