@@ -31,9 +31,21 @@ let { file_path, start, end, initial_depth } = workerData;
 				
 				//Non-string literal parsing
 				if (!in_string)
-					if (local_char === 91 || local_char === 123) { depth++; } //91/123: [
-					else if (local_char === 93 || local_char === 125) { depth--; } //93/125: ]
-					
+					if (local_char === 91 || local_char === 123) { //91/123: [
+						if (depth === 0) { //Move up starting bracket; 1-indexed
+							result_parts.push(chunk.subarray(last_pos, i + 1));
+							result_parts.push(Buffer.from("\n"));
+							last_pos = i + 1;
+						}
+						depth++;
+					} else if (local_char === 93 || local_char === 125) {  //93/125: ]
+						depth--;
+						if (depth === 0) { //Move down ending bracket; length - 2
+							result_parts.push(chunk.subarray(last_pos, i));
+							result_parts.push(Buffer.from("\n"));
+							last_pos = i;
+						}
+					}
 					//Depth: 1 since first { in .json causes base-level depth to be 1-indexed
 					else if (local_char === 44 && depth === 1) { //44: ,
 						result_parts.push(chunk.subarray(last_pos, i));

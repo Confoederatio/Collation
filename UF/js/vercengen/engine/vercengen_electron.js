@@ -8,7 +8,7 @@ if (!global.os) global.os = require("node:os");
 if (!global.path) try { path = require("path"); } catch (e) {}
 if (!global.readline) try { readline = require("readline"); } catch (e) {}
 if (!global.v8) global.v8 = require("node:v8");
-let { Worker } = require("node:worker_threads");
+let NodeWorker = require("node:worker_threads").Worker;
 
 //Math utils - [WIP] - Override at a later date
 {
@@ -138,7 +138,7 @@ let { Worker } = require("node:worker_threads");
 		let global_depth = 0;
 		let write_stream = fs.createWriteStream(`${file_path}.ndjson`);
 		
-		//Initialisee logic functions
+		//Initialise logic functions
 		let refreshLimits = () => {
 			let memory = process.memoryUsage();
 			let memory_usage = memory.heapUsed;
@@ -147,11 +147,11 @@ let { Worker } = require("node:worker_threads");
 			
 			//If we are exceeding n% of --max-old-space-size, throttle down
 			if (available_buffer < 0) {
-				_dynamic_chunk_size = Math.max(1024*1024, _dynamic_chunk_size - 1); //Floor at 1MB
+				_dynamic_chunk_size = Math.max(1024*1024, _dynamic_chunk_size*0.9); //Floor at 1MB; throttle down by 10%
 				_dynamic_max_workers = Math.max(1, _dynamic_max_workers - 1);
 			} else {
 				//If we have plenty of room, scale back up to CPU limits
-				_dynamic_chunk_size = Math.min(128*1024*1024, Math.floor(available_buffer/2));
+				_dynamic_chunk_size = Math.min(128*1024*1024, Math.floor(available_buffer*options.ram_threshold));
 				_dynamic_max_workers = Math.min(os.cpus().length - 1, _dynamic_max_workers + 1);
 			}
 		};
@@ -176,7 +176,7 @@ let { Worker } = require("node:worker_threads");
 					active_workers++;
 					current_offset = end + 1;
 					
-					let worker = new Worker("./worker_vercengen_ndjson.js", {
+					let worker = new NodeWorker("./UF/js/vercengen/workers/worker_vercengen_ndjson.js", {
 						workerData: { file_path, start, end, initial_depth: global_depth }
 					});
 						worker.on("message", (message) => {

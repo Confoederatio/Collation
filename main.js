@@ -149,4 +149,5 @@ let win;
 {
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
+  ve.loadNDJSON("./saves/atlas.naissance");
 }
