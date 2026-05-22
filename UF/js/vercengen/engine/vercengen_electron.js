@@ -185,63 +185,56 @@ let NodeWorker = require("node:worker_threads").Worker;
 	 * @returns {Promise<Object[]>} Array of { key, value }
 	 */
 	ve.NDJSON_diffAll = async function (arg0_file_path, arg1_options) {
-		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
 		let options = (arg1_options) ? arg1_options : {};
-		
-		//Internal guard clause
 		if (!options.timestamp) throw new Error("NDJSON_diffAll requires a timestamp.");
 		
-		//Ensure the file is indexed across all workers
 		await ve.NDJSON_checkIndex(file_path, options);
 		
-		//Declare local instance variables
 		let pool = ve.NDJSON_getWorkerPool();
 		let promises = [];
 		
-		//Broadcast to ALL workers in the pool
 		for (let i = 0; i < pool.length; i++) {
 			let task_id = ve.ndjson_task_id_counter++;
-			
 			promises.push(new Promise((resolve) => {
 				ve.ndjson_pending_tasks.set(task_id, resolve);
-				pool[i].postMessage({
-					type: "diff_all",
-					task_id: task_id,
-					file_path: file_path,
-					timestamp: options.timestamp
-				});
+				pool[i].postMessage({ type: "diff_all", task_id, file_path, timestamp: options.timestamp });
 			}));
 		}
 		
-		//Return statement
 		let results_array = await Promise.all(promises);
-		return results_array.flat();
+		//Filter out nulls before flattening
+		return results_array.filter(v => v !== null).flat();
 	};
 	
+	/**
+	 * Retrieves the full object for a given key.
+	 *
+	 * @param {string} arg0_file_path
+	 * @param {string} arg1_id
+	 * @param {Object} [arg2_options]
+	 *
+	 * @returns {Promise<Object>} The full JSON object found at the index.
+	 */
 	ve.NDJSON_getValue = async function (arg0_file_path, arg1_id, arg2_options) {
-		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
 		let options = (arg2_options) ? arg2_options : {};
-		
-		//Reindex, then get value
 		await ve.NDJSON_checkIndex(file_path, options);
 		
 		let pool = ve.NDJSON_getWorkerPool();
-		let task_id = ve.ndjson_task_id_counter++;
-		let worker_index = Math.abs(id.hashCode()) % pool.length;
+		let promises = [];
 		
-		//Return statement
-		return new Promise((resolve, reject) => {
-			ve.ndjson_pending_tasks.set(task_id, resolve);
-			pool[worker_index].postMessage({
-				type: "get_value",
-				task_id,
-				file_path: file_path,
-				id: id,
-			});
-		});
+		for (let i = 0; i < pool.length; i++) {
+			let task_id = ve.ndjson_task_id_counter++;
+			promises.push(new Promise((resolve) => {
+				ve.ndjson_pending_tasks.set(task_id, resolve);
+				pool[i].postMessage({ type: "get_value", task_id, file_path, id: arg1_id });
+			}));
+		}
+		
+		let results = await Promise.all(promises);
+		//Find the single worker that actually returned the object
+		return results.find(v => v !== null) || null;
 	};
 	
 	ve.NDJSON_getWorkerPool = function (arg0_max_workers) {
@@ -448,6 +441,85 @@ let NodeWorker = require("node:worker_threads").Worker;
 		let parts = await Promise.all(promises);
 		return parts.flat();
 	};
+	
+	//WRITE OPERATIONS
+	
+	/**
+	 * Updates multiple values and/or appends new ones in a single file pass.
+	 *
+	 * @param {string} arg0_file_path
+	 * @param {Object} arg1_update_map - { id: value, id: value, ... }
+	 * @param {Object} [arg2_options]
+	 */
+	ve.NDJSON_setValues = async function (arg0_file_path, arg1_update_map, arg2_options) {
+		let file_path = path.resolve(arg0_file_path);
+		let update_map = (arg1_update_map) ? arg1_update_map : {};
+		let options = (arg2_options) ? arg2_options : {};
+		
+		await ve.NDJSON_checkIndex(file_path, options);
+		
+		let pool = ve.NDJSON_getWorkerPool();
+		let temp_path = `${file_path}.tmp`;
+		let write_stream = fs.createWriteStream(temp_path);
+		let processed_ids = new Set();
+		let is_first_entry = true;
+		
+		write_stream.write("{\n");
+		
+		for (let i = 0; i < pool.length; i++) {
+			let task_id = ve.ndjson_task_id_counter++;
+			let worker_results = await new Promise((resolve) => {
+				ve.ndjson_pending_tasks.set(task_id, resolve);
+				pool[i].postMessage({
+					type: "batch_process",
+					task_id: task_id,
+					file_path: file_path,
+					update_map: update_map
+				});
+			});
+			
+			if (worker_results)
+				for (let x = 0; x < worker_results.length; x++) {
+					let local_obj = worker_results[x];
+					processed_ids.add(local_obj.id);
+					
+					let prefix = (is_first_entry) ? "" : ",\n";
+					write_stream.write(`${prefix}"${local_obj.id}":${JSON.stringify(local_obj.data)}`);
+					is_first_entry = false;
+				}
+		}
+		
+		let update_keys = Object.keys(update_map);
+		for (let i = 0; i < update_keys.length; i++) {
+			let local_id = update_keys[i];
+			if (!processed_ids.has(local_id))
+				if (update_map[local_id] !== null) {
+					let prefix = (is_first_entry) ? "" : ",\n";
+					write_stream.write(`${prefix}"${local_id}":${JSON.stringify(update_map[local_id])}`);
+					is_first_entry = false;
+				}
+		}
+		
+		write_stream.write("\n}");
+		await new Promise(resolve => write_stream.end(resolve));
+		
+		await fs.promises.rename(temp_path, file_path);
+		let stats = await fs.promises.stat(file_path);
+		ve.ndjson_file_metadata[file_path] = stats.mtimeMs;
+	};
+	
+	//Redefine setValue and removeValue to use the efficient batch process
+	ve.NDJSON_setValue = async function (arg0_file_path, arg1_id, arg2_value) {
+		let update_map = {};
+		update_map[arg1_id] = arg2_value;
+		return await ve.NDJSON_setValues(arg0_file_path, update_map);
+	};
+	
+	ve.NDJSON_removeValue = async function (arg0_file_path, arg1_id) {
+		let update_map = {};
+		update_map[arg1_id] = null; //Signifies deletion
+		return await ve.NDJSON_setValues(arg0_file_path, update_map);
+	};
 }
 
 module.exports = { 
@@ -462,4 +534,7 @@ module.exports = {
 	NDJSON_index: ve.NDJSON_index,
 	NDJSON_parse: ve.NDJSON_parse,
 	NDJSON_query: ve.NDJSON_query,
+	NDJSON_removeValue: ve.NDJSON_removeValue,
+	NDJSON_setValue: ve.NDJSON_setValue,
+	NDJSON_setValues: ve.NDJSON_setValues
 };

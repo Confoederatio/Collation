@@ -154,6 +154,8 @@ let win;
   ve.NDJSON_diffAll("./saves/atlas.naissance.ndjson", { timestamp: 1005088321 })
     .then((v) => {
       for (let i = 0; i < v.length; i++) console.log(v[i].key, v[i].value);
-      console.log("Active Workers:", ve.NDJSON_getWorkerPool());
+      ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "45817001146").then((v) => console.log(v));
+      ve.NDJSON_setValue("./saves/atlas.naissance.ndjson", "45817001146", { key: "value" }).then((v) => console.log(v));
+      console.log("Active Workers:", ve.NDJSON_getWorkerPool().length);
     });
 }

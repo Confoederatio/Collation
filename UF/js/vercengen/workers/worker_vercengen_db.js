@@ -68,7 +68,6 @@ parentPort.on("message", async (task) => {
 	
 	//type: index - map IDs to byte offsets
 	if (type === "index") {
-		//Clear index if file was modified
 		if (mtime !== indexed_mtime) {
 			file_index.clear();
 			indexed_mtime = mtime;
@@ -81,8 +80,6 @@ parentPort.on("message", async (task) => {
 		
 		for await (let line of rl) {
 			let line_len = Buffer.byteLength(line, "utf8") + NL_LEN;
-			
-			//Skip partial lines at chunk starts
 			if (start > 0 && is_first_line) {
 				current_offset += line_len;
 				is_first_line = false;
@@ -102,27 +99,108 @@ parentPort.on("message", async (task) => {
 			current_offset += line_len;
 		}
 		
-		//Return statement
 		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size });
 	}
 	
-	//type: diff_all/diff
-	if (type === "diff" || type === "diff_all") {
-		let results_list = [];
-		let targets = [];
+	//Handle single-ID lookups (diff or get_value)
+	if (type === "diff" || type === "get_value") {
+		let target = file_index.get(id);
 		
-		if (type === "diff") {
-			targets = [[id, file_index.get(id)]];
-		} else {
-			targets = Array.from(file_index.entries());
+		//If this worker doesn't have the ID, return null immediately
+		if (!target) return parentPort.postMessage({ task_id, results: null });
+		
+		try {
+			const line = await new Promise((resolve) => {
+				let s = fs.createReadStream(file_path, { start: target.start, end: target.end });
+				let r = readline.createInterface({ input: s });
+				r.on("line", (l) => { resolve(l); r.close(); });
+			});
+			
+			let json_start = line.indexOf(":");
+			let raw_json = line.substring(json_start + 1).trim();
+			
+			if (raw_json.endsWith(",")) raw_json = raw_json.slice(0, -1);
+			if (raw_json.endsWith("}}"))
+				if (!raw_json.includes('{"id"'))
+					raw_json = raw_json.slice(0, -1);
+			
+			let data = JSON.parse(raw_json);
+			
+			if (type === "get_value")
+				return parentPort.postMessage({ task_id, results: data });
+			
+			let history_obj = (typeof data.history === "string") ?
+				JSON.parse(data.history) : data.history;
+			
+			if (history_obj && history_obj.keyframes) {
+				let diffed_val = ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, timestamp);
+				return parentPort.postMessage({
+					task_id,
+					results: { key: id, value: diffed_val }
+				});
+			}
+		} catch (e) {}
+		
+		return parentPort.postMessage({ task_id, results: null });
+	}
+	
+	//Handle batch operations (diff_all)
+	if (type === "diff_all") {
+		let results_list = [];
+		let entries = Array.from(file_index.entries());
+		
+		for (let i = 0; i < entries.length; i++) {
+			let local_id = entries[i][0];
+			let target = entries[i][1];
+			
+			try {
+				const line = await new Promise((resolve) => {
+					let s = fs.createReadStream(file_path, { start: target.start, end: target.end });
+					let r = readline.createInterface({ input: s });
+					r.on("line", (l) => { resolve(l); r.close(); });
+				});
+				
+				let json_start = line.indexOf(":");
+				let raw_json = line.substring(json_start + 1).trim();
+				
+				if (raw_json.endsWith(",")) raw_json = raw_json.slice(0, -1);
+				if (raw_json.endsWith("}}"))
+					if (!raw_json.includes('{"id"'))
+						raw_json = raw_json.slice(0, -1);
+				
+				let data = JSON.parse(raw_json);
+				let history_obj = (typeof data.history === "string") ?
+					JSON.parse(data.history) : data.history;
+				
+				if (history_obj && history_obj.keyframes) {
+					let diffed_val = ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, timestamp);
+					results_list.push({ key: local_id, value: diffed_val });
+				}
+			} catch (e) {}
 		}
 		
-		//Iterate over all targets
-		for (let i = 0; i < targets.length; i++) {
-			let local_id = targets[i][0];
-			let target = targets[i][1];
+		return parentPort.postMessage({ task_id, results: results_list });
+	}
+	
+	//type: batch_process - Processes a chunk, swapping out data from the update_map
+	if (type === "batch_process") {
+		let results_list = [];
+		let entries = Array.from(file_index.entries());
+		let update_map = task.update_map || {};
+		
+		for (let i = 0; i < entries.length; i++) {
+			let local_id = entries[i][0];
+			let target = entries[i][1];
 			
-			if (target) {
+			//Check if this ID needs to be updated or removed
+			if (update_map.hasOwnProperty(local_id)) {
+				let new_val = update_map[local_id];
+				
+				//If new_val is null, we are deleting it, so we don't push to results_list
+				if (new_val !== null)
+					results_list.push({ id: local_id, data: new_val });
+			} else {
+				//Not in update_map; just read the existing data and pass it through
 				try {
 					const line = await new Promise((resolve) => {
 						let s = fs.createReadStream(file_path, { start: target.start, end: target.end });
@@ -138,28 +216,11 @@ parentPort.on("message", async (task) => {
 						if (!raw_json.includes('{"id"'))
 							raw_json = raw_json.slice(0, -1);
 					
-					let data = JSON.parse(raw_json);
-					let history_obj = (typeof data.history === "string") ?
-						JSON.parse(data.history) : data.history;
-					
-					if (history_obj)
-						if (history_obj.keyframes) {
-							let diffed_val = ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, timestamp);
-							
-							if (type === "diff")
-								return parentPort.postMessage({
-									task_id,
-									results: { key: local_id, value: diffed_val }
-								});
-							
-							results_list.push({ key: local_id, value: diffed_val });
-						}
+					results_list.push({ id: local_id, data: JSON.parse(raw_json) });
 				} catch (e) {}
 			}
 		}
 		
-		//Return statement
-		let final_results = (type === "diff") ? null : results_list;
-		parentPort.postMessage({ task_id, results: final_results });
+		return parentPort.postMessage({ task_id, results: results_list });
 	}
 });
