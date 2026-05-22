@@ -2,7 +2,7 @@ global.UI_SystemManagerWindow = class {
 	static instance;
 	
 	constructor () {
-		if (UI_SystemManagerWindow.instance) UI_SystemManagerWindow.close();
+		if (UI_SystemManagerWindow.instance) UI_SystemManagerWindow.instance.close();
 		UI_SystemManagerWindow.instance = vePageMenuWindow({
 			histmap_workers: {
 				name: "Histmap Workers"
