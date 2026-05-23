@@ -95,6 +95,60 @@ parentPort.on("message", async (task) => {
 	
 	let { type, file_path, start, end, task_id, timestamp, id, mtime, update_map } = task;
 	
+	if (type === "batch_process") {
+		let list = [];
+		let targets = Array.from(file_index.entries());
+		const fd = fs.openSync(file_path, 'r');
+		for (let i = 0; i < targets.length; i++) {
+			let local_id = targets[i][0];
+			if (update_map && update_map.hasOwnProperty(local_id)) {
+				if (update_map[local_id] !== null) list.push({ id: local_id, data: update_map[local_id] });
+				continue;
+			}
+			let parsed_data = getRawData(fd, targets[i][1]);
+			if (parsed_data) list.push({ id: local_id, data: parsed_data });
+		}
+		fs.closeSync(fd);
+		return parentPort.postMessage({ task_id, results: list });
+	}
+	
+	if (type === "diff") {
+		let pos = file_index.get(id);
+		if (!pos) return parentPort.postMessage({ task_id, results: null });
+		const fd = fs.openSync(file_path, 'r');
+		let parsed_data = getRawData(fd, pos);
+		fs.closeSync(fd);
+		if (parsed_data) {
+			let state_val = resolveHistory(parsed_data, timestamp);
+			if (state_val !== null) return parentPort.postMessage({ task_id, results: { key: id, value: state_val } });
+		}
+		return parentPort.postMessage({ task_id, results: null });
+	}
+	
+	if (type === "diff_all") {
+		let list = [];
+		let targets = Array.from(file_index.entries());
+		const fd = fs.openSync(file_path, 'r');
+		for (let i = 0; i < targets.length; i++) {
+			let parsed_data = getRawData(fd, targets[i][1]);
+			if (parsed_data) {
+				let state_val = resolveHistory(parsed_data, timestamp);
+				if (state_val !== null) list.push({ key: targets[i][0], value: state_val });
+			}
+		}
+		fs.closeSync(fd);
+		return parentPort.postMessage({ task_id, results: list });
+	}
+	
+	if (type === "get_value") {
+		let pos = file_index.get(id);
+		if (!pos) return parentPort.postMessage({ task_id, results: null });
+		const fd = fs.openSync(file_path, 'r');
+		let parsed_data = getRawData(fd, pos);
+		fs.closeSync(fd);
+		return parentPort.postMessage({ task_id, results: parsed_data });
+	}
+	
 	if (type === "index") {
 		if (mtime !== indexed_mtime) { file_index.clear(); indexed_mtime = mtime; }
 		
@@ -136,78 +190,10 @@ parentPort.on("message", async (task) => {
 		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size, tombstones });
 	}
 	
-	if (type === "update_index") {
-		let { offsets, tombstone_keys, is_primary, mtime: new_mtime } = task;
-		if (new_mtime) indexed_mtime = new_mtime;
-		if (offsets) {
-			let keys = Object.keys(offsets);
-			let tombstone_set = new Set(tombstone_keys || []);
-			for (let i = 0; i < keys.length; i++) file_index.delete(keys[i]);
-			if (is_primary)
-				for (let i = 0; i < keys.length; i++)
-					if (!tombstone_set.has(keys[i])) file_index.set(keys[i], offsets[keys[i]]);
-		}
-		return parentPort.postMessage({ task_id, status: "updated" });
-	}
-	
 	if (type === "purge_keys") {
 		let { keys } = task;
 		for (let i = 0; i < keys.length; i++) file_index.delete(keys[i]);
 		return parentPort.postMessage({ task_id, status: "purged" });
-	}
-	
-	if (type === "get_value") {
-		let pos = file_index.get(id);
-		if (!pos) return parentPort.postMessage({ task_id, results: null });
-		const fd = fs.openSync(file_path, 'r');
-		let parsed_data = getRawData(fd, pos);
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, results: parsed_data });
-	}
-	
-	if (type === "diff") {
-		let pos = file_index.get(id);
-		if (!pos) return parentPort.postMessage({ task_id, results: null });
-		const fd = fs.openSync(file_path, 'r');
-		let parsed_data = getRawData(fd, pos);
-		fs.closeSync(fd);
-		if (parsed_data) {
-			let state_val = resolveHistory(parsed_data, timestamp);
-			if (state_val !== null) return parentPort.postMessage({ task_id, results: { key: id, value: state_val } });
-		}
-		return parentPort.postMessage({ task_id, results: null });
-	}
-	
-	if (type === "diff_all") {
-		let list = [];
-		let targets = Array.from(file_index.entries());
-		const fd = fs.openSync(file_path, 'r');
-		for (let i = 0; i < targets.length; i++) {
-			let parsed_data = getRawData(fd, targets[i][1]);
-			if (parsed_data) {
-				let state_val = resolveHistory(parsed_data, timestamp);
-				if (state_val !== null) list.push({ key: targets[i][0], value: state_val });
-			}
-		}
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, results: list });
-	}
-	
-	if (type === "batch_process") {
-		let list = [];
-		let targets = Array.from(file_index.entries());
-		const fd = fs.openSync(file_path, 'r');
-		for (let i = 0; i < targets.length; i++) {
-			let local_id = targets[i][0];
-			if (update_map && update_map.hasOwnProperty(local_id)) {
-				if (update_map[local_id] !== null) list.push({ id: local_id, data: update_map[local_id] });
-				continue;
-			}
-			let parsed_data = getRawData(fd, targets[i][1]);
-			if (parsed_data) list.push({ id: local_id, data: parsed_data });
-		}
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, results: list });
 	}
 	
 	if (type === "query") {
@@ -231,5 +217,19 @@ parentPort.on("message", async (task) => {
 		}
 		fs.closeSync(fd);
 		return parentPort.postMessage({ task_id, results: list });
+	}
+	
+	if (type === "update_index") {
+		let { offsets, tombstone_keys, is_primary, mtime: new_mtime } = task;
+		if (new_mtime) indexed_mtime = new_mtime;
+		if (offsets) {
+			let keys = Object.keys(offsets);
+			let tombstone_set = new Set(tombstone_keys || []);
+			for (let i = 0; i < keys.length; i++) file_index.delete(keys[i]);
+			if (is_primary)
+				for (let i = 0; i < keys.length; i++)
+					if (!tombstone_set.has(keys[i])) file_index.set(keys[i], offsets[keys[i]]);
+		}
+		return parentPort.postMessage({ task_id, status: "updated" });
 	}
 });
