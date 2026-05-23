@@ -151,7 +151,7 @@ let win;
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
   
-  ve.NDJSON_parse("./saves/atlas.naissance").then(() => {
+  ve.NDJSON_load("./saves/atlas.naissance").then(() => {
     ve.NDJSON_diffAll("./saves/atlas.naissance.ndjson", { timestamp: 1005088321 })
     .then(async (v) => {
       for (let i = 0; i < v.length; i++) console.log(v[i].key, v[i].value);

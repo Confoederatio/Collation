@@ -63,6 +63,15 @@ if (!global.v8) global.v8 = require("node:v8");
 		//Declare local instance variables
 		let ipc_main = electron.ipcMain;
 		
+		//NDJSON
+		ipc_main.on("ndjson:load", async (event, file_path) => {
+			let web_contents = event.sender;
+			
+			await ve.loadNDJSON(file_path);
+			web_contents.send("ndjson:load_ready", `${file_path}.ndjson`);
+		});
+		
+		//ontology
 		ipc_main.on("ontology:initialise", async (event, folder_path) => {
 			//Declare local instance variables
 			if (!fs.existsSync(folder_path)) fs.mkdirSync(folder_path, { recursive: true });
@@ -140,7 +149,7 @@ module.exports = {
 	NDJSON_getValue: ve.NDJSON_getValue,
 	NDJSON_getWorkerPool: ve.NDJSON_getWorkerPool,
 	NDJSON_index: ve.NDJSON_index,
-	NDJSON_parse: ve.NDJSON_parse,
+	NDJSON_load: ve.NDJSON_load,
 	NDJSON_query: ve.NDJSON_query,
 	NDJSON_removeValue: ve.NDJSON_removeValue,
 	NDJSON_setValue: ve.NDJSON_setValue,

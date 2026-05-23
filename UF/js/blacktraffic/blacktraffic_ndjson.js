@@ -13,7 +13,7 @@ let NodeWorker = require("node:worker_threads").Worker;
  *
  * @returns {Promise<void>}
  */
-ve.NDJSON_parse = async function (arg0_file_path, arg1_options) {
+ve.NDJSON_load = async function (arg0_file_path, arg1_options) {
 	//Convert from parameters		
 	let file_path = path.resolve(arg0_file_path);
 	let options = (arg1_options) ? arg1_options : {};
@@ -140,7 +140,7 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 		//Declare local instance variables
 		if (global.ve.ndjson_worker_pool.length === 0)
 			for (let i = 0; i < max_workers; i++) {
-				let worker = new NodeWorker("./UF/js/vercengen/workers/worker_vercengen_db.js");
+				let worker = new NodeWorker("./core/db/NDJSON.js");
 				worker.on("message", (response) => {
 					let { task_id, results, status, count, tombstones } = response;
 					let callback = global.ve.ndjson_pending_tasks.get(task_id);
