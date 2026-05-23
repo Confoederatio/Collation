@@ -151,13 +151,26 @@ let win;
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
   
-  ve.NDJSON_parse("./saves/atlas.naissance.ndjson").then(() => {
+  ve.NDJSON_parse("./saves/atlas.naissance").then(() => {
     ve.NDJSON_diffAll("./saves/atlas.naissance.ndjson", { timestamp: 1005088321 })
     .then(async (v) => {
       for (let i = 0; i < v.length; i++) console.log(v[i].key, v[i].value);
       let local_value = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "45817001146");
-      console.log(local_value);
-      //await ve.NDJSON_setValue("./saves/atlas.naissance.ndjson", "45817001146", { key: "value" }).then((v) => console.log(v));
+      console.log("Local value:", local_value);
+      
+      console.time("set_value");
+      await ve.NDJSON_setValue("./saves/atlas.naissance.ndjson", "45817001146", { key: "value", hello: "world" });
+      local_value = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "45817001146");
+      console.timeEnd("set_value");
+      console.log("Local value after write:", local_value);
+      
+      console.time("remove");
+      await ve.NDJSON_removeValue("./saves/atlas.naissance.ndjson", "45817001146");
+      local_value = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "45817001146");
+      console.timeEnd("remove");
+      console.log("Local value after remove:", local_value);
+      
+      
       console.log("Active Workers:", ve.NDJSON_getWorkerPool().length);
     });
   })
