@@ -266,11 +266,16 @@ let NodeWorker = require("node:worker_threads").Worker;
 				for (let i = 0; i < max_workers; i++) {
 					let worker = new NodeWorker("./UF/js/vercengen/workers/worker_vercengen_db.js");
 					worker.on("message", (response) => {
-						let { task_id, results, status, count } = response;
+						let { task_id, results, status, count, tombstones } = response;
 						let callback = global.ve.ndjson_pending_tasks.get(task_id);
 						
 						if (callback) {
-							callback(status === "indexed" ? count : results);
+							if (status === "indexed")
+								callback({ count, tombstones: tombstones || [] });
+							else if (status === "updated" || status === "purged")
+								callback(true);
+							else
+								callback(results);
 							global.ve.ndjson_pending_tasks.delete(task_id);
 						}
 					});
@@ -320,7 +325,34 @@ let NodeWorker = require("node:worker_threads").Worker;
 				}));
 			}
 			
-			await Promise.all(promises);
+			let results = await Promise.all(promises);
+			
+			//Collect all tombstone keys from every worker
+			let all_tombstones = new Set();
+			for (let i = 0; i < results.length; i++)
+				if (results[i].tombstones)
+					for (let j = 0; j < results[i].tombstones.length; j++)
+						all_tombstones.add(results[i].tombstones[j]);
+			
+			//Broadcast purge to all workers so no stale entries survive cross-chunk
+			if (all_tombstones.size > 0) {
+				let tombstone_array = Array.from(all_tombstones);
+				let purge_promises = [];
+				
+				for (let i = 0; i < pool.length; i++) {
+					let task_id = global.ve.ndjson_task_id_counter++;
+					purge_promises.push(new Promise((resolve) => {
+						global.ve.ndjson_pending_tasks.set(task_id, resolve);
+						pool[i].postMessage({
+							type: "purge_keys",
+							task_id: task_id,
+							keys: tombstone_array
+						});
+					}));
+				}
+				
+				await Promise.all(purge_promises);
+			}
 			
 			if (!global.ve.ndjson_file_metadata) global.ve.ndjson_file_metadata = {};
 			global.ve.ndjson_file_metadata[file_path] = mtime;
@@ -404,54 +436,62 @@ let NodeWorker = require("node:worker_threads").Worker;
 				
 				//Declare local instance variables
 				let pool = ve.NDJSON_getWorkerPool();
-				let temp_path = `${file_path}.tmp`;
-				let write_stream = fs.createWriteStream(temp_path);
-				let processed_ids = new Set();
+				let stats = await fs.promises.stat(file_path);
+				let current_offset = stats.size;
+				
+				let append_lines = [];
+				let new_offsets = {};
+				let tombstone_keys = [];
+				
+				//Build append buffer and compute byte offsets for each entry
+				let update_keys = Object.keys(update_map);
+				
+				for (let i = 0; i < update_keys.length; i++) {
+					let id = update_keys[i];
+					let value = update_map[id];
+					
+					let line = (value === null)
+						? `"${id}":null\n`
+						: `"${id}":${JSON.stringify(value)}\n`;
+					let line_bytes = Buffer.byteLength(line);
+					
+					new_offsets[id] = { start: current_offset, end: current_offset + line_bytes - 1 };
+					if (value === null) tombstone_keys.push(id);
+					append_lines.push(line);
+					current_offset += line_bytes;
+				}
+				
+				//Single small append instead of full rewrite
+				if (append_lines.length > 0)
+					await fs.promises.appendFile(file_path, append_lines.join(""));
+				
+				//Get new mtime so workers + main thread stay in sync
+				let new_stats = await fs.promises.stat(file_path);
+				let new_mtime = new_stats.mtimeMs;
+				
+				//Broadcast lightweight index patches to all workers
+				let promises = [];
 				
 				for (let i = 0; i < pool.length; i++) {
 					let task_id = global.ve.ndjson_task_id_counter++;
-					let results = await new Promise((res) => {
-						global.ve.ndjson_pending_tasks.set(task_id, res);
+					promises.push(new Promise((resolve) => {
+						global.ve.ndjson_pending_tasks.set(task_id, resolve);
 						pool[i].postMessage({
-							type: "batch_process",
+							type: "update_index",
 							task_id: task_id,
-							file_path: file_path,
-							update_map: update_map
+							offsets: new_offsets,
+							tombstone_keys: tombstone_keys,
+							is_primary: i === 0,
+							mtime: new_mtime
 						});
-					});
-					
-					if (results)
-						for (let x = 0; x < results.length; x++) {
-							processed_ids.add(results[x].id);
-							write_stream.write(`"${results[x].id}":${JSON.stringify(results[x].data)}\n`);
-						}
+					}));
 				}
 				
-				let new_keys = Object.keys(update_map);
+				await Promise.all(promises);
 				
-				for (let i = 0; i < new_keys.length; i++) {
-					let id = new_keys[i];
-					
-					if (!processed_ids.has(id))
-						if (update_map[id] !== null)
-							write_stream.write(`"${id}":${JSON.stringify(update_map[id])}\n`);
-				}
-				
-				//Ensure stream terminates properly
-				await new Promise((resolve) => {
-					write_stream.once("close", resolve);
-					write_stream.end();
-				});
-				
-				//Atomic rename
-				await fs.promises.rename(temp_path, file_path);
-				
-				//Force re-index: invalidate cached metadata and rebuild worker indices
-				//Workers compare mtime against their indexed_mtime; since the file was
-				//rewritten, the new mtime differs, so they clear and rebuild file_index.
+				//Update main thread metadata
 				if (!global.ve.ndjson_file_metadata) global.ve.ndjson_file_metadata = {};
-				delete global.ve.ndjson_file_metadata[file_path];
-				await ve.NDJSON_index(file_path, options);
+				global.ve.ndjson_file_metadata[file_path] = new_mtime;
 			} finally {
 				unlock();
 			}

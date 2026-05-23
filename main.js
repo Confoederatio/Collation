@@ -164,6 +164,20 @@ let win;
       console.timeEnd("set_value");
       console.log("Local value after write:", local_value);
       
+      console.time("read_value");
+      let local_value_two = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "34593585401");
+      console.log("Local value:", local_value_two);
+      console.timeEnd("read_value");
+      
+      console.time("set_value_two");
+      await ve.NDJSON_setValue("./saves/atlas.naissance.ndjson", "34593585401", { key: "value", hello: "world" });
+      local_value_two = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "34593585401");
+      console.timeEnd("set_value_two");
+      console.log("Local value after write:", local_value_two);
+      
+      console.time("set_value_three");
+      await ve.NDJSON_setValue("./saves/atlas.naissance.ndjson", "34593585401", { key: "value", hello: "world" });
+      
       console.time("remove");
       await ve.NDJSON_removeValue("./saves/atlas.naissance.ndjson", "45817001146");
       local_value = await ve.NDJSON_getValue("./saves/atlas.naissance.ndjson", "45817001146");

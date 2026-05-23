@@ -46,7 +46,7 @@ let indexed_mtime = 0;
 							};
 					} else if (local_keyframe.value[x] !== undefined) {
 						if (local_keyframe.value[x] === "undefined") continue;
-						if (x !== 0 && local_keyframe.value[x] === null) continue; //Preserve index 0 overwrites
+						if (x !== 0 && local_keyframe.value[x] === null) continue;
 						
 						return_keyframe.value[x] = local_keyframe.value[x];
 					}
@@ -68,6 +68,7 @@ parentPort.on("message", async (task) => {
 	if (type === "index") {
 		if (mtime !== indexed_mtime) { file_index.clear(); indexed_mtime = mtime; }
 		
+		let tombstones = [];
 		const fd = fs.openSync(file_path, 'r');
 		const buffer = Buffer.alloc(1024 * 512);
 		let current_pos = start;
@@ -90,7 +91,17 @@ parentPort.on("message", async (task) => {
 					let head_str = head_buf.toString();
 					let match = head_str.match(/^"([^"]+)"\s*:/);
 					
-					if (match) file_index.set(match[1], { start: line_start, end: line_end });
+					if (match) {
+						let value_str = head_str.substring(head_str.indexOf(":") + 1).trim();
+						
+						//Detect tombstones: value is literally "null"
+						if (value_str === "null" || value_str.startsWith("null\n") || value_str.startsWith("null\r")) {
+							tombstones.push(match[1]);
+							file_index.delete(match[1]);
+						} else {
+							file_index.set(match[1], { start: line_start, end: line_end });
+						}
+					}
 					line_start = current_pos + i + 1;
 				}
 			}
@@ -98,7 +109,40 @@ parentPort.on("message", async (task) => {
 		}
 		
 		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size });
+		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size, tombstones });
+	}
+	
+	if (type === "update_index") {
+		let { offsets, tombstone_keys, is_primary, mtime: new_mtime } = task;
+		
+		//Keep worker mtime in sync
+		if (new_mtime) indexed_mtime = new_mtime;
+		
+		if (offsets) {
+			let keys = Object.keys(offsets);
+			let tombstone_set = new Set(tombstone_keys || []);
+			
+			//Every worker deletes stale entries for changed keys
+			for (let i = 0; i < keys.length; i++)
+				file_index.delete(keys[i]);
+			
+			//Only the primary worker adopts new byte offsets, skipping tombstones
+			if (is_primary)
+				for (let i = 0; i < keys.length; i++)
+					if (!tombstone_set.has(keys[i]))
+						file_index.set(keys[i], offsets[keys[i]]);
+		}
+		
+		return parentPort.postMessage({ task_id, status: "updated" });
+	}
+	
+	if (type === "purge_keys") {
+		let { keys } = task;
+		
+		for (let i = 0; i < keys.length; i++)
+			file_index.delete(keys[i]);
+		
+		return parentPort.postMessage({ task_id, status: "purged" });
 	}
 	
 	if (type === "get_value" || type === "diff" || type === "diff_all" || type === "batch_process") {
@@ -131,7 +175,6 @@ parentPort.on("message", async (task) => {
 			try {
 				parsed_data = JSON.parse(raw);
 			} catch (err) {
-				//Attempt to strip overarching wrapper syntax if direct parsing fails
 				if (raw.endsWith("}")) {
 					raw = raw.slice(0, -1).trim();
 					try { parsed_data = JSON.parse(raw); } catch (err2) {}
@@ -146,7 +189,6 @@ parentPort.on("message", async (task) => {
 				if (type === "batch_process") {
 					list.push({ id: local_id, data: parsed_data });
 				} else {
-					//Parse History
 					let history_obj = (typeof parsed_data.history === "string") ?
 						JSON.parse(parsed_data.history) : parsed_data.history;
 					
@@ -164,7 +206,6 @@ parentPort.on("message", async (task) => {
 		}
 		
 		fs.closeSync(fd);
-		//Return statement
 		parentPort.postMessage({ task_id, results: (targets.length === 0 && type !== "diff_all") ? null : list });
 	}
 });
