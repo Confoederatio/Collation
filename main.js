@@ -8,7 +8,7 @@ const ve = require("./UF/js/vercengen/engine/vercengen_electron");
 
 //Metadata - Title
 let latest_fps = 0;
-let naissance_version = "1.8b Guinea";
+let naissance_version = "1.81b Tehuantepec";
 let title_update_interval;
 let win;
 
@@ -184,9 +184,12 @@ let win;
       console.timeEnd("remove");
       console.log("Local value after remove:", local_value);
       
+      console.time("query 1000 GeometryPolygons");
+      local_value = await ve.NDJSON_query("./saves/atlas.naissance.ndjson", { class_name: "GeometryPolygon" }, { limit: 1000 });
+      console.timeEnd("query 1000 GeometryPolygons");
+      console.log("1000 GeometryPolygons:", local_value.length);
       
       console.log("Active Workers:", ve.NDJSON_getWorkerPool().length);
     });
   })
-  
 }

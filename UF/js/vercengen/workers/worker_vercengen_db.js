@@ -19,7 +19,8 @@ let indexed_mtime = 0;
 			value: []
 		};
 		
-		let all_keyframes = Object.keys(keyframes).sort((a, b) => parseInt(a) - parseInt(b));
+		let all_keyframes = Object.keys(keyframes)
+			.sort((a, b) => parseInt(a) - parseInt(b));
 		
 		for (let i = 0; i < all_keyframes.length; i++) {
 			let local_keyframe = keyframes[all_keyframes[i]];
@@ -207,5 +208,54 @@ parentPort.on("message", async (task) => {
 		
 		fs.closeSync(fd);
 		parentPort.postMessage({ task_id, results: (targets.length === 0 && type !== "diff_all") ? null : list });
+	}
+	
+	// Inside parentPort.on("message", async (task) => { ...
+	if (type === "query") {
+		let { query, limit } = task;
+		let list = [];
+		let targets = Array.from(file_index.entries());
+		const fd = fs.openSync(file_path, "r");
+		
+		for (let i = 0; i < targets.length; i++) {
+			// Stop if this specific worker has already hit the limit
+			if (limit !== undefined && list.length >= limit) break;
+			
+			let local_id = targets[i][0];
+			let pos = targets[i][1];
+			
+			let buf_len = pos.end - pos.start;
+			let buf = Buffer.alloc(buf_len);
+			fs.readSync(fd, buf, 0, buf_len, pos.start);
+			
+			let str = buf.toString();
+			let raw = str.substring(str.indexOf(":") + 1).trim();
+			if (raw.endsWith(",")) raw = raw.slice(0, -1);
+			
+			try {
+				let parsed_data = JSON.parse(raw);
+				let matches = true;
+				
+				// Check all keys in query_obj (e.g., class_name: "GeometryPolygon")
+				for (let key in query) {
+					if (parsed_data[key] !== query[key]) {
+						matches = false;
+						break;
+					}
+				}
+				
+				if (matches) {
+					// Optionally include the ID in the returned object
+					if (typeof parsed_data === "object" && parsed_data !== null)
+						parsed_data._id = local_id;
+					list.push(parsed_data);
+				}
+			} catch (err) {
+				// Skip malformed lines
+			}
+		}
+		
+		fs.closeSync(fd);
+		return parentPort.postMessage({ task_id, results: list });
 	}
 });

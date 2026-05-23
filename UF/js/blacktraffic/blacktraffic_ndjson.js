@@ -266,6 +266,46 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 		}
 	};
 	
+	ve.NDJSON_diff = async function (arg0_file_path, arg1_id, arg2_options) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
+		let options = arg2_options ? arg2_options : {};
+		
+		//Acquire Mutex
+		let unlock = await ve.NDJSON_getLock(file_path);
+		
+		try {
+			await ve.NDJSON_checkIndex(file_path, options);
+			
+			//Declare local instance variables
+			let pool = ve.NDJSON_getWorkerPool();
+			let promises = [];
+			
+			for (let i = 0; i < pool.length; i++) {
+				let task_id = global.ve.ndjson_task_id_counter++;
+				promises.push(
+					new Promise((resolve) => {
+						global.ve.ndjson_pending_tasks.set(task_id, resolve);
+						pool[i].postMessage({
+							type: "diff",
+							task_id: task_id,
+							file_path: file_path,
+							id: arg1_id,
+							timestamp: options.timestamp,
+						});
+					}),
+				);
+			}
+			
+			let results = await Promise.all(promises);
+			
+			//Return statement - Find the worker that held the ID and return its resolved state
+			return results.find((v) => v !== null) || null;
+		} finally {
+			unlock();
+		}
+	};
+	
 	ve.NDJSON_diffAll = async function (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -293,6 +333,52 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 			
 			//Return statement
 			return results.filter(v => v !== null).flat();
+		} finally {
+			unlock();
+		}
+	};
+	
+	ve.NDJSON_query = async function (arg0_file_path, arg1_query_obj, arg2_options) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
+		let query_obj = arg1_query_obj ? arg1_query_obj : {};
+		let options = arg2_options ? arg2_options : {};
+		
+		//Acquire Mutex
+		let unlock = await ve.NDJSON_getLock(file_path);
+		
+		try {
+			await ve.NDJSON_checkIndex(file_path, options);
+			
+			//Declare local instance variables
+			let pool = ve.NDJSON_getWorkerPool();
+			let promises = [];
+			
+			for (let i = 0; i < pool.length; i++) {
+				let task_id = global.ve.ndjson_task_id_counter++;
+				promises.push(
+					new Promise((resolve) => {
+						global.ve.ndjson_pending_tasks.set(task_id, resolve);
+						pool[i].postMessage({
+							type: "query",
+							task_id: task_id,
+							file_path: file_path,
+							query: query_obj,
+							limit: options.limit, // Workers can use this to stop early
+						});
+					}),
+				);
+			}
+			
+			let results = await Promise.all(promises);
+			let final_results = results.filter((v) => v !== null).flat();
+			
+			// Apply global limit across all worker results
+			if (options.limit !== undefined) {
+				return final_results.slice(0, options.limit);
+			}
+			
+			return final_results;
 		} finally {
 			unlock();
 		}
@@ -388,6 +474,8 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 		//Return statement
 		return await ve.NDJSON_setValues(arg0_file_path, map);
 	};
+	
+	
 }
 
 //AI SLOP ZONE END
