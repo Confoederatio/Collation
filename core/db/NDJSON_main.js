@@ -108,7 +108,6 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 
 //Initialise functions
 {
-	
 	ve.NDJSON_checkIndex = async function (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
