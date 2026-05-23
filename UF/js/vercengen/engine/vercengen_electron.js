@@ -22,23 +22,6 @@ if (!global.v8) global.v8 = require("node:v8");
 	};
 }
 
-//String utils - [WIP] - Override at a later date
-{
-	String.prototype.hashCode = function () {
-		//Declare local instance variables
-		let hash = 0;
-		
-		//Iterate over this.length
-		for (let i = 0; i < this.length; i++) {
-			hash = (hash << 5) - hash + this.charCodeAt(i);
-			hash |= 0;
-		}
-		
-		//Return statement
-		return hash;
-	};
-}
-
 //Initialise functions
 {
 	/**
@@ -135,13 +118,12 @@ if (!global.v8) global.v8 = require("node:v8");
 	};
 	
 	try {
-		require("../../blacktraffic/blacktraffic_ndjson.js");
+		require("../../../../core/db/NDJSON_main.js");
 	} catch (e) {} //NDJSON handling
 }
 
 module.exports = { 
 	initialiseIPC: ve.initialiseIPC,
-	loadNDJSON: ve.loadNDJSON,
 	
 	NDJSON_checkIndex: ve.NDJSON_checkIndex,
 	NDJSON_diff: ve.NDJSON_diff,

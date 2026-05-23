@@ -185,7 +185,10 @@ let win;
       console.log("Local value after remove:", local_value);
       
       console.time("query 1000 GeometryPolygons");
-      local_value = await ve.NDJSON_query("./saves/atlas.naissance.ndjson", { class_name: "GeometryPolygon" }, { limit: 1000 });
+      local_value = await ve.NDJSON_query("./saves/atlas.naissance.ndjson", { class_name: "GeometryPolygon" }, { 
+        limit_start: 1000,
+        limit_end: 1500
+      });
       console.timeEnd("query 1000 GeometryPolygons");
       console.log("1000 GeometryPolygons:", local_value.length);
       

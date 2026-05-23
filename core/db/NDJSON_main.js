@@ -140,7 +140,7 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 		//Declare local instance variables
 		if (global.ve.ndjson_worker_pool.length === 0)
 			for (let i = 0; i < max_workers; i++) {
-				let worker = new NodeWorker("./core/db/NDJSON.js");
+				let worker = new NodeWorker("./core/db/NDJSON_worker.js");
 				worker.on("message", (response) => {
 					let { task_id, results, status, count, tombstones } = response;
 					let callback = global.ve.ndjson_pending_tasks.get(task_id);
@@ -354,6 +354,10 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 			let pool = ve.NDJSON_getWorkerPool();
 			let promises = [];
 			
+			// If user wants 100 to 200, we need at least 200 total results before slicing
+			let limit_start = Math.returnSafeNumber(options.limit_start, 0);
+			let limit_end = options.limit_end;
+			
 			for (let i = 0; i < pool.length; i++) {
 				let task_id = global.ve.ndjson_task_id_counter++;
 				promises.push(
@@ -364,7 +368,7 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 							task_id: task_id,
 							file_path: file_path,
 							query: query_obj,
-							limit: options.limit, // Workers can use this to stop early
+							limit_end: limit_end, // Workers stop if they individually hit the ceiling
 						});
 					}),
 				);
@@ -373,9 +377,11 @@ if (!global.ve.ndjson_locks) global.ve.ndjson_locks = new Map();
 			let results = await Promise.all(promises);
 			let final_results = results.filter((v) => v !== null).flat();
 			
-			// Apply global limit across all worker results
-			if (options.limit !== undefined) {
-				return final_results.slice(0, options.limit);
+			// Apply pagination logic
+			if (limit_end !== undefined) {
+				return final_results.slice(limit_start, limit_end);
+			} else if (limit_start > 0) {
+				return final_results.slice(limit_start);
 			}
 			
 			return final_results;
