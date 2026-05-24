@@ -134,6 +134,7 @@ module.exports = {
 	NDJSON_load: ve.NDJSON_load,
 	NDJSON_query: ve.NDJSON_query,
 	NDJSON_removeValue: ve.NDJSON_removeValue,
+	NDJSON_save: ve.NDJSON_save,
 	NDJSON_setValue: ve.NDJSON_setValue,
 	NDJSON_setValues: ve.NDJSON_setValues
 };

@@ -1,12 +1,17 @@
-const { parentPort } = require("node:worker_threads");
-const fs = require("fs");
+let fs = require("node:fs");
+let path = require("node:path");
+let readline = require("node:readline");
+let worker_threads = require("node:worker_threads");
+
+let parentPort = worker_threads.parentPort;
+let workerData = worker_threads.workerData;
 
 if (!global.ve) global.ve = {};
 
-let file_index = new Map();
-let indexed_mtime = 0;
+let queue = [];
+let processing = false;
 
-//Initialise functions
+//Init functions
 {
 	ve.NDJSON_resolveStateAtTimestamp = function (arg0_keyframes, arg1_timestamp) {
 		//Convert from parameters
@@ -14,20 +19,14 @@ let indexed_mtime = 0;
 		let timestamp = parseInt(arg1_timestamp);
 		
 		//Declare local instance variables
-		let return_keyframe = {
-			timestamp: timestamp,
-			value: []
-		};
-		
-		let all_keyframes = Object.keys(keyframes)
-			.sort((a, b) => parseInt(a) - parseInt(b));
+		let return_keyframe = { timestamp: timestamp, value: [] };
+		let all_keyframes = Object.keys(keyframes).sort((a, b) => parseInt(a) - parseInt(b));
 		
 		for (let i = 0; i < all_keyframes.length; i++) {
 			let local_keyframe = keyframes[all_keyframes[i]];
 			
 			if (parseInt(all_keyframes[i]) <= parseInt(return_keyframe.timestamp)) {
 				if (!local_keyframe.value) continue;
-				
 				for (let x = 0; x < local_keyframe.value.length; x++) {
 					if (typeof local_keyframe.value[x] === "object" && local_keyframe.value[x] !== null) {
 						let old_variables = (return_keyframe.value[x] && return_keyframe.value[x].variables) ?
@@ -35,20 +34,13 @@ let indexed_mtime = 0;
 						
 						if (!return_keyframe.value[x]) return_keyframe.value[x] = {};
 						
-						return_keyframe.value[x] = {
-							...return_keyframe.value[x],
-							...local_keyframe.value[x],
-						};
+						return_keyframe.value[x] = { ...return_keyframe.value[x], ...local_keyframe.value[x] };
 						
 						if (local_keyframe.value[x] && local_keyframe.value[x].variables)
-							return_keyframe.value[x].variables = {
-								...old_variables,
-								...local_keyframe.value[x].variables,
-							};
+							return_keyframe.value[x].variables = { ...old_variables, ...local_keyframe.value[x].variables };
 					} else if (local_keyframe.value[x] !== undefined) {
 						if (local_keyframe.value[x] === "undefined") continue;
 						if (x !== 0 && local_keyframe.value[x] === null) continue;
-						
 						return_keyframe.value[x] = local_keyframe.value[x];
 					}
 				}
@@ -62,174 +54,158 @@ let indexed_mtime = 0;
 	};
 }
 
-parentPort.on("message", async (task) => {
-	// Internal helper to extract and parse JSON from a specific file position
-	const getRawData = (fd, pos) => {
-		let buf_len = pos.end - pos.start;
-		let buf = Buffer.alloc(buf_len);
-		fs.readSync(fd, buf, 0, buf_len, pos.start);
-		
-		let str = buf.toString();
-		let raw = str.substring(str.indexOf(":") + 1).trim();
-		if (raw.endsWith(",")) raw = raw.slice(0, -1);
-		
-		try {
-			return JSON.parse(raw);
-		} catch (err) {
-			if (raw.endsWith("}")) {
-				raw = raw.slice(0, -1).trim();
-				try { return JSON.parse(raw); } catch (err2) {}
-			}
-		}
-		return null;
-	};
-	
-	// Internal helper to resolve keyframe state
-	const resolveHistory = (data, ts) => {
-		let history_obj = (typeof data.history === "string") ? JSON.parse(data.history) : data.history;
-		if (history_obj && history_obj.keyframes) {
-			return ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, ts);
-		}
-		return null;
-	};
-	
-	let { type, file_path, start, end, task_id, timestamp, id, mtime, update_map } = task;
-	
-	if (type === "batch_process") {
-		let list = [];
-		let targets = Array.from(file_index.entries());
-		const fd = fs.openSync(file_path, 'r');
-		for (let i = 0; i < targets.length; i++) {
-			let local_id = targets[i][0];
-			if (update_map && update_map.hasOwnProperty(local_id)) {
-				if (update_map[local_id] !== null) list.push({ id: local_id, data: update_map[local_id] });
-				continue;
-			}
-			let parsed_data = getRawData(fd, targets[i][1]);
-			if (parsed_data) list.push({ id: local_id, data: parsed_data });
-		}
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, results: list });
+parentPort.on("message", (task) => {
+	queue.push(task);
+	if (!processing) processQueue();
+});
+
+async function processQueue() {
+	processing = true;
+	while (queue.length > 0) {
+		let task = queue.shift();
+		await handleTask(task);
 	}
+	processing = false;
+}
+
+async function handleTask(task) {
+	let resolveHistory = (data, ts) => {
+		let history_obj = (typeof data.history === "string") ? JSON.parse(data.history) : data.history;
+		if (history_obj && history_obj.keyframes) return ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, ts);
+		return null;
+	};
+	
+	let getCleanVal = (str) => {
+		let clean = str.trim();
+		if (clean.endsWith(",")) clean = clean.slice(0, -1);
+		return clean;
+	};
+	
+	let { type, file_path, task_id, timestamp, id, update_map, query, limit_end } = task;
+	let page_file = path.join(`${file_path}.tmpndjson`, `${workerData.worker_id}.ndjson`);
 	
 	if (type === "diff") {
-		let pos = file_index.get(id);
-		if (!pos) return parentPort.postMessage({ task_id, results: null });
-		const fd = fs.openSync(file_path, 'r');
-		let parsed_data = getRawData(fd, pos);
-		fs.closeSync(fd);
-		if (parsed_data) {
-			let state_val = resolveHistory(parsed_data, timestamp);
-			if (state_val !== null) return parentPort.postMessage({ task_id, results: { key: id, value: state_val } });
+		let found = null;
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match && match[1] === id) {
+					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
+					try {
+						let state_val = resolveHistory(JSON.parse(val_str), timestamp);
+						if (state_val !== null) found = { key: id, value: state_val };
+					} catch(e) {}
+					break;
+				}
+			}
 		}
-		return parentPort.postMessage({ task_id, results: null });
+		return parentPort.postMessage({ task_id, results: found });
 	}
 	
 	if (type === "diff_all") {
 		let list = [];
-		let targets = Array.from(file_index.entries());
-		const fd = fs.openSync(file_path, 'r');
-		for (let i = 0; i < targets.length; i++) {
-			let parsed_data = getRawData(fd, targets[i][1]);
-			if (parsed_data) {
-				let state_val = resolveHistory(parsed_data, timestamp);
-				if (state_val !== null) list.push({ key: targets[i][0], value: state_val });
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match) {
+					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
+					try {
+						let state_val = resolveHistory(JSON.parse(val_str), timestamp);
+						if (state_val !== null) list.push({ key: match[1], value: state_val });
+					} catch(e) {}
+				}
 			}
 		}
-		fs.closeSync(fd);
 		return parentPort.postMessage({ task_id, results: list });
 	}
 	
 	if (type === "get_value") {
-		let pos = file_index.get(id);
-		if (!pos) return parentPort.postMessage({ task_id, results: null });
-		const fd = fs.openSync(file_path, 'r');
-		let parsed_data = getRawData(fd, pos);
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, results: parsed_data });
-	}
-	
-	if (type === "index") {
-		if (mtime !== indexed_mtime) { file_index.clear(); indexed_mtime = mtime; }
-		
-		let tombstones = [];
-		const fd = fs.openSync(file_path, 'r');
-		const buffer = Buffer.alloc(1024 * 512);
-		let current_pos = start;
-		let line_start = start;
-		
-		while (current_pos < end) {
-			const bytesRead = fs.readSync(fd, buffer, 0, Math.min(buffer.length, end - current_pos), current_pos);
-			if (bytesRead === 0) break;
-			
-			for (let i = 0; i < bytesRead; i++) {
-				let is_end_of_chunk = (current_pos + i === end - 1);
-				if (buffer[i] === 10 || is_end_of_chunk) {
-					let line_end = current_pos + i + (buffer[i] === 10 ? 0 : 1);
-					let head_len = Math.min(512, line_end - line_start);
-					let head_buf = Buffer.alloc(head_len);
-					fs.readSync(fd, head_buf, 0, head_len, line_start);
-					
-					let head_str = head_buf.toString();
-					let match = head_str.match(/^"([^"]+)"\s*:/);
-					if (match) {
-						let value_str = head_str.substring(head_str.indexOf(":") + 1).trim();
-						if (value_str === "null" || value_str.startsWith("null\n") || value_str.startsWith("null\r")) {
-							tombstones.push(match[1]);
-							file_index.delete(match[1]);
-						} else {
-							file_index.set(match[1], { start: line_start, end: line_end });
-						}
-					}
-					line_start = current_pos + i + 1;
+		let found = null;
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match && match[1] === id) {
+					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
+					try { found = JSON.parse(val_str); } catch(e) {}
+					break;
 				}
 			}
-			current_pos += bytesRead;
 		}
-		fs.closeSync(fd);
-		return parentPort.postMessage({ task_id, status: "indexed", count: file_index.size, tombstones });
-	}
-	
-	if (type === "purge_keys") {
-		let { keys } = task;
-		for (let i = 0; i < keys.length; i++) file_index.delete(keys[i]);
-		return parentPort.postMessage({ task_id, status: "purged" });
+		return parentPort.postMessage({ task_id, results: found });
 	}
 	
 	if (type === "query") {
-		let { query, limit_end } = task;
 		let list = [];
-		let targets = Array.from(file_index.entries());
-		const fd = fs.openSync(file_path, "r");
-		for (let i = 0; i < targets.length; i++) {
-			if (limit_end !== undefined && list.length >= limit_end) break;
-			let parsed_data = getRawData(fd, targets[i][1]);
-			if (parsed_data) {
-				let matches = true;
-				for (let key in query) {
-					if (parsed_data[key] !== query[key]) { matches = false; break; }
-				}
-				if (matches) {
-					if (typeof parsed_data === "object" && parsed_data !== null) parsed_data._id = targets[i][0];
-					list.push(parsed_data);
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			for await (let line of rl) {
+				if (limit_end !== undefined && list.length >= limit_end) break;
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match) {
+					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
+					try {
+						let obj = JSON.parse(val_str);
+						let matches = true;
+						for (let qk in query) {
+							if (obj[qk] !== query[qk]) { matches = false; break; }
+						}
+						if (matches) {
+							if (typeof obj === "object" && obj !== null) obj._id = match[1];
+							list.push(obj);
+						}
+					} catch(e) {}
 				}
 			}
 		}
-		fs.closeSync(fd);
 		return parentPort.postMessage({ task_id, results: list });
 	}
 	
-	if (type === "update_index") {
-		let { offsets, tombstone_keys, is_primary, mtime: new_mtime } = task;
-		if (new_mtime) indexed_mtime = new_mtime;
-		if (offsets) {
-			let keys = Object.keys(offsets);
-			let tombstone_set = new Set(tombstone_keys || []);
-			for (let i = 0; i < keys.length; i++) file_index.delete(keys[i]);
-			if (is_primary)
-				for (let i = 0; i < keys.length; i++)
-					if (!tombstone_set.has(keys[i])) file_index.set(keys[i], offsets[keys[i]]);
+	if (type === "set_values") {
+		let tmp_file = `${page_file}.tmp_${Date.now()}`;
+		let updated_keys = new Set();
+		
+		if (!fs.existsSync(path.dirname(page_file))) fs.mkdirSync(path.dirname(page_file), { recursive: true });
+		
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			let ws = fs.createWriteStream(tmp_file);
+			
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match) {
+					let key = match[1];
+					if (update_map.hasOwnProperty(key)) {
+						let new_val = update_map[key];
+						
+						//Write new value, completely overriding the old key
+						if (new_val !== null)
+							ws.write(`"${key}":${JSON.stringify(new_val)}\n`);
+						
+						updated_keys.add(key);
+					} else ws.write(line + "\n");
+				} else ws.write(line + "\n");
+			}
+			
+			ws.end();
+			await new Promise(r => ws.on("finish", r));
+		} else {
+			let ws = fs.createWriteStream(tmp_file);
+			ws.end();
+			await new Promise(r => ws.on("finish", r));
 		}
-		return parentPort.postMessage({ task_id, status: "updated" });
+		
+		let append_ws = fs.createWriteStream(tmp_file, { flags: "a" });
+		for (let key in update_map)
+			if (!updated_keys.has(key) && update_map[key] !== null)
+				append_ws.write(`"${key}":${JSON.stringify(update_map[key])}\n`);
+		
+		append_ws.end();
+		await new Promise(r => append_ws.on("finish", r));
+		
+		fs.renameSync(tmp_file, page_file);
+		return parentPort.postMessage({ task_id, results: true });
 	}
-});
+}
