@@ -118,7 +118,7 @@ if (!global.v8) global.v8 = require("node:v8");
 	};
 	
 	try {
-		require("../../../../core/db/NDJSON_main.js");
+		require("../db/NDJSON_main.js");
 	} catch (e) {} //NDJSON handling
 }
 
