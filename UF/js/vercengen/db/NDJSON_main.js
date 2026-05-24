@@ -12,7 +12,16 @@ if (!global.ve) global.ve = {};
 
 //Initialise functions
 {
-	
+	/**
+	 * Returns a diff over `.history.keyframes` for the ID in question.
+	 * 
+	 * @param {string} arg0_file_path - The .ndjson file to target for a diff.
+	 * @param {string} arg1_id
+	 * @param {Object} [arg2_options]
+	 *  @param {number} [arg2_options.timestamp]
+	 * 
+	 * @returns {Promise<Object|null>}
+	 */
 	ve.NDJSON_diff = async function (arg0_file_path, arg1_id, arg2_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -22,7 +31,7 @@ if (!global.ve) global.ve = {};
 		//Declare local instance variables
 		let pool = ve.NDJSON_getWorkerPool();
 		let task_id = global.ve.ndjson_task_id_counter++;
-		let worker_id = ve.NDJSON_getWorkerId(id, pool.length);
+		let worker_id = ve.NDJSON_getWorkerID(id, pool.length);
 		
 		//Return statement
 		return new Promise((resolve) => {
@@ -31,12 +40,21 @@ if (!global.ve) global.ve = {};
 				type: "diff",
 				task_id: task_id,
 				file_path: file_path,
-				id: arg1_id,
+				id: id,
 				timestamp: options.timestamp
 			});
 		});
 	};
 	
+	/**
+	 * Diffs all `.history.keyframes` for all Objects for a given ID, so long as they have that field.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {number} [arg1_options.timestamp]
+	 * 
+	 * @returns {Promise<Object[]>}
+	 */
 	ve.NDJSON_diffAll = async function (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -66,6 +84,14 @@ if (!global.ve) global.ve = {};
 		return results.filter(v => v !== null).flat();
 	};
 	
+	/**
+	 * Returns the Object value of a single ID.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {string} arg1_id
+	 * 
+	 * @returns {Promise<Object>}
+	 */
 	ve.NDJSON_getValue = async function (arg0_file_path, arg1_id) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -74,7 +100,7 @@ if (!global.ve) global.ve = {};
 		//Declare local instance variables
 		let pool = ve.NDJSON_getWorkerPool();
 		let task_id = global.ve.ndjson_task_id_counter++;
-		let worker_id = ve.NDJSON_getWorkerId(id, pool.length);
+		let worker_id = ve.NDJSON_getWorkerID(id, pool.length);
 		
 		//Return statement
 		return new Promise((resolve) => {
@@ -88,7 +114,15 @@ if (!global.ve) global.ve = {};
 		});
 	};
 	
-	ve.NDJSON_getWorkerId = function (arg0_id, arg1_pool_length) {
+	/**
+	 * Returns the Worker ID that holds a particular ID's partition.
+	 * 
+	 * @param {string} arg0_id
+	 * @param {number} arg1_pool_length
+	 * 
+	 * @returns {number}
+	 */
+	ve.NDJSON_getWorkerID = function (arg0_id, arg1_pool_length) {
 		//Convert from parameters
 		let id_str = arg0_id.toString();
 		let pool_length = arg1_pool_length;
@@ -105,6 +139,13 @@ if (!global.ve) global.ve = {};
 		return Math.abs(hash) % pool_length;
 	};
 	
+	/**
+	 * Returns the current NDJSON worker pool managing DBs.
+	 * 
+	 * @param {number} [arg0_max_workers=os.cpus().length - 1]
+	 * 
+	 * @returns {NodeWorker[]}
+	 */
 	ve.NDJSON_getWorkerPool = function (arg0_max_workers) {
 		//Convert from parameters
 		let max_workers = Math.returnSafeNumber(arg0_max_workers, os.cpus().length - 1);
@@ -132,6 +173,17 @@ if (!global.ve) global.ve = {};
 		return global.ve.ndjson_worker_pool;
 	};
 	
+	/**
+	 * Loads a regular JSON file and partitions it into NDJSON files.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {number} [arg1_options.dynamic_chunk_size=67108864] - 64MB
+	 *  @param {number} [arg1_options.dynamic_max_workers=os.cpus().length - 1]
+	 *  @param {number} [arg1_options.ram_threshold] - % Threshold of RAM dedicated to RAM queries.
+	 * 
+	 * @returns {Promise<unknown>}
+	 */
 	ve.NDJSON_load = async function (arg0_file_path, arg1_options) {
 		//Convert from parameters		
 		let file_path = path.resolve(arg0_file_path);
@@ -214,6 +266,13 @@ if (!global.ve) global.ve = {};
 		});
 	};
 	
+	/**
+	 * Partitions a given file into multiple NDJSON files for use. Internal helper function.
+	 * 
+	 * @param {string} arg0_file_path
+	 * 
+	 * @returns {Promise<void>}
+	 */
 	ve.NDJSON_partitionFile = async function (arg0_file_path) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -234,7 +293,7 @@ if (!global.ve) global.ve = {};
 		for await (let line of rl) {
 			let match = line.match(/^"([^"]+)"\s*:/);
 			if (match) {
-				let wid = ve.NDJSON_getWorkerId(match[1], pool.length);
+				let wid = ve.NDJSON_getWorkerID(match[1], pool.length);
 				let clean_line = line.trim();
 				if (clean_line.endsWith(",")) clean_line = clean_line.slice(0, -1);
 				
@@ -250,6 +309,15 @@ if (!global.ve) global.ve = {};
 		}
 	};
 	
+	/**
+	 * Queries an NDJSON file. [WIP] - Should be refactored so that only `arg1_options` is present.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_query_obj] - Key/value pairs to match for in queries.
+	 * @param {Object} [arg2_options]
+	 * 
+	 * @returns {Promise<Object[]>}
+	 */
 	ve.NDJSON_query = async function (arg0_file_path, arg1_query_obj, arg2_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -290,6 +358,14 @@ if (!global.ve) global.ve = {};
 		return final_results;
 	};
 	
+	/**
+	 * Removes a value from the NDJSON file.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {string} arg1_id
+	 * 
+	 * @returns {Promise<boolean>}
+	 */
 	ve.NDJSON_removeValue = async function (arg0_file_path, arg1_id) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -303,6 +379,14 @@ if (!global.ve) global.ve = {};
 		return await ve.NDJSON_setValues(file_path, map);
 	};
 	
+	/**
+	 * Removes multiple valuees from the NDJSON file.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {string[]} arg1_ids
+	 * 
+	 * @returns {Promise<boolean>}
+	 */
 	ve.NDJSON_removeValues = async function (arg0_file_path, arg1_ids) {
 		//Convert from parameters
 		let file_path = arg0_file_path;
@@ -319,6 +403,13 @@ if (!global.ve) global.ve = {};
 		return await ve.NDJSON_setValues(arg0_file_path, map);
 	};
 	
+	/**
+	 * Saves the NDJSON file back into the main directory.
+	 * 
+	 * @param {string} arg0_file_path
+	 * 
+	 * @returns {Promise<void>}
+	 */
 	ve.NDJSON_save = async function (arg0_file_path) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -354,6 +445,15 @@ if (!global.ve) global.ve = {};
 		fs.rmSync(folder_path, { recursive: true, force: true });
 	};
 	
+	/**
+	 * Sets a key-value pair in the NDJSON file.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {string} arg1_id
+	 * @param {Object} arg2_value
+	 * 
+	 * @returns {Promise<boolean>}
+	 */
 	ve.NDJSON_setValue = async function (arg0_file_path, arg1_id, arg2_value) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -368,6 +468,14 @@ if (!global.ve) global.ve = {};
 		return await ve.NDJSON_setValues(arg0_file_path, map);
 	};
 	
+	/**
+	 * Sets multiple key-value pairs for the NDJSON file.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} arg1_update_map
+	 * 
+	 * @returns {Promise<boolean>}
+	 */
 	ve.NDJSON_setValues = async function (arg0_file_path, arg1_update_map) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
@@ -380,7 +488,7 @@ if (!global.ve) global.ve = {};
 		
 		//Iterate over all keys in update map
 		for (let key in update_map) {
-			let wid = ve.NDJSON_getWorkerId(key, pool.length);
+			let wid = ve.NDJSON_getWorkerID(key, pool.length);
 			if (!updates_by_worker[wid]) updates_by_worker[wid] = {};
 			updates_by_worker[wid][key] = update_map[key];
 		}
