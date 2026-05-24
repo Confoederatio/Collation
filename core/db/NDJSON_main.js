@@ -1,10 +1,12 @@
-if (!global.ve) global.ve = {};
+//Import libraries
 let fs = require("node:fs");
 let path = require("node:path");
 let os = require("node:os");
 let v8 = require("node:v8");
 let readline = require("node:readline");
 let NodeWorker = require("node:worker_threads").Worker;
+
+if (!global.ve) global.ve = {};
 
 //Init functions
 {
