@@ -157,6 +157,7 @@ if (!global.ve) global.ve = {};
 		let refreshLimits = () => {
 			let memory = process.memoryUsage();
 			let memory_usage = memory.heapUsed;
+			
 			let available_buffer = (heap_limit*options.ram_threshold) - memory_usage;
 			
 			if (available_buffer < 0) {
