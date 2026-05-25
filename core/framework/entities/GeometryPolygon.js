@@ -169,80 +169,35 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			if (this.value[1] && this.geometry)
 				this.geometry.setSymbol(this.value[1]);
 			
-			if (this.geometry) {
-				this.geometry.addEventListener("click", (e) => {
-					console.log(this, this.value, e);
-				});
-				main.layers.entity_layer.addGeometry(this.geometry);
-				
-				this._drawLabels();
-			}
-			
-			//this._drawLabels();
-		} else { console.warn(`this.value:`, this.value, value); }
-	}
-	
-	/*draw () { //[WIP] - Use setCoordinates() first and retain geometries
-		//Remove geometry first to handle it
-		if (this.geometry) this.geometry.remove();
-		if (this.selected_geometry) this.selected_geometry.remove();
-		if (this.label_geometries)
-			for (let i = this.label_geometries.length - 1; i >= 0; i--) {
-				this.label_geometries[i].remove();
-				this.label_geometries.splice(i, 1);
-			}
-		this.geometry = undefined;
-		this.selected_geometry = undefined;
-		
-		//1. Set this.value from current relative keyframe
-		if (this.history._hasTimestampAfter(main.timestamp)) {
-			this.value = this.history.getKeyframe({ date: main.timestamp }).value;
-			if (this.value === undefined || this.value?.length === 0 || this._is_visible === false) return;
-			
-			//2. Check any cause for derendering
-			if (this.value && this.value[0] === null) return;
-			if (this.value && this.value[2]) {
-				if (this.value[2].hidden) return;
-				if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) return;
-				if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) return;
-			}
-			
-			//3. Draw this.geometry, this.label_geometries, this.selected_geometry onto map
-			try {
-				if (this.value[0]) {
-					this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
-					if (this.value[1] && this.geometry) this.geometry.setSymbol(this.value[1]);
-					main.layers.entity_layer.addGeometry(this.geometry);
-					this._drawLabels();
-				}
-			} catch (e) { console.error(e); }
-			
 			//4. Draw this.selected_geometry
-			try {
-				this.selected_geometry = undefined;
-				
-				if (this.geometry && this.selected) {
-					this.selected_geometry = this.geometry.copy();
-					this.selected_geometry.setSymbol({
-						lineColor: `rgb(255, 255, 0)`,
-						lineDasharray : (main.brush.selected_geometry?.id !== this.id) ? [10, 10, 10] : undefined,
-						lineOpacity: 0.5,
-						lineWidth: 4
-					});
-					main.layers.selection_layer.addGeometry(this.selected_geometry);
-				}
-			} catch (e) { console.error(e); }
 			
-			//5. Add bindings
-			if (this.geometry)
+			if (this.geometry) {
 				this.geometry.addEventListener("click", (e) => {
 					if (!["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode)) {
 						this.history.draw(this.keyframes_ui);
 						super.open("instance", { name: this.name, ...this.window_options });
 					}
+					console.log(this, this.value, e);
 				});
-		}
-	}*/
+				main.layers.entity_layer.addGeometry(this.geometry);
+				
+				this._drawLabels();
+				
+				try {
+					if (this.selected) {
+						this.selected_geometry = this.geometry.copy();
+						this.selected_geometry.setSymbol({
+							lineColor: `rgb(255, 255, 0)`,
+							lineDasharray : (main.brush.selected_geometry?.id !== this.id) ? [10, 10, 10] : undefined,
+							lineOpacity: 0.5,
+							lineWidth: 4
+						});
+						main.layers.selection_layer.addGeometry(this.selected_geometry);
+					}
+				} catch (e) { console.error(e); }
+			}
+		} else { console.warn(`this.value:`, this.value, value); }
+	}
 	
 	drawHierarchyDatatype () {
 		//Declare local instance variables
