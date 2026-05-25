@@ -93,6 +93,33 @@ if (!global.NDJSON)
 	};
 	
 	/**
+	 * Resolves active RAM diagnostic percentage statistics from every worker in the pool.
+	 * IPC: `ndjson:get_diagnostics` | Callback: `ndjson:get_diagnostics_ready`.
+	 *
+	 * @returns {Promise<Array<{worker_id: number, rss: number, heapUsed: number, heapTotal: number, heapLimit: number, percentage: number}>>}
+	 */
+	NDJSON.getDiagnostics = async function () {
+		//Declare local instance variables
+		let pool = NDJSON.getWorkerPool();
+		let promises = [];
+		
+		for (let i = 0; i < pool.length; i++) {
+			let task_id = global.ve.ndjson_task_id_counter++;
+			
+			promises.push(new Promise((resolve) => {
+				global.ve.ndjson_pending_tasks.set(task_id, resolve);
+				pool[i].postMessage({
+					type: "get_diagnostics",
+					task_id: task_id
+				});
+			}));
+		}
+		
+		//Return statement
+		return await Promise.all(promises);
+	};
+	
+	/**
 	 * Returns the Object value of a single ID.
 	 * IPC: `ndjson:get_value` | Callback: `ndjson:get_value_ready`.
 	 * 

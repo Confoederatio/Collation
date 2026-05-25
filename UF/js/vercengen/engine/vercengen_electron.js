@@ -55,6 +55,10 @@ if (!global.v8) global.v8 = require("node:v8");
 			let result = await NDJSON.diffAll(file_path, options);
 			event.sender.send("ndjson:diff_all_ready", result);
 		});
+		ipc_main.on("ndjson:get_diagnostics", async (event) => {
+			let result = await NDJSON.getDiagnostics();
+			event.sender.send("ndjson:get_diagnostics_ready", result);
+		});
 		ipc_main.on("ndjson:get_value", async (event, file_path, id) => {
 			let result = await NDJSON.getValue(file_path, id);
 			event.sender.send("ndjson:get_value_ready", result);
@@ -64,8 +68,19 @@ if (!global.v8) global.v8 = require("node:v8");
 			event.sender.send("ndjson:get_worker_id_ready", result);
 		});
 		ipc_main.on("ndjson:get_worker_pool", async (event, max_workers) => {
-			let result = NDJSON.getWorkerPool(max_workers);
-			event.sender.send("ndjson:get_worker_pool_ready", result);
+			let pool = NDJSON.getWorkerPool(max_workers);
+			let serialised_pool = pool.map((w) => {
+				return {
+					threadId: w?.threadId,
+					resourceLimits: w?.resourceLimits ? {
+						maxYoungGenerationSizeMb: w.resourceLimits.maxYoungGenerationSizeMb,
+						maxOldGenerationSizeMb: w.resourceLimits.maxOldGenerationSizeMb,
+						codeRangeSizeMb: w.resourceLimits.codeRangeSizeMb,
+						stackSizeMb: w.resourceLimits.stackSizeMb
+					} : null
+				};
+			});
+			event.sender.send("ndjson:get_worker_pool_ready", serialised_pool);
 		});
 		ipc_main.on("ndjson:load", async (event, file_path) => {
 			await NDJSON.load(file_path);
