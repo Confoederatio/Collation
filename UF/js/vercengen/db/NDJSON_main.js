@@ -384,7 +384,7 @@ if (!global.ve) global.ve = {};
 	};
 	
 	/**
-	 * Removes multiple valuees from the NDJSON file.
+	 * Removes multiple values from the NDJSON file.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {string[]} arg1_ids
