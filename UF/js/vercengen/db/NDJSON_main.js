@@ -20,6 +20,7 @@ if (!global.NDJSON)
 {
 	/**
 	 * Returns a diff over `.history.keyframes` for the ID in question.
+	 * IPC: `ndjson:diff` | Callback: `ndjson:diff_ready`.
 	 * 
 	 * @param {string} arg0_file_path - The .ndjson file to target for a diff.
 	 * @param {string} arg1_id
@@ -54,6 +55,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Diffs all `.history.keyframes` for all Objects for a given ID, so long as they have that field.
+	 * IPC: `ndjson:diff_all` | Callback: `ndjson:diff_all_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {Object} [arg1_options]
@@ -92,6 +94,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Returns the Object value of a single ID.
+	 * IPC: `ndjson:get_value` | Callback: `ndjson:get_value_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {string} arg1_id
@@ -122,6 +125,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Returns the Worker ID that holds a particular ID's partition.
+	 * IPC: `ndjson:get_worker_id` | Callback: `ndjson:get_worker_id_ready`.
 	 * 
 	 * @param {string} arg0_id
 	 * @param {number} arg1_pool_length
@@ -147,6 +151,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Returns the current NDJSON worker pool managing DBs.
+	 * IPC: `ndjson:get_worker_pool` | Callback: `ndjson:get_worker_pool_ready`.
 	 * 
 	 * @param {number} [arg0_max_workers=os.cpus().length - 1]
 	 * 
@@ -274,6 +279,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Partitions a given file into multiple NDJSON files for use. Internal helper function.
+	 * IPC: `ndjson:partition_file` | Callback: `ndjson:partition_file_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * 
@@ -317,6 +323,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Queries an NDJSON file. [WIP] - Should be refactored so that only `arg1_options` is present.
+	 * IPC: `ndjson:query` | Callback: `ndjson:query_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {Object} [arg1_options]
@@ -370,6 +377,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Removes a value from the NDJSON file.
+	 * IPC: `ndjson:remove_value` | Callback: `ndjson:remove_value_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {string} arg1_id
@@ -391,6 +399,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Removes multiple values from the NDJSON file.
+	 * IPC: `ndjson:remove_values` | Callback: `ndjson:remove_values_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {string[]} arg1_ids
@@ -415,6 +424,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Saves the NDJSON file back into the main directory.
+	 * IPC: `ndjson:save` | Callback: `ndjson:save_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * 
@@ -457,6 +467,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Sets a key-value pair in the NDJSON file.
+	 * IPC: `ndjson:set_value` | Callback: `ndjson:set_value_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {string} arg1_id
@@ -480,6 +491,7 @@ if (!global.NDJSON)
 	
 	/**
 	 * Sets multiple key-value pairs for the NDJSON file.
+	 * IPC: `ndjson:set_values` | Callback: `ndjson:set_values_ready`.
 	 * 
 	 * @param {string} arg0_file_path
 	 * @param {Object} arg1_update_map
