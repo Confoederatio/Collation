@@ -10,65 +10,11 @@ if (!global.naissance) global.naissance = {};
 naissance.GeometryPolygon = class extends naissance.Geometry {
 	constructor () {
 		super();
+		
+		//Declare local instance variables
 		this.class_name = "GeometryPolygon";
+		this.label_geometries = [];
 		this.node_editor_mode = "Polygon";
-		
-		//Declare UI
-		this.interface = veInterface({
-			information: veHTML(() => {
-				//Declare local instance variables
-				let area_km2 = (this.geometry && this.isOpen("instance")) ? 
-					this.geometry.getArea()/1000000 : 0;
-				
-				//Return statement
-				return `ID: ${this.id} | Area: ${String.formatNumber(area_km2)}km^2`;
-			}, { width: 99, x: 0, y: 0 }),
-			move_to_brush: veButton(() => DALS.Timeline.parseAction({
-				options: { name: "Select Geometry" },
-				value: [{ type: "Brush", select_geometry_id: this.id }]
-			}), { name: "Move To Brush", limit: () => (main.brush.selected_geometry?.id !== this.id), x: 0, y: 1 }),
-			finish_polygon: veButton(() => DALS.Timeline.parseAction({
-				options: { name: "Deselect Geometry", key: "deselect_geometry" },
-				value: [{ type: "Brush", select_geometry_id: false }]
-			}), { name: "Finish Polygon", limit: () => (main.brush.selected_geometry?.id === this.id), x: 0, y: 1 }),
-			
-			selected: veCheckbox(this.selected, {
-				name: "Selected",
-				onuserchange: (v) => this.selected = v,
-				x: 1, y: 1
-			}),
-			debug: veButton(() => {
-				console.log(`$geometry - naissance.GeometryPolygon (ID: ${this.id}):`, this);
-				window.$geometry = this;
-			}, {
-				name: "Debug",
-				x: 2, y: 1
-			}),
-			
-			actions_bar: veRawInterface(this.drawHierarchyDatatypeGenerics(), {
-				name: "<b>Quick Actions:</b>",
-				style: {
-					alignItems: "center",
-					display: "flex",
-					"[component='ve-button']": { marginLeft: "var(--padding)" }
-				},
-				width: 99
-			})
-		}, { is_folder: false });
-		this.edit_symbol_ui = veInterface({
-			edit_fill: main.interfaces.edit_geometry_polygon.draw({ _id: () => this.id, name: "Fill" }),
-			edit_label: main.interfaces.edit_geometry_label.draw({ _id: () => this.id, name: "Label" }),
-			edit_stroke: main.interfaces.edit_geometry_line.draw({ _id: () => this.id, name: "Stroke" })
-		}, { name: "Edit Symbol" });
-		this.keyframes_ui = veInterface({}, {
-			name: `Keyframes`, open: true
-		});
-		super.drawVariablesEditor();
-		
-		//Add keyframe with default brush symbol upon instantiation
-		let brush_symbol = main.brush.getBrushSymbol();
-		if (brush_symbol)
-			this.addKeyframe(main.date, undefined, brush_symbol);
 		
 		//KEEP AT BOTTOM!
 		this.updateOwner();
@@ -174,7 +120,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 						this.history.draw(this.keyframes_ui);
 						super.open("instance", { name: this.name, ...this.window_options });
 					}
-					console.log(this, this.value, e);
 				});
 				main.layers.entity_layer.addGeometry(this.geometry);
 				
@@ -196,75 +141,5 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				} catch (e) { console.error(e); }
 			}
 		} else { console.warn(`this.value:`, this.value, value); }
-	}
-	
-	drawHierarchyDatatype () {
-		//Declare local instance variables
-		let current_keyframe = this.history.getKeyframe();
-			this._current_keyframe = current_keyframe;
-		let current_symbol = current_keyframe.value[1];
-		let is_visible = false;
-		
-		try {
-			if (current_keyframe.value[0] !== undefined && Object.keys(current_keyframe.value[0]).length)
-				is_visible = true;
-		} catch (e) {}
-		
-		//Return statement
-		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
-		this.hierarchy_datatype = new ve.HierarchyDatatype({
-			icon: veHTML(`<icon style = "${
-				(current_symbol?.polygonFill) ? `color: ${current_symbol?.polygonFill};` : ""
-			}">pentagon</icon>`, {
-				tooltip: "GeometryPolygon"
-			}),
-			...super.drawHierarchyDatatypeGenerics(),
-			context_menu: veButton(() => {
-				try { this.history.draw(this.keyframes_ui); } catch (e) {}
-				super.open("instance", { name: this.name, ...this.window_options });
-			}, {
-				attributes: { class: "order-101" },
-				name: "<icon>more_vert</icon>",
-				tooltip: "More Actions"
-			})
-		},  {
-			attributes: {
-				"data-is-selected": this.selected,
-				"data-is-visible": (is_visible) ? "true" : "false",
-				"data-selected-geometry": (main.brush.selected_geometry?.id === this.id),
-				"data-type": "GeometryPolygon"
-			},
-			do_not_display: true,
-			instance: this,
-			name: this.name,
-			name_options: {
-				onprogramchange: () => {
-					this.drawHierarchyDatatype();
-				},
-				onuserchange: (v) => {
-					this.name = v;
-				}
-			}
-		});
-		delete this._current_keyframe;
-		return this.hierarchy_datatype;
-	}
-	
-	getActionsBarElement () {
-		//Declare local instance variables
-		let actions_bar_el = super.getActionsBarElement();
-		
-		let context_menu_button = veButton(() => {
-			try { this.history.draw(this.keyframes_ui); } catch (e) {}
-			super.open("instance", { name: this.name, ...this.window_options });
-		}, {
-			attributes: { class: "order-101" },
-			name: "<icon>more_vert</icon>",
-			tooltip: "More Actions"
-		});
-			context_menu_button.bind(actions_bar_el);
-		
-		//Return statement
-		return actions_bar_el;
 	}
 };

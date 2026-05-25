@@ -1,4 +1,4 @@
-global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it retains elements and is instance-based
+/*global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it retains elements and is instance-based
 	static histmap_table;
 	static instance;
 	
@@ -72,4 +72,4 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 			ipcRenderer.send("ndjson:get-diagnostics");
 		});
 	}
-};
+};*/

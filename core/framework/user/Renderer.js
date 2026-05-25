@@ -79,7 +79,7 @@ naissance.Renderer = class extends ve.Class {
 	
 	static async draw () {
 		//Declare local instance variables
-		console.log("Renderer pre-flight:", {
+		console.trace("Renderer pre-flight:", {
 			file_path: main.file_path,
 			timestamp: main.timestamp
 		});
