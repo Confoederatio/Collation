@@ -313,16 +313,20 @@ if (!global.ve) global.ve = {};
 	 * Queries an NDJSON file. [WIP] - Should be refactored so that only `arg1_options` is present.
 	 * 
 	 * @param {string} arg0_file_path
-	 * @param {Object} [arg1_query_obj] - Key/value pairs to match for in queries.
-	 * @param {Object} [arg2_options]
+	 * @param {Object} [arg1_options]
+	 *  @param {number} [arg1_options.limit_end]
+	 *  @param {number} [arg1_options.limit_start=0]
+	 *  @param {Object} [arg1_options.query_obj] - Key/value pairs to match for.
 	 * 
 	 * @returns {Promise<Object[]>}
 	 */
-	ve.NDJSON_query = async function (arg0_file_path, arg1_query_obj, arg2_options) {
+	ve.NDJSON_query = async function (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
-		let query_obj = arg1_query_obj ? arg1_query_obj : {};
-		let options = arg2_options ? arg2_options : {};
+		let options = arg1_options ? arg1_options : {};
+		
+		//Initialise options
+		if (!options.query_obj) options.query_obj = {};
 		
 		//Declare local instance variables
 		let limit_end = options.limit_end;
@@ -340,7 +344,7 @@ if (!global.ve) global.ve = {};
 					type: "query",
 					task_id: task_id, 
 					file_path: file_path, 
-					query: query_obj, 
+					query: options.query_obj, 
 					limit_end: limit_end 
 				});
 			}));

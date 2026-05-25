@@ -4,7 +4,7 @@ let fs = require("fs");
 let path = require("path");
 let readline = require("readline");
 let { performance } = require("perf_hooks");
-const ve = require("./UF/js/vercengen/engine/vercengen_electron");
+let ve = require("./UF/js/vercengen/engine/vercengen_electron");
 
 //Metadata - Title
 let latest_fps = 0;
@@ -182,7 +182,8 @@ let win;
       console.log("Local value after remove:", local_value);
       
       console.time("query 1000 GeometryPolygons");
-      local_value = await ve.NDJSON_query("./saves/atlas.naissance.ndjson", { class_name: "GeometryPolygon" }, { 
+      local_value = await ve.NDJSON_query("./saves/atlas.naissance.ndjson", { 
+        query_obj: { class_name: "GeometryPolygon" },
         limit_start: 1000,
         limit_end: 1500
       });
