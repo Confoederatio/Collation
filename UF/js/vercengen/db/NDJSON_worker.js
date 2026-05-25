@@ -69,35 +69,42 @@ parentPort.on("message", (task) => {
 	if (!processing) processQueue();
 });
 
-async function processQueue () {
-	processing = true;
-	while (queue.length > 0) {
-		let task = queue.shift();
-		await handleTask(task);
-	}
-	processing = false;
-}
-
-async function handleTask (task) {
-	let resolveHistory = (data, ts) => {
-		let history_obj = (typeof data.history === "string") ? JSON.parse(data.history) : data.history;
-		if (history_obj && history_obj.keyframes) return ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, ts);
+async function handleTask (arg0_task) {
+	//Convert from parameters
+	let task = arg0_task;
+	
+	//Declare internal helper functions
+	let getCleanVal = (string) => {
+		let clean = string.trim();
+			if (clean.endsWith(",")) clean = clean.slice(0, -1);
+		
+		//Return statement
+		return clean;
+	};
+	let resolveHistory = (data, timestamp) => {
+		let history_obj = (typeof data.history === "string") ? 
+			JSON.parse(data.history) : data.history;
+		
+		//Return statement
+		if (history_obj && history_obj.keyframes) 
+			return ve.NDJSON_resolveStateAtTimestamp(history_obj.keyframes, timestamp);
 		return null;
 	};
 	
-	let getCleanVal = (str) => {
-		let clean = str.trim();
-		if (clean.endsWith(",")) clean = clean.slice(0, -1);
-		return clean;
-	};
-	
-	let { type, file_path, task_id, timestamp, id, update_map, query, limit_end } = task;
+	//Declare local instance variables
+	let {
+		file_path, id, limit_end, update_map, query, task_id, timestamp, type
+	} = task; //Destructure parameteers from task
 	let page_file = path.join(`${file_path}.tmpndjson`, `${workerData.worker_id}.ndjson`);
 	
+	//diff: parses the .history.keyframes for an individual ID
 	if (type === "diff") {
 		let found = null;
+		
 		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
+			let rl = readline.createInterface({ 
+				input: fs.createReadStream(page_file) 
+			});
 			for await (let line of rl) {
 				let match = line.match(/^"([^"]+)"\s*:/);
 				if (match && match[1] === id) {
@@ -110,11 +117,15 @@ async function handleTask (task) {
 				}
 			}
 		}
+		
+		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
 	}
 	
+	//diff_all: parses `.history.keyframes` for all individual IDs.
 	if (type === "diff_all") {
 		let list = [];
+		
 		if (fs.existsSync(page_file)) {
 			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
 			for await (let line of rl) {
@@ -128,9 +139,12 @@ async function handleTask (task) {
 				}
 			}
 		}
+		
+		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
 	}
 	
+	//get_value: returns the Object representing an ID.
 	if (type === "get_value") {
 		let found = null;
 		if (fs.existsSync(page_file)) {
@@ -144,9 +158,12 @@ async function handleTask (task) {
 				}
 			}
 		}
+		
+		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
 	}
 	
+	//query: queries an Object based on strict matches, and returns an Array<Object>.
 	if (type === "query") {
 		let list = [];
 		if (fs.existsSync(page_file)) {
@@ -159,9 +176,9 @@ async function handleTask (task) {
 					try {
 						let obj = JSON.parse(val_str);
 						let matches = true;
-						for (let qk in query) {
-							if (obj[qk] !== query[qk]) { matches = false; break; }
-						}
+						
+						for (let query_key in query)
+							if (Object.getValue(obj, query_key) !== query[query_key]) { matches = false; break; }
 						if (matches) {
 							if (typeof obj === "object" && obj !== null) obj._id = match[1];
 							list.push(obj);
@@ -170,9 +187,12 @@ async function handleTask (task) {
 				}
 			}
 		}
+		
+		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
 	}
 	
+	//set_values: sets multiple key-value pairs in the NDJSON partition.
 	if (type === "set_values") {
 		let tmp_file = `${page_file}.tmp_${Date.now()}`;
 		let updated_keys = new Set();
@@ -216,6 +236,17 @@ async function handleTask (task) {
 		await new Promise(r => append_ws.on("finish", r));
 		
 		fs.renameSync(tmp_file, page_file);
+		
+		//Return statement
 		return parentPort.postMessage({ task_id, results: true });
 	}
+}
+
+async function processQueue () {
+	processing = true;
+	while (queue.length > 0) {
+		let task = queue.shift();
+		await handleTask(task);
+	}
+	processing = false;
 }
