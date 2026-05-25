@@ -178,8 +178,10 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				});
 				main.layers.entity_layer.addGeometry(this.geometry);
 				
+				//3. Draw labels
 				this._drawLabels();
 				
+				//4. Draw selection
 				try {
 					if (this.selected) {
 						this.selected_geometry = this.geometry.copy();
