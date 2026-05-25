@@ -1,4 +1,4 @@
-//Import modules
+//Import libraries
 global.child_process = require("child_process");
 global.cubic_spline = require("cubic-spline");
 global.electron = require("electron");
@@ -16,6 +16,7 @@ global.polylabel = require("polylabel");
 global.puppeteer = require("puppeteer");
 global.util = require("util");
 
+//Set file paths
 global.h1 = "./histmap/1.data_scraping/";
 global.h2 = "./histmap/2.data_cleaning/";
 global.h3 = "./histmap/3.data_merging/";
@@ -41,7 +42,6 @@ global.l4p = "./livemap/4.view/politics/";
 		//KEEP AT TOP! Make sure file paths exist
 		{
 			if (!fs.existsSync("./saves/")) fs.mkdirSync("./saves/");
-			loadSettings();
 		}
 		
 		//Initialise global.scene
@@ -49,99 +49,7 @@ global.l4p = "./livemap/4.view/politics/";
 			map_component: new ve.Map()
 		});
 			global.map = scene.map_component.map;
-		
-    //Declare global variables
-		global.main_navbar = new UI_Navbar();
-    global.main = {
-			hierarchy: {},
-			interfaces: {
-				//Leftbar
-				leftbar_ui: new UI_Leftbar(),
-				
-				//Rightbar
-				
-				//Topbar
-				date_ui: new UI_DateMenu(),
-				navbar: global.main_navbar,
-			},
-			_layers: { //Layers which are not appended to the map but kept internally
-				province_layers: [], //Array of all current naissance.Layers that are flagged as 'provinces'
-				provinces: new maptalks.VectorLayer("province_layer", [], { hitDetect: true, interactive: false }) 
-			},
-			layers: {
-				//Foreground layers
-				overlay_layer: new maptalks.VectorLayer("overlay_layer", [], { hitDetect: true, interactive: true, zIndex: 10001 }),
-				cursor_layer: new maptalks.VectorLayer("cursor_layer", [], { hitDetect: false, interactive: false, zIndex: 10000 }),
-				
-				//Background layers
-				label_layer: new maptalks.VectorLayer("label_layer", [], {
-					collision: true,
-					collisionDelay: 250,
-					forceRenderOnMoving: true,
-					forceRenderOnRotating: true,
-					forceRenderOnZooming: true,
-					
-					hitDetect: false, 
-					interactive: false, 
-					zIndex: 6 
-				}),
-				selection_layer: new maptalks.VectorLayer("selection_layer", [], { hitDetect: false, interactive: false, zIndex: 5 }),
-				entity_layer: new maptalks.VectorLayer("entity_layer", [], {
-					hitDetect: true,
-					interactive: true,
-					zIndex: 3
-				}),
-				group_tile_layers: new maptalks.GroupTileLayer("group_tile_layers", [], { zIndex: -10000 }) //Tile layers must be at bottom
-			},
-			map: map,
-			renderer: new naissance.Renderer(map),
-			settings: {},
-			user: {
-				_mapmodes: {},
-				mapmodes: []
-			}
-    };
-		
-		if (!global.naissance) global.naissance = {};
-			main.map.settings = {
-				autoload_last_date: true
-			};
-			UI_Settings.loadSettings();
-			main.user.brush = new naissance.Brush();
-		
-		//1.1. Append all layers to map
-		Object.iterate(main.layers, (local_key, local_value) => local_value.addTo(map));
-		
-		//1.2. Add event handlers to map
-		//mousedown
-		let mousedown_dictionary = ["left_click", "middle_click", "right_click"];
-		map.on("mousedown", (e) => {
-			for (let i = 0; i < mousedown_dictionary.length; i++)
-				delete HTML[mousedown_dictionary[i]];
-			HTML[mousedown_dictionary[e.domEvent.which - 1]] = true;
-		});
-		
-		//mouseup
-		map.on("mouseup", (e) => {
-			for (let i = 0; i < mousedown_dictionary.length; i++)
-				delete HTML[mousedown_dictionary[i]];
-		});
-		
-		//2. Set aliases
-		main.brush = main.user.brush;
-		
-		//3. Set datee
-		UI_DateMenu.setDate(Date.getCurrentDate());
   };
-	
-	global.loadSettings = function () {
-		//Try to read from svea_settings.json if possible
-		if (fs.existsSync("svea_settings.json")) {
-			global.svea_settings = JSON.parse(fs.readFileSync("svea_settings.json", "utf8"));
-		} else {
-			console.warn(`svea_settings.json is not defined. API secrets and processes will not be processed.`);
-		}
-	};
 
   function trackPerformance () {
     //Declare local instance variables
@@ -177,12 +85,7 @@ global.l4p = "./livemap/4.view/politics/";
 		//Accepts wildcards (*), exclusionary patterns (!), and folders/file paths
 		load_files: [
 			"common",
-			"!core/startup.js",
-			"!core/archives",
-			"!core/db",
-			"core",
-			"core/framework/brush",
-			"core/framework/actions",
+			"core/render",
 			"histmap",
 			"livemap",
 		],

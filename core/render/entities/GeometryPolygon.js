@@ -14,7 +14,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		//Declare local instance variables
 		this.class_name = "GeometryPolygon";
 		this.label_geometries = [];
-		this.node_editor_mode = "Polygon";
 		
 		//KEEP AT BOTTOM!
 		this.updateOwner();
