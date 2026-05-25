@@ -1,6 +1,32 @@
 //[VERCENGEN]
 if (!global?.History) global.History = {};
 
+//[WIP] - Temporary util functions
+{
+	String.formatObject = function (arg0_object) {
+		//Convert from parameters
+		let object = (arg0_object) ? arg0_object : {};
+		
+		//Internal guard clause if object is empty
+		if (Object.keys(object).length === 0) return "None";
+		
+		//Declare local instance variables
+		let string_array = [];
+		
+		//Iterate over object and parse it to a string
+		Object.iterate(object, (local_key, local_value) => {
+			if (typeof string_array === "object") {
+				string_array.push(`${local_key}: ${JSON.stringify(local_value)}`);
+			} else {
+				string_array.push(`${local_key}: ${local_value.toString()}`);
+			}
+		});
+		
+		//Return statement
+		return string_array.join(", ");
+	};
+}
+
 History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	//Convert from parameters
 	let keyframes = arg0_keyframes;
@@ -42,4 +68,12 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	
 	//Return statement
 	return return_keyframe.value;
+};
+
+History.getLocalisation = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes = arg0_keyframes;
+	
+	//Declare local instance variables
+	
 };
