@@ -7,14 +7,19 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	let timestamp = parseInt(arg1_timestamp);
 	
 	//Declare local instance variables
+	let all_keyframes = Object.keys(keyframes)
+		.sort((a, b) => parseInt(a) - parseInt(b));
 	let return_keyframe = { timestamp: timestamp, value: [] };
-	let all_keyframes = Object.keys(keyframes).sort((a, b) => parseInt(a) - parseInt(b));
 	
+	//Iterate over all_keyframes in order
 	for (let i = 0; i < all_keyframes.length; i++) {
 		let local_keyframe = keyframes[all_keyframes[i]];
 		
-		if (parseInt(all_keyframes[i]) <= parseInt(return_keyframe.timestamp)) {
+		//Check that the keyframe is still valid
+		if (parseInt(all_keyframes[i]) <= return_keyframe.timestamp) {
 			if (!local_keyframe.value) continue;
+			
+			//Iterate over local_keyframe.value and concatenate it
 			for (let x = 0; x < local_keyframe.value.length; x++) {
 				if (typeof local_keyframe.value[x] === "object" && local_keyframe.value[x] !== null) {
 					let old_variables = (return_keyframe.value[x] && return_keyframe.value[x].variables) ?
@@ -32,9 +37,7 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 					return_keyframe.value[x] = local_keyframe.value[x];
 				}
 			}
-		} else {
-			break;
-		}
+		} else { break; }
 	}
 	
 	//Return statement
