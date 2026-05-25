@@ -77,10 +77,10 @@ if (!global?.naissance) global.naissance = {};
 				
 				//ID/History/Metadata deserialisation
 				if (local_value.id) geometry_obj.setID(local_value.id);
-				geometry_obj.history.fromJSON(local_value.history);
+				//geometry_obj.history.fromJSON(local_value.history);
 				if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
 				try {
-					if (geometry_obj.draw) geometry_obj.draw();
+					//if (geometry_obj.draw) geometry_obj.draw();
 				} catch (e) { console.warn(e); }
 			}
 		});

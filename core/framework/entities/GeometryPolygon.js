@@ -157,20 +157,17 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		if (this.value) {
 			//1. Check any cause for derendering
-			if (this.value && this.value[0] === null) return;
+			if (this.value && !this.value[0]) return;
 			if (this.value && this.value[2]) {
 				if (this.value[2].hidden) return;
 				if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) return;
 				if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) return;
 			}
 			
-			if (this.value[0])
-				this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
-			if (this.value[1] && this.geometry)
-				this.geometry.setSymbol(this.value[1]);
+			this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
+			if (this.value[1]) this.geometry.setSymbol(this.value[1]);
 			
-			//4. Draw this.selected_geometry
-			
+			//2. Draw this.selected_geometry
 			if (this.geometry) {
 				this.geometry.addEventListener("click", (e) => {
 					if (!["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode)) {
