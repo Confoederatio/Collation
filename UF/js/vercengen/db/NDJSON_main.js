@@ -8,7 +8,13 @@ let v8 = require("node:v8");
 let readline = require("node:readline");
 let NodeWorker = require("node:worker_threads").Worker;
 
-if (!global?.NDJSON) global.NDJSON = {};
+if (!global?.NDJSON)
+	/**
+	 * The namespace for NDJSON utility functions.
+	 * 
+	 * @namespace NDJSON
+	 */
+	global.NDJSON = {};
 
 //Initialise functions
 {

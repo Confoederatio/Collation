@@ -9,6 +9,9 @@ let { file_path, start, end, initial_depth } = workerData;
 
 //Initialise function
 {
+	/**
+	 * Processes a segment. Internal helper function for parsing NDJSON.
+	 */
 	NDJSON.processSegment = function () {
 		//Declare local instance variables
 		let depth = initial_depth;
