@@ -47,6 +47,7 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 		//Declare local instance variables
 		let ipcRenderer = electron.ipcRenderer;
 		
+		//Return statement
 		return new Promise((resolve, reject) => {
 			ipcRenderer.removeAllListeners("ndjson:get-diagnostics-ready");
 			

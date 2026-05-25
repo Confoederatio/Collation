@@ -49,23 +49,23 @@ if (!global.v8) global.v8 = require("node:v8");
 		//ndjson
 		ipc_main.on("ndjson:diff", async (event, file_path, id, options) => {
 			let result = await NDJSON.diff(file_path, id, options);
-			event.sender.send("ndjson:diff_ready", result);
+			event.sender.send("ndjson:diff-ready", result);
 		});
 		ipc_main.on("ndjson:diff-all", async (event, file_path, options) => {
 			let result = await NDJSON.diffAll(file_path, options);
-			event.sender.send("ndjson:diff_all_ready", result);
+			event.sender.send("ndjson:diff-all-ready", result);
 		});
 		ipc_main.on("ndjson:get-diagnostics", async (event) => {
 			let result = await NDJSON.getDiagnostics();
-			event.sender.send("ndjson:get_diagnostics_ready", result);
+			event.sender.send("ndjson:get-diagnostics-ready", result);
 		});
 		ipc_main.on("ndjson:get-value", async (event, file_path, id) => {
 			let result = await NDJSON.getValue(file_path, id);
-			event.sender.send("ndjson:get_value_ready", result);
+			event.sender.send("ndjson:get-value-ready", result);
 		});
-		ipc_main.on("ndjson:get-worker_id", async (event, id, pool_length) => {
+		ipc_main.on("ndjson:get-worker-id", async (event, id, pool_length) => {
 			let result = NDJSON.getWorkerID(id, pool_length);
-			event.sender.send("ndjson:get_worker_id_ready", result);
+			event.sender.send("ndjson:get-worker-id-ready", result);
 		});
 		ipc_main.on("ndjson:get-worker-pool", async (event, max_workers) => {
 			let pool = NDJSON.getWorkerPool(max_workers);
@@ -86,7 +86,7 @@ if (!global.v8) global.v8 = require("node:v8");
 			await NDJSON.load(file_path);
 			event.sender.send("ndjson:load-ready", `${file_path}.ndjson`);
 		});
-		ipc_main.on("ndjson:partition_file", async (event, file_path) => {
+		ipc_main.on("ndjson:partition-file", async (event, file_path) => {
 			await NDJSON.partitionFile(file_path);
 			event.sender.send("ndjson:partition-file-ready", `${file_path}.ndjson`);
 		});

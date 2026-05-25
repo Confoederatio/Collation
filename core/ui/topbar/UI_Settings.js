@@ -272,13 +272,12 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 			if (fs.existsSync(main.settings.autoload_file[0])) {
 				let load_data = fs.readFileSync(main.settings.autoload_file[0], "utf8");
 				
-				//Load state
-				setTimeout(() => {
+				naissance.loadSave(main.settings.autoload_file[0]).then(() => {
 					DALS.Timeline.parseAction({
 						options: { name: "Load Save", key: "load_save" },
 						value: [{ type: "global", load_save: load_data }]
 					});
-				}, 100);
+				});
 			}
 	}
 	

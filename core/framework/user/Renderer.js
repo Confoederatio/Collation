@@ -16,7 +16,7 @@ naissance.Renderer = class extends ve.Class {
 	/**
 	 * Returns the ordered z-indexes of all Geometries within each Feature based on {@link UI_LeftbarHierarchy}.
 	 */
-	getRenderingOrder (arg0_entity_obj) { //[WIP] - Finish function body
+	getRenderingOrder (arg0_entity_obj) {
 		//Convert from parameters
 		let entity_obj = (arg0_entity_obj) ? arg0_entity_obj : undefined;
 		
@@ -75,6 +75,22 @@ naissance.Renderer = class extends ve.Class {
 		for (let i = rendering_order.length - 1; i >= 0; i--)
 			if (rendering_order[i].draw)
 				rendering_order[i].draw();
+	}
+	
+	static async draw () {
+		//Declare local instance variables
+		let ipcRenderer = electron.ipcRenderer;
+		
+		//Return statement
+		return new Promise((resolve, reject) => {
+			ipcRenderer.removeAllListeners("ndjson:diff-all-ready");
+			ipcRenderer.on("ndjson:diff-all-ready", (event, json) => {
+				resolve(json);
+			});
+			ipcRenderer.send("ndjson:diff-all", "./saves/atlas.naissance.ndjson", {
+				timestamp: main.timestamp
+			});
+		});
 	}
 	
 	static toggleUI () {

@@ -39,7 +39,20 @@
 
 //State save/load functions
 {
-	DALS.Timeline.loadState = function (arg0_json) { //[WIP] - Finish function body
+	if (!global?.naissance) global.naissance = {};
+	
+	naissance.loadSave = async function (arg0_file_path) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
+		
+		//Declare local instance variables  //[WIP] - This needs to be a function pattern
+		main.file_path = file_path;
+		await Blacktraffic.task("ndjson:load", {
+			args: [file_path]
+		});
+	}
+	
+	DALS.Timeline.loadState = function (arg0_json) {
 		//Convert from parameters
 		let json = (arg0_json) ? arg0_json : {};
 		if (typeof json === "string") json = JSON.parse(json);
@@ -111,7 +124,7 @@
 		main.layers.cursor_layer.addGeometry(main.brush.cursor);
 	};
 	
-	DALS.Timeline.saveState = function () { //[WIP] - Finish function body for naissance.Feature
+	DALS.Timeline.saveState = function () {
 		//Declare local instance variables
 		let json_obj = {};
 		
