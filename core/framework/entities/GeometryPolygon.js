@@ -138,7 +138,51 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		}
 	}
 	
-	draw () { //[WIP] - Use setCoordinates() first and retain geometries
+	async draw (arg0_value) {
+		//Convert from parameters
+		let value = arg0_value;
+		if (value === undefined) return;
+		
+		//Declare local instance variables
+		if (this.geometry) this.geometry.remove();
+		if (this.selected_geometry) this.selected_geometry.remove();
+		if (this.label_geometries)
+			for (let i = this.label_geometries.length - 1; i >= 0; i--) {
+				this.label_geometries[i].remove();
+				this.label_geometries.splice(i, 1);
+			}
+		this.geometry = undefined;
+		this.selected_geometry = undefined;
+		this.value = value;
+		
+		if (this.value) {
+			//1. Check any cause for derendering
+			if (this.value && this.value[0] === null) return;
+			if (this.value && this.value[2]) {
+				if (this.value[2].hidden) return;
+				if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) return;
+				if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) return;
+			}
+			
+			if (this.value[0])
+				this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
+			if (this.value[1] && this.geometry)
+				this.geometry.setSymbol(this.value[1]);
+			
+			if (this.geometry) {
+				this.geometry.addEventListener("click", (e) => {
+					console.log(this, this.value, e);
+				});
+				main.layers.entity_layer.addGeometry(this.geometry);
+				
+				this._drawLabels();
+			}
+			
+			//this._drawLabels();
+		} else { console.warn(`this.value:`, this.value, value); }
+	}
+	
+	/*draw () { //[WIP] - Use setCoordinates() first and retain geometries
 		//Remove geometry first to handle it
 		if (this.geometry) this.geometry.remove();
 		if (this.selected_geometry) this.selected_geometry.remove();
@@ -198,7 +242,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					}
 				});
 		}
-	}
+	}*/
 	
 	drawHierarchyDatatype () {
 		//Declare local instance variables

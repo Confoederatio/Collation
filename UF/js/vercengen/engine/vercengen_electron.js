@@ -52,6 +52,8 @@ if (!global.v8) global.v8 = require("node:v8");
 			event.sender.send("ndjson:diff-ready", result);
 		});
 		ipc_main.on("ndjson:diff-all", async (event, file_path, options) => {
+			console.log("IPC Main event received parameters:", { file_path, options });
+			if (file_path === undefined) return;
 			let result = await NDJSON.diffAll(file_path, options);
 			event.sender.send("ndjson:diff-all-ready", result);
 		});

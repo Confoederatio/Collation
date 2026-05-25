@@ -1,3 +1,5 @@
+if (!global?.naissance) global.naissance = {};
+
 //State mutation functions
 {
 	DALS.Timeline.parseAction = function (arg0_json, arg1_do_not_push_action) {
@@ -18,8 +20,7 @@
 				if (json.value[i].set_date) {
 					UI_DateMenu.setDate(json.value[i].set_date);
 				} else if (json.value[i].refresh_date === true) {
-					Object.iterate(naissance.Geometry.instances, (local_key, local_value) => 
-						local_value.draw());
+					naissance.Renderer.draw();
 				}
 				continue;
 			}
@@ -39,18 +40,6 @@
 
 //State save/load functions
 {
-	if (!global?.naissance) global.naissance = {};
-	
-	naissance.loadSave = async function (arg0_file_path) {
-		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		
-		//Declare local instance variables  //[WIP] - This needs to be a function pattern
-		main.file_path = file_path;
-		await Blacktraffic.task("ndjson:load", {
-			args: [file_path]
-		});
-	}
 	
 	DALS.Timeline.loadState = function (arg0_json) {
 		//Convert from parameters
@@ -157,5 +146,20 @@
 		
 		//Return statement
 		return json_obj;
+	};
+	
+	naissance.loadSave = async function (arg0_file_path) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
+		
+		//Declare local instance variables //[WIP] - This needs to be a function pattern
+		let data = fs.readFileSync(file_path, "utf8");
+		
+		//Load save, then 
+		await Blacktraffic.task("ndjson:load", {
+			args: [file_path]
+		});
+		main.file_path = `${file_path}.ndjson`;
+		DALS.Timeline.loadState(data);
 	};
 }

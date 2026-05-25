@@ -125,7 +125,7 @@
 	 *  @param {any[]} [arg1_options.args]
 	 *  @param {function} [arg1_options.special_function] - Function to use when resolving the channel.
 	 * 
-	 * @returns {Promise<void>}
+	 * @returns {Promise}
 	 */
 	Blacktraffic.task = async function (arg0_channel, arg1_options) {
 		//Convert from parameters
@@ -136,6 +136,7 @@
 		
 		//Declare local instance variables
 		let ipcRenderer = electron.ipcRenderer;
+		console.log("Blacktraffic sending args:", options.args);
 		
 		//Return statement
 		return new Promise((resolve, reject) => {

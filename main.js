@@ -150,49 +150,4 @@ let win;
 {
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
-  
-  NDJSON.load("./saves/atlas.naissance").then(() => {
-    NDJSON.diffAll("./saves/atlas.naissance.ndjson", { timestamp: 1005088321 })
-    .then(async (v) => {
-      for (let i = 0; i < v.length; i++) console.log(v[i].key, v[i].value);
-      let local_value = await NDJSON.getValue("./saves/atlas.naissance.ndjson", "45817001146");
-      console.log("Local value:", local_value);
-      
-      console.time("set_value");
-      await NDJSON.setValue("./saves/atlas.naissance.ndjson", "45817001146", { key: "value", hello: "world" });
-      local_value = await NDJSON.getValue("./saves/atlas.naissance.ndjson", "45817001146");
-      console.timeEnd("set_value");
-      console.log("Local value after write:", local_value);
-      
-      console.time("read_value");
-      let local_value_two = await NDJSON.getValue("./saves/atlas.naissance.ndjson", "34593585401");
-      console.log("Local value:", local_value_two);
-      console.timeEnd("read_value");
-      
-      console.time("set_value_two");
-      await NDJSON.setValue("./saves/atlas.naissance.ndjson", "34593585401", { key: "value", hello: "world" });
-      local_value_two = await NDJSON.getValue("./saves/atlas.naissance.ndjson", "34593585401");
-      console.timeEnd("set_value_two");
-      console.log("Local value after write:", local_value_two);
-      
-      console.time("remove");
-      await NDJSON.removeValue("./saves/atlas.naissance.ndjson", "45817001146");
-      local_value = await NDJSON.getValue("./saves/atlas.naissance.ndjson", "45817001146");
-      console.timeEnd("remove");
-      console.log("Local value after remove:", local_value);
-      
-      console.time("query 1000 GeometryPolygons");
-      local_value = await NDJSON.query("./saves/atlas.naissance.ndjson", { 
-        query_obj: { class_name: "GeometryPolygon" },
-        limit_start: 1000,
-        limit_end: 1500
-      });
-      console.timeEnd("query 1000 GeometryPolygons");
-      console.log("1000 GeometryPolygons:", local_value.length);
-      
-      console.log("Active Workers:", NDJSON.getWorkerPool().length);
-      
-      //await NDJSON.save("./saves/atlas.naissance.ndjson");
-    });
-  });
 }

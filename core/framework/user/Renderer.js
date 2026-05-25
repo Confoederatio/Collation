@@ -79,18 +79,27 @@ naissance.Renderer = class extends ve.Class {
 	
 	static async draw () {
 		//Declare local instance variables
-		let ipcRenderer = electron.ipcRenderer;
+		console.log("Renderer pre-flight:", {
+			file_path: main.file_path,
+			timestamp: main.timestamp
+		});
+		
+		let diff_array = await Blacktraffic.task("ndjson:diff-all", {
+			args: [main.file_path, {
+				timestamp: main.timestamp
+			}]
+		});
+		
+		//Iterate over all values in diff_array
+		for (let i = 0; i < diff_array.length; i++) {
+			let local_geometry = naissance.Geometry.instances[diff_array[i].key];
+			
+			if (local_geometry && typeof local_geometry.draw === "function")
+				local_geometry.draw(diff_array[i].value);
+		}
 		
 		//Return statement
-		return new Promise((resolve, reject) => {
-			ipcRenderer.removeAllListeners("ndjson:diff-all-ready");
-			ipcRenderer.on("ndjson:diff-all-ready", (event, json) => {
-				resolve(json);
-			});
-			ipcRenderer.send("ndjson:diff-all", "./saves/atlas.naissance.ndjson", {
-				timestamp: main.timestamp
-			});
-		});
+		return diff_array;
 	}
 	
 	static toggleUI () {
