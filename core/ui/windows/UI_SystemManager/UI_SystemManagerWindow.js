@@ -48,9 +48,9 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 		let ipcRenderer = electron.ipcRenderer;
 		
 		return new Promise((resolve, reject) => {
-			ipcRenderer.removeAllListeners("ndjson:get_diagnostics_ready");
+			ipcRenderer.removeAllListeners("ndjson:get-diagnostics-ready");
 			
-			ipcRenderer.on("ndjson:get_diagnostics_ready", (event, all_workers) => {
+			ipcRenderer.on("ndjson:get-diagnostics-ready", (event, all_workers) => {
 				let table_array = [["Thread ID", "Heap", "RAM/RSS", "Utilisation (Processing)"]];
 				
 				for (let i = 0; i < all_workers.length; i++) {
@@ -68,7 +68,7 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 				
 				resolve(table_array);
 			});
-			ipcRenderer.send("ndjson:get_diagnostics");
+			ipcRenderer.send("ndjson:get-diagnostics");
 		});
 	}
 };
