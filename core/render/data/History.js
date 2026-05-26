@@ -157,8 +157,6 @@ naissance.History = class extends ve.Class {
 			args: [main.file_path, id]
 		});
 		
-		console.log(all_keyframes.value);
-		
 		Object.iterate(all_keyframes.value, (local_key, local_value) => {
 			//Set components_obj
 			components_obj[`t_${local_key}`] = new ve.Interface({
