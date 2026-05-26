@@ -157,20 +157,17 @@ naissance.History = class extends ve.Class {
 			args: [main.file_path, id]
 		});
 		
-		console.log(all_keyframes);
+		console.log(all_keyframes.value);
 		
-		//this.getKeyframe({ refresh_localisation: true });
-		
-		//Iterate over all_keyframes and push it to components_obj
-		/*Object.iterate(this.keyframes, (local_key, local_value) => {
+		Object.iterate(all_keyframes.value, (local_key, local_value) => {
 			//Set components_obj
 			components_obj[`t_${local_key}`] = new ve.Interface({
-				date_info: new ve.HTML(String.formatDate(parseInt(local_key)), { 
-					tooltip: `Timestamp: ${local_value.timestamp}`,
+				date_info: new ve.HTML(String.formatDate(parseInt(local_key)), {
+					tooltip: `Timestamp: ${local_key}`,
 					x: 0, y: 0
 				}),
-				localisation: veHTML(() => 
-					(local_value.localisation) ? local_value.localisation : "", { x: 1, y: 0 }),
+				localisation: veHTML(() =>
+					(local_value.localisation) ? local_value.localisation.join("<br>") : "", { x: 1, y: 0 }),
 				actions_bar:  veRawInterface({
 					jump_to_date: veButton((e) => {
 						DALS.Timeline.parseAction({
@@ -186,7 +183,7 @@ naissance.History = class extends ve.Class {
 					}),
 					move_keyframe: veButton(() => {
 						let move_keyframe_window = veWindow({
-							new_date: veDate(JSON.parse(JSON.stringify(local_value.date)), { name: "New Date" }),
+							new_date: veDate(JSON.parse(JSON.stringify(local_key)), { name: "New Date" }),
 							confirm: veButton(() => {
 								DALS.Timeline.parseAction({
 									options: { name: "Move Keyframe", key: "move_keyframe" },
@@ -194,7 +191,7 @@ naissance.History = class extends ve.Class {
 										type: "Geometry",
 										geometry_id: this.options._id(),
 										move_keyframe: {
-											date: local_value.date,
+											date: local_key,
 											ot_date: move_keyframe_window.new_date.v
 										}
 									}]
@@ -253,7 +250,7 @@ naissance.History = class extends ve.Class {
 					}, { name: "Copy Geometry To Date" })
 				}, { id: "ui_keyframe_context_menu" })
 			});
-		}, { sort_mode: "date_descending" });*/
+		}, { sort_mode: "date_descending" });
 		
 		//Set interface_obj.v
 		if (interface_obj) {

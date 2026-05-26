@@ -14,13 +14,21 @@ if (!global?.History) global.History = {};
 		let string_array = [];
 		
 		//Iterate over object and parse it to a string
-		Object.iterate(object, (local_key, local_value) => {
-			if (typeof string_array === "object") {
-				string_array.push(`${local_key}: ${JSON.stringify(local_value)}`);
-			} else {
-				string_array.push(`${local_key}: ${local_value.toString()}`);
+		let all_keys = Object.keys(object);
+		
+		for (let i = 0; i < all_keys.length; i++) {
+			let local_value = object[all_keys[i]];
+			
+			if (typeof local_value === "object" && local_value !== null) {
+				if (Array.isArray(local_value)) {
+					string_array.push(`${all_keys[i]}: [${local_value.length}]`);
+				} else {
+					string_array.push(`${all_keys[i]}: {${Object.keys(local_value).length}}`);
+				}
+			} else if (local_value !== undefined) {
+				string_array.push(`${all_keys[i]}: ${local_value}`);
 			}
-		});
+		}
 		
 		//Return statement
 		return string_array.join(", ");
