@@ -134,19 +134,7 @@ naissance.Geometry = class extends ve.Class {
 	
 	get name () {
 		//Declare local instance variables
-		let current_keyframe = (this._current_keyframe) ? 
-			this._current_keyframe : this.history.getKeyframe();
-		let current_value = current_keyframe.value;
-		
-		let current_name;
-			if (current_value[2] && current_value[2].name) current_name = current_value[2].name;
-			if (!current_name)
-				Object.iterate(this.history.keyframes, (local_key, local_value) => {
-					if (local_value?.value[2] && local_value?.value[2].name) {
-						current_name = local_value.value[2].name;
-						return "break"; //Break if possible
-					}
-				});
+		let current_name = this.value?.[2]?.name;
 		
 		//Return statement
 		return (current_name) ? 
