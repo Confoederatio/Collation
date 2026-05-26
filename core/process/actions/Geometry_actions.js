@@ -113,7 +113,6 @@ naissance.Geometry.parseAction = function (arg0_json) { //[WIP] - Add variable a
 			
 			geometry_obj.history.cleanKeyframes();
 			geometry_obj.history.getKeyframe(); //Refresh localisation
-			geometry_obj.history.draw(geometry_obj.keyframes_ui);
 		}
 		
 		//delete_geometry
@@ -123,7 +122,6 @@ naissance.Geometry.parseAction = function (arg0_json) { //[WIP] - Add variable a
 		//move_keyframe
 		if (json.move_keyframe) {
 			geometry_obj.history.moveKeyframe(json.move_keyframe.date, json.move_keyframe.ot_date);
-			geometry_obj.history.draw(geometry_obj.keyframes_ui);
 		}
 		
 		//remove_column
@@ -138,7 +136,6 @@ naissance.Geometry.parseAction = function (arg0_json) { //[WIP] - Add variable a
 		//remove_keyframe
 		if (json.remove_keyframe) {
 			geometry_obj.removeKeyframe(json.remove_keyframe);
-			geometry_obj.history.draw(geometry_obj.keyframes_ui);
 		}
 		
 		//remove_variable

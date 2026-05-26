@@ -169,9 +169,9 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			
 			//2. Draw this.selected_geometry
 			if (this.geometry) {
-				this.geometry.addEventListener("click", (e) => {
+				this.geometry.addEventListener("click", async (e) => {
 					if (!["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode)) {
-						this.history.draw(this.keyframes_ui);
+						await this.history.draw(this.id, this.keyframes_ui);
 						super.open("instance", { name: this.name, ...this.window_options });
 					}
 					console.log(this, this.value, e);
@@ -220,7 +220,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			}),
 			...super.drawHierarchyDatatypeGenerics(),
 			context_menu: veButton(() => {
-				try { this.history.draw(this.keyframes_ui); } catch (e) {}
+				try { this.history.draw(this.id, this.keyframes_ui); } catch (e) {}
 				super.open("instance", { name: this.name, ...this.window_options });
 			}, {
 				attributes: { class: "order-101" },
@@ -255,7 +255,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		let actions_bar_el = super.getActionsBarElement();
 		
 		let context_menu_button = veButton(() => {
-			try { this.history.draw(this.keyframes_ui); } catch (e) {}
+			try { this.history.draw(this.id, this.keyframes_ui); } catch (e) {}
 			super.open("instance", { name: this.name, ...this.window_options });
 		}, {
 			attributes: { class: "order-101" },

@@ -144,17 +144,25 @@ naissance.History = class extends ve.Class {
 		}
 	}
 	
-	draw (arg0_interface_obj) {
+	async draw (arg0_id, arg1_interface_obj) {
 		//Convert from parameter
-		let interface_obj = arg0_interface_obj;
+		let id = arg0_id;
+		let interface_obj = arg1_interface_obj;
 		
 		//Declare local instance variables
 		let components_obj = {};
 		if (this.interface && typeof this.interface.remove === "function") this.interface.remove();
-		this.getKeyframe({ refresh_localisation: true });
+		
+		let all_keyframes = await Blacktraffic.task("ndjson:get-keyframes", {
+			args: [main.file_path, id]
+		});
+		
+		console.log(all_keyframes);
+		
+		//this.getKeyframe({ refresh_localisation: true });
 		
 		//Iterate over all_keyframes and push it to components_obj
-		Object.iterate(this.keyframes, (local_key, local_value) => {
+		/*Object.iterate(this.keyframes, (local_key, local_value) => {
 			//Set components_obj
 			components_obj[`t_${local_key}`] = new ve.Interface({
 				date_info: new ve.HTML(String.formatDate(parseInt(local_key)), { 
@@ -245,7 +253,7 @@ naissance.History = class extends ve.Class {
 					}, { name: "Copy Geometry To Date" })
 				}, { id: "ui_keyframe_context_menu" })
 			});
-		}, { sort_mode: "date_descending" });
+		}, { sort_mode: "date_descending" });*/
 		
 		//Set interface_obj.v
 		if (interface_obj) {

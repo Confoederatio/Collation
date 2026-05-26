@@ -61,6 +61,10 @@ if (!global.v8) global.v8 = require("node:v8");
 			let result = await NDJSON.getDiagnostics();
 			event.sender.send("ndjson:get-diagnostics-ready", result);
 		});
+		ipc_main.on("ndjson:get-keyframes", async (event, file_path, id) => {
+			let result = await NDJSON.getKeyframes(file_path, id);
+			event.sender.send("ndjson:get-keyframes-ready", result);
+		});
 		ipc_main.on("ndjson:get-value", async (event, file_path, id) => {
 			let result = await NDJSON.getValue(file_path, id);
 			event.sender.send("ndjson:get-value-ready", result);

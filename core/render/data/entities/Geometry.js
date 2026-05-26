@@ -315,7 +315,7 @@ naissance.Geometry = class extends ve.Class {
 								
 								this.metadata.variables = e.toJSON();
 								delete this.history.do_not_draw;
-								this.history.draw(this.keyframes_ui);
+								this.history.draw(this.id, this.keyframes_ui);
 							}
 						})
 					}, {

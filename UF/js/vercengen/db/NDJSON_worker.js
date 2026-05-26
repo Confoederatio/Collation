@@ -65,13 +65,16 @@ async function handleTask (arg0_task) {
 		//Return statement
 		return clean;
 	};
-	let resolveHistory = (data, timestamp) => {
+	let resolveHistory = (data, timestamp, options) => {
 		let history_obj = (typeof data.history === "string") ?
 			JSON.parse(data.history) : data.history;
 		
 		//Return statement
-		if (history_obj && history_obj.keyframes)
+		if (history_obj && history_obj.keyframes) {
+			if (options?.type === "get_keyframes")
+				return History.getKeyframes(history_obj.keyframes);
 			return History.getKeyframe(history_obj.keyframes, timestamp);
+		}
 		return null;
 	};
 	
@@ -96,7 +99,7 @@ async function handleTask (arg0_task) {
 					try {
 						let state_val = resolveHistory(JSON.parse(val_str), timestamp);
 						if (state_val !== null) found = { key: id, value: state_val };
-					} catch(e) {}
+					} catch (e) {}
 					break;
 				}
 			}
@@ -126,6 +129,32 @@ async function handleTask (arg0_task) {
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
+	}
+	
+	if (type === "get_keyframes") {
+		let found = null;
+		
+		if (fs.existsSync(page_file)) {
+			let rl = readline.createInterface({
+				input: fs.createReadStream(page_file)
+			});
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				if (match && match[1] === id) {
+					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
+					try {
+						let state_val = resolveHistory(JSON.parse(val_str), undefined, { 
+							type: "get_keyframes" 
+						});
+						if (state_val !== null) found = { key: id, value: state_val };
+					} catch (e) {}
+					break;
+				}
+			}
+		}
+		
+		//Return statement
+		return parentPort.postMessage({ task_id, results: found });
 	}
 	
 	//get_value: returns the Object representing an ID.

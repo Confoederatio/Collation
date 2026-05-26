@@ -27,14 +27,88 @@ if (!global?.History) global.History = {};
 	};
 }
 
+History.diffKeyframe = function (arg0_keyframe, arg1_keyframe) {
+	//Convert from parameters
+	let keyframe = (arg0_keyframe) ? arg0_keyframe : { value: [] };
+	let ot_keyframe = (arg1_keyframe) ? arg1_keyframe : {};
+	
+	//Declare local instance variables
+	if (ot_keyframe.value)
+		for (let i = 0; i < ot_keyframe.value.length; i++) {
+			if (typeof ot_keyframe.value[i] === "object" && ot_keyframe.value[i] !== null) {
+				let old_variables = (keyframe.value[i] && keyframe.value[i].variables) ?
+					keyframe.value[i].variables : {};
+				
+				if (!keyframe.value[i]) keyframe.value[i] = {};
+				
+				keyframe.value[i] = { ...keyframe.value[i], ...ot_keyframe.value[i] };
+				
+				if (ot_keyframe.value[i] && ot_keyframe.value[i].variables)
+					keyframe.value[i].variables = { ...old_variables, ...ot_keyframe.value[i].variables };
+			} else if (ot_keyframe.value[i] !== undefined) {
+				if (ot_keyframe.value[i] === "undefined") continue;
+				if (i !== 0 && ot_keyframe.value[i] === null) continue;
+				keyframe.value[i] = ot_keyframe.value[i];
+			}
+		}
+	
+	//Return statement
+	return keyframe;
+};
+	
+History.getLocalisation = function (arg0_keyframe, arg1_keyframe) {
+	//Convert from parameters
+	let old_keyframe = (arg0_keyframe) ? arg0_keyframe : {};
+	let new_keyframe = (arg1_keyframe) ? arg1_keyframe  : {};
+	
+	//Declare local instance variables
+	let return_string = [];
+	
+	try {
+		//[0] .geometry change
+		if (new_keyframe.value[0])
+			return_string.push(`Geometry changed`);
+		if (new_keyframe.value[0] === null)
+			return_string.push(`Geometry removed`);
+		
+		//[1] .symbol change
+		if (new_keyframe.value[1])
+			return_string.push(`Symbol changed to: ${String.formatObject(new_keyframe.value[1])}`);
+		
+		//[2] .properties change
+		if (new_keyframe.value[2]?.hidden === false)
+			return_string.push(`Geometry visible`);
+		if (new_keyframe.value[2]?.hidden === true)
+			return_string.push(`Geometry hidden`);
+		if (new_keyframe.value[2]?.label_geometries)
+			if (new_keyframe.value[2].label_geometries.length > 0)
+				return_string.push(`Set custom label geometries`);
+		if (new_keyframe.value[2]?.label_name)
+			return_string.push(`Label name changed to: ${new_keyframe.value[2].label_name}`);
+		if (new_keyframe.value[2]?.label_symbol)
+			return_string.push(`Label symbol changed to: ${String.formatObject(new_keyframe.value[2].label_symbol)}`);
+		if (new_keyframe.value[2]?.max_zoom !== undefined)
+			return_string.push(`Maximum zoom set to ${new_keyframe.value[2].max_zoom}`);
+		if (new_keyframe.value[2]?.min_zoom !== undefined)
+			return_string.push(`Minimum zoom set to ${new_keyframe.value[2].min_zoom}`);
+		if (new_keyframe.value[2]?.name)
+			return_string.push(`Name changed to ${new_keyframe.value[2].name}`);
+		if (new_keyframe.value[2]?.variables)
+			return_string.push(`Variables changed to: ${String.formatObject(new_keyframe.value[2].variables)}`);
+	} catch (e) {
+		console.error(`History.getLocalisation - new_keyframe:`, new_keyframe, `old_keyframe:`, old_keyframe, `Error:`, e);
+	}
+	
+	return return_string;
+};
+
 History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	//Convert from parameters
 	let keyframes = arg0_keyframes;
 	let timestamp = parseInt(arg1_timestamp);
 	
 	//Declare local instance variables
-	let all_keyframes = Object.keys(keyframes)
-		.sort((a, b) => parseInt(a) - parseInt(b));
+	let all_keyframes = History.getKeys(keyframes);
 	let return_keyframe = { timestamp: timestamp, value: [] };
 	
 	//Iterate over all_keyframes in order
@@ -45,24 +119,8 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 		if (parseInt(all_keyframes[i]) <= return_keyframe.timestamp) {
 			if (!local_keyframe.value) continue;
 			
-			//Iterate over local_keyframe.value and concatenate it
-			for (let x = 0; x < local_keyframe.value.length; x++) {
-				if (typeof local_keyframe.value[x] === "object" && local_keyframe.value[x] !== null) {
-					let old_variables = (return_keyframe.value[x] && return_keyframe.value[x].variables) ?
-						return_keyframe.value[x].variables : {};
-					
-					if (!return_keyframe.value[x]) return_keyframe.value[x] = {};
-					
-					return_keyframe.value[x] = { ...return_keyframe.value[x], ...local_keyframe.value[x] };
-					
-					if (local_keyframe.value[x] && local_keyframe.value[x].variables)
-						return_keyframe.value[x].variables = { ...old_variables, ...local_keyframe.value[x].variables };
-				} else if (local_keyframe.value[x] !== undefined) {
-					if (local_keyframe.value[x] === "undefined") continue;
-					if (x !== 0 && local_keyframe.value[x] === null) continue;
-					return_keyframe.value[x] = local_keyframe.value[x];
-				}
-			}
+			//Merge keys using diffKeyframe
+			return_keyframe = History.diffKeyframe(return_keyframe, local_keyframe);
 		} else { break; }
 	}
 	
@@ -70,10 +128,31 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	return return_keyframe.value;
 };
 
-History.getLocalisation = function (arg0_keyframes) {
+History.getKeyframes = function (arg0_keyframes) {
 	//Convert from parameters
 	let keyframes = arg0_keyframes;
 	
 	//Declare local instance variables
+	let all_keyframes = History.getKeys(keyframes);
+	let return_keyframe = { value: [] };
 	
+	//Iterate over all_keyframes in order
+	for (let i = 0; i < all_keyframes.length; i++) {
+		let local_keyframe = keyframes[all_keyframes[i]];
+		
+		local_keyframe.localisation = History.getLocalisation(return_keyframe, local_keyframe);
+		return_keyframe = History.diffKeyframe(return_keyframe, local_keyframe);
+	}
+	
+	//Return statement
+	return keyframes;
+};
+
+History.getKeys = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes = (arg0_keyframes) ? arg0_keyframes : {};
+	
+	//Return statement
+	return Object.keys(keyframes)
+		.sort((a, b) => parseInt(a) - parseInt(b));
 };

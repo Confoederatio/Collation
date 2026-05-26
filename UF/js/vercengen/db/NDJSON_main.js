@@ -120,6 +120,37 @@ if (!global.NDJSON)
 	};
 	
 	/**
+	 * Returns processed `.history.keyframes` for a given key.
+	 * IPC: `ndjson:get-keyframes` | Callback: `ndjson:get-keyframes-ready`.
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {string} arg1_id
+	 * 
+	 * @returns {Promise<Object>}
+	 */
+	NDJSON.getKeyframes = async function (arg0_file_path, arg1_id) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
+		let id = arg1_id;
+		
+		//Declare local instance variables
+		let pool = NDJSON.getWorkerPool();
+		let task_id = global.ve.ndjson_task_id_counter++;
+		let worker_id = NDJSON.getWorkerID(id, pool.length);
+		
+		//Return statement
+		return new Promise((resolve) => {
+			global.ve.ndjson_pending_tasks.set(task_id, resolve);
+			pool[worker_id].postMessage({
+				type: "get_keyframes",
+				task_id: task_id,
+				file_path: file_path,
+				id: id
+			});
+		});
+	};
+	
+	/**
 	 * Returns the Object value of a single ID.
 	 * IPC: `ndjson:get-value` | Callback: `ndjson:get-value-ready`.
 	 * 
