@@ -47,57 +47,38 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 	
 	static async getHistmapWorkersTableArray () {
 		//Declare local instance variables
-		let ipcRenderer = electron.ipcRenderer;
+		let db_diagnostics = await db.send("getDiagnostics");
+		let process_diagnostics = await Blacktraffic.task("process:get-diagnostics");
+		let table_array = [["Thread ID", "Heap", "RAM/RSS", "Utilisation (Processing)"]];
 		
-		//Declare local instance variables
-		let db_array = await new Promise((resolve, reject) => {
-			ipcRenderer.removeAllListeners("ndjson:get-diagnostics-ready");
+		//Iterate over all db_diagnostics
+		for (let i = 0; i < db_diagnostics.length; i++) {
+			let heap_used_mb = db_diagnostics[i].heapUsed/(1024*1024);
+			let heap_total_mb = db_diagnostics[i].heapTotal/(1024*1024);
+			let rss_mb = db_diagnostics[i].rss/(1024*1024);
 			
-			ipcRenderer.on("ndjson:get-diagnostics-ready", (event, all_workers) => {
-				let table_array = [["Thread ID", "Heap", "RAM/RSS", "Utilisation (Processing)"]];
-				
-				for (let i = 0; i < all_workers.length; i++) {
-					let heap_used_mb = all_workers[i].heapUsed/(1024*1024);
-					let heap_total_mb = all_workers[i].heapTotal/(1024*1024);
-					let rss_mb = all_workers[i].rss/(1024*1024);
-					
-					table_array.push([
-						`DB #${all_workers[i].worker_id}`,
-						`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
-						`${String.formatNumber(rss_mb)}MB`,
-						`${Math.round(all_workers[i].percentage)}%`,
-					]);
-				}
-				
-				resolve(table_array);
-			});
-			ipcRenderer.send("ndjson:get-diagnostics");
-		});
-		let process_array = await new Promise((resolve, reject) => {
-			ipcRenderer.removeAllListeners("process:get-diagnostics-ready");
+			table_array.push([
+				`DB #${db_diagnostics[i].worker_id}`,
+				`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
+				`${String.formatNumber(rss_mb)}MB`,
+				`${Math.round(db_diagnostics[i].percentage)}%`,
+			]);
+		}
+		//Iterate over all process_diagnostics
+		for (let i = 0; i < process_diagnostics.length; i++) {
+			let heap_used_mb = process_diagnostics[i].heapUsed/(1024*1024);
+			let heap_total_mb = process_diagnostics[i].heapTotal/(1024*1024);
+			let rss_mb = process_diagnostics[i].rss/(1024*1024);
 			
-			ipcRenderer.on("process:get-diagnostics-ready", (event, all_workers) => {
-				let table_array = [];
-				
-				for (let i = 0; i < all_workers.length; i++) {
-					let heap_used_mb = all_workers[i].heapUsed/(1024*1024);
-					let heap_total_mb = all_workers[i].heapTotal/(1024*1024);
-					let rss_mb = all_workers[i].rss/(1024*1024);
-					
-					table_array.push([
-						`Process #${all_workers[i].worker_id}`,
-						`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
-						`${String.formatNumber(rss_mb)}MB`,
-						`${Math.round(all_workers[i].percentage)}%`,
-					])
-				}
-				
-				resolve(table_array);
-			});
-			ipcRenderer.send("process:get-diagnostics");
-		});
+			table_array.push([
+				`Process #${process_diagnostics[i].worker_id}`,
+				`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
+				`${String.formatNumber(rss_mb)}MB`,
+				`${Math.round(process_diagnostics[i].percentage)}%`,
+			]);
+		}
 		
 		//Return statement
-		return db_array.concat(process_array);
+		return table_array;
 	}
 };

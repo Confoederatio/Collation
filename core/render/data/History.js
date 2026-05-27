@@ -153,9 +153,7 @@ naissance.History = class extends ve.Class {
 		let components_obj = {};
 		if (this.interface && typeof this.interface.remove === "function") this.interface.remove();
 		
-		let all_keyframes = await Blacktraffic.task("ndjson:get-keyframes", {
-			args: [main.file_path, id]
-		});
+		let all_keyframes = await db.send("getKeyframes", main.file_path, id);
 		
 		Object.iterate(all_keyframes.value, (local_key, local_value) => {
 			//Set components_obj

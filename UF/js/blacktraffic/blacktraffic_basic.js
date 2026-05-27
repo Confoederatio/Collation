@@ -141,11 +141,11 @@
 		//Return statement
 		return new Promise((resolve, reject) => {
 			//Clean up existing listeners to prevent leaks or duplicate handlers
-			ipcRenderer.removeAllListeners(`${channel}-ready`);
+			ipcRenderer.removeAllListeners(`${channel}:ready`);
 			
-			ipcRenderer.on(`${channel}-ready`, (event, ...response_args) => {
+			ipcRenderer.on(`${channel}:ready`, (event, ...response_args) => {
 				//Clean up listener immediately after execution
-				ipcRenderer.removeAllListeners(`${channel}-ready`);
+				ipcRenderer.removeAllListeners(`${channel}:ready`);
 				
 				try {
 					if (typeof options.special_function === "function") {

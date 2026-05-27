@@ -155,10 +155,8 @@ if (!global?.naissance) global.naissance = {};
 		//Declare local instance variables //[WIP] - This needs to be a function pattern
 		let data = fs.readFileSync(file_path, "utf8");
 		
-		//Load save, then 
-		await Blacktraffic.task("ndjson:load", {
-			args: [file_path]
-		});
+		//Load save, then set file path
+		await db.send("load", file_path);
 		main.file_path = `${file_path}.ndjson`;
 		DALS.Timeline.loadState(data);
 	};
