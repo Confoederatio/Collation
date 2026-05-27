@@ -488,34 +488,27 @@ global.path = require("path");
 		
 		let load_files = ve.getImportFiles(load_patterns);
 		
-		console.log(`[VERCENGEN] Importing ${load_files.length} files.`, load_files);
+		if (!ve.is_not_browser)
+			console.log(`[VERCENGEN] Importing ${load_files.length} files.`, load_files);
 		
 		//1. Handle browser <link>/<script> tags
-		
 		if (options.is_browser) { //[WIP] - Refactor at a later date
 			// Build up the full HTML snippet for all files in order
 			let html_concat = "";
 			
 			for (let i = 0; i < load_files.length; i++) {
-				const local_file_path = load_files[i];
-				const local_file_extension = path.extname(local_file_path).toLowerCase();
+				let local_file_path = load_files[i];
+				let local_file_extension = path.extname(local_file_path).toLowerCase();
 				
 				// Each file becomes HTML markup in correct order
 				if (local_file_extension === ".css") {
 					html_concat += `<link rel="stylesheet" type="text/css" href="${local_file_path}">`;
 				} else if (local_file_extension === ".js") {
-					// close the script tag safely
 					html_concat += `<script type="text/javascript" src="${local_file_path}"></` + `script>`;
 				}
 			}
 			
-			// Inject all tags via HTML concatenation
-			//
-			// document.write() integrates the tags into the parsing process.
-			// This ensures that <script> blocks execute *in exact given order*,
-			// per HTML parser rules.
-			//
-			// This must run during document loading (not after DOM is complete).
+			//Inject all tags via HTML concatenation
 			injectConcatenatedHTML(html_concat);
 		}
 		
