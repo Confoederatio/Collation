@@ -35,6 +35,10 @@ if (!global?.History) global.History = {};
 	};
 }
 
+History.addKeyframe = function (arg0_keyframe, arg1_timestamp, ...argn_args) {
+	
+};
+
 History.diffKeyframe = function (arg0_keyframe, arg1_keyframe) {
 	//Convert from parameters
 	let keyframe = (arg0_keyframe) ? arg0_keyframe : { value: [] };
@@ -163,4 +167,8 @@ History.getKeys = function (arg0_keyframes) {
 	//Return statement
 	return Object.keys(keyframes)
 		.sort((a, b) => parseInt(a) - parseInt(b));
+};
+
+History.removeKeyframe = function (arg0_keyframe, arg1_timestamp) {
+	
 };

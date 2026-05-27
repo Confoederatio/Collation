@@ -7,7 +7,12 @@ let queue = [];
 
 //Require Vercengen startup
 require("../../../UF/js/vercengen/startup/vercengen_startup.js");
-ve.start({ is_browser: false, is_node: true });
+ve.start({
+	is_browser: false, is_node: true,
+	load_files: [
+		"core/process/actions_thread/"
+	]
+});
 
 parentPort.on("message", (task) => {
 	// Bypasses resource-intensive wait queues for real-time diagnostics
