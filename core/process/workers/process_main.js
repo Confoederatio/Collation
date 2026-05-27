@@ -74,5 +74,7 @@ if (!global?.proc)
 		return proc.worker_pool;
 	};
 	
-	
+	proc.IPC_task = function (arg0_json) {
+		
+	};
 }
