@@ -35,8 +35,41 @@ if (!global?.History) global.History = {};
 	};
 }
 
-History.addKeyframe = function (arg0_keyframe, arg1_timestamp, ...argn_args) {
+History.addKeyframe = function (arg0_keyframes, arg1_timestamp, ...argn_arguments) {
+	//Convert from parameters
+	let keyframes_obj = arg0_keyframes;
+	let timestamp = arg1_timestamp;
 	
+	//Declare local instance variables
+	let keyframe_obj = keyframes_obj[timestamp];
+	
+	//Iterate over all argn_arguments and add it to .value, concatenating any objects if they exist
+	for (let i = 0; i < argn_arguments.length; i++)
+		if (argn_arguments[i] !== undefined)
+			if (typeof argn_arguments === "object" && argn_arguments[i] !== null) {
+				let old_variables = (keyframe_obj.value[i]?.variables) ? 
+					keyframe_obj.value[i].variables : {};
+				
+				//Handle initial value naively
+				keyframe_obj.value[i] = {
+					...(keyframe_obj.value[i]) ? keyframe_obj.value[i] : {},
+					...argn_arguments[i]
+				};
+				//Handle shallow nesting for .variables if extant
+				if (argn_arguments[i].variables)
+					keyframe_obj.value[i].variables = { 
+					...old_variables, 
+						...argn_arguments[i].variables 
+				};
+			} else {
+				keyframe_obj.value[i] = argn_arguments[i];
+			}
+	
+	//Set new keyframe_obj by mutating keyframes_obj
+	keyframes_obj[timestamp] = keyframe_obj;
+	
+	//Return statement
+	return keyframes_obj;
 };
 
 History.diffKeyframe = function (arg0_keyframe, arg1_keyframe) {
@@ -169,6 +202,12 @@ History.getKeys = function (arg0_keyframes) {
 		.sort((a, b) => parseInt(a) - parseInt(b));
 };
 
-History.removeKeyframe = function (arg0_keyframe, arg1_timestamp) {
+History.removeKeyframe = function (arg0_keyframes, arg1_timestamp) {
+	//Convert from parameters
+	let keyframes_obj = arg0_keyframes;
+	let timestamp = parseInt(arg1_timestamp);
 	
+	//Return statement; delete timestamp key
+	delete keyframes_obj[timestamp];
+	return keyframes_obj;
 };
