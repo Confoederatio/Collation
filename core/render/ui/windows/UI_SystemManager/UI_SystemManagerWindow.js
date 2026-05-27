@@ -7,7 +7,9 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 		this.static = UI_SystemManagerWindow;
 		
 		if (!this.static.histmap_table)
-			this.static.histmap_table = new ve.Table({});
+			this.static.histmap_table = new ve.Table({}, {
+				page_size: 20
+			});
 		
 		if (this.static.instance) this.static.instance.close();
 		this.static.instance = vePageMenuWindow({
@@ -47,8 +49,8 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 		//Declare local instance variables
 		let ipcRenderer = electron.ipcRenderer;
 		
-		//Return statement
-		return new Promise((resolve, reject) => {
+		//Declare local instance variables
+		let db_array = await new Promise((resolve, reject) => {
 			ipcRenderer.removeAllListeners("ndjson:get-diagnostics-ready");
 			
 			ipcRenderer.on("ndjson:get-diagnostics-ready", (event, all_workers) => {
@@ -60,7 +62,7 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 					let rss_mb = all_workers[i].rss/(1024*1024);
 					
 					table_array.push([
-						all_workers[i].worker_id,
+						`DB #${all_workers[i].worker_id}`,
 						`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
 						`${String.formatNumber(rss_mb)}MB`,
 						`${Math.round(all_workers[i].percentage)}%`,
@@ -71,5 +73,31 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 			});
 			ipcRenderer.send("ndjson:get-diagnostics");
 		});
+		let process_array = await new Promise((resolve, reject) => {
+			ipcRenderer.removeAllListeners("process:get-diagnostics-ready");
+			
+			ipcRenderer.on("process:get-diagnostics-ready", (event, all_workers) => {
+				let table_array = [];
+				
+				for (let i = 0; i < all_workers.length; i++) {
+					let heap_used_mb = all_workers[i].heapUsed/(1024*1024);
+					let heap_total_mb = all_workers[i].heapTotal/(1024*1024);
+					let rss_mb = all_workers[i].rss/(1024*1024);
+					
+					table_array.push([
+						`Process #${all_workers[i].worker_id}`,
+						`${String.formatNumber(heap_used_mb)}/${String.formatNumber(heap_total_mb)}MB (${Math.round((heap_used_mb/heap_total_mb)*100)}%)`,
+						`${String.formatNumber(rss_mb)}MB`,
+						`${Math.round(all_workers[i].percentage)}%`,
+					])
+				}
+				
+				resolve(table_array);
+			});
+			ipcRenderer.send("process:get-diagnostics");
+		});
+		
+		//Return statement
+		return db_array.concat(process_array);
 	}
 };

@@ -1,5 +1,6 @@
 //Import libraries
 let NodeWorker = require("node:worker_threads").Worker;
+let os = require("node:os");
 
 if (!global?.proc)
 	/*
@@ -11,6 +12,33 @@ if (!global?.proc)
 
 //Initialise functions
 {
+	/**
+	 * Resolves active RAM diagnostic percentage statistics from every worker in the pool.
+	 * IPC: `process:get-diagnostics` | Callback: `process:get-diagnostics-ready`.
+	 *
+	 * @returns {Promise<Array<{worker_id: number, rss: number, heapUsed: number, heapTotal: number, heapLimit: number, percentage: number}>>}
+	 */
+	proc.IPC_getDiagnostics = async function () {
+		//Declare local instance variables
+		let pool = proc.IPC_getWorkerPool();
+		let promises = [];
+		
+		for (let i = 0; i < pool.length; i++) {
+			let task_id = proc.task_id_counter++;
+			
+			promises.push(new Promise((resolve) => {
+				proc.pending_tasks.set(task_id, resolve);
+				pool[i].postMessage({
+					type: "get_diagnostics",
+					task_id: task_id
+				});
+			}));
+		}
+		
+		//Return statement
+		return await Promise.all(promises);
+	};
+	
 	/**
 	 * Creates a pool of workers to handle geoprocessing tasks.
 	 * IPC: `process:get-worker-pool` | Callback: `process:get-worker-pool-ready`.

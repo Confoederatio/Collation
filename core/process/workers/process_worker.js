@@ -5,6 +5,10 @@ let { parentPort, workerData } = require("node:worker_threads");
 let processing = false;
 let queue = [];
 
+//Require Vercengen startup
+require("../../../UF/js/vercengen/startup/vercengen_startup.js");
+ve.start({ is_browser: false, is_node: true });
+
 parentPort.on("message", (task) => {
 	// Bypasses resource-intensive wait queues for real-time diagnostics
 	if (task.type === "get_diagnostics") {
@@ -34,7 +38,7 @@ async function handleTask (arg0_json) {
 	//Convert from parameters
 	let json = arg0_json;
 	
-	//Declare elocal instance variables
+	//Declare local instance variables
 	
 }
 

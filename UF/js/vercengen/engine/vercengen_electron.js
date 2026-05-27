@@ -182,10 +182,32 @@ if (!global.v8) global.v8 = require("node:v8");
 			ipc_main.on('ontology:stream-next', sendNextBatch);
 			await sendNextBatch();
 		});
+		
+		//process
+		ipc_main.on("process:get-diagnostics", async (event) => {
+			let result = await proc.IPC_getDiagnostics();
+			event.sender.send("process:get-diagnostics-ready", result);
+		});
+		ipc_main.on("process:get-worker-pool", async (event, max_workers) => {
+			let pool = proc.IPC_getWorkerPool(max_workers);
+			let serialised_pool = pool.map((w) => {
+				return {
+					threadId: w?.threadId,
+					resourceLimits: w?.resourceLimits ? {
+						maxYoungGenerationSizeMb: w.resourceLimits.maxYoungGenerationSizeMb,
+						maxOldGenerationSizeMb: w.resourceLimits.maxOldGenerationSizeMb,
+						codeRangeSizeMb: w.resourceLimits.codeRangeSizeMb,
+						stackSizeMb: w.resourceLimits.stackSizeMb
+					} : null
+				};
+			});
+			event.sender.send("process:get-worker-pool-ready", serialised_pool);
+		});
 	};
 	
 	try {
 		require("../db/NDJSON_main.js");
+		require("../../../../core/process/workers/process_main.js");
 	} catch (e) {} //NDJSON handling
 }
 

@@ -187,6 +187,7 @@ global.l4p = "./livemap/4.view/politics/";
 			"!core/startup.js",
 			"!core/archives",
 			"!core/db",
+			"!core/process/workers",
 			"core",
 			"core/render/data/entities",
 			"core/render/data/brush",
