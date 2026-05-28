@@ -101,6 +101,17 @@ History.diffKeyframe = function (arg0_keyframe, arg1_keyframe) {
 	return keyframe;
 };
 
+History.getFirstKey = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes_obj = (arg0_keyframes) ? arg0_keyframes : {};
+	
+	//Declare local instance variables
+	let all_timestamps = History.getTimestamps(keyframes_obj);
+	
+	//Return statement
+	return (all_timestamps.length > 0) ? all_timestamps[0] : null;
+};
+
 History.getFirstKeyframe = function (arg0_keyframes) {
 	//Convert from parameters
 	let keyframes_obj = (arg0_keyframes) ? arg0_keyframes : {};
@@ -111,6 +122,17 @@ History.getFirstKeyframe = function (arg0_keyframes) {
 	//Return statement
 	return (all_timestamps.length > 0) ? 
 		keyframes_obj[all_timestamps[0]] : null;
+};
+
+History.getLastKey = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes_obj = (arg0_keyframes) ? arg0_keyframes : {};
+	
+	//Declare local instance variables
+	let all_timestamps = History.getTimestamps(keyframes_obj);
+	
+	//Return statement
+	return (all_timestamps.length > 0) ? all_timestamps[all_timestamps.length - 1] : null;
 };
 
 History.getLastKeyframe = function (arg0_keyframes) {
