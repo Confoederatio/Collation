@@ -2,13 +2,13 @@ if (!global?.proc) global.proc = {};
 
 //Initialise functions
 {
-	proc.send = async function (arg0_function_key, ...argn_arguments) {
+	proc.send = async function (arg0_json) {
 		//Convert from parameters
-		let function_key = arg0_function_key;
+		let json = (arg0_json) ? arg0_json : {};
 		
 		//Return statement
 		return await Blacktraffic.task("process", {
-			args: [function_key, ...argn_arguments]
+			args: ["IPC_task", json]
 		});
 	};
 }

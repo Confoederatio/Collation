@@ -79,14 +79,12 @@ if (!global?.proc)
 	/**
 	 * Sends an IPC task down to subordinate workers deemed available.
 	 * 
-	 * @param {string} arg0_function_key
-	 * @param {Object} arg1_json
+	 * @param {Object} arg0_json
 	 * @constructor
 	 */
-	proc.IPC_task = async function (arg0_function_key, arg1_json) {
+	proc.IPC_task = async function (arg0_json) {
 		//Convert from parameters
-		let function_key = arg0_function_key;
-		let json = (arg1_json !== undefined) ? arg1_json : {};
+		let json = (arg0_json) ? arg0_json : {};
 		
 		//Declare local instance variables
 		let pool = proc.IPC_getWorkerPool();
@@ -120,10 +118,11 @@ if (!global?.proc)
 				resolve(result);
 			});
 			selected_worker.postMessage({
-				...options,
-				type: function_key,
-				task_id: task_id
-			})
+				type: "process",
+				task_id: task_id,
+				
+				value: json
+			});
 		})
 	};
 }
