@@ -133,9 +133,9 @@ if (!global.v8) global.v8 = require("node:v8");
 		
 		//process
 		ipc_main.on("process", async (event, function_key, ...argn_arguments) => {
-			if (proc[function_key] === undefined) event.sender.send("process:ready", null);
+			if (proc.IPC_task === undefined) event.sender.send("process:ready", null);
 			
-			let result = await proc[function_key](...argn_arguments);
+			let result = await proc.IPC_task(function_key, ...argn_arguments);
 			event.sender.send("process:ready", result);
 		});
 		ipc_main.on("process:get-diagnostics", async (event) => {

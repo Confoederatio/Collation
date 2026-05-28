@@ -44,7 +44,7 @@ async function handleTask (arg0_json) {
 	let json = arg0_json;
 	
 	//Declare local instance variables
-	
+	console.log(`[WIP] - Complete implementation. Received handleTask:`, json);
 }
 
 async function processQueue () {

@@ -2,6 +2,8 @@
 let NodeWorker = require("node:worker_threads").Worker;
 let os = require("node:os");
 
+require("../../../UF/js/vercengen/db/NDJSON_history"); //Require NDJSON_history.js
+
 if (!global?.proc)
 	/*
 	 * The namespace for all process-related functions.
@@ -74,7 +76,54 @@ if (!global?.proc)
 		return proc.worker_pool;
 	};
 	
-	proc.IPC_task = function (arg0_json) {
+	/**
+	 * Sends an IPC task down to subordinate workers deemed available.
+	 * 
+	 * @param {string} arg0_function_key
+	 * @param {Object} arg1_json
+	 * @constructor
+	 */
+	proc.IPC_task = async function (arg0_function_key, arg1_json) {
+		//Convert from parameters
+		let function_key = arg0_function_key;
+		let json = (arg1_json !== undefined) ? arg1_json : {};
 		
+		//Declare local instance variables
+		let pool = proc.IPC_getWorkerPool();
+		let selected_worker = pool[0];
+		
+		let min_tasks = (selected_worker.active_tasks || 0);
+		
+		//Iterate over all workers in pool to see which is doing the least work
+		for (let i = 1; i < pool.length; i++) {
+			let active_tasks = (pool[i].active_tasks || 0);
+			
+			if (active_tasks < min_tasks) {
+				min_tasks = active_tasks;
+				selected_worker = pool[i];
+			}
+		}
+		
+		//Increment the task counter for this worker
+		if (selected_worker.active_tasks === undefined)
+			selected_worker.active_tasks = 0;
+		selected_worker.active_tasks++;
+		
+		//Create performance container task ID
+		let task_id = proc.task_id_counter++;
+		
+		//Return statement
+		return new Promise((resolve) => {
+			//Intersect callback to decrement worker task overhead
+			proc.pending_tasks.set(task_id, (result) => {
+				selected_worker.active_tasks--;
+				resolve(result);
+			});
+			selected_worker.postMessage({
+				...options,
+				type: function_key,
+				task_id: task_id
+			})
+		})
 	};
 }

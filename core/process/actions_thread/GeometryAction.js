@@ -16,5 +16,12 @@ proc.GeometryAction = async function (arg0_json) {
 			file_path: json.file_path,
 			geometry_obj: geometry_obj
 		});
+		
+		//.add_column
+		if (typeof json.add_column === "object") {
+			if (!json.add_column.values) {
+				
+			}
+		}
 	}
 };
