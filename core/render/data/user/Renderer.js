@@ -84,7 +84,7 @@ naissance.Renderer = class extends ve.Class {
 			timestamp: main.timestamp
 		});
 		if (main.file_path === undefined) return []; //Internal guard clause if no file is loaded
-		let diff_array = await db.send("diffAll", main.file_path, main.timestamp);
+		let diff_array = await db.send("diffAll", main.timestamp);
 		
 		//Iterate over all values in diff_array
 		for (let i = 0; i < diff_array.length; i++) {

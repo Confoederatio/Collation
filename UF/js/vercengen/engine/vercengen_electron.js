@@ -124,7 +124,7 @@ if (!global.v8) global.v8 = require("node:v8");
 		});
 		ipc_main.on("process:get-worker-pool", async (event, max_workers) => {
 			let pool = proc.IPC_getWorkerPool(max_workers);
-			let serialised_pool = pool.map((w) => {
+			let serialised_pool = pool.map((w) => { 
 				return {
 					threadId: w?.threadId,
 					resourceLimits: w?.resourceLimits ? {

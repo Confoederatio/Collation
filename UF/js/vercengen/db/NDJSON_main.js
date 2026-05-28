@@ -69,24 +69,22 @@ if (!global.NDJSON)
 {
 	/**
 	 * Returns a diff over `.history.keyframes` for the ID in question.
-	 *
-	 * @param {string} arg0_file_path - The .ndjson file to target for a diff.
-	 * @param {string} arg1_id
-	 * @param {Object} [arg2_options]
-	 *  @param {number} [arg2_options.timestamp]
+	 * 
+	 * @param {string} arg0_id
+	 * @param {Object} [arg1_options]
+	 *  @param {number} [arg1_options.timestamp]
 	 *
 	 * @returns {Promise<Object|null>}
 	 */
-	NDJSON.diff = async function (arg0_file_path, arg1_id, arg2_options) {
+	NDJSON.diff = async function (arg0_id, arg1_options) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
-		let options = arg2_options ? arg2_options : {};
+		let id = arg0_id;
+		let options = arg1_options ? arg1_options : {};
 		
 		//Return statement
 		return NDJSON.task(id, {
 			type: "diff",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			id: id,
 			timestamp: options.timestamp
 		});
@@ -95,19 +93,17 @@ if (!global.NDJSON)
 	/**
 	 * Diffs all `.history.keyframes` for all Objects for a given ID, so long as they have that field.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {number|string} arg1_timestamp
+	 * @param {number|string} arg0_timestamp
 	 *
 	 * @returns {Promise<Object[]>}
 	 */
-	NDJSON.diffAll = async function (arg0_file_path, arg1_timestamp) {
+	NDJSON.diffAll = async function (arg0_timestamp) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let timestamp = parseInt(arg1_timestamp);
+		let timestamp = parseInt(arg0_timestamp);
 		
 		let results = await NDJSON.task("all", {
 			type: "diff_all",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			timestamp: timestamp
 		});
 		
@@ -130,20 +126,18 @@ if (!global.NDJSON)
 	/**
 	 * Returns processed `.history.keyframes` for a given key.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {string} arg1_id
+	 * @param {string} arg0_id
 	 *
 	 * @returns {Promise<Object>}
 	 */
-	NDJSON.getKeyframes = async function (arg0_file_path, arg1_id) {
+	NDJSON.getKeyframes = async function (arg0_id) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
+		let id = arg0_id;
 		
 		//Return statement
 		return NDJSON.task(id, {
 			type: "get_keyframes",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			id: id
 		});
 	};
@@ -151,20 +145,18 @@ if (!global.NDJSON)
 	/**
 	 * Returns the Object value of a single ID.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {string} arg1_id
+	 * @param {string} arg0_id
 	 *
 	 * @returns {Promise<Object>}
 	 */
-	NDJSON.getValue = async function (arg0_file_path, arg1_id) {
+	NDJSON.getValue = async function (arg0_id) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
+		let id = arg0_id;
 		
 		//Return statement
 		return NDJSON.task(id, {
 			type: "get_value",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			id: id
 		});
 	};
@@ -259,6 +251,7 @@ if (!global.NDJSON)
 		let current_offset = 0;
 		let global_depth = 0;
 		let write_stream = fs.createWriteStream(`${file_path}.ndjson`);
+		ve.ndjson_file_path = `${file_path}.ndjson`;
 		
 		//Initialise logic functions
 		let refreshLimits = () => {
@@ -367,18 +360,16 @@ if (!global.NDJSON)
 	/**
 	 * Queries an NDJSON file. [WIP] - Should be refactored so that only `arg1_options` is present.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {Object} [arg1_options]
-	 *  @param {number} [arg1_options.limit_end]
-	 *  @param {number} [arg1_options.limit_start=0]
-	 *  @param {Object} [arg1_options.query_obj] - Key/value pairs to match for.
+	 * @param {Object} [arg0_options]
+	 *  @param {number} [arg0_options.limit_end]
+	 *  @param {number} [arg0_options.limit_start=0]
+	 *  @param {Object} [arg0_options.query_obj] - Key/value pairs to match for.
 	 *
 	 * @returns {Promise<Object[]>}
 	 */
-	NDJSON.query = async function (arg0_file_path, arg1_options) {
+	NDJSON.query = async function (arg0_options) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let options = arg1_options ? arg1_options : {};
+		let options = arg0_options ? arg0_options : {};
 		
 		//Initialise options
 		if (!options.query_obj) options.query_obj = {};
@@ -389,7 +380,7 @@ if (!global.NDJSON)
 		
 		let results = await NDJSON.task("all", {
 			type: "query",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			query: options.query_obj,
 			limit_end: limit_end
 		});
@@ -408,36 +399,32 @@ if (!global.NDJSON)
 	/**
 	 * Removes a value from the NDJSON file.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {string} arg1_id
+	 * @param {string} arg0_id
 	 *
 	 * @returns {Promise<boolean>}
 	 */
-	NDJSON.removeValue = async function (arg0_file_path, arg1_id) {
+	NDJSON.removeValue = async function (arg0_id) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
+		let id = arg0_id;
 		
 		//Declare local instance variables
 		let map = {};
 		map[id] = null;
 		
 		//Return statement
-		return await NDJSON.setValues(file_path, map);
+		return await NDJSON.setValues(path.resolve(ve.ndjson_file_path), map);
 	};
 	
 	/**
 	 * Removes multiple values from the NDJSON file.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {string[]} arg1_ids
+	 * @param {string[]} arg0_ids
 	 *
 	 * @returns {Promise<boolean>}
 	 */
-	NDJSON.removeValues = async function (arg0_file_path, arg1_ids) {
+	NDJSON.removeValues = async function (arg0_ids) {
 		//Convert from parameters
-		let file_path = arg0_file_path;
-		let ids = arg1_ids;
+		let ids = arg0_ids;
 		
 		//Declare local instance variables
 		let map = {};
@@ -447,21 +434,17 @@ if (!global.NDJSON)
 			map[ids[i]] = null;
 		
 		//Return statement
-		return await NDJSON.setValues(arg0_file_path, map);
+		return await NDJSON.setValues(path.resolve(ve.ndjson_file_path), map);
 	};
 	
 	/**
 	 * Saves the NDJSON file back into the main directory.
 	 *
-	 * @param {string} arg0_file_path
-	 *
 	 * @returns {Promise<void>}
 	 */
-	NDJSON.save = async function (arg0_file_path) {
-		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		
+	NDJSON.save = async function () {
 		//Declare local instance variables
+		let file_path = path.resolve(ve.ndjson_file_path);
 		let folder_path = `${file_path}.tmpndjson`;
 		let pool = NDJSON.getWorkerPool();
 		
@@ -495,38 +478,34 @@ if (!global.NDJSON)
 	/**
 	 * Sets a key-value pair in the NDJSON file.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {string} arg1_id
-	 * @param {Object} arg2_value
+	 * @param {string} arg0_id
+	 * @param {Object} arg1_value
 	 *
 	 * @returns {Promise<boolean>}
 	 */
-	NDJSON.setValue = async function (arg0_file_path, arg1_id, arg2_value) {
+	NDJSON.setValue = async function (arg0_id, arg1_value) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let id = arg1_id;
-		let value = arg2_value;
+		let id = arg0_id;
+		let value = arg1_value;
 		
 		//Declare local instance variables
 		let map = {};
 		map[id] = value;
 		
 		//Return statement
-		return await NDJSON.setValues(arg0_file_path, map);
+		return await NDJSON.setValues(parg.resolve(ve.ndjson_file_path), map);
 	};
 	
 	/**
 	 * Sets multiple key-value pairs for the NDJSON file.
 	 *
-	 * @param {string} arg0_file_path
-	 * @param {Object} arg1_update_map
+	 * @param {Object} arg0_update_map
 	 *
 	 * @returns {Promise<boolean>}
 	 */
-	NDJSON.setValues = async function (arg0_file_path, arg1_update_map) {
+	NDJSON.setValues = async function (arg0_update_map) {
 		//Convert from parameters
-		let file_path = path.resolve(arg0_file_path);
-		let update_map = (arg1_update_map) ? arg1_update_map : {};
+		let update_map = (arg0_update_map) ? arg0_update_map : {};
 		
 		//Declare local instance variables
 		let pool = NDJSON.getWorkerPool();
@@ -544,7 +523,7 @@ if (!global.NDJSON)
 		//Dispatch tasks via the NDJSON.task helper
 		await NDJSON.task(target_wids, (wid) => ({
 			type: "set_values",
-			file_path: file_path,
+			file_path: path.resolve(ve.ndjson_file_path),
 			update_map: updates_by_worker[wid]
 		}));
 		
