@@ -100,6 +100,30 @@ History.diffKeyframe = function (arg0_keyframe, arg1_keyframe) {
 	//Return statement
 	return keyframe;
 };
+
+History.getFirstKeyframe = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes_obj = (arg0_keyframes) ? arg0_keyframes : {};
+	
+	//Declare local instance variables
+	let all_timestamps = History.getTimestamps(keyframes_obj);
+	
+	//Return statement
+	return (all_timestamps.length > 0) ? 
+		keyframes_obj[all_timestamps[0]] : null;
+};
+
+History.getLastKeyframe = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes_obj = (arg0_keyframes) ? arg0_keyframes : {};
+	
+	//Declare local instance variables
+	let all_timestamps = History.getTimestamps(keyframes_obj);
+	
+	//Return statement
+	return (all_timestamps.length > 0) ? 
+		keyframes_obj[all_timestamps[all_timestamps.length - 1]] : null;
+};
 	
 History.getLocalisation = function (arg0_keyframe, arg1_keyframe) {
 	//Convert from parameters
@@ -153,7 +177,7 @@ History.getKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	let timestamp = parseInt(arg1_timestamp);
 	
 	//Declare local instance variables
-	let all_keyframes = History.getKeys(keyframes);
+	let all_keyframes = History.getTimestamps(keyframes);
 	let return_keyframe = { timestamp: timestamp, value: [] };
 	
 	//Iterate over all_keyframes in order
@@ -178,7 +202,7 @@ History.getKeyframes = function (arg0_keyframes) {
 	let keyframes = arg0_keyframes;
 	
 	//Declare local instance variables
-	let all_keyframes = History.getKeys(keyframes);
+	let all_keyframes = History.getTimestamps(keyframes);
 	let return_keyframe = { value: [] };
 	
 	//Iterate over all_keyframes in order
@@ -193,7 +217,7 @@ History.getKeyframes = function (arg0_keyframes) {
 	return keyframes;
 };
 
-History.getKeys = function (arg0_keyframes) {
+History.getTimestamps = function (arg0_keyframes) {
 	//Convert from parameters
 	let keyframes = (arg0_keyframes) ? arg0_keyframes : {};
 	

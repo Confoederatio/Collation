@@ -10,5 +10,5 @@ if (!global?.proc) global.proc = {};
 		return await Blacktraffic.task("process", {
 			args: [function_key, ...argn_arguments]
 		});
-	}
+	};
 }
