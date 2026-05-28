@@ -81,7 +81,7 @@ async function handleTask (arg0_task) {
 	//Declare local instance variables
 	let {
 		file_path, id, limit_end, update_map, query, task_id, timestamp, type
-	} = task; //Destructure parameteers from task
+	} = task; //Destructure parameters from task
 	let page_file = path.join(`${file_path}.tmpndjson`, `${workerData.worker_id}.ndjson`);
 	
 	//diff: parses the .history.keyframes for an individual ID
