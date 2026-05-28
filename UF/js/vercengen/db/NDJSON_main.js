@@ -58,15 +58,14 @@ if (!global.NDJSON)
 	 * IPC: `ndjson:diff-all` | Callback: `ndjson:diff-all-ready`.
 	 * 
 	 * @param {string} arg0_file_path
-	 * @param {Object} [arg1_options]
-	 *  @param {number} [arg1_options.timestamp]
+	 * @param {number|string} arg1_timestamp
 	 * 
 	 * @returns {Promise<Object[]>}
 	 */
-	NDJSON.diffAll = async function (arg0_file_path, arg1_options) {
+	NDJSON.diffAll = async function (arg0_file_path, arg1_timestamp) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
-		let options = (arg1_options) ? arg1_options : {};
+		let timestamp = parseInt(arg1_timestamp);
 		
 		//Declare local instance variables
 		let pool = NDJSON.getWorkerPool();
@@ -81,7 +80,7 @@ if (!global.NDJSON)
 					type: "diff_all", 
 					task_id: task_id, 
 					file_path: file_path, 
-					timestamp: options.timestamp 
+					timestamp: timestamp 
 				});
 			}));
 		}
