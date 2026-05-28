@@ -44,11 +44,19 @@ async function handleTask (arg0_json) {
 	let json = arg0_json;
 	
 	//Internal guard clause if no json.type is provided
-	if (json.type === undefined) 
+	let task_id = json.task_id;
+	if (json.type === undefined) {
 		console.error(`Requires a type to send JSON packet onto proc[json.type](json) for processing.`);
+		return;
+	}
 	
-	//Return statement
-	return await proc[json.type](json);
+	try {
+		//Return statement
+		return parentPort.postMessage({ task_id, results: await proc[json.type](json.value)});
+	} catch (error) {
+		console.error(`Error processing task ${task_id}:`, error);
+		return parentPort.postMessage({ task_id, error: error.message });
+	}
 }
 
 async function processQueue () {
