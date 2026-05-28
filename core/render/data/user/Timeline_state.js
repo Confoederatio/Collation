@@ -156,7 +156,7 @@ if (!global?.naissance) global.naissance = {};
 		let data = fs.readFileSync(file_path, "utf8");
 		
 		//Load save, then set file path
-		await db.send("load", file_path);
+		await db.load(file_path);
 		main.file_path = `${file_path}.ndjson`;
 		DALS.Timeline.loadState(data);
 	};

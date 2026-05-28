@@ -37,7 +37,7 @@ global.l4p = "./livemap/4.view/politics/";
 
 //Initialise functions
 {
-  global.initialiseGlobal = function () {
+  global.initialiseGlobal = async function () {
 		//KEEP AT TOP! Make sure file paths exist
 		{
 			if (!fs.existsSync("./saves/")) fs.mkdirSync("./saves/");
@@ -109,6 +109,9 @@ global.l4p = "./livemap/4.view/politics/";
 			}
     };
 		
+		//Initialise DB, process
+		await db.initialise();
+		
 		if (!global.naissance) global.naissance = {};
 			main.map.settings = {
 				autoload_last_date: true
@@ -137,7 +140,7 @@ global.l4p = "./livemap/4.view/politics/";
 		//2. Set aliases
 		main.brush = main.user.brush;
 		
-		//3. Set datee
+		//3. Set date
 		UI_DateMenu.setDate(Date.getCurrentDate());
   };
 	

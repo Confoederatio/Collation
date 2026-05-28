@@ -153,7 +153,7 @@ naissance.History = class extends ve.Class {
 		let components_obj = {};
 		if (this.interface && typeof this.interface.remove === "function") this.interface.remove();
 		
-		let all_keyframes = await db.send("getKeyframes", id);
+		let all_keyframes = await db.getKeyframes(id);
 		
 		Object.iterate(all_keyframes.value, (local_key, local_value) => {
 			//Set components_obj

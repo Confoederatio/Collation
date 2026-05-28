@@ -2,6 +2,17 @@ if (!global.db) global.db = {};
 
 //Initialise functions
 {
+	db.initialise = async function () {
+		//Declare local instance variables
+		let all_function_keys = await Blacktraffic.task("ndjson:get-all-functions");
+		
+		for (let i = 0; i < all_function_keys.length; i++)
+			db[all_function_keys[i]] = async function (...argn_arguments) {
+				//Return statement
+				return await db.send(all_function_keys[i], ...argn_arguments);
+			};
+	};
+	
 	db.send = async function (arg0_function_key, ...argn_arguments) {
 		//Convert from parameters
 		let function_key = arg0_function_key;

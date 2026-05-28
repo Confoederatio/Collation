@@ -54,6 +54,20 @@ if (!global.v8) global.v8 = require("node:v8");
 			let result = await NDJSON[function_key](...argn_arguments);
 			event.sender.send("ndjson:ready", result);
 		});
+		//ndjson:get-all-functions
+		ipc_main.on("ndjson:get-all-functions", async (event) => {
+			let all_ndjson_function_keys = [];
+			let all_ndjson_keys = Object.keys(NDJSON);
+			
+			for (let i = 0; i < all_ndjson_keys.length; i++) {
+				let local_value = NDJSON[all_ndjson_keys[i]];
+				
+				if (typeof local_value === "function")
+					all_ndjson_function_keys.push(all_ndjson_keys[i]);
+			}
+			
+			event.sender.send("ndjson:get-all-functions:ready", all_ndjson_function_keys);
+		});
 		
 		//ontology
 		ipc_main.on("ontology:initialise", async (event, folder_path) => {

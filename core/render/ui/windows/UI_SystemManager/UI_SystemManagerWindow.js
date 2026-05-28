@@ -47,7 +47,7 @@ global.UI_SystemManagerWindow = class { //[WIP] - Improve window so that it reta
 	
 	static async getHistmapWorkersTableArray () {
 		//Declare local instance variables
-		let db_diagnostics = await db.send("getDiagnostics");
+		let db_diagnostics = await db.getDiagnostics();
 		let process_diagnostics = await Blacktraffic.task("process:get-diagnostics");
 		let table_array = [["Thread ID", "Heap", "RAM/RSS", "Utilisation (Processing)"]];
 		

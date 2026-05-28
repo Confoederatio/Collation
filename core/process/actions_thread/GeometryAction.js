@@ -11,8 +11,6 @@ proc.GeometryAction = async function (arg0_json) {
 	
 	//Parse commands for geometry_obj by fetching its type, and forwarding commands to there
 	if (geometry_obj && geometry_obj.class_name) {
-		
-		
 		await proc[`${geometry_obj.class_name}Action`]({
 			...json,
 			file_path: json.file_path,
