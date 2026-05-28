@@ -43,8 +43,12 @@ async function handleTask (arg0_json) {
 	//Convert from parameters
 	let json = arg0_json;
 	
-	//Declare local instance variables
-	console.log(`[WIP] - Complete implementation. Received handleTask:`, json);
+	//Internal guard clause if no json.type is provided
+	if (json.type === undefined) 
+		console.error(`Requires a type to send JSON packet onto proc[json.type](json) for processing.`);
+	
+	//Return statement
+	return await proc[json.type](json);
 }
 
 async function processQueue () {
