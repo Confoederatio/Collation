@@ -18,7 +18,7 @@ naissance.Renderer.parseAction = function (arg0_json) {
 		map.setSpatialReference(json.set_map_spatial_reference);
 		
 		//Refresh naissance.FeatureTileLayers this.draw() call
-		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => 
+		Object.iterate(naissance.Feature.instances, (local_key, local_feature) =>
 			local_feature.draw());
 	}
 };
