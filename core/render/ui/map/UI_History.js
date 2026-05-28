@@ -1,5 +1,5 @@
 if (!global.naissance) global.naissance = {};
-naissance.History = class extends ve.Class {
+naissance.History = class extends ve.Class { //[WIP] - Refactor after DALS refactor
 	constructor (arg0_keyframes_obj, arg1_options) {
 		//Convert from parameters
 		super();
