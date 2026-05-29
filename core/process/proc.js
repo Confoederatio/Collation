@@ -1,5 +1,13 @@
 if (!global?.proc) global.proc = {};
 
+//Initialise util functions
+{
+	proc.handleCommandQueue = async function (arg0_results_obj) { //[WIP] - Finish function body
+		//Convert from parameters
+		let results_obj = arg0_results_obj;
+	};
+}
+
 //Initialise functions
 {
 	proc.feature = async function (arg0_feature_id, arg1_json) {
@@ -9,6 +17,7 @@ if (!global?.proc) global.proc = {};
 		
 		//Declare local instance variables
 		json.feature_obj = await db.getValue(feature_id);
+		json.type = "FeatureAction";
 		return await proc.send(json);
 	};
 	
@@ -19,6 +28,7 @@ if (!global?.proc) global.proc = {};
 		
 		//Declare local instance variables
 		json.geometry_obj = await db.getValue(geometry_id);
+		json.type = "GeometryAction";
 		return await proc.send(json);
 	};
 	
@@ -28,7 +38,7 @@ if (!global?.proc) global.proc = {};
 		
 		//Return statement
 		return await Blacktraffic.task("process", {
-			args: ["IPC_task", json]
+			args: [json]
 		});
 	};
 }

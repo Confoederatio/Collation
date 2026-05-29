@@ -118,7 +118,7 @@ if (!global?.proc)
 				resolve(result);
 			});
 			selected_worker.postMessage({
-				type: "process",
+				type: json.type,
 				task_id: task_id,
 				
 				value: json

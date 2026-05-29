@@ -45,10 +45,12 @@ async function handleTask (arg0_json) {
 	
 	//Internal guard clause if no json.type is provided
 	let task_id = json.task_id;
+	//console.log(`Sent:`, json);
 	if (json.type === undefined) {
 		console.error(`Requires a type to send JSON packet onto proc[json.type](json) for processing.`);
 		return;
 	}
+	//console.log(`handleTask received:`, arg0_json, Object.keys(proc));
 	
 	try {
 		//Return statement

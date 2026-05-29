@@ -1,8 +1,44 @@
 //[VERCENGEN]
+if (!global.Boolean)
+	/**
+	 * The namespace for all UF/Boolean utility functions, typically for static methods.
+	 *
+	 * @namespace Boolean
+	 */
+	global.Boolean = {};
 if (!global?.History) global.History = {};
 
 //[WIP] - Temporary util functions
 {
+	/**
+	 * Checks if two objects are deeply equal. JSON-parsing only.
+	 * @alias Boolean.isDeepEqual
+	 *
+	 * @param {Object} arg0_object
+	 * @param {Object} arg1_object
+	 *
+	 * @returns {boolean}
+	 */
+	Boolean.isDeepEqual = function (arg0_object, arg1_object) {
+		//Convert from parameters
+		let object = arg0_object;
+		let ot_object = arg1_object;
+		
+		if (object === ot_object) return true; //Internal guard clause if two objects are the same
+		if (typeof object !== "object" || object === null || typeof ot_object !== "object" || ot_object === null) return false; //Internal guard clause for falseys
+		
+		//Declare local instance variables
+		let all_object_keys = Object.keys(object);
+		let all_ot_object_keys = Object.keys(ot_object);
+		
+		//Return statement
+		if (all_object_keys.length !== all_ot_object_keys.length) return false;
+		for (let local_key of all_object_keys)
+			if (!all_ot_object_keys[local_key] || !Boolean.isDeepEqual(object[local_key], ot_object[local_key]))
+				return false;
+		return true;
+	};
+	
 	String.formatObject = function (arg0_object) {
 		//Convert from parameters
 		let object = (arg0_object) ? arg0_object : {};
@@ -69,6 +105,106 @@ History.addKeyframe = function (arg0_keyframes, arg1_timestamp, ...argn_argument
 	keyframes_obj[timestamp] = keyframe_obj;
 	
 	//Return statement
+	return keyframes_obj;
+};
+	
+History.cleanKeyframes = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes_obj = arg0_keyframes;
+	
+	//Declare local instance variables
+	let all_timestamps = History.getTimestamps(keyframes_obj);
+	let running_state = []; //Tracks the accumulated values to find redundancies
+	
+	//Iterate over all_timestamps in the current history
+	for (let i = 0; i < all_timestamps.length; i++) {
+		let timestamp = all_timestamps[i];
+		let local_keyframe = keyframes_obj[timestamp];
+		let has_meaningful_change = false;
+		
+		//Don't clean the very first keyframe, as it serves as the baseline
+		if (i === 0) {
+			//Update running state with the first keyframe's data
+			running_state = JSON.parse(JSON.stringify(local_keyframe.value));
+			continue;
+		}
+		
+		for (let x = 0; x < local_keyframe.value.length; x++) {
+			let current_val = local_keyframe.value[x];
+			let prev_val = running_state[x];
+			
+			//Skip only if undefined; null is treated as a meaningful value change
+			if (current_val === undefined) continue;
+			
+			if (typeof current_val === "object" && current_val !== null) {
+				// Handle object merging and variable delta checks
+				let is_redundant_obj = true;
+				let cleaned_obj = { ...current_val };
+				if (current_val.variables)
+					cleaned_obj.variables = { ...current_val.variables };
+				
+				//Check nested variables
+				if (current_val.variables && prev_val && prev_val.variables) {
+					for (let key in current_val.variables)
+						if (Boolean.isDeepEqual(current_val.variables[key], prev_val.variables[key])) {
+							delete cleaned_obj.variables[key];
+						} else {
+							is_redundant_obj = false;
+						}
+					//If variables becomes empty, remove the key
+					if (Object.keys(cleaned_obj.variables).length === 0) delete cleaned_obj.variables;
+				} else if (current_val.variables) {
+					is_redundant_obj = false;
+				}
+				
+				//Check other properties of the object (excluding variables which we just handled)
+				for (let key in current_val) {
+					if (key === "variables") continue;
+					if (prev_val && Boolean.isDeepEqual(current_val[key], prev_val[key])) {
+						delete cleaned_obj[key];
+					} else {
+						is_redundant_obj = false;
+					}
+				}
+				
+				if (is_redundant_obj) {
+					//Remove this index from keyframe if it changes nothing
+					local_keyframe.value[x] = undefined;
+				} else {
+					//Update the keyframe with cleaned object and update running state
+					local_keyframe.value[x] = cleaned_obj;
+					has_meaningful_change = true;
+					
+					//Update running state for next iteration; ensure state is an object if merging
+					if (typeof running_state[x] !== "object" || running_state[x] === null)
+						running_state[x] = { variables: {} };
+					
+					if (cleaned_obj.variables)
+						running_state[x].variables = {
+							...running_state[x].variables,
+							...cleaned_obj.variables
+						};
+					running_state[x] = { ...running_state[x], ...cleaned_obj };
+				}
+			} else {
+				//Handle primitive values and null
+				if (current_val === prev_val) {
+					local_keyframe.value[x] = undefined;
+				} else {
+					running_state[x] = current_val;
+					has_meaningful_change = true;
+				}
+			}
+		}
+		
+		//If the keyframe now contains no unique data, delete the keyframe entirely
+		let is_empty = local_keyframe.value.every((val) => val === undefined);
+		if (is_empty || !has_meaningful_change) {
+			delete keyframes_obj[timestamp];
+		}
+	}
+	
+	//Return stateement
 	return keyframes_obj;
 };
 
@@ -255,5 +391,20 @@ History.removeKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	
 	//Return statement; delete timestamp key
 	delete keyframes_obj[timestamp];
+	return keyframes_obj;
+};
+
+History.replaceKeyframe = function (arg0_keyframes, arg1_timestamp, arg2_keyframe, arg3_options) {
+	//Convert from parameters
+	let keyframes_obj = arg0_keyframes;
+	let timestamp = arg1_timestamp;
+	let keyframe = arg2_keyframe;
+	let options = (arg3_options) ? arg3_options : {};
+	
+	//Declare local instance variables
+	keyframes_obj = History.removeKeyframe(keyframes_obj, timestamp);
+	keyframes_obj = History.addKeyframe(keyframes_obj, timestamp, ...keyframe.value);
+	
+	//Return statement
 	return keyframes_obj;
 };
