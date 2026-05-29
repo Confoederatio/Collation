@@ -143,9 +143,17 @@ proc.GeometryAction = async function (arg0_json) { //[WIP] - Finish function bod
 			//.set_geometry
 			if (json.set_geometry)
 				if (json.set_geometry.value) {
-					keyframes_obj = History.addKeyframe(keyframes_obj, json.set_geometry.date, json.set_geometry.value);
+					keyframes_obj = History.addKeyframe(
+						keyframes_obj, 
+						Date.getTimestamp(json.set_geometry.date), 
+						json.set_geometry.value
+					);
 				} else if (json.set_geometry.value === null) {
-					keyframes_obj = History.addKeyframe(keyframes_obj, json.set_geometry.date, null);
+					keyframes_obj = History.addKeyframe(
+						keyframes_obj, 
+						Date.getTimestamp(json.set_geometry.date), 
+						null
+					);
 				}
 			//.set_history
 			//.set_label_symbol
