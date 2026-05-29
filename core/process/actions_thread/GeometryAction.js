@@ -140,6 +140,11 @@ proc.GeometryAction = async function (arg0_json) { //[WIP] - Finish function bod
 						keyframes_obj = History.removeKeyframe(keyframes_obj, timestamp);
 				}
 			}
+			//.set_description
+			if (json.set_description) {
+				if (!geometry_obj.metadata) geometry_obj.metadata = {};
+				geometry_obj.metadata.description = json.set_description;
+			}
 			//.set_geometry
 			if (json.set_geometry)
 				if (json.set_geometry.value) {
@@ -156,11 +161,59 @@ proc.GeometryAction = async function (arg0_json) { //[WIP] - Finish function bod
 					);
 				}
 			//.set_history
+			if (json.set_history) {
+				history_obj = JSON.parse(json.set_history);
+				keyframes_obj = (json.set_history.keyframes) ? json.set_history.keyframes : {};
+			}
 			//.set_label_symbol
+			if (json.set_label_symbol) {
+				keyframes_obj = History.addKeyframe(keyframes_obj,
+					Date.getTimestamp(json.set_label_symbol.date),
+					undefined,
+					undefined,
+					{ label_symbol: json.set_label_symbol.value }
+				);
+			} else if (json.set_label_symbol === null) {
+				keyframes_obj = History.addKeyframe(keyframes_obj,
+					Date.getTimestamp(json.set_label_symbol.date),
+					undefined,
+					undefined,
+					{ label_symbol: null }
+				);
+			}
 			//.set_name
+			if (json.set_name) {
+				let new_name = json.set_name.value;
+				if (new_name) new_name = new_name.trim();
+				
+				keyframes_obj = History.addKeyframe(keyframes_obj, 
+					Date.getTimestamp(json.set_name.date), 
+					undefined, 
+					undefined, 
+					{ name: new_name }
+				);
+			}
 			//.set_properties
+			if (json.set_properties !== undefined)
+				keyframes_obj = History.addKeyframe(keyframes_obj,
+					Date.getTimestamp(json.set_properties.date),
+					undefined,
+					undefined,
+					(json.set_properties.value) ? json.set_properties.value : null
+				);
 			//.set_symbol
+			if (json.set_symbol !== undefined)
+				keyframes_obj = History.addKeyframe(keyframes_obj,
+					Date.getTimestamp(json.set_symbol.date),
+					undefined,
+					undefined,
+					(json.set_symbol.value) ? json.set_symbol.value : null
+				);
 			//.set_tags
+			if (json.set_tags !== undefined) {
+				if (!geometry_obj.metadata) geometry_obj.metadata = {};
+				geometry_obj.metadata.tags = json.set_tags;
+			}
 		}
 		
 		//Ensure shallow mapping
