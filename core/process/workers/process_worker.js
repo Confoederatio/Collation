@@ -50,7 +50,6 @@ async function handleTask (arg0_json) {
 		console.error(`Requires a type to send JSON packet onto proc[json.type](json) for processing.`);
 		return;
 	}
-	//console.log(`handleTask received:`, arg0_json, Object.keys(proc));
 	
 	try {
 		//Return statement
