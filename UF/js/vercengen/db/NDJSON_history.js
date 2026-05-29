@@ -384,6 +384,27 @@ History.getTimestamps = function (arg0_keyframes) {
 		.sort((a, b) => parseInt(a) - parseInt(b));
 };
 
+History.moveKeyframe = function (arg0_keyframes, arg1_timestamp, arg2_timestamp) {
+	//Convert from parameters
+	let keyframes_obj = arg0_keyframes;
+	let timestamp = parseInt(arg1_timestamp);
+	let ot_timestamp = parseInt(arg2_timestamp);
+	
+	//Internal guard clause if timestamps are the same
+	if (timestamp === ot_timestamp) return keyframes_obj;
+	
+	//Check if keyframe_obj exists; if it does, move it
+	let keyframe_obj = keyframes_obj[timestamp];
+	
+	if (keyframe_obj) {
+		keyframe_obj[ot_timestamp] = keyframe_obj[timestamp];
+		delete keyframe_obj[timestamp];
+	}
+	
+	//Return statement
+	return keyframes_obj;
+};
+
 History.removeKeyframe = function (arg0_keyframes, arg1_timestamp) {
 	//Convert from parameters
 	let keyframes_obj = arg0_keyframes;

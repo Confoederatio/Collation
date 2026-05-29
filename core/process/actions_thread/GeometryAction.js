@@ -8,7 +8,7 @@ if (!global.proc) global.proc = {};
  * 
  * @returns {Promise}
  */
-proc.GeometryAction = async function (arg0_json) {
+proc.GeometryAction = async function (arg0_json) { //[WIP] - Finish function body
 	//Convert from parameters
 	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
 	
@@ -93,6 +93,66 @@ proc.GeometryAction = async function (arg0_json) {
 				keyframes_obj = History.cleanKeyframes(keyframes_obj);
 			}
 			//.delete_geometry
+			if (json.delete_geometry === true)
+				cmd_queue.push({
+					function_key: "db.removeValue",
+					value: [geometry_obj.id]
+				});
+			//.move_keyframe
+			if (json.move_keyframe)
+				keyframes_obj = History.moveKeyframe(
+					keyframes_obj, 
+					Date.getTimestamp(json.move_keyframe.date), 
+					Date.getTimestamp(json.move_keyframe.ot_date)
+				);
+			//.remove_column
+			if (typeof json.remove_variable === "string") {
+				Object.iterate(keyframes_obj, (local_key, local_value) => {
+					if (local_value?.value?.[2]?.variables)
+						delete local_value.value[2].variables[json.remove_variable];
+				});
+				keyframes_obj = History.cleanKeyframes(keyframes_obj);
+			}
+			//.remove_keyframe
+			if (json.remove_keyframe)
+				keyframes_obj = History.removeKeyframe(keyframes_obj, Date.getTimestamp(json.remove_keyframe));
+			//.remove_variable
+			if (typeof json.remove_variable === "object") {
+				let timestamp;
+					if (json.remove_variable.date === "end") {
+						timestamp = History.getLastKey(keyframes_obj);
+					} else if (json.remove_variable.date === "start") {
+						timestamp = History.getFirstKey(keyframes_obj);
+					}
+				
+				let keyframe_obj = keyframes_obj[timestamp];
+					
+				if (keyframe_obj?.value?.[2]?.variables) {
+					delete keyframe_obj.value[2].variables[json.remove_variable.key];
+					
+					if (Object.keys(keyframe_obj.value[2].variables))
+						keyframes_obj = History.removeKeyframe(keyframes_obj, timestamp);
+					if (
+						(keyframe_obj.value[0] === "undefined" || !keyframe_obj.value[0]) &&
+						(!keyframe_obj.value[1]) &&
+						(Object.keys(keyframe_obj.value[2]).length === 0)
+					)
+						keyframes_obj = History.removeKeyframe(keyframes_obj, timestamp);
+				}
+			}
+			//.set_geometry
+			if (json.set_geometry)
+				if (json.set_geometry.value) {
+					keyframes_obj = History.addKeyframe(keyframes_obj, json.set_geometry.date, json.set_geometry.value);
+				} else if (json.set_geometry.value === null) {
+					keyframes_obj = History.addKeyframe(keyframes_obj, json.set_geometry.date, null);
+				}
+			//.set_history
+			//.set_label_symbol
+			//.set_name
+			//.set_properties
+			//.set_symbol
+			//.set_tags
 		}
 		
 		//Ensure shallow mapping
