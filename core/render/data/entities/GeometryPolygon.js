@@ -14,14 +14,8 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		this.geometry = undefined;
 		
 		//2. Derender check
-		if (this.value) {
-			if (this.value[0] === null) return;
-			if (this.value[2]) {
-				if (this.value[2].hidden) return;
-				if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) return;
-				if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) return;
-			}
-		}
+		if (this.canDerender(value)) { this.removeGeometries(); return; }
+		if (this.canRemove(value)) { this.remove(); return; }
 		
 		//3. Draw geometry
 		if (this.value[0]) this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
