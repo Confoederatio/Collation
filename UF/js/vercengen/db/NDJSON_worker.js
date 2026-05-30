@@ -134,8 +134,22 @@ async function handleTask (arg0_task) {
 		
 		await forEachLine(page_file, (key, val_str) => {
 			try {
-				let state_val = resolveHistory(JSON.parse(val_str), timestamp);
-				if (state_val !== null) list.push({ key, value: state_val });
+				let entity_obj = JSON.parse(val_str);
+				let state_val = resolveHistory(entity_obj, timestamp);
+				
+				if (state_val !== null) {
+					list.push({
+						key,
+						class_name: entity_obj.class_name,
+						value: state_val
+					});
+				} else {
+					list.push({
+						key,
+						class_name: entity_obj.class_name,
+						entity_obj: entity_obj
+					});
+				}
 			} catch (e) {}
 		});
 		

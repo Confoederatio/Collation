@@ -1,28 +1,27 @@
 if (!global.naissance) global.naissance = {};
 naissance.Entity = class extends ve.Class {
-	static instances = new Map();
+	static instances = {};
 	
-	constructor (arg0_options, arg1_value) {
-		super();
-		this._init(arg0_options, arg1_value).then(() => {});
-	}
-	async _init (arg0_options, arg1_value) {
+	constructor (arg0_id, arg1_value) {
 		//Convert from parameters
-		this.options = (arg0_options) ? arg0_options : {};
-		this.value = arg1_value;
-		
-		//Initialise options
-		if (!this.options.hierarchy_icon) this.options.hierarchy_icon = "select";
+		let id = arg0_id;
+		let value = arg1_value;
+		super();
 		
 		//Declare local instance variables
 		this.class_name = "Entity";
+		this.id = id;
+		this.value = value;
+		
+		//Push to naissance.Entity.instances
+		naissance.Entity.instances[this.id] = this;
 	}
 	
 	async drawHierarchyDatatype () {
 		//Declare local instance variables
 		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
 		this.hierarchy_datatype = new ve.HierarchyDatatype({
-			icon: veHTML(`<icon>${this.options.hierarchy_icon}</icon>`, { tooltip: this.class_name }),
+			icon: veHTML(`<icon>select</icon>`, { tooltip: this.class_name }),
 			context_menu: veButton(() => {
 				super.open("instance", { name: this.getName(), ...this.window_options })
 			}, {

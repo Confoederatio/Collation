@@ -60,16 +60,18 @@ global.l4p = "./livemap/4.view/politics/";
 				entity_layer: new maptalks.VectorLayer("entity_layer", [], {
 					hitDetect: true,
 					interactive: true,
-					zIndex: 3
+					zIndex: 0
 				})
 			},
 			map: map,
 			settings: {},
 			user: {}
     };
+		Object.iterate(main.layers, (local_key, local_value) => local_value.addTo(map));
 		
 		//Initialise DB, process
 		await db.initialise();
+		await naissance.Renderer.setDate(Date.getCurrentDate());
   };
 	
 	global.loadSettings = function () {
