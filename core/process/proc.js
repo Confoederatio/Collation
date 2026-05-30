@@ -38,7 +38,6 @@ if (!global?.proc) global.proc = {};
 		json.feature_obj = await db.getValue(feature_id);
 		json.type = "FeatureAction";
 		let result = await proc.send(json);
-			await db.setValue(feature_id, result.entity_obj);
 			if (result.cmd_queue) result.results = await proc.handleCommandQueue(result.cmd_queue);
 		
 		//Return statement
@@ -54,9 +53,7 @@ if (!global?.proc) global.proc = {};
 		json.geometry_obj = await db.getValue(geometry_id);
 		json.type = "GeometryAction";
 		let result = await proc.send(json);
-			await db.setValue(geometry_id, result.entity_obj); //Update value before parsing command queue
 			if (result.cmd_queue) result.results = await proc.handleCommandQueue(result.cmd_queue);
-			
 		
 		//Return statement
 		return result;

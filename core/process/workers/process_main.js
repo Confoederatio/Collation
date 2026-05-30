@@ -45,13 +45,14 @@ if (!global?.proc)
 	 * Creates a pool of workers to handle geoprocessing tasks.
 	 * IPC: `process:get-worker-pool` | Callback: `process:get-worker-pool-ready`.
 	 *
-	 * @param {number} [arg0_max_workers=os.cpus().length - 1]
+	 * @param {number} [arg0_max_workers=Math.ceil((os.cpus().length - 1)/8)]
 	 *
 	 * @returns {NodeWorker[]}
 	 */
 	proc.IPC_getWorkerPool = function (arg0_max_workers) {
 		//Convert from parameters
-		let max_workers = Math.returnSafeNumber(arg0_max_workers, os.cpus().length - 1);
+		let max_workers = Math.returnSafeNumber(
+			arg0_max_workers, Math.ceil((os.cpus().length - 1)/8));
 		
 		//Init worker pool variables
 		if (proc.pending_tasks === undefined) proc.pending_tasks = new Map();

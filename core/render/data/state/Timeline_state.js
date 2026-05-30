@@ -2,9 +2,7 @@ if (!global.naissance) global.naissance = {};
 
 //Initialise functions
 {
-	DALS.Timeline.loadState = async function (arg0_json) {
-		console.log(`Received:`, arg0_json.length);
-	};
+	DALS.Timeline.loadState = async function (arg0_json) {};
 	
 	/**
 	 * Parses a user action inside Naissance. All user actions must be mapped to a valid JSON schema.
@@ -22,16 +20,14 @@ if (!global.naissance) global.naissance = {};
 		
 	};
 	
-	DALS.Timeline.saveState = async function () {
-		
-	};
+	DALS.Timeline.saveState = async function () {};
 	
 	naissance.loadFile = async function (arg0_file_path) {
 		//Convert from parameters
 		let file_path = path.resolve(arg0_file_path);
 		
 		//Declare local instance variables
-		await DALS.Timeline.loadState(await fs.promises.readFile(file_path, "utf8"));
+		await db.load(file_path);
 	};
 	
 	naissance.saveFile = async function (arg0_file_path) {
