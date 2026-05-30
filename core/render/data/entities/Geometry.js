@@ -20,6 +20,7 @@ naissance.Geometry = class extends naissance.Entity {
 		let value = (arg0_value) ? arg0_value : this.value;
 		
 		if (value) {
+			if (value.length === 0) return true; //If no value, just remove it
 			if (value[0] === null) return true;
 			if (value[2])
 				if (value[2].hidden) return true;
