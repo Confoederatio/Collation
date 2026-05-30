@@ -1,3 +1,58 @@
+//[VERCENGEN]
+
+//Import libraries
+let fs = require("node:fs");
+let path = require("node:path");
+let readline = require("node:readline");
+let { parentPort, workerData } = require("node:worker_threads");
+
+if (!global?.NDJSON) global.NDJSON = {};
+if (!global.ve) global.ve = {};
+
+require("../db/NDJSON_history.js"); //Require NDJSON_history.js
+
+//Declare variables
+let processing = false;
+let queue = [];
+
+//Internal helper functions
+{
+	Object.getValue = function (arg0_object, arg1_variable_string) {
+		//Convert from parameters
+		let object = arg0_object;
+		let variable_string = (arg1_variable_string) ? arg1_variable_string : "";
+		
+		//Return statement
+		return variable_string.split(".")
+		.reduce((local_object, local_key) => local_object?.[local_key], object);
+	};
+}
+
+parentPort.on("message", (task) => {
+	// Bypasses resource-intensive wait queues for real-time diagnostics
+	if (task.type === "get_diagnostics") {
+		let memory = process.memoryUsage();
+		let v8_stats = require("node:v8").getHeapStatistics();
+		
+		return parentPort.postMessage({
+			task_id: task.task_id,
+			results: {
+				worker_id: workerData.worker_id,
+				rss: memory.rss, // Total Resident Set Size for the whole process
+				heapUsed: memory.heapUsed,
+				heapTotal: memory.heapTotal,
+				heapLimit: v8_stats.heap_size_limit,
+				percentage: parseFloat(
+					((memory.heapUsed / v8_stats.heap_size_limit) * 100).toFixed(2)
+				)
+			}
+		});
+	}
+	
+	queue.push(task);
+	if (!processing) processQueue();
+});
+
 async function handleTask (arg0_task) {
 	//Convert from parameters
 	let task = arg0_task;
@@ -195,4 +250,13 @@ async function handleTask (arg0_task) {
 		//Return statement
 		return parentPort.postMessage({ task_id, results: true });
 	}
+}
+
+async function processQueue () {
+	processing = true;
+	while (queue.length > 0) {
+		let task = queue.shift();
+		await handleTask(task);
+	}
+	processing = false;
 }

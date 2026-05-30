@@ -53,7 +53,9 @@ global.l4p = "./livemap/4.view/politics/";
     //Declare global variables
     global.main = {
 			hierarchy: {},
-			interfaces: {},
+			interfaces: {
+				leftbar: new UI_Leftbar()
+			},
 			layers: {
 				entity_layer: new maptalks.VectorLayer("entity_layer", [], {
 					hitDetect: true,
