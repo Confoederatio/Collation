@@ -126,6 +126,7 @@ global.l4p = "./livemap/4.view/politics/";
 			"core/process/",
 			"histmap",
 			"livemap",
+			//"UF/js/vercengen/db/NDJSON_history.js"
 		],
 		special_function: function () {
 			try {
