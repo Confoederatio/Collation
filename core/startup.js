@@ -51,97 +51,23 @@ global.l4p = "./livemap/4.view/politics/";
 			global.map = scene.map_component.map;
 		
     //Declare global variables
-		global.main_navbar = new UI_Navbar();
     global.main = {
 			hierarchy: {},
-			interfaces: {
-				//Leftbar
-				leftbar_ui: new UI_Leftbar(),
-				
-				//Rightbar
-				edit_brush_keyframes: new UI_BrushKeyframes(),
-				edit_geometry_label: new UI_EditGeometryLabel(),
-				edit_geometry_line: new UI_EditGeometryLine(),
-				edit_geometry_point: new UI_EditGeometryPoint(),
-				edit_geometry_polygon: new UI_EditGeometryPolygon(),
-				edit_selected_geometries_ui: new UI_EditSelectedGeometries(),
-				mapmodes_ui: new UI_Mapmodes(),
-				
-				//Topbar
-				date_ui: new UI_DateMenu(),
-				navbar: global.main_navbar,
-			},
-			_layers: { //Layers which are not appended to the map but kept internally
-				province_layers: [], //Array of all current naissance.Layers that are flagged as 'provinces'
-				provinces: new maptalks.VectorLayer("province_layer", [], { hitDetect: true, interactive: false }) 
-			},
+			interfaces: {},
 			layers: {
-				//Foreground layers
-				overlay_layer: new maptalks.VectorLayer("overlay_layer", [], { hitDetect: true, interactive: true, zIndex: 10001 }),
-				cursor_layer: new maptalks.VectorLayer("cursor_layer", [], { hitDetect: false, interactive: false, zIndex: 10000 }),
-				
-				//Background layers
-				label_layer: new maptalks.VectorLayer("label_layer", [], {
-					collision: true,
-					collisionDelay: 250,
-					forceRenderOnMoving: true,
-					forceRenderOnRotating: true,
-					forceRenderOnZooming: true,
-					
-					hitDetect: false, 
-					interactive: false, 
-					zIndex: 6 
-				}),
-				selection_layer: new maptalks.VectorLayer("selection_layer", [], { hitDetect: false, interactive: false, zIndex: 5 }),
 				entity_layer: new maptalks.VectorLayer("entity_layer", [], {
 					hitDetect: true,
 					interactive: true,
 					zIndex: 3
-				}),
-				group_tile_layers: new maptalks.GroupTileLayer("group_tile_layers", [], { zIndex: -10000 }) //Tile layers must be at bottom
+				})
 			},
 			map: map,
-			renderer: new naissance.Renderer(map),
 			settings: {},
-			user: {
-				_mapmodes: {},
-				mapmodes: []
-			}
+			user: {}
     };
 		
 		//Initialise DB, process
 		await db.initialise();
-		
-		if (!global.naissance) global.naissance = {};
-			main.map.settings = {
-				autoload_last_date: true
-			};
-			UI_Settings.loadSettings();
-			main.user.brush = new naissance.Brush();
-		
-		//1.1. Append all layers to map
-		Object.iterate(main.layers, (local_key, local_value) => local_value.addTo(map));
-		
-		//1.2. Add event handlers to map
-		//mousedown
-		let mousedown_dictionary = ["left_click", "middle_click", "right_click"];
-		map.on("mousedown", (e) => {
-			for (let i = 0; i < mousedown_dictionary.length; i++)
-				delete HTML[mousedown_dictionary[i]];
-			HTML[mousedown_dictionary[e.domEvent.which - 1]] = true;
-		});
-		
-		//mouseup
-		map.on("mouseup", (e) => {
-			for (let i = 0; i < mousedown_dictionary.length; i++)
-				delete HTML[mousedown_dictionary[i]];
-		});
-		
-		//2. Set aliases
-		main.brush = main.user.brush;
-		
-		//3. Set date
-		UI_DateMenu.setDate(Date.getCurrentDate());
   };
 	
 	global.loadSettings = function () {
@@ -194,7 +120,6 @@ global.l4p = "./livemap/4.view/politics/";
 			"core/render/data/entities",
 			"core/render/data/brush",
 			"core/process/",
-			"core/actions/",
 			"histmap",
 			"livemap",
 		],
