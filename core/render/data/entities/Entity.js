@@ -1,6 +1,6 @@
 if (!global.naissance) global.naissance = {};
 naissance.Entity = class extends ve.Class {
-	static instances = [];
+	static instances = new Map();
 	
 	constructor (arg0_options) {
 		//Convert from parameters
