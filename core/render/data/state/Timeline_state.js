@@ -3,7 +3,7 @@ if (!global.naissance) global.naissance = {};
 //Initialise functions
 {
 	DALS.Timeline.loadState = async function (arg0_json) {
-		
+		console.log(`Received:`, arg0_json.length);
 	};
 	
 	/**
@@ -27,7 +27,11 @@ if (!global.naissance) global.naissance = {};
 	};
 	
 	naissance.loadFile = async function (arg0_file_path) {
+		//Convert from parameters
+		let file_path = path.resolve(arg0_file_path);
 		
+		//Declare local instance variables
+		await DALS.Timeline.loadState(await fs.promises.readFile(file_path, "utf8"));
 	};
 	
 	naissance.saveFile = async function (arg0_file_path) {

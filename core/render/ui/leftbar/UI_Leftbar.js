@@ -8,7 +8,16 @@ global.UI_Leftbar = class extends ve.Class {
 				components_obj: {
 					file_explorer: veFileExplorer(path.join(process.cwd(), "saves"), {
 						name: " ",
-						navigation_only: true
+						navigation_only: true,
+						
+						load_function: (arg0_data) => {
+							//Convert from parameters
+							let data = (arg0_data) ? arg0_data : {};
+							
+							DALS.Timeline.loadState(data); //Call loadState
+						},
+						save_extension: ".naissance",
+						save_function: DALS.Timeline.saveState
 					})
 				}
 			},
