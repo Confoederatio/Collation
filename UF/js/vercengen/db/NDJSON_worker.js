@@ -1,64 +1,35 @@
-//[VERCENGEN]
-
-//Import libraries
-let fs = require("node:fs");
-let path = require("node:path");
-let readline = require("node:readline");
-let { parentPort, workerData } = require("node:worker_threads");
-
-if (!global?.NDJSON) global.NDJSON = {};
-if (!global.ve) global.ve = {};
-
-require("../db/NDJSON_history.js"); //Require NDJSON_history.js
-
-//Declare variables
-let processing = false;
-let queue = [];
-
-//Internal helper functions
-{
-	Object.getValue = function (arg0_object, arg1_variable_string) {
-		//Convert from parameters
-		let object = arg0_object;
-		let variable_string = (arg1_variable_string) ? arg1_variable_string : "";
-		
-		//Return statement
-		return variable_string.split(".")
-		.reduce((local_object, local_key) => local_object?.[local_key], object);
-	};
-}
-
-parentPort.on("message", (task) => {
-	// Bypasses resource-intensive wait queues for real-time diagnostics
-	if (task.type === "get_diagnostics") {
-		let memory = process.memoryUsage();
-		let v8_stats = require("node:v8").getHeapStatistics();
-		
-		return parentPort.postMessage({
-			task_id: task.task_id,
-			results: {
-				worker_id: workerData.worker_id,
-				rss: memory.rss, // Total Resident Set Size for the whole process
-				heapUsed: memory.heapUsed,
-				heapTotal: memory.heapTotal,
-				heapLimit: v8_stats.heap_size_limit,
-				percentage: parseFloat(
-					((memory.heapUsed / v8_stats.heap_size_limit) * 100).toFixed(2)
-				)
-			}
-		});
-	}
-	
-	queue.push(task);
-	if (!processing) processQueue();
-});
-
 async function handleTask (arg0_task) {
 	//Convert from parameters
 	let task = arg0_task;
 	
 	//Declare internal helper functions
-	let getCleanVal = (string) => {
+	let forEachLine = async (filePath, callback) => {
+		if (fs.existsSync(filePath)) {
+			let rl = readline.createInterface({
+				input: fs.createReadStream(filePath)
+			});
+			for await (let line of rl) {
+				let match = line.match(/^"([^"]+)"\s*:/);
+				let result;
+				
+				if (match) {
+					let key = match[1];
+					let val_str = getCleanValue(
+						line.substring(line.indexOf(":") + 1)
+					);
+					result = await callback(key, val_str, line);
+				} else {
+					result = await callback(null, null, line);
+				}
+				
+				if (result === false) {
+					rl.close();
+					break;
+				}
+			}
+		}
+	};
+	let getCleanValue = (string) => {
 		let clean = string.trim();
 		if (clean.endsWith(",")) clean = clean.slice(0, -1);
 		
@@ -88,22 +59,15 @@ async function handleTask (arg0_task) {
 	if (type === "diff") {
 		let found = null;
 		
-		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({
-				input: fs.createReadStream(page_file)
-			});
-			for await (let line of rl) {
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match && match[1] === id) {
-					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
-					try {
-						let state_val = resolveHistory(JSON.parse(val_str), timestamp);
-						if (state_val !== null) found = { key: id, value: state_val };
-					} catch (e) {}
-					break;
-				}
+		await forEachLine(page_file, (key, val_str) => {
+			if (key === id) {
+				try {
+					let state_val = resolveHistory(JSON.parse(val_str), timestamp);
+					if (state_val !== null) found = { key: id, value: state_val };
+				} catch (e) {}
+				return false; // Break the stream reader
 			}
-		}
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
@@ -113,19 +77,12 @@ async function handleTask (arg0_task) {
 	if (type === "diff_all") {
 		let list = [];
 		
-		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
-			for await (let line of rl) {
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match) {
-					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
-					try {
-						let state_val = resolveHistory(JSON.parse(val_str), timestamp);
-						if (state_val !== null) list.push({ key: match[1], value: state_val });
-					} catch(e) {}
-				}
-			}
-		}
+		await forEachLine(page_file, (key, val_str) => {
+			try {
+				let state_val = resolveHistory(JSON.parse(val_str), timestamp);
+				if (state_val !== null) list.push({ key, value: state_val });
+			} catch (e) {}
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
@@ -134,24 +91,17 @@ async function handleTask (arg0_task) {
 	if (type === "get_keyframes") {
 		let found = null;
 		
-		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({
-				input: fs.createReadStream(page_file)
-			});
-			for await (let line of rl) {
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match && match[1] === id) {
-					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
-					try {
-						let state_val = resolveHistory(JSON.parse(val_str), undefined, { 
-							type: "get_keyframes" 
-						});
-						if (state_val !== null) found = { key: id, value: state_val };
-					} catch (e) {}
-					break;
-				}
+		await forEachLine(page_file, (key, val_str) => {
+			if (key === id) {
+				try {
+					let state_val = resolveHistory(JSON.parse(val_str), undefined, {
+						type: "get_keyframes"
+					});
+					if (state_val !== null) found = { key: id, value: state_val };
+				} catch (e) {}
+				return false; // Break the stream reader
 			}
-		}
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
@@ -160,17 +110,13 @@ async function handleTask (arg0_task) {
 	//get_value: returns the Object representing an ID.
 	if (type === "get_value") {
 		let found = null;
-		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
-			for await (let line of rl) {
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match && match[1] === id) {
-					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
-					try { found = JSON.parse(val_str); } catch(e) {}
-					break;
-				}
+		
+		await forEachLine(page_file, (key, val_str) => {
+			if (key === id) {
+				try { found = JSON.parse(val_str); } catch (e) {}
+				return false; // Break the stream reader
 			}
-		}
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
@@ -179,27 +125,25 @@ async function handleTask (arg0_task) {
 	//query: queries an Object based on strict matches, and returns an Array<Object>.
 	if (type === "query") {
 		let list = [];
-		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
-			for await (let line of rl) {
-				if (limit_end !== undefined && list.length >= limit_end) break;
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match) {
-					let val_str = getCleanVal(line.substring(line.indexOf(":") + 1));
-					try {
-						let obj = JSON.parse(val_str);
-						let matches = true;
-						
-						for (let query_key in query)
-							if (Object.getValue(obj, query_key) !== query[query_key]) { matches = false; break; }
-						if (matches) {
-							if (typeof obj === "object" && obj !== null) obj._id = match[1];
-							list.push(obj);
-						}
-					} catch(e) {}
+		
+		await forEachLine(page_file, (key, val_str) => {
+			if (limit_end !== undefined && list.length >= limit_end) return false; // Break early
+			
+			try {
+				let obj = JSON.parse(val_str);
+				let matches = true;
+				
+				for (let query_key in query)
+					if (Object.getValue(obj, query_key) !== query[query_key]) {
+						matches = false;
+						break;
+					}
+				if (matches) {
+					if (typeof obj === "object" && obj !== null) obj._id = key;
+					list.push(obj);
 				}
-			}
-		}
+			} catch (e) {}
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
@@ -210,16 +154,14 @@ async function handleTask (arg0_task) {
 		let tmp_file = `${page_file}.tmp_${Date.now()}`;
 		let updated_keys = new Set();
 		
-		if (!fs.existsSync(path.dirname(page_file))) fs.mkdirSync(path.dirname(page_file), { recursive: true });
+		if (!fs.existsSync(path.dirname(page_file)))
+			fs.mkdirSync(path.dirname(page_file), { recursive: true });
 		
 		if (fs.existsSync(page_file)) {
-			let rl = readline.createInterface({ input: fs.createReadStream(page_file) });
 			let ws = fs.createWriteStream(tmp_file);
 			
-			for await (let line of rl) {
-				let match = line.match(/^"([^"]+)"\s*:/);
-				if (match) {
-					let key = match[1];
+			await forEachLine(page_file, (key, val_str, line) => {
+				if (key) {
 					if (update_map.hasOwnProperty(key)) {
 						let new_val = update_map[key];
 						
@@ -230,7 +172,7 @@ async function handleTask (arg0_task) {
 						updated_keys.add(key);
 					} else ws.write(line + "\n");
 				} else ws.write(line + "\n");
-			}
+			});
 			
 			ws.end();
 			await new Promise(r => ws.on("finish", r));
@@ -253,13 +195,4 @@ async function handleTask (arg0_task) {
 		//Return statement
 		return parentPort.postMessage({ task_id, results: true });
 	}
-}
-
-async function processQueue () {
-	processing = true;
-	while (queue.length > 0) {
-		let task = queue.shift();
-		await handleTask(task);
-	}
-	processing = false;
 }
