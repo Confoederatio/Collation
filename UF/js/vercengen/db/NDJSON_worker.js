@@ -106,7 +106,7 @@ async function handleTask (arg0_task) {
 	
 	//Declare local instance variables
 	let {
-		file_path, id, limit_end, update_map, query, task_id, timestamp, type
+		file_path, id, limit_end, keyframes, update_map, query, task_id, timestamp, type
 	} = task; //Destructure parameters from task
 	let page_file = path.join(`${file_path}.tmpndjson`, `${workerData.worker_id}.ndjson`);
 	
@@ -202,6 +202,76 @@ async function handleTask (arg0_task) {
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: list });
+	}
+	
+	//set_keyframes: sets/updates the .history.keyframes for an individual ID.
+	if (type === "set_keyframes") {
+		let tmp_file = `${page_file}.tmp_${Date.now()}`;
+		let updated = false;
+		
+		if (!fs.existsSync(path.dirname(page_file)))
+			fs.mkdirSync(path.dirname(page_file), { recursive: true });
+		
+		if (fs.existsSync(page_file)) {
+			let ws = fs.createWriteStream(tmp_file);
+			
+			await forEachLine(page_file, (key, val_str, line) => {
+				if (key === id) {
+					try {
+						let obj = JSON.parse(val_str);
+						let is_history_string = (typeof obj.history === "string");
+						let history_obj;
+						
+						if (is_history_string) {
+							try {
+								history_obj = JSON.parse(obj.history);
+							} catch (e) {
+								history_obj = {};
+							}
+						} else {
+							history_obj = obj.history || {};
+						}
+						
+						history_obj.keyframes = keyframes;
+						
+						if (is_history_string) {
+							obj.history = JSON.stringify(history_obj);
+						} else {
+							obj.history = history_obj;
+						}
+						
+						ws.write(`"${key}":${JSON.stringify(obj)}\n`);
+						updated = true;
+					} catch (e) {
+						ws.write(line + "\n");
+					}
+				} else ws.write(line + "\n");
+			});
+			
+			ws.end();
+			await new Promise(r => ws.on("finish", r));
+		} else {
+			let ws = fs.createWriteStream(tmp_file);
+			ws.end();
+			await new Promise(r => ws.on("finish", r));
+		}
+		
+		if (!updated) {
+			let append_ws = fs.createWriteStream(tmp_file, { flags: "a" });
+			let new_obj = {
+				history: {
+					keyframes: keyframes
+				}
+			};
+			append_ws.write(`"${id}":${JSON.stringify(new_obj)}\n`);
+			append_ws.end();
+			await new Promise(r => append_ws.on("finish", r));
+		}
+		
+		fs.renameSync(tmp_file, page_file);
+		
+		//Return statement
+		return parentPort.postMessage({ task_id, results: true });
 	}
 	
 	//set_values: sets multiple key-value pairs in the NDJSON partition.

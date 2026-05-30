@@ -476,6 +476,28 @@ if (!global.NDJSON)
 	};
 	
 	/**
+	 * Sets the `.history.keyframes` object for a given key.
+	 *
+	 * @param {string} arg0_id
+	 * @param {Object} arg1_keyframes
+	 *
+	 * @returns {Promise<boolean>}
+	 */
+	NDJSON.setKeyframes = async function (arg0_id, arg1_keyframes) {
+		//Convert from parameters
+		let id = arg0_id;
+		let keyframes_obj = arg1_keyframes;
+		
+		//Return statement
+		return NDJSON.task(id, {
+			type: "set_keyframes",
+			file_path: path.resolve(ve.ndjson_file_path),
+			id: id,
+			keyframes: keyframes_obj
+		});
+	};
+	
+	/**
 	 * Sets a key-value pair in the NDJSON file.
 	 *
 	 * @param {string} arg0_id
