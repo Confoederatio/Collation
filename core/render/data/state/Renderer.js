@@ -32,8 +32,12 @@ naissance.Renderer = class {
 		let date_obj = arg0_date;
 		
 		//Declare local instance variables
+		let date_interface = main.interfaces.date;
+		
+		//Set date
 		main.date = Date.convertTimestampToDate(date_obj);
 		main.timestamp = Date.getTimestamp(date_obj);
+		date_interface.date.v = main.date;
 		
 		//Draw call
 		await naissance.Renderer.draw();

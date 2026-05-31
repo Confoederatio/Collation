@@ -9,7 +9,7 @@ let { parentPort, workerData } = require("node:worker_threads");
 if (!global?.NDJSON) global.NDJSON = {};
 if (!global.ve) global.ve = {};
 
-require("../db/NDJSON_history.js"); //Require NDJSON_history.js
+require("../db_shared/NDJSON_history.js"); //Require NDJSON_history.js
 
 //Declare variables
 let processing = false;

@@ -54,9 +54,23 @@ global.l4p = "./livemap/4.view/politics/";
     global.main = {
 			hierarchy: {},
 			interfaces: {
+				date: new UI_DateMenu(),
+				
 				leftbar: new UI_Leftbar()
 			},
 			layers: {
+				//Default Layers - for geometries with no layer
+				label_collision_layer: new maptalks.VectorLayer("label_collision_layer", [], {
+					collision: true,
+					collisionDelay: 250,
+					forceRenderOnMoving: true,
+					forceRenderOnRotating: true,
+					forceRenderOnZooming: true,
+					
+					hitDetect: false,
+					interactive: false,
+					zIndex: 1
+				}),
 				entity_layer: new maptalks.VectorLayer("entity_layer", [], {
 					hitDetect: true,
 					interactive: true,
@@ -125,8 +139,7 @@ global.l4p = "./livemap/4.view/politics/";
 			"core/render/data/brush",
 			"core/process/",
 			"histmap",
-			"livemap",
-			//"UF/js/vercengen/db/NDJSON_history.js"
+			"livemap"
 		],
 		special_function: function () {
 			try {

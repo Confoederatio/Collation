@@ -28,6 +28,10 @@ global.UI_Leftbar = class extends ve.Class {
 					
 				}
 			},
+			timeline: {
+				name: "Timeline",
+				components_obj: {}
+			},
 			undo_redo: {
 				name: "Undo/Redo",
 				components_obj: { undo_redo: veUndoRedo() }
