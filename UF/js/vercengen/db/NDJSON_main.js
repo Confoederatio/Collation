@@ -19,6 +19,52 @@ if (!global.NDJSON)
 //Initialise utils
 {
 	/**
+	 * Internal helper to route multi-ID tasks across worker partitions and format ordered responses.
+	 *
+	 * @param {string[]} arg0_ids
+	 * @param {string} arg1_type
+	 * @param {Object} [arg2_payload={}]
+	 *
+	 * @returns {Promise<Array<Object|null>>}
+	 * @private
+	 */
+	NDJSON._getMulti = async function (arg0_ids, arg1_type, arg2_payload) {
+		//Convert from parameters
+		let ids = Array.isArray(arg0_ids) ? arg0_ids : [];
+		let payload = arg2_payload || {};
+		
+		//Declare local instance variables
+		let pool = NDJSON.getWorkerPool();
+		let ids_by_worker = {};
+		
+		for (let i = 0; i < ids.length; i++) {
+			let wid = NDJSON.getWorkerID(ids[i], pool.length);
+			if (!ids_by_worker[wid]) ids_by_worker[wid] = [];
+			ids_by_worker[wid].push(ids[i]);
+		}
+		
+		let target_wids = Object.keys(ids_by_worker).map(Number);
+		
+		let results = await NDJSON.task(target_wids, (wid) => ({
+			type: arg1_type,
+			file_path: path.resolve(ve.ndjson_file_path),
+			ids: ids_by_worker[wid],
+			...payload
+		}));
+		
+		let merged_map = {};
+		for (let i = 0; i < results.length; i++) {
+			let res = results[i];
+			if (res) Object.assign(merged_map, res);
+		}
+		
+		//Return statement
+		return ids.map((id) =>
+			merged_map.hasOwnProperty(id) ? merged_map[id] : null
+		);
+	};
+	
+	/**
 	 * Internal dispatcher to handle messaging and promise queues across worker pools.
 	 *
 	 * @param {number|number[]|string} arg0_target - Target worker ID, array of IDs, partition ID string, or "all".
@@ -71,22 +117,21 @@ if (!global.NDJSON)
 	 * Returns a diff over `.history.keyframes` for the ID in question.
 	 * 
 	 * @param {string} arg0_id
-	 * @param {Object} [arg1_options]
-	 *  @param {number} [arg1_options.timestamp]
+	 * @param {Object} arg1_timestamp
 	 *
 	 * @returns {Promise<Object|null>}
 	 */
-	NDJSON.diff = async function (arg0_id, arg1_options) {
+	NDJSON.diff = async function (arg0_id, arg1_timestamp) {
 		//Convert from parameters
 		let id = arg0_id;
-		let options = arg1_options ? arg1_options : {};
+		let timestamp = arg1_timestamp;
 		
 		//Return statement
 		return NDJSON.task(id, {
 			type: "diff",
 			file_path: path.resolve(ve.ndjson_file_path),
 			id: id,
-			timestamp: options.timestamp
+			timestamp: timestamp
 		});
 	};
 	
@@ -121,6 +166,40 @@ if (!global.NDJSON)
 		return await NDJSON.task("all", {
 			type: "get_diagnostics"
 		});
+	};
+	
+	/**
+	 * Returns diffs over `.history.keyframes` for multiple IDs in 1-pass.
+	 *
+	 * @param {string[]} arg0_ids
+	 * @param {number} arg1_timestamp
+	 *
+	 * @returns {Promise<Array<Object|null>>}
+	 */
+	NDJSON.getDiffs = async function (arg0_ids, arg1_timestamp) {
+		//Convert from parameters
+		let ids = arg0_ids;
+		let timestamp = arg1_timestamp;
+		
+		//Return statement
+		return NDJSON._getMulti(ids, "get_diffs", {
+			timestamp: timestamp
+		});
+	};
+	
+	/**
+	 * Returns the Object values of multiple IDs in 1-pass.
+	 *
+	 * @param {string[]} arg0_ids
+	 *
+	 * @returns {Promise<Array<Object|null>>}
+	 */
+	NDJSON.getValues = async function (arg0_ids) {
+		//Convert from parameters
+		let ids = arg0_ids;
+		
+		//Return statement
+		return NDJSON._getMulti(ids, "get_values");
 	};
 	
 	/**

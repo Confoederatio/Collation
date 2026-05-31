@@ -73,6 +73,26 @@ async function handleTask (arg0_task) {
 		return found;
 	};
 	
+	let findMany = async (ids, callback) => {
+		let target_ids = new Set(ids);
+		let found = {};
+		
+		await forEachLine(page_file, (key, val_str) => {
+			if (target_ids.has(key)) {
+				try {
+					let parsed = JSON.parse(val_str);
+					let res = callback(key, parsed);
+					if (res !== null && res !== undefined) {
+						found[key] = res;
+					}
+				} catch (e) {}
+				target_ids.delete(key);
+				if (target_ids.size === 0) return false; // Break early
+			}
+		});
+		return found;
+	};
+	
 	let forEachLine = async (filePath, callback) => {
 		if (fs.existsSync(filePath)) {
 			let rl = readline.createInterface({
@@ -165,7 +185,21 @@ async function handleTask (arg0_task) {
 	if (type === "diff") {
 		let found = await findByID((obj) => {
 			let state_val = resolveHistory(obj, timestamp);
-			return (state_val !== null) ? { key: id, value: state_val } : null;
+			
+			if (state_val !== null) {
+				return {
+					key: id,
+					class_name: obj.class_name,
+					value: state_val
+				};
+			} else {
+				return {
+					key: id,
+					class_name: obj.class_name,
+					value: (typeof obj.value === "string") ?
+						JSON.parse(obj.value) : obj.value
+				};
+			}
 		});
 		
 		//Return statement
@@ -202,6 +236,32 @@ async function handleTask (arg0_task) {
 		return parentPort.postMessage({ task_id, results: list });
 	}
 	
+	//get_diffs: parses `.history.keyframes` for multiple IDs in a single pass.
+	if (type === "get_diffs") {
+		let found = await findMany(task.ids, (key, obj) => {
+			let state_val = resolveHistory(obj, timestamp);
+			
+			if (state_val !== null) {
+				return {
+					key,
+					class_name: obj.class_name,
+					value: state_val
+				};
+			} else {
+				return {
+					key,
+					class_name: obj.class_name,
+					value: (typeof obj.value === "string") ?
+						JSON.parse(obj.value) : obj.value
+				};
+			}
+		});
+		
+		//Return statement
+		return parentPort.postMessage({ task_id, results: found });
+	}
+	
+	//get_keyframes: returns keyframes for an ID.
 	if (type === "get_keyframes") {
 		let found = await findByID((obj) => {
 			let state_val = resolveHistory(obj, undefined, {
@@ -217,6 +277,14 @@ async function handleTask (arg0_task) {
 	//get_value: returns the Object representing an ID.
 	if (type === "get_value") {
 		let found = await findByID((obj) => obj);
+		
+		//Return statement
+		return parentPort.postMessage({ task_id, results: found });
+	}
+	
+	//get_values: returns the Objects representing multiple IDs in a single pass.
+	if (type === "get_values") {
+		let found = await findMany(task.ids, (key, obj) => obj);
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
