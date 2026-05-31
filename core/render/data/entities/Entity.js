@@ -33,10 +33,24 @@ naissance.Entity = class extends ve.Class {
 		if (!cache_obj.class_name) return;
 		if (cache_obj.class_name.startsWith("Geometry"))
 			return veHierarchyDatatype({
-				
+				...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 			}, {
 				name: cache_obj.name
 			});
+	}
+	
+	static drawHierarchyDatatypeGenerics (arg0_cache_obj) {
+		//Convert from parameters
+		let cache_obj = (arg0_cache_obj) ? arg0_cache_obj : {};
+		
+		//Return statement
+		return {
+			selected: veCheckbox(undefined),
+			context_menu: veButton(() => {}, {
+				attributes: { "data-type": "context-menu" },
+				name: "<icon>more_vert</icon>" 
+			})
+		}
 	}
 	
 	static getRetainedObject (arg0_class_name) {

@@ -12,6 +12,8 @@ naissance.Feature = class extends naissance.Entity {
 	}
 	
 	async drawHierarchyDatatype () {
+		//Declare local instance variables
+		let cache_obj = main.cache.hierarchy[this.id];
 		let hierarchy_obj = {};
 		
 		//Iterate over this.entities and draw them from main.cache.hierarchy
@@ -31,8 +33,11 @@ naissance.Feature = class extends naissance.Entity {
 				}
 			}
 		
+		console.log(cache_obj);
+		
 		//Return statement
 		return veHierarchyDatatype({
+			...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 			...hierarchy_obj
 		}, {
 			name: this.name,
