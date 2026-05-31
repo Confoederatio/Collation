@@ -16,7 +16,7 @@ naissance.Feature = class extends naissance.Entity {
 		let options = (arg0_options) ? arg0_options : {};
 		
 		//Declare local instance variables
-		let all_entities = this.getEntities();
+		let all_entities = (options.entities) ? options.entities : this.getEntities();
 		let all_geometries = [];
 		
 		//Filter all_entities
@@ -62,7 +62,7 @@ naissance.Feature = class extends naissance.Entity {
 		let options = (arg0_options) ? arg0_options : {};
 		
 		//Declare local instance variables
-		let all_entities = this.getEntities();
+		let all_entities = (options.entities) ? options.entities : this.getEntities();
 		let all_features = [];
 		
 		//Filter all_entities
