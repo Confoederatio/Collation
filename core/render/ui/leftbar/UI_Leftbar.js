@@ -2,6 +2,7 @@ global.UI_Leftbar = class extends ve.Class {
 	constructor () {
 		super();
 		
+		this.hierarchy = new UI_LeftbarHierarchy();
 		this.page_menu = new ve.PageMenu({
 			file_explorer: {
 				name: "File",
@@ -25,7 +26,7 @@ global.UI_Leftbar = class extends ve.Class {
 			hierarchy: {
 				name: "Hierarchy",
 				components_obj: {
-					
+					hierarchy: this.hierarchy.value
 				}
 			},
 			timeline: {
@@ -50,5 +51,9 @@ global.UI_Leftbar = class extends ve.Class {
 			x: 8,
 			y: 8
 		});
+	}
+	
+	async refresh () {
+		await this.hierarchy.refresh();
 	}
 };

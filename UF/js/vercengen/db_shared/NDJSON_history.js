@@ -375,6 +375,25 @@ History.getKeyframes = function (arg0_keyframes) {
 	return keyframes;
 };
 
+History.getName = function (arg0_keyframes) {
+	//Convert from parameters
+	let keyframes = arg0_keyframes;
+	
+	//Declare local instance variables
+	let all_keyframes = History.getTimestamps(keyframes);
+	let entity_name;
+	
+	//Iterate over all_keyframes in order
+	for (let i = 0; i < all_keyframes.length; i++) {
+		let local_keyframe = keyframes[all_keyframes[i]];
+		
+		if (local_keyframe.value?.[2]?.name) entity_name = local_keyframe.value[2].name;
+	}
+	
+	//Return statement
+	return entity_name;
+};
+
 History.getTimestamps = function (arg0_keyframes) {
 	//Convert from parameters
 	let keyframes = (arg0_keyframes) ? arg0_keyframes : {};

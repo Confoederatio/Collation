@@ -17,28 +17,27 @@ naissance.Entity = class extends ve.Class {
 		naissance.Entity.instances[this.id] = this;
 	}
 	
-	async drawHierarchyDatatype () {
-		//Declare local instance variables
-		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
-		this.hierarchy_datatype = new ve.HierarchyDatatype({
-			icon: veHTML(`<icon>select</icon>`, { tooltip: this.class_name }),
-			context_menu: veButton(() => {
-				super.open("instance", { name: this.getName(), ...this.window_options })
-			}, {
-				attributes: { class: "order-101" },
-				name: "<icon>more_vert</icon>"
-			})
-		}, {
-			do_not_display: true,
-			instance: this,
-			name: this.getName()
-		});
-		
+	getName () { return "Entity"; }
+	
+	isBaseEntity () {
 		//Return statement
-		return this.hierarchy_datatype;
+		return (main.cache.hierarchy[this.id].is_base_entity !== false);
 	}
 	
-	getName () { return "Entity"; }
+	static drawHierarchyDatatype (arg0_cache_obj) {
+		//Convert from parameters
+		let cache_obj = (arg0_cache_obj) ? arg0_cache_obj : {};
+		
+		//Return statement
+		if (!cache_obj) return;
+		if (!cache_obj.class_name) return;
+		if (cache_obj.class_name.startsWith("Geometry"))
+			return veHierarchyDatatype({
+				
+			}, {
+				name: cache_obj.name
+			});
+	}
 	
 	static getRetainedObject (arg0_class_name) {
 		//Convert from parameters

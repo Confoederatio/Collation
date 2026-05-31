@@ -11,6 +11,35 @@ naissance.Feature = class extends naissance.Entity {
 		delete this.value;
 	}
 	
+	async drawHierarchyDatatype () {
+		let hierarchy_obj = {};
+		
+		//Iterate over this.entities and draw them from main.cache.hierarchy
+		if (this.entities)
+			for (let i = 0; i < this.entities.length; i++) {
+				let local_class_name = this.entities[i].class_name;
+				let local_key = this.entities[i].id;
+				
+				let local_cache = main.cache.hierarchy[local_key];
+				
+				if (local_class_name.startsWith("Feature")) {
+					let local_feature = naissance.Entity.instances[local_key];
+					hierarchy_obj[local_key] = await local_feature.drawHierarchyDatatype();
+				} else {
+					let local_datatype = naissance.Entity.drawHierarchyDatatype(local_cache);
+					hierarchy_obj[local_key] = local_datatype;
+				}
+			}
+		
+		//Return statement
+		return veHierarchyDatatype({
+			...hierarchy_obj
+		}, {
+			name: this.name,
+			type: "group"
+		})
+	}
+	
 	getGeometries (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};

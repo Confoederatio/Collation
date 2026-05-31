@@ -52,10 +52,9 @@ global.l4p = "./livemap/4.view/politics/";
 		
     //Declare global variables
     global.main = {
-			hierarchy: {},
+			cache: {},
 			interfaces: {
 				date: new UI_DateMenu(),
-				
 				leftbar: new UI_Leftbar()
 			},
 			layers: {

@@ -288,6 +288,7 @@ async function handleTask (arg0_task) {
 						key,
 						class_name: entity_obj.class_name,
 						metadata: entity_obj.metadata,
+						name: History.getName(state_val, timestamp),
 						value: state_val
 					});
 				} else {

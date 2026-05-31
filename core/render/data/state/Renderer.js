@@ -26,6 +26,9 @@ naissance.Renderer = class {
 					local_entity.value = diff_all[i].value; //Keyframe handling for geometries only
 				if (typeof local_entity.draw === "function") await local_entity.draw();
 		}
+		
+		//Update hierarchy
+		await main.interfaces.leftbar.hierarchy.refresh();
 	}
 	
 	static async setDate (arg0_date) {
