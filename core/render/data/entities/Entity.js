@@ -39,4 +39,20 @@ naissance.Entity = class extends ve.Class {
 	}
 	
 	getName () { return "Entity"; }
+	
+	static getRetainedObject (arg0_class_name) {
+		//Convert from parameters
+		let class_name = arg0_class_name;
+		
+		//Iterate over all Objects, compile rendered Object
+		let retained_obj = {};
+		
+		Object.iterate(naissance.Entity.instances, (local_key, local_value) => {
+			if (class_name === undefined || local_value.class_name === class_name)
+				retained_obj[local_key] = local_value;
+		});
+		
+		//Return statement
+		return retained_obj;
+	}
 };

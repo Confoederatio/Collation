@@ -22,7 +22,8 @@ naissance.Renderer = class {
 			
 			//Draw entity
 			let local_entity = naissance.Entity.instances[local_key];
-				local_entity.value = diff_all[i].value;
+				if (local_class_name.startsWith("Geometry"))
+					local_entity.value = diff_all[i].value; //Keyframe handling for geometries only
 				if (typeof local_entity.draw === "function") await local_entity.draw();
 		}
 	}

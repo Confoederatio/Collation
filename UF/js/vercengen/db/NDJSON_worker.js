@@ -147,7 +147,8 @@ async function handleTask (arg0_task) {
 					list.push({
 						key,
 						class_name: entity_obj.class_name,
-						entity_obj: entity_obj
+						value: (typeof entity_obj.value === "string") ? 
+							JSON.parse(entity_obj.value) : entity_obj.value
 					});
 				}
 			} catch (e) {}
