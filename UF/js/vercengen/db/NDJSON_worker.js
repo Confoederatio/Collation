@@ -58,6 +58,21 @@ async function handleTask (arg0_task) {
 	let task = arg0_task;
 	
 	//Declare internal helper functions
+	let findByID = async (callback) => {
+		let found = null;
+		await forEachLine(page_file, (key, val_str) => {
+			if (key === id) {
+				try {
+					let parsed = JSON.parse(val_str);
+					let res = callback(parsed);
+					if (res !== null && res !== undefined) found = res;
+				} catch (e) {}
+				return false; // Break the stream reader
+			}
+		});
+		return found;
+	};
+	
 	let forEachLine = async (filePath, callback) => {
 		if (fs.existsSync(filePath)) {
 			let rl = readline.createInterface({
@@ -104,6 +119,42 @@ async function handleTask (arg0_task) {
 		return null;
 	};
 	
+	let updateNDJSON = async (getUpdatedValue) => {
+		let tmp_file = `${page_file}.tmp_${Date.now()}`;
+		let updated = false;
+		
+		let dir = path.dirname(page_file);
+		if (!fs.existsSync(dir))
+			fs.mkdirSync(dir, { recursive: true });
+		
+		let ws = fs.createWriteStream(tmp_file);
+		
+		if (fs.existsSync(page_file)) {
+			await forEachLine(page_file, (key, val_str, line) => {
+				if (key) {
+					let newValue = getUpdatedValue(key, val_str);
+					if (newValue !== undefined) {
+						if (newValue !== null)
+							ws.write(`"${key}":${JSON.stringify(newValue)}\n`);
+						updated = true;
+					} else ws.write(line + "\n");
+				} else ws.write(line + "\n");
+			});
+		}
+		
+		let extraAppends = getUpdatedValue(null, null, updated);
+		if (extraAppends) {
+			for (let [k, val] of Object.entries(extraAppends))
+				if (val !== null)
+					ws.write(`"${k}":${JSON.stringify(val)}\n`);
+		}
+		
+		ws.end();
+		await new Promise(r => ws.on("finish", r));
+		
+		fs.renameSync(tmp_file, page_file);
+	};
+	
 	//Declare local instance variables
 	let {
 		file_path, id, limit_end, keyframes, update_map, query, task_id, timestamp, type
@@ -112,16 +163,9 @@ async function handleTask (arg0_task) {
 	
 	//diff: parses the .history.keyframes for an individual ID
 	if (type === "diff") {
-		let found = null;
-		
-		await forEachLine(page_file, (key, val_str) => {
-			if (key === id) {
-				try {
-					let state_val = resolveHistory(JSON.parse(val_str), timestamp);
-					if (state_val !== null) found = { key: id, value: state_val };
-				} catch (e) {}
-				return false; // Break the stream reader
-			}
+		let found = await findByID((obj) => {
+			let state_val = resolveHistory(obj, timestamp);
+			return (state_val !== null) ? { key: id, value: state_val } : null;
 		});
 		
 		//Return statement
@@ -147,7 +191,7 @@ async function handleTask (arg0_task) {
 					list.push({
 						key,
 						class_name: entity_obj.class_name,
-						value: (typeof entity_obj.value === "string") ? 
+						value: (typeof entity_obj.value === "string") ?
 							JSON.parse(entity_obj.value) : entity_obj.value
 					});
 				}
@@ -159,18 +203,11 @@ async function handleTask (arg0_task) {
 	}
 	
 	if (type === "get_keyframes") {
-		let found = null;
-		
-		await forEachLine(page_file, (key, val_str) => {
-			if (key === id) {
-				try {
-					let state_val = resolveHistory(JSON.parse(val_str), undefined, {
-						type: "get_keyframes"
-					});
-					if (state_val !== null) found = { key: id, value: state_val };
-				} catch (e) {}
-				return false; // Break the stream reader
-			}
+		let found = await findByID((obj) => {
+			let state_val = resolveHistory(obj, undefined, {
+				type: "get_keyframes"
+			});
+			return (state_val !== null) ? { key: id, value: state_val } : null;
 		});
 		
 		//Return statement
@@ -179,14 +216,7 @@ async function handleTask (arg0_task) {
 	
 	//get_value: returns the Object representing an ID.
 	if (type === "get_value") {
-		let found = null;
-		
-		await forEachLine(page_file, (key, val_str) => {
-			if (key === id) {
-				try { found = JSON.parse(val_str); } catch (e) {}
-				return false; // Break the stream reader
-			}
-		});
+		let found = await findByID((obj) => obj);
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: found });
@@ -221,69 +251,31 @@ async function handleTask (arg0_task) {
 	
 	//set_keyframes: sets/updates the .history.keyframes for an individual ID.
 	if (type === "set_keyframes") {
-		let tmp_file = `${page_file}.tmp_${Date.now()}`;
-		let updated = false;
-		
-		if (!fs.existsSync(path.dirname(page_file)))
-			fs.mkdirSync(path.dirname(page_file), { recursive: true });
-		
-		if (fs.existsSync(page_file)) {
-			let ws = fs.createWriteStream(tmp_file);
+		await updateNDJSON((key, val_str, updated) => {
+			if (key === null) {
+				return updated ? null : { [id]: { history: { keyframes } } };
+			}
 			
-			await forEachLine(page_file, (key, val_str, line) => {
-				if (key === id) {
-					try {
-						let obj = JSON.parse(val_str);
-						let is_history_string = (typeof obj.history === "string");
-						let history_obj;
-						
-						if (is_history_string) {
-							try {
-								history_obj = JSON.parse(obj.history);
-							} catch (e) {
-								history_obj = {};
-							}
-						} else {
-							history_obj = obj.history || {};
-						}
-						
-						history_obj.keyframes = keyframes;
-						
-						if (is_history_string) {
-							obj.history = JSON.stringify(history_obj);
-						} else {
-							obj.history = history_obj;
-						}
-						
-						ws.write(`"${key}":${JSON.stringify(obj)}\n`);
-						updated = true;
-					} catch (e) {
-						ws.write(line + "\n");
-					}
-				} else ws.write(line + "\n");
-			});
-			
-			ws.end();
-			await new Promise(r => ws.on("finish", r));
-		} else {
-			let ws = fs.createWriteStream(tmp_file);
-			ws.end();
-			await new Promise(r => ws.on("finish", r));
-		}
-		
-		if (!updated) {
-			let append_ws = fs.createWriteStream(tmp_file, { flags: "a" });
-			let new_obj = {
-				history: {
-					keyframes: keyframes
+			if (key === id) {
+				try {
+					let obj = JSON.parse(val_str);
+					let is_history_string = (typeof obj.history === "string");
+					let history_obj = is_history_string ?
+						JSON.parse(obj.history) : obj.history;
+					
+					if (!history_obj) history_obj = {};
+					history_obj.keyframes = keyframes;
+					
+					obj.history = is_history_string ?
+						JSON.stringify(history_obj) : history_obj;
+					
+					return obj;
+				} catch (e) {
+					return undefined;
 				}
-			};
-			append_ws.write(`"${id}":${JSON.stringify(new_obj)}\n`);
-			append_ws.end();
-			await new Promise(r => append_ws.on("finish", r));
-		}
-		
-		fs.renameSync(tmp_file, page_file);
+			}
+			return undefined;
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: true });
@@ -291,46 +283,21 @@ async function handleTask (arg0_task) {
 	
 	//set_values: sets multiple key-value pairs in the NDJSON partition.
 	if (type === "set_values") {
-		let tmp_file = `${page_file}.tmp_${Date.now()}`;
 		let updated_keys = new Set();
-		
-		if (!fs.existsSync(path.dirname(page_file)))
-			fs.mkdirSync(path.dirname(page_file), { recursive: true });
-		
-		if (fs.existsSync(page_file)) {
-			let ws = fs.createWriteStream(tmp_file);
+		await updateNDJSON((key, val_str) => {
+			if (key === null) {
+				let rem = {};
+				for (let k in update_map)
+					if (!updated_keys.has(k)) rem[k] = update_map[k];
+				return rem;
+			}
 			
-			await forEachLine(page_file, (key, val_str, line) => {
-				if (key) {
-					if (update_map.hasOwnProperty(key)) {
-						let new_val = update_map[key];
-						
-						//Write new value, completely overriding the old key
-						if (new_val !== null)
-							ws.write(`"${key}":${JSON.stringify(new_val)}\n`);
-						
-						updated_keys.add(key);
-					} else ws.write(line + "\n");
-				} else ws.write(line + "\n");
-			});
-			
-			ws.end();
-			await new Promise(r => ws.on("finish", r));
-		} else {
-			let ws = fs.createWriteStream(tmp_file);
-			ws.end();
-			await new Promise(r => ws.on("finish", r));
-		}
-		
-		let append_ws = fs.createWriteStream(tmp_file, { flags: "a" });
-		for (let key in update_map)
-			if (!updated_keys.has(key) && update_map[key] !== null)
-				append_ws.write(`"${key}":${JSON.stringify(update_map[key])}\n`);
-		
-		append_ws.end();
-		await new Promise(r => append_ws.on("finish", r));
-		
-		fs.renameSync(tmp_file, page_file);
+			if (update_map.hasOwnProperty(key)) {
+				updated_keys.add(key);
+				return update_map[key];
+			}
+			return undefined;
+		});
 		
 		//Return statement
 		return parentPort.postMessage({ task_id, results: true });
