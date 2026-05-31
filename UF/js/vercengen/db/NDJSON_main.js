@@ -146,6 +146,7 @@ if (!global.NDJSON)
 		//Convert from parameters
 		let timestamp = parseInt(arg0_timestamp);
 		
+		//Declare local instance variables
 		let results = await NDJSON.task("all", {
 			type: "diff_all",
 			file_path: path.resolve(ve.ndjson_file_path),
@@ -185,6 +186,21 @@ if (!global.NDJSON)
 		return NDJSON._getMulti(ids, "get_diffs", {
 			timestamp: timestamp
 		});
+	};
+	
+	NDJSON.getHierarchyValues = async function (arg0_timestamp) {
+		//Convert from parameters
+		let timestamp = parseInt(arg0_timestamp);
+		
+		//Declare local instance variables
+		let results = await NDJSON.task("all", {
+			type: "get_hierarchy_values",
+			file_path: path.resolve(ve.ndjson_file_path),
+			timestamp: timestamp
+		});
+		
+		//Return statement
+		return results.filter(v => v !== null).flat();
 	};
 	
 	/**

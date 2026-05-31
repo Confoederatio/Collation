@@ -261,6 +261,51 @@ async function handleTask (arg0_task) {
 		return parentPort.postMessage({ task_id, results: found });
 	}
 	
+	//get_hierarchy_values: sends back metadata, names, and symbols of Geometry classes, as well as Feature classes
+	if (type === "get_hierarchy_values") {
+		let list = [];
+		
+		await forEachLine(page_file, (key, val_str) => {
+			try {
+				let entity_obj = JSON.parse(val_str);
+				let state_val = resolveHistory(entity_obj, timestamp, {
+					type: "get_keyframes"
+				});
+				
+				if (typeof entity_obj.history !== "undefined") {
+					//Iterate over all_keyframes to ensure we pass back minimal data
+					let all_keyframes = Object.keys(state_val);
+					
+					for (let i = 0; i < all_keyframes.length; i++) {
+						let local_keyframe = state_val[all_keyframes[i]];
+						
+						delete local_keyframe.localisation;
+						if (local_keyframe.value)
+							local_keyframe.value[0] = undefined;
+					}
+					
+					list.push({
+						key,
+						class_name: entity_obj.class_name,
+						metadata: entity_obj.metadata,
+						value: state_val
+					});
+				} else {
+					list.push({
+						key,
+						class_name: entity_obj.class_name,
+						metadata: entity_obj.metadata,
+						value: (typeof entity_obj.value === "string") ?
+							JSON.parse(entity_obj.value) : entity_obj.value
+					});
+				}
+			} catch (e) {}
+		});
+		
+		//Return statement
+		return parentPort.postMessage({ task_id, results: list });
+	}
+	
 	//get_keyframes: returns keyframes for an ID.
 	if (type === "get_keyframes") {
 		let found = await findByID((obj) => {
