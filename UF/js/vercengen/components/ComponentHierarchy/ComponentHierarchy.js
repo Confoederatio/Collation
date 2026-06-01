@@ -10,6 +10,7 @@
  *   - `.allow_disabled_reordering=false`: {@link boolean}
  *   - `.disable_searchbar=false`: {@link boolean}
  *   - `.namespace=Class.generateRandomID(ve.Hierarchy)`: {@link string}
+ *   - `.onitemchange`: {@link function}(v:{@link Object}, e:{ item_el:{@link HTMLElement}, old_parent_el:{@link HTMLElement}, old_parent_order:{@link Array}<{@link HTMLElement}>, new_parent_el:{@link HTMLElement}, new_parent_order:{@link Array}<{@link HTMLElement}> })
  *   - `.searchbar_style`: {@link Object} - The Telestyle object to apply to the searchbar.
  *
  * ##### Instance:
@@ -239,6 +240,21 @@ ve.Hierarchy = class extends ve.Component {
 		this.nestable.on("stop", (e) => {
 			if (!this.options.allow_disabled_ordering)
 				this._handleDisabledOrdering(e);
+			
+			//Fire onitemchange if direct parent changed
+			if (this.options.onitemchange) {
+				let old_parent_order = e.originalParentItem.querySelectorAll(`:scope > ol > [component="ve-hierarchy-datatype"]`);
+				let new_parent_order = e.originalParentItem.querySelectorAll(`:scope > ol > [component="ve-hierarchy-datatype"]`);
+				
+				this.options.onitemchange(this.v, {
+					item_el: e.movedNode,
+					old_parent_el: e.originalParentItem,
+					old_parent_order,
+					new_parent_el: e.newParentItem,
+					new_parent_order,
+				});
+			}
+			
 			this.on_stop_data = e;
 			this.fireToBinding();
 		});
