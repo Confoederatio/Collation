@@ -243,8 +243,13 @@ ve.Hierarchy = class extends ve.Component {
 			
 			//Fire onitemchange if direct parent changed
 			if (this.options.onitemchange) {
-				let old_parent_order = e.originalParentItem.querySelectorAll(`:scope > ol > [component="ve-hierarchy-datatype"]`);
-				let new_parent_order = e.originalParentItem.querySelectorAll(`:scope > ol > [component="ve-hierarchy-datatype"]`);
+				let child_selector = `:scope > ol > [component="ve-hierarchy-datatype"]`;
+				let old_parent_order = [];
+					if (e.originalParentItem)
+						old_parent_order = e.originalParentItem.querySelectorAll(child_selector);
+				let new_parent_order = [];
+					if (e.newParentItem)
+						new_parent_order = e.newParentItem.querySelectorAll(child_selector);
 				
 				this.options.onitemchange(this.v, {
 					item_el: e.movedNode,
