@@ -77,7 +77,7 @@ ve.Hierarchy = class extends ve.Component {
 	 */
 	set v (arg0_components_obj) {
 		//Convert from parameters
-		let components_obj = arg0_components_obj;
+		this.components_obj = arg0_components_obj;
 		
 		//Diff .v state
 		{
@@ -93,14 +93,6 @@ ve.Hierarchy = class extends ve.Component {
 				}
 				this.nestable = null;
 			}
-			
-			/**
-			 * Stores the components currently displayed in the {@link ve.Hierarchy}.
-			 * @instance
-			 * @memberof this
-			 * @type {ve.Component[]}
-			 */
-			this.components_obj = components_obj;
 			
 			//0. Reconcile searchbar
 			if (!this.options.disable_searchbar) {
