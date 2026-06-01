@@ -5,8 +5,8 @@ global.UI_LeftbarHierarchy = class extends ve.Class {
 		this.value = new ve.HTML("Loading ..", {
 			attributes: {
 				"naissance-ui": "LeftbarHierarchy",
-				style: { padding: 0 }
-			}
+			},
+			style: { padding: 0 }
 		});
 	}
 	
@@ -26,9 +26,7 @@ global.UI_LeftbarHierarchy = class extends ve.Class {
 		}
 		
 		//Return current_hierarchy, since it is being manually moved out in UI_Leftbar
-		let current_hierarchy = new ve.Hierarchy({
-			...hierarchy_obj
-		}, {
+		if (!this.hierarchy) this.hierarchy = new ve.Hierarchy({}, {
 			style: {
 				"[component='ve-checkbox'] input": { margin: 0 },
 				"[component='ve-text']": { minWidth: 0 },
@@ -42,23 +40,20 @@ global.UI_LeftbarHierarchy = class extends ve.Class {
 				}
 			}
 		});
+		this.hierarchy.v = hierarchy_obj;
 		
 		//Return statement
-		return current_hierarchy;
+		return this.hierarchy;
 	}
 	
 	async refresh () {
 		//Declare local instance variables
 		await UI_LeftbarHierarchy.updateCache();
-		console.time(`UI_LeftbarHierarchy.refresh`);
 		let current_hierarchy = await UI_LeftbarHierarchy.draw();
-		console.timeEnd(`UI_LeftbarHierarchy.refresh`);
 		
-		console.time(`UI_LeftbarHierarchy.refresh - paint`);
 		//Append element as needed
 		this.value.element.innerHTML = "";
 		this.value.element.appendChild(current_hierarchy.element);
-		console.timeEnd(`UI_LeftbarHierarchy.refresh - paint`);
 	}
 	
 	static async updateCache () {

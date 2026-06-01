@@ -40,6 +40,7 @@ naissance.Feature = class extends naissance.Entity {
 			...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 			...hierarchy_obj
 		}, {
+			id: this.id,
 			name: this.name,
 			type: "group"
 		})

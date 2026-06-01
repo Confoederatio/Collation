@@ -35,6 +35,7 @@ naissance.Entity = class extends ve.Class {
 			return veHierarchyDatatype({
 				...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 			}, {
+				id: cache_obj.key,
 				name: cache_obj.name
 			});
 	}
