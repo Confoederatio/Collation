@@ -79,190 +79,193 @@ ve.Hierarchy = class extends ve.Component {
 		//Convert from parameters
 		let components_obj = arg0_components_obj;
 		
-		//Save current scroll positions before rendering updates
-		this._saveScrollState();
-		
-		// Crucial: Destroy Nestable BEFORE modifying any DOM nodes or parent structures
-		if (this.nestable && typeof this.nestable.destroy === "function") {
-			try {
-				this.nestable.destroy();
-			} catch (err) {
-				console.warn("Error destroying previous nestable instance: ", err);
-			}
-			this.nestable = null;
-		}
-		
-		/**
-		 * Stores the components currently displayed in the {@link ve.Hierarchy}.
-		 * @instance
-		 * @memberof this
-		 * @type {ve.Component[]}
-		 */
-		this.components_obj = components_obj;
-		
-		//0. Reconcile searchbar
-		if (!this.options.disable_searchbar) {
-			let searchbar_el = this.element.querySelector('[ve-searchbar="true"]');
+		//Diff .v state
+		{
+			//Save current scroll positions before rendering updates
+			this._saveScrollState();
 			
-			if (!searchbar_el || !this.searchbar_interface) {
-				this.searchbar_interface = new ve.RawInterface({
-					searchbar_icon: new ve.HTML("<icon>search</icon>", { style: { padding: `var(--cell-padding)` } }),
-					searchbar_input: new ve.Datalist({
-						
-					}, {
-						attributes: {
-							placeholder: loc("ve.registry.localisation.Hierarchy_search_for_item")
-						},
-						name: " ",
-						onuserchange: (v) => {
-							this.updateSearchFilter(v);
-						}
-					})
-				}, {
-					name: " ",
-					attributes: {
-						"ve-searchbar": "true",
-						"ve-sticky": "true"
-					},
-					style: this.options.searchbar_style
-				});
+			//Crucial: Destroy Nestable BEFORE modifying any DOM nodes or parent structures
+			if (this.nestable && typeof this.nestable.destroy === "function") {
+				try {
+					this.nestable.destroy();
+				} catch (err) {
+					console.warn("Error destroying previous nestable instance: ", err);
+				}
+				this.nestable = null;
+			}
+			
+			/**
+			 * Stores the components currently displayed in the {@link ve.Hierarchy}.
+			 * @instance
+			 * @memberof this
+			 * @type {ve.Component[]}
+			 */
+			this.components_obj = components_obj;
+			
+			//0. Reconcile searchbar
+			if (!this.options.disable_searchbar) {
+				let searchbar_el = this.element.querySelector('[ve-searchbar="true"]');
 				
+				if (!searchbar_el || !this.searchbar_interface) {
+					this.searchbar_interface = new ve.RawInterface({
+						searchbar_icon: new ve.HTML("<icon>search</icon>", { style: { padding: `var(--cell-padding)` } }),
+						searchbar_input: new ve.Datalist({
+							
+						}, {
+							attributes: {
+								placeholder: loc("ve.registry.localisation.Hierarchy_search_for_item")
+							},
+							name: " ",
+							onuserchange: (v) => {
+								this.updateSearchFilter(v);
+							}
+						})
+					}, {
+						name: " ",
+						attributes: {
+							"ve-searchbar": "true",
+							"ve-sticky": "true"
+						},
+						style: this.options.searchbar_style
+					});
+					
+					if (searchbar_el) {
+						searchbar_el.remove();
+					}
+					this.searchbar_interface.bind(this.element);
+				} else {
+					// Keep existing searchbar at the very top of container
+					if (this.element.firstChild !== searchbar_el) {
+						this.element.insertBefore(searchbar_el, this.element.firstChild);
+					}
+				}
+			} else {
+				let searchbar_el = this.element.querySelector('[ve-searchbar="true"]');
 				if (searchbar_el) {
 					searchbar_el.remove();
 				}
-				this.searchbar_interface.bind(this.element);
-			} else {
-				// Keep existing searchbar at the very top of container
-				if (this.element.firstChild !== searchbar_el) {
-					this.element.insertBefore(searchbar_el, this.element.firstChild);
+				this.searchbar_interface = null;
+			}
+			
+			//1. Reconcile all non-hierarchy datatype components
+			let expected_non_hierarchy_els = [];
+			Object.iterate(this.components_obj, (local_key, local_value) => {
+				if (!local_value.is_vercengen_hierarchy_datatype) {
+					let elem = ve.Component.getElement(local_value);
+					if (elem) {
+						expected_non_hierarchy_els.push(elem);
+					}
+				}
+			});
+			
+			//Remove redundant root-level components we explicitly manage
+			let existing_children = Array.from(this.element.children);
+			for (let i = 0; i < existing_children.length; i++) {
+				let child = existing_children[i];
+				
+				//Guard: skip searchbar, root list, and any non-component node
+				if (child.getAttribute("ve-searchbar") === "true") continue;
+				if (child.tagName === "OL") continue;
+				if (!child.hasAttribute("component")) continue;
+				
+				//Only remove managed components that are no longer expected
+				if (!expected_non_hierarchy_els.includes(child)) {
+					child.remove();
 				}
 			}
-		} else {
-			let searchbar_el = this.element.querySelector('[ve-searchbar="true"]');
-			if (searchbar_el) {
-				searchbar_el.remove();
+			
+			//Place and order elements right after searchbar dynamically
+			let reference_node = this.element.querySelector('[ve-searchbar="true"]') ?
+				this.element.querySelector('[ve-searchbar="true"]').nextSibling :
+				this.element.firstChild;
+			
+			for (let i = 0; i < expected_non_hierarchy_els.length; i++) {
+				let elem = expected_non_hierarchy_els[i];
+				if (elem.parentElement !== this.element) {
+					this.element.insertBefore(elem, reference_node);
+				} else if (elem !== reference_node) {
+					this.element.insertBefore(elem, reference_node);
+				}
+				reference_node = elem.nextSibling;
 			}
-			this.searchbar_interface = null;
-		}
-		
-		//1. Reconcile all non-hierarchy datatype components
-		let expected_non_hierarchy_els = [];
-		Object.iterate(this.components_obj, (local_key, local_value) => {
-			if (!local_value.is_vercengen_hierarchy_datatype) {
-				let elem = ve.Component.getElement(local_value);
-				if (elem) {
-					expected_non_hierarchy_els.push(elem);
+			
+			//2. Reconcile hierarchy datatype components inside root list
+			let ol_el = this.element.querySelector("ol.ve-hierarchy");
+			if (!ol_el) {
+				ol_el = document.createElement("ol");
+				ol_el.id = (this.options.namespace) ?
+					this.options.namespace : Class.generateRandomID(ve.Hierarchy);
+				ol_el.setAttribute("class", "list ve-drag-disabled ve-hierarchy");
+				this.element.appendChild(ol_el);
+			}
+			
+			let expected_hierarchy_els = [];
+			Object.iterate(this.components_obj, (local_key, local_value) => {
+				if (local_value.is_vercengen_hierarchy_datatype) {
+					let elem = ve.Component.getElement(local_value);
+					if (elem) {
+						expected_hierarchy_els.push(elem);
+					}
+				}
+			});
+			
+			//Remove items that are no longer part of our incoming collection
+			let existing_hierarchy_li_els = Array.from(ol_el.children);
+			for (let i = 0; i < existing_hierarchy_li_els.length; i++) {
+				let li = existing_hierarchy_li_els[i];
+				if (!expected_hierarchy_els.includes(li)) {
+					li.remove();
 				}
 			}
-		});
-		
-		//Remove redundant root-level components we explicitly manage
-		let existing_children = Array.from(this.element.children);
-		for (let i = 0; i < existing_children.length; i++) {
-			let child = existing_children[i];
 			
-			//Guard: skip searchbar, root list, and any non-component node
-			if (child.getAttribute("ve-searchbar") === "true") continue;
-			if (child.tagName === "OL") continue;
-			if (!child.hasAttribute("component")) continue;
-			
-			//Only remove managed components that are no longer expected
-			if (!expected_non_hierarchy_els.includes(child)) {
-				child.remove();
-			}
-		}
-		
-		//Place and order elements right after searchbar dynamically
-		let reference_node = this.element.querySelector('[ve-searchbar="true"]') ?
-			this.element.querySelector('[ve-searchbar="true"]').nextSibling :
-			this.element.firstChild;
-		
-		for (let i = 0; i < expected_non_hierarchy_els.length; i++) {
-			let elem = expected_non_hierarchy_els[i];
-			if (elem.parentElement !== this.element) {
-				this.element.insertBefore(elem, reference_node);
-			} else if (elem !== reference_node) {
-				this.element.insertBefore(elem, reference_node);
-			}
-			reference_node = elem.nextSibling;
-		}
-		
-		//2. Reconcile hierarchy datatype components inside root list
-		let ol_el = this.element.querySelector("ol.ve-hierarchy");
-		if (!ol_el) {
-			ol_el = document.createElement("ol");
-			ol_el.id = (this.options.namespace) ?
-				this.options.namespace : Class.generateRandomID(ve.Hierarchy);
-			ol_el.setAttribute("class", "list ve-drag-disabled ve-hierarchy");
-			this.element.appendChild(ol_el);
-		}
-		
-		let expected_hierarchy_els = [];
-		Object.iterate(this.components_obj, (local_key, local_value) => {
-			if (local_value.is_vercengen_hierarchy_datatype) {
-				let elem = ve.Component.getElement(local_value);
-				if (elem) {
-					expected_hierarchy_els.push(elem);
+			//Safely order and insert hierarchy datatype elements in root OL
+			let ol_ref_node = ol_el.firstChild;
+			for (let i = 0; i < expected_hierarchy_els.length; i++) {
+				let elem = expected_hierarchy_els[i];
+				if (elem.parentElement !== ol_el) {
+					ol_el.insertBefore(elem, ol_ref_node);
+				} else if (elem !== ol_ref_node) {
+					ol_el.insertBefore(elem, ol_ref_node);
 				}
+				ol_ref_node = elem.nextSibling;
 			}
-		});
-		
-		//Remove items that are no longer part of our incoming collection
-		let existing_hierarchy_li_els = Array.from(ol_el.children);
-		for (let i = 0; i < existing_hierarchy_li_els.length; i++) {
-			let li = existing_hierarchy_li_els[i];
-			if (!expected_hierarchy_els.includes(li)) {
-				li.remove();
-			}
-		}
-		
-		//Safely order and insert hierarchy datatype elements in root OL
-		let ol_ref_node = ol_el.firstChild;
-		for (let i = 0; i < expected_hierarchy_els.length; i++) {
-			let elem = expected_hierarchy_els[i];
-			if (elem.parentElement !== ol_el) {
-				ol_el.insertBefore(elem, ol_ref_node);
-			} else if (elem !== ol_ref_node) {
-				ol_el.insertBefore(elem, ol_ref_node);
-			}
-			ol_ref_node = elem.nextSibling;
-		}
-		
-		//Ensure list is structurally placed at bottom level
-		if (ol_el.parentElement !== this.element) {
-			this.element.appendChild(ol_el);
-		} else if (this.element.lastChild !== ol_el) {
-			this.element.appendChild(ol_el);
-		}
-		
-		//Reinstantiate Nestable instance safely after DOM has finished restructuring
-		this.nestable = new Nestable(ol_el, { items: ".group, .item" });
-		this.nestable.on("stop", (e) => {
-			if (!this.options.allow_disabled_ordering)
-				this._handleDisabledOrdering(e);
 			
-			//Fire onitemchange if direct parent changed
-			if (this.options.onitemchange) {
-				let child_selector = `:scope > ol > [component="ve-hierarchy-datatype"]`;
-				let old_parent_order = [];
+			//Ensure list is structurally placed at bottom level
+			if (ol_el.parentElement !== this.element) {
+				this.element.appendChild(ol_el);
+			} else if (this.element.lastChild !== ol_el) {
+				this.element.appendChild(ol_el);
+			}
+			
+			//Reinstantiate Nestable instance safely after DOM has finished restructuring
+			this.nestable = new Nestable(ol_el, { items: ".group, .item" });
+			this.nestable.on("stop", (e) => {
+				if (!this.options.allow_disabled_ordering)
+					this._handleDisabledOrdering(e);
+				
+				//Fire onitemchange if direct parent changed
+				if (this.options.onitemchange) {
+					let child_selector = `:scope > ol > [component="ve-hierarchy-datatype"]`;
+					let old_parent_order = [];
 					if (e.originalParentItem)
 						old_parent_order = e.originalParentItem.querySelectorAll(child_selector);
-				let new_parent_order = [];
+					let new_parent_order = [];
 					if (e.newParentItem)
 						new_parent_order = e.newParentItem.querySelectorAll(child_selector);
+					
+					this.options.onitemchange(this.v, {
+						item_el: e.movedNode,
+						old_parent_el: e.originalParentItem,
+						old_parent_order,
+						new_parent_el: e.newParentItem,
+						new_parent_order,
+					});
+				}
 				
-				this.options.onitemchange(this.v, {
-					item_el: e.movedNode,
-					old_parent_el: e.originalParentItem,
-					old_parent_order,
-					new_parent_el: e.newParentItem,
-					new_parent_order,
-				});
-			}
-			
-			this.on_stop_data = e;
-			this.fireToBinding();
-		});
+				this.on_stop_data = e;
+				this.fireToBinding();
+			});
+		}
 		
 		//Fire from binding, then restore scroll state
 		this.fireFromBinding();
