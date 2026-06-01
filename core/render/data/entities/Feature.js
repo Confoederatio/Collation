@@ -33,14 +33,13 @@ naissance.Feature = class extends naissance.Entity {
 				}
 			}
 		
-		console.log(cache_obj);
-		
 		//Return statement
 		return veHierarchyDatatype({
 			...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 			...hierarchy_obj
 		}, {
 			id: this.id,
+			is_collapsed: cache_obj.value.is_collapsed,
 			name: this.name,
 			type: "group"
 		})
