@@ -119,6 +119,7 @@
 	};
 	
 	/**
+	 * Sends an IPC task out from a render/worker thread to the main thread for processing, resolving the Promise once the result is received.
 	 * 
 	 * @param {string} arg0_channel
 	 * @param {Object} [arg1_options]
@@ -139,7 +140,7 @@
 		let is_renderer = (ipc_renderer !== undefined && ipc_renderer !== null);
 		
 		if (is_renderer) {
-			//RENDERER LOGIC - Uses the standard Electron IPC pipe
+			//Renderer logic uses the standard Electron IPC pipe
 			return new Promise((resolve, reject) => {
 				ipc_renderer.removeAllListeners(`${channel}:ready`);
 				
@@ -163,7 +164,7 @@
 				ipc_renderer.send(channel, ...options.args);
 			});
 		} else {
-			//WORKER LOGIC - Only runs if ipc_renderer is not present
+			//Worker logic only runs if ipc_renderer is not present
 			let task_id = Object.generateRandomID();
 			
 			try {
