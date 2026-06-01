@@ -161,9 +161,8 @@ ve.Hierarchy = class extends ve.Component {
 				if (!child.hasAttribute("component")) continue;
 				
 				//Only remove managed components that are no longer expected
-				if (!expected_non_hierarchy_els.includes(child)) {
+				if (!expected_non_hierarchy_els.includes(child))
 					child.remove();
-				}
 			}
 			
 			//Order elements right after searchbar dynamically
@@ -171,14 +170,16 @@ ve.Hierarchy = class extends ve.Component {
 				this.element.querySelector('[ve-searchbar="true"]').nextSibling :
 				this.element.firstChild;
 			
+			//Iterate over expected_non_hierarchy_els
 			for (let i = 0; i < expected_non_hierarchy_els.length; i++) {
-				let elem = expected_non_hierarchy_els[i];
-				if (elem.parentElement !== this.element) {
-					this.element.insertBefore(elem, reference_node);
-				} else if (elem !== reference_node) {
-					this.element.insertBefore(elem, reference_node);
+				let local_el = expected_non_hierarchy_els[i];
+				
+				if (local_el.parentElement !== this.element) {
+					this.element.insertBefore(local_el, reference_node);
+				} else if (local_el !== reference_node) {
+					this.element.insertBefore(local_el, reference_node);
 				}
-				reference_node = elem.nextSibling;
+				reference_node = local_el.nextSibling;
 			}
 			
 			//Deconflict hierarchy datatype components inside root
