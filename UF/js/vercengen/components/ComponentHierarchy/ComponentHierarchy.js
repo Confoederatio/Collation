@@ -84,17 +84,17 @@ ve.Hierarchy = class extends ve.Component {
 			//Save current scroll positions before rendering updates
 			this._saveScrollState();
 			
-			//Crucial: Destroy Nestable BEFORE modifying any DOM nodes or parent structures
+			//Destroy Nestable before modifying any DOM nodes or parent structures
 			if (this.nestable && typeof this.nestable.destroy === "function") {
 				try {
 					this.nestable.destroy();
-				} catch (err) {
-					console.warn("Error destroying previous nestable instance: ", err);
+				} catch (e) {
+					console.warn("Error destroying previous Nestable instance: ", e);
 				}
-				this.nestable = null;
+				delete this.nestable;
 			}
 			
-			//0. Reconcile searchbar
+			//Deconflict searchbar
 			if (!this.options.disable_searchbar) {
 				let searchbar_el = this.element.querySelector('[ve-searchbar="true"]');
 				
@@ -139,7 +139,7 @@ ve.Hierarchy = class extends ve.Component {
 				this.searchbar_interface = null;
 			}
 			
-			//1. Reconcile all non-hierarchy datatype components
+			//Deconflict all non-hierarchy datatype components
 			let expected_non_hierarchy_els = [];
 			Object.iterate(this.components_obj, (local_key, local_value) => {
 				if (!local_value.is_vercengen_hierarchy_datatype) {
@@ -150,7 +150,7 @@ ve.Hierarchy = class extends ve.Component {
 				}
 			});
 			
-			//Remove redundant root-level components we explicitly manage
+			//Deconflict redundant root-level components we explicitly manage
 			let existing_children = Array.from(this.element.children);
 			for (let i = 0; i < existing_children.length; i++) {
 				let child = existing_children[i];
@@ -166,7 +166,7 @@ ve.Hierarchy = class extends ve.Component {
 				}
 			}
 			
-			//Place and order elements right after searchbar dynamically
+			//Order elements right after searchbar dynamically
 			let reference_node = this.element.querySelector('[ve-searchbar="true"]') ?
 				this.element.querySelector('[ve-searchbar="true"]').nextSibling :
 				this.element.firstChild;
@@ -181,7 +181,7 @@ ve.Hierarchy = class extends ve.Component {
 				reference_node = elem.nextSibling;
 			}
 			
-			//2. Reconcile hierarchy datatype components inside root list
+			//Deconflict hierarchy datatype components inside root
 			let ol_el = this.element.querySelector("ol.ve-hierarchy");
 			if (!ol_el) {
 				ol_el = document.createElement("ol");
