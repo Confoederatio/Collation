@@ -52,7 +52,9 @@ if (!global?.proc)
 	proc.IPC_getWorkerPool = function (arg0_max_workers) {
 		//Convert from parameters
 		let max_workers = Math.returnSafeNumber(
-			arg0_max_workers, Math.ceil((os.cpus().length - 1)/8));
+			arg0_max_workers,
+			Math.ceil((os.cpus().length - 1) / 8)
+		);
 		
 		//Init worker pool variables
 		if (proc.pending_tasks === undefined) proc.pending_tasks = new Map();
@@ -60,18 +62,49 @@ if (!global?.proc)
 		if (proc.worker_pool === undefined) proc.worker_pool = [];
 		
 		//Declare local instance variables
-		if (proc.worker_pool.length === 0)
+		if (proc.worker_pool.length === 0) {
+			let { ipcMain } = require("electron");
+			
 			for (let i = 0; i < max_workers; i++) {
-				let worker = new NodeWorker("./core/process/workers/process_worker.js", { workerData: { worker_id: i } });
+				let worker = new NodeWorker("./core/process/workers/process_worker.js", {
+					workerData: { worker_id: i },
+				});
+				
 				worker.on("message", (response) => {
+					//1. Handle proxy/bridge requests (When the worker calls Blacktraffic.task)
+					if (response.type === "worker_ipc_request") {
+						let { channel, args, task_id } = response;
+						
+						//Create a mock event that mimics an IPC call from a renderer
+						let mock_event = {
+							sender: {
+								send: (response_channel, results) => {
+									//Forward the response back to the worker
+									worker.postMessage({
+										type: "worker_ipc_ready",
+										task_id: task_id,
+										results: results,
+									});
+								},
+							},
+						};
+						
+						//Emitting the event triggers the handlers defined in ve.initialiseIPC()
+						ipcMain.emit(channel, mock_event, ...args);
+						return;
+					}
+					
+					//2. Handle standard task/diagnostic responses
 					let callback = proc.pending_tasks.get(response.task_id);
 					if (callback) {
-						callback((response.results !== undefined) ? response.results : true);
+						callback(response.results !== undefined ? response.results : true);
 						proc.pending_tasks.delete(response.task_id);
 					}
 				});
+				
 				proc.worker_pool.push(worker);
 			}
+		}
 		
 		//Return statement
 		return proc.worker_pool;
