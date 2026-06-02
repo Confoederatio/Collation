@@ -29,13 +29,14 @@ if (!global?.proc) global.proc = {};
 
 //Initialise functions
 {
-	proc.feature = async function (arg0_feature_id, arg1_json) {
+	proc.feature = async function (arg0_feature_obj, arg1_json) {
 		//Convert from parameters
-		let feature_id = arg0_feature_id;
+		let feature_obj = arg0_feature_obj;
 		let json = arg1_json;
 		
 		//Declare local instance variables
-		json.feature_obj = await db.getValue(feature_id);
+		json.feature_obj = (typeof feature_obj === "string") ? 
+			await db.getValue(feature_obj) : feature_obj;
 		json.type = "FeatureAction";
 		let result = await proc.send(json);
 			if (result.cmd_queue) result.results = await proc.handleCommandQueue(result.cmd_queue);
@@ -44,13 +45,14 @@ if (!global?.proc) global.proc = {};
 		return result;
 	};
 	
-	proc.geometry = async function (arg0_geometry_id, arg1_json) {
+	proc.geometry = async function (arg0_geometry_obj, arg1_json) {
 		//Convert from parameters
-		let geometry_id = arg0_geometry_id;
+		let geometry_obj = arg0_geometry_obj;
 		let json = arg1_json;
 		
 		//Declare local instance variables
-		json.geometry_obj = await db.getValue(geometry_id);
+		json.geometry_obj = (typeof geometry_obj === "string") ? 
+			await db.getValue(geometry_obj) : geometry_obj;
 		json.type = "GeometryAction";
 		let result = await proc.send(json);
 			if (result.cmd_queue) result.results = await proc.handleCommandQueue(result.cmd_queue);

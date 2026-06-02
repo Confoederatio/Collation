@@ -9,9 +9,9 @@ if (!global.naissance) global.naissance = {};
 	 * 
 	 * @param {string} [arg0_key] - The key to push to the current DALS timeline.
 	 * @param {Object|string} [arg1_json] - If no top-level ID is passed, the action is assumed to be global.
-	 *  @param {string} [arg1_json.feature_id] - Top-level ID for {@link naissance.Feature}.
-	 *  @param {string} [arg1_json.geometry_id] - Top-level ID for {@link naissance.Geometry}.
-	 *  @param {string} [arg1_json.stencil_id]
+	 *  @param {string} [arg1_json.feature_obj] - Top-level ID for {@link naissance.Feature}.
+	 *  @param {string} [arg1_json.geometry_obj] - Top-level ID for {@link naissance.Geometry}.
+	 *  @param {string} [arg1_json.stencil_obj]
 	 * @param {boolean} [arg2_do_not_push_action=false]
 	 */
 	DALS.Timeline.parseAction = async function (arg0_key, arg1_json, arg2_do_not_push_action) {
@@ -27,11 +27,11 @@ if (!global.naissance) global.naissance = {};
 		for (let i = 0; i < json.value.length; i++) {
 			let local_value = json.value[i];
 			
-			if (local_value.feature_id) {
-				await proc.feature(json.feature_id, json);
-			} else if (local_value.geometry_id) {
-				await proc.geometry(json.geometry_id, json);
-			} else if (local_value.stencil_id) {
+			if (local_value.feature_obj) {
+				await proc.feature(json.feature_obj, json);
+			} else if (local_value.geometry_obj) {
+				await proc.geometry(json.geometry_obj, json);
+			} else if (local_value.stencil_obj) {
 				console.warn(`[WIP] - Stencils are not yet implemented.`);
 			} else {
 				if (local_value.refresh_date) await naissance.Renderer.setDate(main.date);
