@@ -51,7 +51,7 @@ naissance.Feature = class extends naissance.Entity {
 					await DALS.Timeline.parseAction("collapse_feature", [{ 
 						feature_obj: this.id, collapse_feature: v 
 					}]);
-					//await main.interfaces.leftbar.hierarchy.refresh();
+					await main.interfaces.leftbar.hierarchy.refresh();
 				}
 			});
 		let component_obj = hierarchy_components[this.id];
