@@ -28,6 +28,12 @@ naissance.Entity = class extends ve.Class {
 		//Convert from parameters
 		let cache_obj = (arg0_cache_obj) ? arg0_cache_obj : {};
 		
+		//Declare local instance variables
+		let static_obj = naissance[cache_obj.class_name];
+		
+		let hierarchy_symbol = (static_obj.hierarchy_symbol) ?
+			static_obj.hierarchy_symbol : {};
+		
 		//Return statement
 		if (!cache_obj) return;
 		if (!cache_obj.class_name) return;
@@ -44,6 +50,15 @@ naissance.Entity = class extends ve.Class {
 				});
 			let component_obj = main.cache.hierarchy_components[cache_obj.key];
 			
+			//Update .icon symbol if possible
+			try {
+				let icon_el = component_obj.components_obj.icon.element;
+				
+				if (hierarchy_symbol.fill_colour)
+					icon_el.style.color = cache_obj?.current_keyframe?.[1]?.polygonFill;
+			} catch (e) {}
+			
+			//Return statement
 			return component_obj;
 		}
 	}
@@ -60,15 +75,8 @@ naissance.Entity = class extends ve.Class {
 			static_obj.hierarchy_symbol : {};
 		let hierarchy_symbol_components = {};
 		
-		if (hierarchy_symbol.icon) {
-			let style = "";
-			if (hierarchy_symbol.fill_colour) {
-				let polygon_fill = cache_obj?.current_keyframe?.[1]?.polygonFill;
-				if (polygon_fill) style += `color:${polygon_fill}`;
-			}
-			
-			hierarchy_symbol_components.icon = veHTML(`<icon style = "${style}">${hierarchy_symbol.icon}</icon>`);
-		}
+		if (hierarchy_symbol.icon)
+			hierarchy_symbol_components.icon = veHTML(`<icon>${hierarchy_symbol.icon}</icon>`);
 		
 		//Return statement
 		return {
