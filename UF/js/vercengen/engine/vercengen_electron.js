@@ -1,11 +1,26 @@
 //Import libraries
 if (!global.ve) global.ve = {};
+
 if (!global.electron) try { electron = require("electron"); } catch (e) {}
+if (!global.file_read) try { file_read = require("../../file/file_read"); } catch (e) {}
 if (!global.fs) try { fs = require("fs"); } catch (e) {}
+if (!global.os) global.os = require("node:os");
 if (!global.path) try { path = require("path"); } catch (e) {}
 if (!global.readline) try { readline = require("readline"); } catch (e) {}
+if (!global.v8) global.v8 = require("node:v8");
 
-if (!global.file_read) try { file_read = require("../../file/file_read"); } catch (e) {}
+//Math utils - [WIP] - Override at a later date
+{
+	if (!global.Math) global.Math = {};
+	Math.returnSafeNumber = function (arg0_number, arg1_default) {
+		//Convert from parameters
+		let number = parseFloat(arg0_number);
+		let default_value = (arg1_default !== undefined) ? arg1_default : 0;
+		
+		//Return statement
+		return (!isNaN(number) && isFinite(number)) ? number : default_value;
+	};
+}
 
 //Initialise functions
 {
@@ -31,6 +46,30 @@ if (!global.file_read) try { file_read = require("../../file/file_read"); } catc
 		//Declare local instance variables
 		let ipc_main = electron.ipcMain;
 		
+		//ndjson
+		ipc_main.on("ndjson", async (event, function_key, ...argn_arguments) => {
+			if (NDJSON[function_key] === undefined) event.sender.send("ndjson:ready", null);
+			
+			//console.log(`Received`, function_key, argn_arguments);
+			let result = await NDJSON[function_key](...argn_arguments);
+			event.sender.send("ndjson:ready", result);
+		});
+		//ndjson:get-all-functions
+		ipc_main.on("ndjson:get-all-functions", async (event) => {
+			let all_ndjson_function_keys = [];
+			let all_ndjson_keys = Object.keys(NDJSON);
+			
+			for (let i = 0; i < all_ndjson_keys.length; i++) {
+				let local_value = NDJSON[all_ndjson_keys[i]];
+				
+				if (typeof local_value === "function")
+					all_ndjson_function_keys.push(all_ndjson_keys[i]);
+			}
+			
+			event.sender.send("ndjson:get-all-functions:ready", all_ndjson_function_keys);
+		});
+		
+		//ontology
 		ipc_main.on("ontology:initialise", async (event, folder_path) => {
 			//Declare local instance variables
 			if (!fs.existsSync(folder_path)) fs.mkdirSync(folder_path, { recursive: true });
@@ -91,9 +130,41 @@ if (!global.file_read) try { file_read = require("../../file/file_read"); } catc
 			ipc_main.on('ontology:stream-next', sendNextBatch);
 			await sendNextBatch();
 		});
+		
+		//process
+		ipc_main.on("process", async (event, json) => {
+			if (proc.IPC_task === undefined) event.sender.send("process:ready", null);
+			
+			let result = await proc.IPC_task(json);
+			event.sender.send("process:ready", result);
+		});
+		ipc_main.on("process:get-diagnostics", async (event) => {
+			let result = await proc.IPC_getDiagnostics();
+			event.sender.send("process:get-diagnostics:ready", result);
+		});
+		ipc_main.on("process:get-worker-pool", async (event, max_workers) => {
+			let pool = proc.IPC_getWorkerPool(max_workers);
+			let serialised_pool = pool.map((w) => { 
+				return {
+					threadId: w?.threadId,
+					resourceLimits: w?.resourceLimits ? {
+						maxYoungGenerationSizeMb: w.resourceLimits.maxYoungGenerationSizeMb,
+						maxOldGenerationSizeMb: w.resourceLimits.maxOldGenerationSizeMb,
+						codeRangeSizeMb: w.resourceLimits.codeRangeSizeMb,
+						stackSizeMb: w.resourceLimits.stackSizeMb
+					} : null
+				};
+			});
+			event.sender.send("process:get-worker-pool:ready", serialised_pool);
+		});
 	};
+	
+	try {
+		require("../db/NDJSON_main.js");
+		require("../../../../core/process/workers/process_main.js");
+	} catch (e) {} //NDJSON handling
 }
 
 module.exports = { 
-	initialiseIPC: ve.initialiseIPC 
+	initialiseIPC: ve.initialiseIPC
 };
