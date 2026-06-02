@@ -297,7 +297,10 @@ naissance.Brush = class extends ve.Class {
 							if (!["override", "node_override", "node_transfer"].includes(this.mode) && is_visible)
 								turf_geometry = turf.difference(turf.featureCollection([
 									turf_geometry,
-									turf.buffer(Geospatiale.convertMaptalksToTurf(all_layer_geometries[i].geometry), 0.001, { units: "kilometers"})
+									Geospatiale.convertMaptalksToTurf(all_layer_geometries[i].geometry)
+									/*turf.buffer(Geospatiale.convertMaptalksToTurf(all_layer_geometries[i].geometry), 0.001, { 
+										units: "kilometers"
+									})*/
 								]));
 						} catch (e) { console.warn(e); }
 				}
@@ -379,7 +382,7 @@ naissance.Brush = class extends ve.Class {
 					//Buffer so that provinces aren't irregular
 					let turf_geometry = Geospatiale.convertMaptalksToTurf(all_geometries[i]);
 					if (!HTML.ctrl_pressed) {
-						let buffered_geometry = turf.buffer(turf_geometry, 0.001, { units: "kilometers" });
+						let buffered_geometry = turf_geometry; //turf.buffer(turf_geometry, 0.001, { units: "kilometers" });
 						buffered_geometry = Geospatiale.convertTurfToMaptalks(buffered_geometry);
 						
 						DALS.Timeline.parseAction({
@@ -392,7 +395,7 @@ naissance.Brush = class extends ve.Class {
 							}]
 						});
 					} else {
-						let buffered_geometry = turf.buffer(turf_geometry, 0.1, { units: "kilometers" });
+						let buffered_geometry = turf_geometry; //turf.buffer(turf_geometry, 0.1, { units: "kilometers" });
 						buffered_geometry = Geospatiale.convertTurfToMaptalks(buffered_geometry);
 						
 						DALS.Timeline.parseAction({
@@ -527,12 +530,13 @@ naissance.Brush = class extends ve.Class {
 		
 		//Iterate over naissance.Geometry.instances and check for .selected
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
-			json_obj.value.push({
-				type: "Geometry",
-				
-				geometry_id: local_geometry.id,
-				set_symbol: symbol_obj
-			});
+			if (local_geometry.selected)
+				json_obj.value.push({
+					type: "Geometry",
+					
+					geometry_id: local_geometry.id,
+					set_symbol: symbol_obj
+				});
 		});
 		DALS.Timeline.parseAction(json_obj);
 	}
