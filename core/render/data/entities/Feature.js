@@ -16,6 +16,7 @@ naissance.Feature = class extends naissance.Entity {
 		if (!main.cache.hierarchy_components) main.cache.hierarchy_components = {};
 		
 		let cache_obj = main.cache.hierarchy[this.id];
+		let hierarchy_components = main.cache.hierarchy_components;
 		let hierarchy_obj = {};
 		
 		//Iterate over this.entities and draw them from main.cache.hierarchy
@@ -36,8 +37,8 @@ naissance.Feature = class extends naissance.Entity {
 			}
 		
 		//Return statement
-		if (main.cache.hierarchy_components[this.id] === undefined)
-			main.cache.hierarchy_components[this.id] = veHierarchyDatatype({
+		if (hierarchy_components[this.id] === undefined)
+			hierarchy_components[this.id] = veHierarchyDatatype({
 				...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 				...hierarchy_obj
 			}, {
@@ -46,7 +47,7 @@ naissance.Feature = class extends naissance.Entity {
 				name: this.name,
 				type: "group"
 			});
-		let component_obj = main.cache.hierarchy_components[this.id];
+		let component_obj = hierarchy_components[this.id];
 		
 		return component_obj;
 	}

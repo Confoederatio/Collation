@@ -33,8 +33,10 @@ naissance.Entity = class extends ve.Class {
 		if (!cache_obj.class_name) return;
 		if (cache_obj.class_name.startsWith("Geometry")) {
 			if (!main.cache.hierarchy_components) main.cache.hierarchy_components = {};
-			if (main.cache.hierarchy_components[cache_obj.key] === undefined)
-				main.cache.hierarchy_components[cache_obj.key] = veHierarchyDatatype({
+			let hierarchy_components = main.cache.hierarchy_components;
+			
+			if (hierarchy_components[cache_obj.key] === undefined)
+				hierarchy_components[cache_obj.key] = veHierarchyDatatype({
 					...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
 				}, {
 					id: cache_obj.key,
