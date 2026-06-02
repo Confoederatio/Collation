@@ -45,7 +45,15 @@ naissance.Feature = class extends naissance.Entity {
 				id: this.id,
 				is_collapsed: cache_obj.value.is_collapsed,
 				name: this.name,
-				type: "group"
+				type: "group",
+				
+				oncollapse: async (v, e) => {
+					console.log(v, e);
+					await DALS.Timeline.parseAction("collapse_feature", [{ 
+						feature_obj: this.id, collapse_feature: v 
+					}]);
+					//await main.interfaces.leftbar.hierarchy.refresh();
+				}
 			});
 		let component_obj = hierarchy_components[this.id];
 		

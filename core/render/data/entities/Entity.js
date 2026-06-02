@@ -82,9 +82,11 @@ naissance.Entity = class extends ve.Class {
 		return {
 			selected: veCheckbox(undefined),
 			...hierarchy_symbol_components,
-			context_menu: veButton(() => {}, {
+			context_menu: veButton(() => {
+				console.log(`Debug cache_obj::`, cache_obj);
+			}, {
 				attributes: { "data-type": "context-menu" },
-				name: "<icon>more_vert</icon>" 
+				name: "<icon>more_vert</icon>",
 			})
 		}
 	}

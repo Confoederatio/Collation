@@ -37,6 +37,7 @@ if (!global?.proc) global.proc = {};
 		//Declare local instance variables
 		json.feature_obj = (typeof feature_obj === "string") ? 
 			await db.getValue(feature_obj) : feature_obj;
+		console.log(feature_obj, json.feature_obj);
 		json.type = "FeatureAction";
 		let result = await proc.send(json);
 			if (result.cmd_queue) result.results = await proc.handleCommandQueue(result.cmd_queue);

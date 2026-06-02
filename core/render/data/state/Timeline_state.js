@@ -16,26 +16,24 @@ if (!global.naissance) global.naissance = {};
 	 */
 	DALS.Timeline.parseAction = async function (arg0_key, arg1_json, arg2_do_not_push_action) {
 		//Convert from parameters
+		let key = arg0_key;
 		let json = (typeof arg1_json === "string") ?
 			JSON.parse(arg1_json) : arg1_json;
 		
 		//Initialise JSON
-		if (json.options === undefined) json.options = {};
-		if (json.value === undefined) json.value = [];
+		if (json === undefined) json = [];
 		
 		//Iterate over multi-value packet (MVP) and filter it down to superclass single-value packets (SVPs)
-		for (let i = 0; i < json.value.length; i++) {
-			let local_value = json.value[i];
-			
-			if (local_value.feature_obj) {
-				await proc.feature(json.feature_obj, json);
-			} else if (local_value.geometry_obj) {
-				await proc.geometry(json.geometry_obj, json);
-			} else if (local_value.stencil_obj) {
+		for (let i = 0; i < json.length; i++) {
+			if (json[i].feature_obj) {
+				await proc.feature(json[i].feature_obj, json[i]);
+			} else if (json[i].geometry_obj) {
+				await proc.geometry(json[i].geometry_obj, json[i]);
+			} else if (json[i].stencil_obj) {
 				console.warn(`[WIP] - Stencils are not yet implemented.`);
 			} else {
-				if (local_value.refresh_date) await naissance.Renderer.setDate(main.date);
-				if (local_value.set_date) await naissance.Renderer.setDate(local_value.set_date);
+				if (json[i].refresh_date) await naissance.Renderer.setDate(main.date);
+				if (json[i].set_date) await naissance.Renderer.setDate(json[i].set_date);
 			}
 		}
 		

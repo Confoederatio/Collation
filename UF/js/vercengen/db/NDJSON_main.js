@@ -610,7 +610,7 @@ if (!global.NDJSON)
 		map[id] = value;
 		
 		//Return statement
-		return await NDJSON.setValues(parg.resolve(ve.ndjson_file_path), map);
+		return await NDJSON.setValues(path.resolve(ve.ndjson_file_path), map);
 	};
 	
 	/**
