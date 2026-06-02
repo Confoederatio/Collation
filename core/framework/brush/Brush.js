@@ -298,9 +298,6 @@ naissance.Brush = class extends ve.Class {
 								turf_geometry = turf.difference(turf.featureCollection([
 									turf_geometry,
 									Geospatiale.convertMaptalksToTurf(all_layer_geometries[i].geometry)
-									/*turf.buffer(Geospatiale.convertMaptalksToTurf(all_layer_geometries[i].geometry), 0.001, { 
-										units: "kilometers"
-									})*/
 								]));
 						} catch (e) { console.warn(e); }
 				}
@@ -380,31 +377,24 @@ naissance.Brush = class extends ve.Class {
 					}
 					
 					//Buffer so that provinces aren't irregular
-					let turf_geometry = Geospatiale.convertMaptalksToTurf(all_geometries[i]);
 					if (!HTML.ctrl_pressed) {
-						let buffered_geometry = turf_geometry; //turf.buffer(turf_geometry, 0.001, { units: "kilometers" });
-						buffered_geometry = Geospatiale.convertTurfToMaptalks(buffered_geometry);
-						
 						DALS.Timeline.parseAction({
 							options: { name: "Add to Polygon", key: "add_to_polygon" },
 							value: [{
 								type: "GeometryPolygon",
 								
 								geometry_id: this._selected_geometry.id,
-								add_to_polygon: { geometry: buffered_geometry.toJSON() }
+								add_to_polygon: { geometry: all_geometries[i].toJSON() }
 							}]
 						});
 					} else {
-						let buffered_geometry = turf_geometry; //turf.buffer(turf_geometry, 0.1, { units: "kilometers" });
-						buffered_geometry = Geospatiale.convertTurfToMaptalks(buffered_geometry);
-						
 						DALS.Timeline.parseAction({
 							options: { name: "Remove from Polygon", key: "remove_from_polygon" },
 							value: [{
 								type: "GeometryPolygon",
 								
 								geometry_id: this._selected_geometry.id,
-								remove_from_polygon: { geometry: buffered_geometry.toJSON() }
+								remove_from_polygon: { geometry: all_geometries[i].toJSON() }
 							}]
 						});
 					}

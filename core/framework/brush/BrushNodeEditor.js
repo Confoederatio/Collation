@@ -115,8 +115,9 @@ naissance.GeometryPolygon.handleNodeEditorEnd = function (arg0_e) {
 				turf.intersect(turf.featureCollection([ot_turf_geometry, cursor_turf_geometry])) :
 				turf.intersect(turf.featureCollection([turf_geometry, cursor_turf_geometry]));
 			if (!turf_intersection) return; //Internal guard clause if nothing overlaps
-			turf_intersection = turf.truncate(turf_intersection, {
-				precision: 6
+			turf_intersection = turf.buffer(turf_intersection, 0.001, {
+				units: "kilometers",
+				steps: 1
 			});
 			
 			//Transfer selected polygon
