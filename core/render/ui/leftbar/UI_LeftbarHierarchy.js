@@ -22,7 +22,7 @@ global.UI_LeftbarHierarchy = class extends ve.Class {
 			
 			let local_entity = naissance.Entity.instances[local_key];
 			if (local_entity && local_entity.isBaseEntity())
-				hierarchy_obj[local_key] = await local_entity.drawHierarchyDatatype();
+				hierarchy_obj[local_key] = await local_entity?.drawHierarchyDatatype();
 		}
 		
 		//Return current_hierarchy, since it is being manually moved out in UI_Leftbar

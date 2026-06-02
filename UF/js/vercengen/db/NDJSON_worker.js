@@ -268,11 +268,13 @@ async function handleTask (arg0_task) {
 		await forEachLine(page_file, (key, val_str) => {
 			try {
 				let entity_obj = JSON.parse(val_str);
-				let state_val = resolveHistory(entity_obj, timestamp, {
-					type: "get_keyframes"
-				});
 				
 				if (typeof entity_obj.history !== "undefined") {
+					let current_keyframe = resolveHistory(entity_obj, timestamp);
+					let state_val = resolveHistory(entity_obj, timestamp, {
+						type: "get_keyframes"
+					});
+					
 					//Iterate over all_keyframes to ensure we pass back minimal data
 					let all_keyframes = Object.keys(state_val);
 					
@@ -289,6 +291,8 @@ async function handleTask (arg0_task) {
 						class_name: entity_obj.class_name,
 						metadata: entity_obj.metadata,
 						name: History.getName(state_val, timestamp),
+						
+						current_keyframe: current_keyframe,
 						value: state_val
 					});
 				} else {

@@ -1,5 +1,10 @@
 if (!global.naissance) global.naissance = {};
 naissance.GeometryPolygon = class extends naissance.Geometry {
+	static hierarchy_symbol = {
+		icon: "pentagon",
+		fill_colour: true
+	};
+	
 	constructor (arg0_id, arg1_value) {
 		super(arg0_id, arg1_value);
 		this.class_name = "GeometryPolygon";

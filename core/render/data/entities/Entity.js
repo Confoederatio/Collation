@@ -52,9 +52,28 @@ naissance.Entity = class extends ve.Class {
 		//Convert from parameters
 		let cache_obj = (arg0_cache_obj) ? arg0_cache_obj : {};
 		
+		//Declare local instance variables
+		let static_obj = naissance[cache_obj.class_name];
+		
+		//Parse hierarchy_symbol
+		let hierarchy_symbol = (static_obj.hierarchy_symbol) ?
+			static_obj.hierarchy_symbol : {};
+		let hierarchy_symbol_components = {};
+		
+		if (hierarchy_symbol.icon) {
+			let style = "";
+			if (hierarchy_symbol.fill_colour) {
+				let polygon_fill = cache_obj?.current_keyframe?.[1]?.polygonFill;
+				if (polygon_fill) style += `color:${polygon_fill}`;
+			}
+			
+			hierarchy_symbol_components.icon = veHTML(`<icon style = "${style}">${hierarchy_symbol.icon}</icon>`);
+		}
+		
 		//Return statement
 		return {
 			selected: veCheckbox(undefined),
+			...hierarchy_symbol_components,
 			context_menu: veButton(() => {}, {
 				attributes: { "data-type": "context-menu" },
 				name: "<icon>more_vert</icon>" 
