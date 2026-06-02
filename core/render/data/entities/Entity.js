@@ -31,13 +31,19 @@ naissance.Entity = class extends ve.Class {
 		//Return statement
 		if (!cache_obj) return;
 		if (!cache_obj.class_name) return;
-		if (cache_obj.class_name.startsWith("Geometry"))
-			return veHierarchyDatatype({
-				...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
-			}, {
-				id: cache_obj.key,
-				name: cache_obj.name
-			});
+		if (cache_obj.class_name.startsWith("Geometry")) {
+			if (!main.cache.hierarchy_components) main.cache.hierarchy_components = {};
+			if (main.cache.hierarchy_components[cache_obj.key] === undefined)
+				main.cache.hierarchy_components[cache_obj.key] = veHierarchyDatatype({
+					...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
+				}, {
+					id: cache_obj.key,
+					name: cache_obj.name
+				});
+			let component_obj = main.cache.hierarchy_components[cache_obj.key];
+			
+			return component_obj;
+		}
 	}
 	
 	static drawHierarchyDatatypeGenerics (arg0_cache_obj) {

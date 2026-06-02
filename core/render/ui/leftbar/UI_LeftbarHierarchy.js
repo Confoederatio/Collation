@@ -27,9 +27,6 @@ global.UI_LeftbarHierarchy = class extends ve.Class {
 		
 		//Return current_hierarchy, since it is being manually moved out in UI_Leftbar
 		if (!this.hierarchy) this.hierarchy = new ve.Hierarchy({}, {
-			onitemchange: (v, e) => {
-				console.log(v, e);
-			},
 			style: {
 				"[component='ve-checkbox'] input": { margin: 0 },
 				"[component='ve-text']": { minWidth: 0 },

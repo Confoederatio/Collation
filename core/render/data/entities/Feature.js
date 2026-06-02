@@ -13,6 +13,8 @@ naissance.Feature = class extends naissance.Entity {
 	
 	async drawHierarchyDatatype () {
 		//Declare local instance variables
+		if (!main.cache.hierarchy_components) main.cache.hierarchy_components = {};
+		
 		let cache_obj = main.cache.hierarchy[this.id];
 		let hierarchy_obj = {};
 		
@@ -34,15 +36,19 @@ naissance.Feature = class extends naissance.Entity {
 			}
 		
 		//Return statement
-		return veHierarchyDatatype({
-			...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
-			...hierarchy_obj
-		}, {
-			id: this.id,
-			is_collapsed: cache_obj.value.is_collapsed,
-			name: this.name,
-			type: "group"
-		})
+		if (main.cache.hierarchy_components[this.id] === undefined)
+			main.cache.hierarchy_components[this.id] = veHierarchyDatatype({
+				...naissance.Entity.drawHierarchyDatatypeGenerics(cache_obj),
+				...hierarchy_obj
+			}, {
+				id: this.id,
+				is_collapsed: cache_obj.value.is_collapsed,
+				name: this.name,
+				type: "group"
+			});
+		let component_obj = main.cache.hierarchy_components[this.id];
+		
+		return component_obj;
 	}
 	
 	getGeometries (arg0_options) {
