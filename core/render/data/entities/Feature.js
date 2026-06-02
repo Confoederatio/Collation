@@ -48,7 +48,6 @@ naissance.Feature = class extends naissance.Entity {
 				type: "group",
 				
 				oncollapse: async (v, e) => {
-					console.log(v, e);
 					await DALS.Timeline.parseAction("collapse_feature", [{ 
 						feature_obj: this.id, collapse_feature: v 
 					}]);
