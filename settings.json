@@ -24,5 +24,8 @@
   "hide_labels_under_km2": 100,
   "default_line_symbol": {
     "lineColor": "#000000"
+  },
+  "default_label_symbol": {
+    "textSize": 12
   }
 }
