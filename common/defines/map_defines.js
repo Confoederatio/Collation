@@ -42,7 +42,7 @@ config.defines.map = {
 		markerVerticalAlignment: "keyword",
 		markerWidth: 40,
 		opacity: 1,
-		polygonFill: "#1bbc9b",
+		polygonFill: "#ffffff",
 		polygonOpacity: 1,
 		polygonPatternFile: undefined,
 		shadowBlur: 0,

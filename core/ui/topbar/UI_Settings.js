@@ -235,6 +235,15 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 			return;
 		}
 		
+		//main.settings.default_polygon_symbol
+		if (!main.settings.default_polygon_symbol) main.settings.default_polygon_symbol = {};
+		let default_polygon_symbol = main.settings.default_polygon_symbol;
+			
+			if (default_polygon_symbol.polygonFill === undefined)
+				default_polygon_symbol.polygonFill = "#1bbc9b";
+			if (default_polygon_symbol.polygonOpacity === undefined)
+				default_polygon_symbol.polygonOpacity = 0.7;
+		
 		//main.settings.autoload_file handler
 		if (main.settings.autoload_file && main.settings.autoloading_mode === "default")
 			if (fs.existsSync(main.settings.autoload_file[0])) {
