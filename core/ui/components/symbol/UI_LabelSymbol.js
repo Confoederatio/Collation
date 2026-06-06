@@ -23,27 +23,18 @@ global.UI_LabelSymbol = class extends ve.Component {
 		//Convert from parameters
 		let value = (arg0_value) ? arg0_value : {};
 		
-		//Declare local instance variables
-		let key_map_obj = {
-			hide_label: "hide_label",
-			textFill: "font_colour",
-			textFaceName: "font_family",
-			textSize: "font_size",
-			textHaloFill: "font_stroke",
-			textHaloRadius: "font_stroke_width"
-		};
-		
-		//Update this.components_obj if possible
-		if (this.components_obj) {
-			Object.iterate(value, (local_key, local_value) => {
-				let local_component = Object.getValue(this.components_obj, key_map_obj[local_key]);
-				if (local_component) local_component.v = local_value;
-			});
-		} else {
-			this.value = value;
-			this.element = this.draw().element;
-		}
-		this.fireFromBinding();
+		//Fire setValue
+		UI_Symbol.setValue(value, {
+			instance: this, 
+			key_map_obj: {
+				hide_label: "hide_label",
+				textFill: "font_colour",
+				textFaceName: "font_family",
+				textSize: "font_size",
+				textHaloFill: "font_stroke",
+				textHaloRadius: "font_stroke_width"
+			}
+		});
 	}
 	
 	draw () {

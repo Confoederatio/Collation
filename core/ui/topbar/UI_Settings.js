@@ -137,63 +137,13 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 									name: "Default Label Symbol",
 									special_function: (v) => console.log(v)
 								}),
-								default_point_symbol: veInterface({
-									point_icon: veFile((main.settings.default_marker_file || "gfx/icons/marker_default.png"), {
-										name: "Change Icon",
-										onuserchange: (v) => {
-											main.settings.default_marker_file = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									point_opacity: veRange(Math.returnSafeNumber(main.settings.default_marker_opacity, 1), {
-										name: "Point Opacity",
-										onuserchange: (v) => {
-											main.settings.default_marker_opacity = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									
-									advanced_marker_options: veInterface({
-										marker_height: veNumber(Math.returnSafeNumber(main.settings.default_marker_height, 40), {
-											name: "Height",
-											onuserchange: (v) => {
-												main.settings.default_marker_height = v;
-												UI_Settings.saveSettings();
-											},
-											x: 0, y: 0
-										}),
-										marker_width: veNumber(Math.returnSafeNumber(main.settings.default_marker_width, 40), {
-											name: "Width",
-											onuserchange: (v) => {
-												main.settings.default_marker_width = v;
-												UI_Settings.saveSettings();
-											},
-											x: 1, y: 0
-										}),
-										
-										marker_offset_x: veNumber(Math.returnSafeNumber(main.settings.default_marker_offset_x, 0), {
-											name: "Offset X",
-											onuserchange: (v) => {
-												main.settings.default_marker_offset_x = v;
-												UI_Settings.saveSettings();
-											},
-											x: 0, y: 1
-										}),
-										marker_offset_y: veNumber(Math.returnSafeNumber(main.settings.default_marker_offset_y, 0), {
-											name: "Offset Y",
-											onuserchange: (v) => {
-												main.settings.default_marker_offset_y = v;
-												UI_Settings.saveSettings();
-											},
-											x: 1, y: 1
-										})
-									}, {
-										name: "Advanced Marker Options",
-										open: true
-									})
-								}, {
-									attributes: { class: "ve-disable-nesting" },
-									name: "Default Point Symbol"
+								default_line_symbol: new UI_LineSymbol(main.settings.default_line_symbol, {
+									name: "Default Line Symbol",
+									special_function: (v) => console.log(v)
+								}),
+								default_point_symbol: new UI_PointSymbol(main.settings.default_point_symbol, {
+									name: "Default Point Symbol",
+									special_function: (v) => console.log(v)
 								}),
 								default_polygon_symbol: veInterface({
 									polygon_fill: veColour((main.settings.default_polygon_fill || "#1bbc9b"), {
@@ -213,69 +163,6 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 								}, {
 									attributes: { class: "ve-disable-nesting" },
 									name: "Default Polygon Symbol"
-								}),
-								default_stroke_symbol: veInterface({
-									stroke_colour: veColour((main.settings.default_stroke_colour || "#000000"), {
-										name: "Stroke Colour",
-										onuserchange: (v, e) => {
-											main.settings.default_stroke_colour = e.getHex();
-											UI_Settings.saveSettings();
-										}
-									}),
-									stroke_opacity: veRange(Math.returnSafeNumber(main.settings.default_stroke_opacity, 1), {
-										name: "Stroke Opacity",
-										onuserchange: (v) => {
-											main.settings.default_stroke_opacity = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									stroke_width: veNumber(Math.returnSafeNumber(main.settings.default_stroke_width, 2), {
-										name: "Stroke Width",
-										onuserchange: (v) => {
-											main.settings.default_stroke_width = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									advanced_stroke_options: veInterface({
-										stroke_cap: veSelect({
-											butt: { name: "Butt" },
-											round: { name: "Round" },
-											square: { name: "Square" }
-										}, {
-											name: "Stroke Cap",
-											selected: (main.settings.default_stroke_join || "butt"),
-											onuserchange: (v) => {
-												main.settings.default_stroke_cap = v;
-												UI_Settings.saveSettings();
-											}
-										}),
-										stroke_join: veSelect({
-											bevel: { name: "Bevel" },
-											miter: { name: "Miter" },
-											round: { name: "Round" }
-										}, {
-											name: "Stroke Join",
-											selected: (main.settings.deefeault_stroke_join || "miter"),
-											onuserchange: (v) => {
-												main.settings.default_stroke_join = v;
-												UI_Settings.saveSettings();
-											}
-										}),
-										stroke_dash_array: veNumber((main.settings.default_stroke_dash_array || [0]), {
-											name: "Stroke Dash Array",
-											onuserchange: (v) => {
-												if (v.length <= 1) {
-													delete main.settings.default_stroke_dash_array;
-												} else {
-													main.settings.default_stroke_dash_array = v;
-												}
-												UI_Settings.saveSettings();
-											}
-										}),
-									}, { name: "Advanced Stroke Options" })
-								}, {
-									attributes: { class: "ve-disable-nesting" },
-									name: "Default Stroke Symbol"
 								}),
 								province_layer_symbol: veInterface({
 									province_layer_opacity: veRange(Math.returnSafeNumber(main.settings.province_layer_opacity, 0.5), {
