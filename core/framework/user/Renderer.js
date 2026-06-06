@@ -77,6 +77,10 @@ naissance.Renderer = class extends ve.Class {
 				rendering_order[i].draw();
 	}
 	
+	static getDefaultSymbol () {
+		
+	}
+	
 	static toggleUI () {
 		let all_interface_els = document.querySelectorAll(`#ve-overlay > .ve`);
 		naissance.Renderer.hide_ui = (!naissance.Renderer.hide_ui);

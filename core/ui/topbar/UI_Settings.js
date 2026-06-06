@@ -197,6 +197,60 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 									attributes: { class: "ve-disable-nesting" },
 									name: "Default Label Symbol" 
 								}),
+								default_point_symbol: veInterface({
+									
+								}, {
+									attributes: { class: "ve-disable-nesting" },
+									name: "Default Point Symbol"
+								}),
+								default_polygon_symbol: veInterface({
+									polygon_fill: veColour((main.settings.default_polygon_fill || "#1bbc9b"), {
+										name: "Polygon Fill",
+										onuserchange: (v, e) => {
+											main.settings.default_polygon_fill = e.getHex();
+											UI_Settings.saveSettings();
+										}
+									}),
+									polygon_opacity: veRange(Math.returnSafeNumber(main.settings.default_polygon_opacity, 0.70), {
+										name: "Polygon Opacity",
+										onuserchange: (v) => {
+											main.settings.default_polygon_opacity = v;
+											UI_Settings.saveSettings();
+										}
+									})
+								}, {
+									attributes: { class: "ve-disable-nesting" },
+									name: "Default Polygon Symbol"
+								}),
+								default_stroke_symbol: veInterface({
+									stroke_colour: veColour((main.settings.default_stroke_colour || "#000000"), {
+										name: "Stroke Colour",
+										onuserchange: (v, e) => {
+											main.settings.default_stroke_colour = e.getHex();
+											UI_Settings.saveSettings();
+										}
+									}),
+									stroke_opacity: veRange(Math.returnSafeNumber(main.settings.default_stroke_opacity, 1), {
+										name: "Stroke Opacity",
+										onuserchange: (v) => {
+											main.settings.default_stroke_opacity = v;
+											UI_Settings.saveSettings();
+										}
+									}),
+									stroke_width: veNumber(Math.returnSafeNumber(main.settings.default_stroke_width, 2), {
+										name: "Stroke Width",
+										onuserchange: (v) => {
+											main.settings.default_stroke_width = v;
+											UI_Settings.saveSettings();
+										}
+									}),
+									advanced_stroke_options: veInterface({
+										
+									}, { name: "Advanced Stroke Options" })
+								}, {
+									attributes: { class: "ve-disable-nesting" },
+									name: "Default Stroke Symbol"
+								}),
 								province_layer_symbol: veInterface({
 									province_layer_opacity: veRange(Math.returnSafeNumber(main.settings.province_layer_opacity, 0.5), {
 										name: "Layer Opacity",
@@ -213,7 +267,7 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 								}, {
 									attributes: { class: "ve-disable-nesting" },
 									name: "Province Layer Symbol"
-								})
+								}),
 							}
 						}
 					}, {
