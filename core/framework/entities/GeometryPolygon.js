@@ -78,6 +78,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		if (this.value[2]) { //[WIP] - Refactor labelling logic at a later date
 			//Declare local instance variables
 			let brush_symbol = main.brush.getBrushSymbol();
+			let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
 			let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
 			
 			//Fetch this.value[2].label_coordinates, this.value[2].label_name/name, this.value[2].label_symbol
@@ -119,11 +120,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 						this.label_geometries[i].setSymbol({
 							textName: label_name,
 							
-							textFaceName: brush_symbol.textFaceName,
-							textFill: brush_symbol.textFill,
-							textHaloFill: brush_symbol.textHaloFill,
-							textHaloRadius: brush_symbol.textHaloRadius,
-							textSize: brush_symbol.textSize,
+							...default_label_symbol,
 							...this.value[2].label_symbol
 						});
 						

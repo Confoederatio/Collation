@@ -78,7 +78,20 @@ naissance.Renderer = class extends ve.Class {
 	}
 	
 	static getDefaultLabelSymbol () {
+		//Declare local instance variables
+		let map_defines = config.defines.map;
 		
+		let default_maptalks_label_keys = map_defines.default_maptalks_label_keys;
+		let maptalks_label_obj = {};
+		
+		for (let i = 0; i < default_maptalks_label_keys.length; i++)
+			maptalks_label_obj[default_maptalks_label_keys[i]] = map_defines.default_maptalks_symbol[default_maptalks_label_keys[i]];
+		
+		//Return statement; diff main.settings.default_label_symbol and config.defines.map.default_maptalks_symbol
+		return {
+			...maptalks_label_obj,
+			...main.settings.default_label_symbol
+		};
 	}
 	
 	static getDefaultSymbol () {
