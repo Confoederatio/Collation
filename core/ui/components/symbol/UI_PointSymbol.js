@@ -15,7 +15,22 @@ global.UI_PointSymbol = class extends ve.Component {
 	get v () { return this.value; }
 	
 	set v (arg0_value) {
+		//Convert from parameters
+		let value = (arg0_value) ? arg0_value : {};
 		
+		//Fire setValue
+		UI_Symbol.setValue(value, {
+			instance: this,
+			key_map_obj: {
+				markerFile: "point_icon",
+				markerOpacity: "point_opacity",
+				
+				markerHeight: "advanced_options.marker_height",
+				markerWidth: "advanced_options.marker_width",
+				markerDx: "advanced_options.marker_offset_x",
+				markerDy: "advanced_options.marker_offset_y"
+			}
+		});
 	}
 	
 	draw () {

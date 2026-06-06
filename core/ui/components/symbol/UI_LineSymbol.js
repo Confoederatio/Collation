@@ -27,7 +27,12 @@ global.UI_LineSymbol = class extends ve.Component {
 				lineWidth: "stroke_width",
 				
 				lineCap: "stroke_line_cap",
-				lineJoin: "stroke_line_join"
+				lineJoin: "stroke_line_join",
+				
+				lineDasharray: "advanced_options.stroke_dash_array",
+				linePatternFile: "advanced_options.stroke_pattern_file",
+				lineDx: "advanced_options.stroke_offset_x",
+				lineDy: "advanced_options.stroke_offset_y"
 			}
 		});
 	}

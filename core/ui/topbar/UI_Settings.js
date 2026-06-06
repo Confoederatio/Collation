@@ -145,24 +145,9 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 									name: "Default Point Symbol",
 									special_function: (v) => console.log(v)
 								}),
-								default_polygon_symbol: veInterface({
-									polygon_fill: veColour((main.settings.default_polygon_fill || "#1bbc9b"), {
-										name: "Polygon Fill",
-										onuserchange: (v, e) => {
-											main.settings.default_polygon_fill = e.getHex();
-											UI_Settings.saveSettings();
-										}
-									}),
-									polygon_opacity: veRange(Math.returnSafeNumber(main.settings.default_polygon_opacity, 0.70), {
-										name: "Polygon Opacity",
-										onuserchange: (v) => {
-											main.settings.default_polygon_opacity = v;
-											UI_Settings.saveSettings();
-										}
-									})
-								}, {
-									attributes: { class: "ve-disable-nesting" },
-									name: "Default Polygon Symbol"
+								default_polygon_symbol: new UI_PolygonSymbol(main.settings.default_polygon_symbol, {
+									name: "Default Polygon Symbol",
+									special_function: (v) => console.log(v)
 								}),
 								province_layer_symbol: veInterface({
 									province_layer_opacity: veRange(Math.returnSafeNumber(main.settings.province_layer_opacity, 0.5), {
