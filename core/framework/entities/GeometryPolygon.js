@@ -164,7 +164,10 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			try {
 				if (this.value[0]) {
 					this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
-					if (this.value[1] && this.geometry) this.geometry.setSymbol(this.value[1]);
+					if (this.geometry) this.geometry.setSymbol({
+						...naissance.Renderer.getDefaultSymbol(),
+						...this.value?.[1],
+					});
 					main.layers.entity_layer.addGeometry(this.geometry);
 					this._drawLabels();
 				}

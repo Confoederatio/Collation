@@ -27,5 +27,8 @@
   },
   "default_label_symbol": {
     "textSize": 12
+  },
+  "default_polygon_symbol": {
+    "polygonOpacity": 0.7
   }
 }
