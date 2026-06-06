@@ -135,19 +135,35 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 								}),
 								default_label_symbol: new UI_LabelSymbol(main.settings.default_label_symbol, {
 									name: "Default Label Symbol",
-									special_function: (v) => console.log(v)
+									special_function: (v) => {
+										let all_keys = Object.keys(v);
+										Object.setValue(main.settings, `default_label_symbol.${all_keys[0]}`, v[all_keys[0]]);
+										UI_Settings.saveSettings();
+									}
 								}),
 								default_line_symbol: new UI_LineSymbol(main.settings.default_line_symbol, {
 									name: "Default Line Symbol",
-									special_function: (v) => console.log(v)
+									special_function: (v) => {
+										let all_keys = Object.keys(v);
+										Object.setValue(main.settings, `default_line_symbol.${all_keys[0]}`, v[all_keys[0]]);
+										UI_Settings.saveSettings();
+									}
 								}),
 								default_point_symbol: new UI_PointSymbol(main.settings.default_point_symbol, {
 									name: "Default Point Symbol",
-									special_function: (v) => console.log(v)
+									special_function: (v) => {
+										let all_keys = Object.keys(v);
+										Object.setValue(main.settings, `default_point_symbol.${all_keys[0]}`, v[all_keys[0]]);
+										UI_Settings.saveSettings();
+									}
 								}),
 								default_polygon_symbol: new UI_PolygonSymbol(main.settings.default_polygon_symbol, {
 									name: "Default Polygon Symbol",
-									special_function: (v) => console.log(v)
+									special_function: (v) => {
+										let all_keys = Object.keys(v);
+										Object.setValue(main.settings, `default_polygon_symbol.${all_keys[0]}`, v[all_keys[0]]);
+										UI_Settings.saveSettings();
+									}
 								}),
 								province_layer_symbol: veInterface({
 									province_layer_opacity: veRange(Math.returnSafeNumber(main.settings.province_layer_opacity, 0.5), {

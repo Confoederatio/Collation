@@ -21,5 +21,8 @@
   "ui_scaling": 0.8,
   "disable_mapmode_interactivity": true,
   "default_label_font_size": 10,
-  "hide_labels_under_km2": 100
+  "hide_labels_under_km2": 100,
+  "default_line_symbol": {
+    "lineColor": "#000000"
+  }
 }

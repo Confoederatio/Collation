@@ -96,7 +96,7 @@ global.polities_Cliopatria_UI = class {
 						if (local_properties.poi)
 							local_marker = new maptalks.Marker([optimised_poi[1], optimised_poi[0]], {
 								symbol: {
-									...map_defines.default_label_symbol,
+									...map_defines.default_maptalks_symbol,
 									textName: local_properties.Name
 								}
 							});
