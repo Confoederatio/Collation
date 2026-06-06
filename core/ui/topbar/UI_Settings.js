@@ -133,69 +133,9 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 										UI_Settings.saveSettings();
 									}
 								}),
-								default_label_symbol: veInterface({
-									hide_labels_by_default: veToggle(main.settings.hide_labels_by_default, {
-										name: "Hide Labels by Default",
-										tooltip: "Labels will not appear by default when new Geometries are created.",
-										
-										onuserchange: (v) => {
-											main.settings.hide_labels_by_default = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									hide_labels_under_km2: veNumber(Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000), {
-										name: "Hide Labels Under Area (km^2)",
-										tooltip: "Labels will not appear for exclaves under this area.",
-										onuserchange: (v) => {
-											main.settings.hide_labels_under_km2 = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									
-									default_label_colour: veColour((main.settings.default_label_colour) ? main.settings.default_label_colour : [255, 255, 255], {
-										name: "Font Colour",
-										onuserchange: (v, e) => {
-											main.settings.default_label_colour = e.getHex();
-											UI_Settings.saveSettings();
-										}
-									}),
-									default_label_font: veSelect(main.settings.font_registry, {
-										name: "Font Family",
-										selected: main.settings.default_label_font,
-										
-										onuserchange: (v) => {
-											main.settings.default_label_font = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									default_label_font_size: veNumber(Math.returnSafeNumber(main.settings.default_label_font_size, 14), {
-										name: "Font Size",
-										
-										min: 6,
-										onuserchange: (v) => {
-											main.settings.default_label_font_size = v;
-											UI_Settings.saveSettings();
-										}
-									}),
-									default_label_stroke: veColour((main.settings.default_label_stroke) ? main.settings.default_label_stroke : [0, 0, 0], {
-										name: "Font Stroke",
-										onuserchange: (v, e) => {
-											main.settings.default_label_stroke = e.getHex();
-											UI_Settings.saveSettings();
-										}
-									}),
-									default_label_stroke_width: veNumber(Math.returnSafeNumber(main.settings.default_label_stroke_width, 2), {
-										name: "Font Stroke Width",
-										
-										min: 0,
-										onuserchange: (v) => {
-											main.settings.default_label_stroke_width = v;
-											UI_Settings.saveSettings();
-										}
-									})
-								}, {
-									attributes: { class: "ve-disable-nesting" },
-									name: "Default Label Symbol" 
+								default_label_symbol: new UI_LabelSymbol(main.settings.default_label_symbol, {
+									name: "Default Label Symbol",
+									special_function: (v) => console.log(v)
 								}),
 								default_point_symbol: veInterface({
 									point_icon: veFile((main.settings.default_marker_file || "gfx/icons/marker_default.png"), {
