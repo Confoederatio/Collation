@@ -77,6 +77,10 @@ naissance.Renderer = class extends ve.Class {
 				rendering_order[i].draw();
 	}
 	
+	static getDefaultLabelSymbol () {
+		
+	}
+	
 	static getDefaultSymbol () {
 		
 	}
