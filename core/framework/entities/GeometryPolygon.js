@@ -149,7 +149,10 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		//1. Set this.value from current relative keyframe
 		if (this.history._hasTimestampAfter(main.timestamp)) {
-			this.value = this.history.getKeyframe({ date: main.timestamp }).value;
+			this.value = this.history.getKeyframe({ 
+				date: main.timestamp,
+				guaranteed_indexes: [1]
+			}).value;
 			if (this.value === undefined || this.value?.length === 0 || this._is_visible === false) return;
 			
 			//2. Check any cause for derendering

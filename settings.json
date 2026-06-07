@@ -1,6 +1,6 @@
 {
   "autoload_file": [
-    "D:\\Project 1509 - SVEA\\saves\\atlas_f3.naissance"
+    "D:\\Project 1509 - SVEA\\saves\\atlas.naissance"
   ],
   "disable_autoload": true,
   "autoloading_mode": "default",
@@ -21,5 +21,9 @@
   "ui_scaling": 0.8,
   "disable_mapmode_interactivity": true,
   "default_label_font_size": 10,
-  "hide_labels_under_km2": 100
+  "hide_labels_under_km2": 100,
+  "default_polygon_symbol": {
+    "polygonFill": "#1bbc9b",
+    "polygonOpacity": 0.7
+  }
 }
