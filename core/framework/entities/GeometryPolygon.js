@@ -119,7 +119,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					if (label_geometries.length === 0) {
 						this.label_geometries[i].setSymbol({
 							textName: label_name,
-							
 							...default_label_symbol,
 							...this.value[2].label_symbol
 						});
