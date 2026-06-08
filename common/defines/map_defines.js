@@ -75,7 +75,6 @@ config.defines.map = {
 		textWrapCharacter: "\n",
 		textWrapWidth: 0,
 	},
-	default_maptalks_polygon_keys: ["polygonFill", "polygonOpacity"],
 	default_maptalks_label_keys: ["textFaceName", "textFill", "textHaloFill", "textHaloRadius"],
 	default_z_indices: [0, 8] //Heuristic bounds for default z-indices. Bottom mapmodes are z-indexed underneath [0]; top mapmodes are z-indexed above [1]
 };
