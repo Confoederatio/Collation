@@ -718,6 +718,7 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 		}, {
 			name: loc("ve.registry.localisation.DatavisSuite_edit_graph"),
 			can_rename: false,
+			do_not_wrap: true,
 			width: "30rem",
 			
 			onuserchange: (v, e) => {
