@@ -3,7 +3,7 @@
     "D:\\Project 1509 - SVEA\\saves\\atlas.naissance"
   ],
   "disable_autoload": true,
-  "autoloading_mode": "disable_autoload",
+  "autoloading_mode": "default",
   "sort_settings_alphabetically": false,
   "font_registry": [
     "Arial",
@@ -25,5 +25,12 @@
   "default_polygon_symbol": {
     "polygonFill": "#1bbc9b",
     "polygonOpacity": 0.7
+  },
+  "default_point_symbol": {
+    "markerDx": 0,
+    "markerDy": 0,
+    "markerHeight": 24,
+    "markerWidth": 40,
+    "markerFile": "gfx/icons/marker_default.png"
   }
 }

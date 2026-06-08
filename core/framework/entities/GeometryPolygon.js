@@ -61,7 +61,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
 			}),
 			edit_polygon: new UI_PolygonSymbol(main.settings.default_polygon_symbol, {
-				name: "Label",
+				name: "Polygon",
 				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
 			}),
 			edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
