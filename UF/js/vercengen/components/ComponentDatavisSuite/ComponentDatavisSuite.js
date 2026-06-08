@@ -55,7 +55,7 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 		options.dark_mode = (options.dark_mode !== undefined) ? options.dark_mode : true;
 			
 		//Declare local instance variables
-		let topbar_button_style = { marginLeft: "var(--cell-padding)" };
+		let topbar_button_style = { marginRight: "var(--cell-padding)" };
 		
 		this.element = document.createElement("div");
 			this.element.setAttribute("component", "ve-datavis-suite");
@@ -837,4 +837,14 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 		//this.element.innerHTML = "";
 		Object.iterate(this.components_obj, (local_key, local_value) => local_value.bind(this.element));
 	}
+};
+
+//Functional binding
+
+/**
+ * @returns {ve.Button}
+ */
+veDatavisSuite = function () {
+	//Return statement
+	return new ve.DatavisSuite(...arguments);
 };
