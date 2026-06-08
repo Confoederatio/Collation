@@ -32,8 +32,14 @@ naissance.GeometryLine = class extends naissance.Geometry {
 			})
 		}, { is_folder: false });
 		this.edit_symbol_ui = veInterface({
-			edit_label: main.interfaces.edit_geometry_label.draw({ _id: () => this.id, name: "Label" }),
-			edit_stroke: main.interfaces.edit_geometry_line.draw({ _id: () => this.id, name: "Stroke" })
+			edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
+				name: "Label",
+				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+			}),
+			edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
+				name: "Stroke",
+				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+			})
 		}, { name: "Edit Symbol" });
 		this.keyframes_ui = veInterface({}, {
 			name: "Keyframes", open: true
