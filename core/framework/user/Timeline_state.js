@@ -25,7 +25,6 @@
 			json = (typeof json.value === "string") ?
 				JSON.parse(json.value) : json.value;
 		}
-		
 		if (json === undefined) json = [];
 		if (!Array.isArray(json)) json = [json];
 		
