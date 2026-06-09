@@ -16,7 +16,18 @@
 		
 		//Initialise JSON
 		if (json === undefined) json = [];
-		//console.log(json);
+		
+		//Allow callers to pass either a raw MVP array or a full action object
+		if (!Array.isArray(json) && json.value !== undefined) {
+			if (key === undefined)
+				key = json.key || json.options?.key;
+			
+			json = (typeof json.value === "string") ?
+				JSON.parse(json.value) : json.value;
+		}
+		
+		if (json === undefined) json = [];
+		if (!Array.isArray(json)) json = [json];
 		
 		//Iterate over multi-value packet (MVP) and filter it down to superclass single-value packets (SVPs)
 		for (let i = 0; i < json.length; i++) {

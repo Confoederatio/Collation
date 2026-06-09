@@ -112,11 +112,18 @@ DALS.Timeline = class {
 		
 		//Declare local instance variables
 		let json_obj = JSON.parse(json);
+		
 		if (json_obj.options === undefined) json_obj.options = {};
 		if (json_obj.options.timeline === undefined) json_obj.options.timeline = this.id;
+		
 		let new_action = new DALS.Action(json_obj);
-		if (options.do_not_parse_action !== false)
-			await DALS.Timeline.parseAction(json_obj.key || json_obj.options?.key, json_obj, true);
+		
+		if (!options.do_not_parse_action) {
+			let action_key = json_obj.key || json_obj.options?.key;
+			let action_value = (json_obj.value !== undefined) ? json_obj.value : json_obj;
+			
+			await DALS.Timeline.parseAction(action_key, action_value, true);
+		}
 		
 		//Return statement
 		return new_action;
@@ -351,7 +358,9 @@ DALS.Timeline = class {
 		let timeline_groups = [];
 		
 		if (this.value.length > 1) {
-			let action_1 = (typeof this.value[1] === "string") ? JSON.parse(this.value[1]) : this.value[1];
+			let action_1 = (typeof this.value[1] === "string") ?
+				JSON.parse(this.value[1]) : this.value[1];
+			
 			if (action_1.options === undefined) action_1.options = {};
 			action_1.options.timeline_index = 1;
 			
@@ -360,14 +369,18 @@ DALS.Timeline = class {
 			
 			//Iterate over remaining mutations in timeline
 			for (let i = 2; i < this.value.length; i++) {
-				let local_current = (typeof this.value[i] === "string") ? JSON.parse(this.value[i]) : this.value[i];
-				let local_previous = (typeof this.value[i - 1] === "string") ? JSON.parse(this.value[i - 1]) : this.value[i - 1];
+				let local_current = (typeof this.value[i] === "string") ?
+					JSON.parse(this.value[i]) : this.value[i];
+				let local_previous = (typeof this.value[i - 1] === "string") ?
+					JSON.parse(this.value[i - 1]) : this.value[i - 1];
 				
 				if (local_current.options === undefined) local_current.options = {};
+				if (local_previous.options === undefined) local_previous.options = {};
+				
 				local_current.options.timeline_index = i;
 				
-				let current_key = local_current.options?.key;
-				let previous_key = local_previous.options?.key;
+				let current_key = local_current.key || local_current.options?.key;
+				let previous_key = local_previous.key || local_previous.options?.key;
 				
 				if (current_key === previous_key) {
 					current_group.push(local_current);
@@ -424,25 +437,67 @@ DALS.Timeline = class {
 		//Convert from parameters
 		let action_id = arg0_action_id;
 		
-		//1. Cast index to action_id if typeof number, assuming that it is valid
+		//Declare local instance variables
+		let target_index = -1;
+		
+		if (DALS.Timeline.jump_token === undefined)
+			DALS.Timeline.jump_token = 0;
+		
+		DALS.Timeline.jump_token++;
+		let local_jump_token = DALS.Timeline.jump_token;
+		
+		//1. Resolve the target index before touching state
 		if (typeof action_id === "number") {
-			if (action_id <= this.value.length - 1) {
-				let action_obj = (typeof this.value[action_id] === "string") ? JSON.parse(this.value[action_id]) : this.value[action_id];
-				action_id = action_obj.id;
+			target_index = Math.floor(action_id);
+		} else {
+			for (let i = 1; i < this.value.length; i++) {
+				let action_obj = (typeof this.value[i] === "string") ?
+					JSON.parse(this.value[i]) : this.value[i];
+				
+				if (action_obj.id === action_id) {
+					target_index = i;
+					break;
+				}
 			}
 		}
 		
-		//2. Load initial state at head
-		this.jumpToStart();
+		if (target_index < 0)
+			return DALS.Timeline.current_index;
 		
-		//3. Redo actions starting from the state head using DALS.Timeline.parseAction() until we hit the target action ID
-		for (let i = 1; i < this.value.length; i++) {
-			let action_obj = (typeof this.value[i] === "string") ? JSON.parse(this.value[i]) : this.value[i];
-			let action_key = action_obj.key ? action_obj.key : action_obj.options?.key;
-			await DALS.Timeline.parseAction(action_key, action_obj.value, true);
+		if (target_index > this.value.length - 1)
+			target_index = this.value.length - 1;
+		
+		//2. Load initial state at head
+		DALS.Timeline.current_index = 0;
+		DALS.Timeline.current_timeline = this.id;
+		await Promise.resolve(DALS.Timeline.loadState(this.value[0]));
+		
+		if (local_jump_token !== DALS.Timeline.jump_token)
+			return DALS.Timeline.current_index;
+		
+		//3. If jumping to the head, stop after loading the head state
+		if (target_index === 0)
+			return DALS.Timeline.current_index;
+		
+		//4. Redo actions from the state head up to the requested absolute index
+		for (let i = 1; i <= target_index; i++) {
+			let action_obj = (typeof this.value[i] === "string") ?
+				JSON.parse(this.value[i]) : this.value[i];
+			
+			let action_key = action_obj.key || action_obj.options?.key;
+			let action_value = (action_obj.value !== undefined) ?
+				action_obj.value : action_obj;
+			
+			await DALS.Timeline.parseAction(action_key, action_value, true);
+			
+			if (local_jump_token !== DALS.Timeline.jump_token)
+				return DALS.Timeline.current_index;
+			
 			DALS.Timeline.current_index = i;
-			if (action_obj.id === action_id) break;
 		}
+		
+		//Return statement
+		return DALS.Timeline.current_index;
 	}
 	
 	/**
@@ -452,9 +507,9 @@ DALS.Timeline = class {
 	async jumpToEnd () {
 		//Jump to action if there are actions to jump to, otherwise load state head
 		if (this.value.length > 1) {
-			await this.jumpToAction(this.value[this.value.length - 1].id);
+			await this.jumpToAction(this.value.length - 1);
 		} else {
-			this.jumpToStart();
+			await this.jumpToAction(0);
 		}
 	}
 	
@@ -463,6 +518,11 @@ DALS.Timeline = class {
 	 * - Method of: {@link DALS.Timeline}
 	 */
 	jumpToStart () {
+		//Invalidate any in-progress jump/replay
+		if (DALS.Timeline.jump_token === undefined)
+			DALS.Timeline.jump_token = 0;
+		DALS.Timeline.jump_token++;
+		
 		//Load initial state
 		DALS.Timeline.current_index = 0;
 		DALS.Timeline.current_timeline = this.id;
@@ -659,8 +719,8 @@ DALS.Timeline = class {
 			}
 		}
 		
-		//Jump to next index
-		await timeline_obj.jumpToAction(next_index);
+		if (next_index !== DALS.Timeline.current_index)
+			await timeline_obj.jumpToAction(next_index);
 		
 		//Return statement
 		return next_index;
@@ -712,8 +772,8 @@ DALS.Timeline = class {
 			}
 		}
 		
-		//Jump to next index
-		await timeline_obj.jumpToAction(last_index);
+		if (last_index !== DALS.Timeline.current_index)
+			await timeline_obj.jumpToAction(last_index);
 		
 		//Return statement
 		return last_index;
