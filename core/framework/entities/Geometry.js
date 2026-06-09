@@ -103,10 +103,7 @@ naissance.Geometry = class extends ve.Class {
 			width: "30rem",
 			onuserchange: (v) => {
 				if (v.name)
-					DALS.Timeline.parseAction({
-						options: { name: "Rename Geometry", key: "rename_geometry" },
-						value: [{ type: "Geometry", geometry_id: this.id, set_name: v.name }]
-					});
+					DALS.Timeline.parseAction("rename_geometry", [{ geometry_obj: this.id, set_name: v.name }]);
 			}
 		};
 		
@@ -158,10 +155,7 @@ naissance.Geometry = class extends ve.Class {
 		let value = (arg0_value) ? arg0_value : `New ${(this.class_name) ? this.class_name : "Geometry"}`;
 		
 		//Send DALS.Timeline.parseAction() command
-		DALS.Timeline.parseAction({
-			options: { name: "Rename Geometry", key: "rename_Geometry" },
-			value: [{ type: "Geometry", geometry_id: this.id, set_name: value }]
-		}, this.fire_action_silently);
+		DALS.Timeline.parseAction("rename_geometry", [{ geometry_obj: this.id, set_name: value }], this.fire_action_silently);
 	}
 	
 	get selected () {
@@ -225,10 +219,7 @@ naissance.Geometry = class extends ve.Class {
 					
 					onuserchange: (v) => {
 						if (v.close)
-							DALS.Timeline.parseAction({
-								options: { name: "Edit Geometry Tags", key: "edit_geometry_tags" },
-								value: [{ type: "Geometry", geometry_id: this.id, set_tags: this.metadata.tags }]
-							});
+							DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
 					}
 				})
 			}, {
@@ -236,10 +227,7 @@ naissance.Geometry = class extends ve.Class {
 				name: "<icon>new_label</icon>", tooltip: "Manage Tags"
 			}),
 			hide_geometry: veButton(() => {
-				DALS.Timeline.parseAction({
-					options: { name: "Hide Geometry", key: "hide_geometry" },
-					value: [{ type: "Geometry", geometry_id: this.id, set_properties: { hidden: true } }]
-				});
+				DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
 			}, {
 				attributes: { class: "order-100" },
 				name: `<icon>visibility</icon>`,
@@ -247,10 +235,7 @@ naissance.Geometry = class extends ve.Class {
 				tooltip: "Hide Geometry"
 			}),
 			show_geometry: veButton(() => {
-				DALS.Timeline.parseAction({
-					options: { name: "Show Geometry", key: "show_geometry" },
-					value: [{ type: "Geometry", geometry_id: this.id, set_properties: { hidden: false } }]
-				});
+				DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
 			}, {
 				attributes: { class: "order-100" },
 				name: "<icon>visibility_off</icon>",
@@ -258,10 +243,7 @@ naissance.Geometry = class extends ve.Class {
 				tooltip: "Show Geometry"
 			}),
 			delete_button: veButton(() => {
-				DALS.Timeline.parseAction({
-					options: { name: "Delete Geometry", key: "delete_geometry" },
-					value: [{ type: "Geometry", geometry_id: this.id, delete_geometry: true }]
-				});
+				DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
 			}, {
 				attributes: { class: "order-101" },
 				name: "<icon>delete</icon>",
@@ -360,10 +342,7 @@ naissance.Geometry = class extends ve.Class {
 							
 							//Call DALS.Timeline.parseAction() .set_history 
 							if (v.close)
-								DALS.Timeline.parseAction({
-									options: { name: "Edit Geometry History", key: "edit_geometry_history" },
-									value: [{ type: "Geometry", geometry_id: this.id, set_history: this.history.toJSON() }]
-								});
+								DALS.Timeline.parseAction("edit_geometry_history", [{ geometry_obj: this.id, set_history: this.history.toJSON() }]);
 						}
 					});
 				}, { name: "<icon>rule</icon> Variables Editor", x: 0, y: 1 }),
@@ -780,10 +759,7 @@ naissance.Geometry = class extends ve.Class {
 			old_date = JSON.parse(JSON.stringify(main.date));
 			UI_DateMenu.setDate(options.date);
 		}
-		DALS.Timeline.parseAction({
-			options: { name: options.name, key: options.key },
-			value: dals_value_array
-		});
+		DALS.Timeline.parseAction(options.key, dals_value_array);
 		if (options.date)
 			UI_DateMenu.setDate(old_date);
 	};

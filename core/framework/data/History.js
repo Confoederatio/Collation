@@ -165,13 +165,10 @@ naissance.History = class extends ve.Class {
 					(local_value.localisation) ? local_value.localisation : "", { x: 1, y: 0 }),
 				actions_bar:  veRawInterface({
 					jump_to_date: veButton((e) => {
-						DALS.Timeline.parseAction({
-							options: { name: "Set Date", key: "load_date" },
-							value: [
-								{ type: "global", set_date: Date.convertTimestampToDate(local_key) },
-								{ type: "global", refresh_date: true }
-							]
-						});
+						DALS.Timeline.parseAction("load_date", [
+							{ set_date: Date.convertTimestampToDate(local_key) },
+							{ refresh_date: true }
+						]);
 					}, {
 						name: "<icon>arrow_forward</icon>",
 						tooltip: "Jump to Date"
@@ -180,17 +177,13 @@ naissance.History = class extends ve.Class {
 						let move_keyframe_window = veWindow({
 							new_date: veDate(JSON.parse(JSON.stringify(local_value.date)), { name: "New Date" }),
 							confirm: veButton(() => {
-								DALS.Timeline.parseAction({
-									options: { name: "Move Keyframe", key: "move_keyframe" },
-									value: [{
-										type: "Geometry",
-										geometry_id: this.options._id(),
-										move_keyframe: {
-											date: local_value.date,
-											ot_date: move_keyframe_window.new_date.v
-										}
-									}]
-								});
+								DALS.Timeline.parseAction("move_keyframe", [{
+									geometry_obj: this.options._id(),
+									move_keyframe: {
+										date: local_value.date,
+										ot_date: move_keyframe_window.new_date.v
+									}
+								}]);
 								move_keyframe_window.close();
 							})
 						}, {
@@ -202,13 +195,10 @@ naissance.History = class extends ve.Class {
 						tooltip: "Move Keyframe to Date"
 					}),
 					remove_keyframe: veButton((e) => {
-						DALS.Timeline.parseAction({
-							options: { name: "Delete Keyframe", key: "delete_keyframe" },
-							value: [
-								{ type: "Geometry", geometry_id: this.options._id(), remove_keyframe: local_key },
-								{ type: "global", refresh_date: true }
-							]
-						});
+						DALS.Timeline.parseAction("delete_keyframe", [
+							{ geometry_obj: this.options._id(), remove_keyframe: local_key },
+							{ refresh_date: true }
+						]);
 					}, {
 						name: "<icon>delete</icon>",
 						tooltip: "Delete Keyframe"

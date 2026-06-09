@@ -24,14 +24,10 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 					local_component.name = `Cancel Moving Marker`;
 					
 					map.once("click", (e) => {
-						DALS.Timeline.parseAction({
-							options: { name: "Set Point Position", key: "set_point_position" },
-							value: [{
-								type: "GeometryPoint",
-								geometry_id: this.id,
-								set_coordinates: e.coordinate.toJSON()
-							}]
-						});
+						DALS.Timeline.parseAction("set_point_position", [{
+							geometry_obj: this.id,
+							set_coordinates: e.coordinate.toJSON()
+						}]);
 						
 						delete this._is_being_moved;
 						this.draw();

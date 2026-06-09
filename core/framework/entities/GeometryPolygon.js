@@ -23,14 +23,12 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				//Return statement
 				return `ID: ${this.id} | Area: ${String.formatNumber(area_km2)}km^2`;
 			}, { width: 99, x: 0, y: 0 }),
-			move_to_brush: veButton(() => DALS.Timeline.parseAction({
-				options: { name: "Select Geometry" },
-				value: [{ type: "Brush", select_geometry_id: this.id }]
-			}), { name: "Move To Brush", limit: () => (main.brush.selected_geometry?.id !== this.id), x: 0, y: 1 }),
-			finish_polygon: veButton(() => DALS.Timeline.parseAction({
-				options: { name: "Deselect Geometry", key: "deselect_geometry" },
-				value: [{ type: "Brush", select_geometry_id: false }]
-			}), { name: "Finish Polygon", limit: () => (main.brush.selected_geometry?.id === this.id), x: 0, y: 1 }),
+			move_to_brush: veButton(() => DALS.Timeline.parseAction("select_geometry", [{ 
+				type: "Brush", select_geometry_id: this.id 
+			}]), { name: "Move To Brush", limit: () => (main.brush.selected_geometry?.id !== this.id), x: 0, y: 1 }),
+			finish_polygon: veButton(() => DALS.Timeline.parseAction("deselect_geometry", [{ 
+				type: "Brush", select_geometry_id: false 
+			}]), { name: "Finish Polygon", limit: () => (main.brush.selected_geometry?.id === this.id), x: 0, y: 1 }),
 			
 			selected: veCheckbox(this.selected, {
 				name: "Selected",

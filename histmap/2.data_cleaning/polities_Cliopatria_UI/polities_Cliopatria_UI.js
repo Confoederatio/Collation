@@ -59,14 +59,9 @@ global.polities_Cliopatria_UI = class {
 										let selected_geometry = main.brush.selected_geometry;
 										
 										if (selected_geometry && selected_geometry instanceof naissance.GeometryPolygon) {
-											DALS.Timeline.parseAction({
-												options: { name: "Add to Polygon", key: "add_to_polygon" },
-												value: [{
-													type: "GeometryPolygon",
-													
-													geometry_id: selected_geometry.id,
-													set_polygon: { geometry: local_geometry.toJSON() }
-												}]
+											DALS.Timeline.parseAction("add_to_polygon", {
+												geometry_obj: selected_geometry.id,
+												set_polygon: { geometry: local_geometry.toJSON() }
 											});
 										} else {
 											veToast(`<icon>warning</icon> You must select a GeometryPolygon before being able to copy this geometry.`);

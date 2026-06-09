@@ -1,35 +1,54 @@
 //State mutation functions
 {
-	DALS.Timeline.parseAction = function (arg0_json, arg1_do_not_push_action) {
+	/**
+	 * Parses a user action inside Naissance. All user actions must be mapped to a valid JSON schema.
+	 * @alias DALS.Timeline.parseAction
+	 *
+	 * @param {string} [arg0_key] - The key to push to the current DALS timeline.
+	 * @param {Object[]} [arg1_json] - If no top-level ID is passed, the action is assumed to be global.
+	 * @param {boolean} [arg2_do_not_push_action=false]
+	 */
+	DALS.Timeline.parseAction = async function (arg0_key, arg1_json, arg2_do_not_push_action) {
 		//Convert from parameters
-		let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
-		let do_not_push_action = arg1_do_not_push_action;
+		let key = arg0_key;
+		let json = (typeof arg1_json === "string") ? JSON.parse(arg1_json) : arg1_json;
+		let do_not_push_action = arg2_do_not_push_action;
 		
 		//Initialise JSON
-		if (json.options === undefined) json.options = {};
-		if (json.value === undefined) json.value = [];
+		if (json === undefined) json = [];
+		//console.log(json);
 		
 		//Iterate over multi-value packet (MVP) and filter it down to superclass single-value packets (SVPs)
-		//console.log(json.value);
-		for (let i = 0; i < json.value.length; i++) {
-			if (json.value[i].type === "global") {
-				if (json.value[i].load_save)
-					DALS.Timeline.loadState(json.value[i].load_save);
-				if (json.value[i].set_date) {
-					UI_DateMenu.setDate(json.value[i].set_date);
-				} else if (json.value[i].refresh_date === true) {
-					Object.iterate(naissance.Geometry.instances, (local_key, local_value) => 
-						local_value.draw());
+		for (let i = 0; i < json.length; i++) {
+			if (json[i].feature_obj) {
+				await naissance.Feature.parseAction(json[i]);
+			} else if (json[i].geometry_obj) {
+				await naissance.Geometry.parseAction(json[i]);
+			} else {
+				if (json[i].type) {
+					await naissance[json[i].type].parseAction(json[i]);
+				} else {
+					if (json[i].load_save)
+						DALS.Timeline.loadState(json[i].load_save);
+					if (json[i].set_date) {
+						UI_DateMenu.setDate(json[i].set_date);
+					} else if (json[i].refresh_date === true) {
+						Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>
+							local_value.draw());
+					}
 				}
-				continue;
 			}
-			if (json.value[i].type)
-				naissance[json.value[i].type].parseAction(json.value[i]);
 		}
 		
 		//Save action to current timeline if needed
 		if (!do_not_push_action) {
-			new DALS.Action(json);
+			new DALS.Action({
+				options: {
+					key: key,
+					name: key
+				},
+				value: json
+			});
 			
 			//Force all UI_LeftbarHierarchy instances to .refresh()
 			UI_LeftbarHierarchy.refresh();

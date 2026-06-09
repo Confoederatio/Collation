@@ -369,25 +369,15 @@ naissance.Brush = class extends ve.Class {
 					
 					//Buffer so that provinces aren't irregular
 					if (!HTML.ctrl_pressed) {
-						DALS.Timeline.parseAction({
-							options: { name: "Add to Polygon", key: "add_to_polygon" },
-							value: [{
-								type: "GeometryPolygon",
-								
-								geometry_id: this._selected_geometry.id,
-								add_to_polygon: { geometry: all_geometries[i].toJSON() }
-							}]
-						});
+						DALS.Timeline.parseAction("add_to_polygon", [{
+							geometry_obj: this._selected_geometry.id,
+							add_to_polygon: { geometry: all_geometries[i].toJSON() }
+						}]);
 					} else {
-						DALS.Timeline.parseAction({
-							options: { name: "Remove from Polygon", key: "remove_from_polygon" },
-							value: [{
-								type: "GeometryPolygon",
-								
-								geometry_id: this._selected_geometry.id,
-								remove_from_polygon: { geometry: all_geometries[i].toJSON() }
-							}]
-						});
+						DALS.Timeline.parseAction("remove_from_polygon", [{
+							geometry_obj: this._selected_geometry.id,
+							remove_from_polygon: { geometry: all_geometries[i].toJSON() }
+						}]);
 					}
 				}
 		});
@@ -425,27 +415,17 @@ naissance.Brush = class extends ve.Class {
 				if (processed_geometry)
 					if (HTML.left_click) {
 						//add_to_polygon
-						DALS.Timeline.parseAction({
-							options: { name: "Add to Polygon", key: "add_to_polygon" },
-							value: [{
-								type: "GeometryPolygon",
-								
-								geometry_id: this._selected_geometry.id,
-								add_to_polygon: { geometry: processed_geometry.toJSON() },
-								simplify_polygon: (main.brush.simplify > 0 && main.brush.simplify_applies_to_polygon) ?
-									main.brush.simplify : undefined
-							}]
-						});
+						DALS.Timeline.parseAction("add_to_polygon", [{
+							geometry_obj: this._selected_geometry.id,
+							add_to_polygon: { geometry: processed_geometry.toJSON() },
+							simplify_polygon: (main.brush.simplify > 0 && main.brush.simplify_applies_to_polygon) ?
+								main.brush.simplify : undefined
+						}]);
 					} else if (HTML.right_click) {
-						DALS.Timeline.parseAction({
-							options: { name: "Remove from Polygon", key: "remove_from_polygon" },
-							value: [{
-								type: "GeometryPolygon",
-								
-								geometry_id: this._selected_geometry.id,
-								remove_from_polygon: { geometry: processed_geometry.toJSON() }
-							}]
-						});
+						DALS.Timeline.parseAction("remove_from_polygon", [{
+							geometry_obj: this._selected_geometry.id,
+							remove_from_polygon: { geometry: processed_geometry.toJSON() }
+						}]);
 					}
 			}
 		});

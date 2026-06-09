@@ -76,15 +76,10 @@ naissance.GeometryLine.handleNodeEditorEnd = function (arg0_e) {
 	//Push action to timeline
 	if (main.brush.node_editor.mode === "add") {
 		e.geometry = main.brush.getAddLine(e.geometry);
-		DALS.Timeline.parseAction({
-			options: { name: "Add to Line", key: "add_to_line" },
-			value: [{
-				type: "GeometryLine",
-				
-				geometry_id: this.id,
-				add_to_line: { geometry: e.geometry.toJSON() }
-			}]
-		});
+		DALS.Timeline.parseAction("add_to_line", [{
+			geometry_obj: this.id,
+			add_to_line: { geometry: e.geometry.toJSON() }
+		}]);
 	}
 	
 	main.brush.node_editor.disable();
@@ -124,29 +119,21 @@ naissance.GeometryPolygon.handleNodeEditorEnd = function (arg0_e) {
 			e.geometry = Geospatiale.convertTurfToMaptalks(turf_intersection);
 			
 			if (main.brush.node_editor.mode === "add") {
-				DALS.Timeline.parseAction({
-					options: { name: "Remove from Polygon", key: "remove_from_polygon" },
-					value: [{
-						type: "GeometryPolygon",
-						geometry_id: from_geometry.id,
-						remove_from_polygon: {
-							date_range: date_range,
-							geometry: e.geometry.toJSON()
-						}
-					}]
-				}); //Remove cut from target polygon
+				DALS.Timeline.parseAction("remove_from_polygon", [{
+					geometry_obj: from_geometry.id,
+					remove_from_polygon: {
+						date_range: date_range,
+						geometry: e.geometry.toJSON()
+					}
+				}]); //Remove cut from target polygon
 			} else if (main.brush.node_editor.mode === "remove") {
-				DALS.Timeline.parseAction({
-					options: { name: "Add to Polygon", key: "add_to_polygon" },
-					value: [{
-						type: "GeometryPolygon",
-						geometry_id: from_geometry.id,
-						add_to_polygon: {
-							date_range: date_range,
-							geometry: e.geometry.toJSON() 
-						}
-					}]
-				});
+				DALS.Timeline.parseAction("add_to_polygon", [{
+					geometry_obj: from_geometry.id,
+					add_to_polygon: {
+						date_range: date_range,
+						geometry: e.geometry.toJSON()
+					}
+				}]);
 			}
 			
 		} catch (e) { console.error(e); }
@@ -156,36 +143,27 @@ naissance.GeometryPolygon.handleNodeEditorEnd = function (arg0_e) {
 	if (main.brush.node_editor.mode === "add") {
 		e.geometry = main.brush.getAddPolygon(e.geometry);
 		if (!e.geometry) console.log(`Undefined geometry:`, e.geometry);
-		DALS.Timeline.parseAction({
-			options: { name: "Add to Polygon", key: "add_to_polygon" },
-			value: [{
-				type: "GeometryPolygon",
-				
-				geometry_id: this.id,
-				add_to_polygon: {
-					date_range: date_range,
-					geometry: e.geometry.toJSON() 
-				},
-				simplify_polygon: {
-					date_range: date_range,
-					tolerance: (main.brush.simplify > 0 && main.brush.simplify_applies_to_polygon) ?
-						main.brush.simplify : undefined
-				}
-			}]
-		}); //Add cut to target polygon
+		DALS.Timeline.parseAction("add_to_polygon", [{
+			geometry_obj: this.id,
+			add_to_polygon: {
+				date_range: date_range,
+				geometry: e.geometry.toJSON()
+			},
+			simplify_polygon: {
+				date_range: date_range,
+				tolerance: (main.brush.simplify > 0 && main.brush.simplify_applies_to_polygon) ?
+					main.brush.simplify : undefined
+			}
+		}]); //Add cut to target polygon
 	} else if (main.brush.node_editor.mode === "remove") {
 		e.geometry = main.brush.getRemovePolygon(e.geometry);
-		DALS.Timeline.parseAction({
-			options: { name: "Remove from Polygon", key: "remove_from_polygon" },
-			value: [{
-				type: "GeometryPolygon",
-				geometry_id: this.id,
-				remove_from_polygon: {
-					date_range: date_range,
-					geometry: e.geometry.toJSON()
-				}
-			}]
-		});
+		DALS.Timeline.parseAction("remove_from_polygon", [{
+			geometry_obj: this.id,
+			remove_from_polygon: {
+				date_range: date_range,
+				geometry: e.geometry.toJSON()
+			}
+		}]);
 	}
 	
 	main.brush.node_editor.disable();
