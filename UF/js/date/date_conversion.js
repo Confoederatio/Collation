@@ -21,13 +21,13 @@
 		
 		//Check to make sure that the inputted date_string is valid
 		for (let i = 0; i < date_array.length; i++)
-			if (isNaN(parseInt(date_array[i])))
+			if (isNaN(parseFloat(date_array[i])))
 				return;
 		
 		//Iterate over all elements in date_array and cast them to a date object
 		for (let i = 0; i < date_array.length; i++)
 			if (date_properties[i])
-				date_obj[date_properties[i]] = parseInt(date_array[i]);
+				date_obj[date_properties[i]] = parseFloat(date_array[i]);
 		
 		//Return statement
 		return date_obj;
@@ -46,7 +46,7 @@
 		
 		if (typeof timestamp === "object") return timestamp;
 		
-		timestamp = parseInt(timestamp);
+		timestamp = parseFloat(timestamp);
 		if (isNaN(timestamp)) return Date.getBlankDate();
 		
 		// Map cache for extremely fast O(1) repeat lookups
@@ -162,7 +162,7 @@
 		let timestamp = arg0_timestamp;
 		
 		//Return statement
-		return parseInt(
+		return parseFloat(
 			Math.numerise(timestamp.toString().replace("t_", "").replace("tz_", ""))
 		);
 	};
