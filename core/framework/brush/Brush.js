@@ -462,21 +462,17 @@ naissance.Brush = class extends ve.Class {
 		let symbol_obj = (arg0_symbol_obj) ? arg0_symbol_obj : {};
 		
 		//Declare local instance variables
-		let json_obj = {
-			options: { name: "Set Selected Label Symbol", key: "set_selected_label_symbol" },
-			value: []
-		};
+		let json_obj = [];
 		
 		//Iterate over naissance.Geometry.instances and check for .selected
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
-			json_obj.value.push({
-				type: "Geometry",
-				
-				geometry_id: local_geometry.id,
-				set_label_symbol: symbol_obj
-			});
+			if (local_geometry.selected)
+				json_obj.push({
+					geometry_obj: local_geometry.id,
+					set_label_symbol: symbol_obj
+				});
 		});
-		DALS.Timeline.parseAction(json_obj);
+		DALS.Timeline.parseAction("set_selected_label_symbol", json_obj);
 	}
 	
 	static setSelectedSymbol (arg0_symbol_obj) {
@@ -484,22 +480,17 @@ naissance.Brush = class extends ve.Class {
 		let symbol_obj = (arg0_symbol_obj) ? arg0_symbol_obj : {};
 		
 		//Declare local instance variables
-		let json_obj = {
-			options: { name: "Set Selected Symbol", key: "set_selected_symbol" },
-			value: []
-		};
+		let json_obj = [];
 		
 		//Iterate over naissance.Geometry.instances and check for .selected
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
 			if (local_geometry.selected)
-				json_obj.value.push({
-					type: "Geometry",
-					
-					geometry_id: local_geometry.id,
+				json_obj.push({
+					geometry_obj: local_geometry.id,
 					set_symbol: symbol_obj
 				});
 		});
-		DALS.Timeline.parseAction(json_obj);
+		DALS.Timeline.parseAction("set_selected_symbol", json_obj);
 	}
 	
 	static setSelectedProperties (arg0_properties_obj) {

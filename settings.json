@@ -8,7 +8,8 @@
   "font_registry": [
     "Arial",
     "Barlow",
-    "Karla, sans-serif"
+    "Karla, sans-serif",
+    "Cascadia Mono"
   ],
   "default_label_font": "Karla, sans-serif",
   "default_label_stroke_width": 2,
@@ -32,5 +33,10 @@
     "markerHeight": 24,
     "markerWidth": 40,
     "markerFile": "gfx/icons/marker_default.png"
+  },
+  "default_label_symbol": {
+    "textFaceName": "Barlow",
+    "textHaloRadius": 2,
+    "textHaloFill": "#191919"
   }
 }
