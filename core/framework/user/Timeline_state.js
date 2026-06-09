@@ -100,15 +100,12 @@
 		//Iterate over JSON to load in each class
 		Object.iterate(json, (local_key, local_value) => {
 			if (local_value.class_name && local_value.type === "geometry") {
-				let geometry_obj = new naissance[local_value.class_name]();
+				let geometry_obj = new naissance[local_value.class_name]({ is_import: true });
 				
 				//ID/History/Metadata deserialisation
 				if (local_value.id) geometry_obj.setID(local_value.id);
 				geometry_obj.history.fromJSON(local_value.history);
 				if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
-				try {
-					if (geometry_obj.draw) geometry_obj.draw();
-				} catch (e) { console.warn(e); }
 			}
 		});
 		

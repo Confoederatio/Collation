@@ -36,24 +36,44 @@
 	/**
 	 * Converts a timestamp to a Date object.
 	 * @alias Date.convertTimestampToDate
-	 * 
+	 *
 	 * @param {number|string} arg0_timestamp
-	 * 
+	 *
 	 * @returns {{year: number, month: number, day: number, hour: number, minute: number}|*}
 	 */
 	Date.convertTimestampToDate = function (arg0_timestamp) {
 		let timestamp = arg0_timestamp;
 		
 		if (typeof timestamp === "object") return timestamp;
-		
-		timestamp = parseInt(timestamp);
+		if (typeof timestamp !== "number") timestamp = parseInt(timestamp);
 		if (isNaN(timestamp)) return Date.getBlankDate();
+		
+		// Simple cache to prevent recalculating deep math for repeat timestamps
+		/*if (!Date._conversion_cache) Date._conversion_cache = {};
+		if (Date._conversion_cache[timestamp]) {
+			let cached = Date._conversion_cache[timestamp];
+			return {
+				year: cached.year,
+				month: cached.month,
+				day: cached.day,
+				hour: cached.hour,
+				minute: cached.minute
+			};
+		}*/
 		
 		let date_obj = Date.getBlankDate();
 		let minutes = timestamp;
+		let minutes_per_400_years = 210379680; // 146097 days * 24 * 60
 		
 		// --- Handle BCE (negative timestamps) ---
 		if (minutes < 0) {
+			// Fast-jump in 400-year blocks if we are safely within standard Gregorian BCE rules (before year -45)
+			if (date_obj.year < -45) {
+				let four_hundred_years = Math.floor((-minutes) / minutes_per_400_years);
+				minutes += four_hundred_years * minutes_per_400_years;
+				date_obj.year -= four_hundred_years * 400;
+			}
+			
 			// Walk backwards through years until the remaining magnitude
 			// fits within one year.
 			while (true) {
@@ -79,6 +99,13 @@
 			// as the CE path below, using the now-positive `minutes`.
 		} else {
 			// --- CE (positive or zero timestamp) ---
+			// Fast-jump in 400-year blocks if we are safely past custom leap boundaries (after year 45)
+			if (date_obj.year > 45) {
+				let four_hundred_years = Math.floor(minutes / minutes_per_400_years);
+				minutes -= four_hundred_years * minutes_per_400_years;
+				date_obj.year += four_hundred_years * 400;
+			}
+			
 			while (true) {
 				let y_minutes =
 					(Date.isLeapYear(date_obj.year) ? 366 : 365) * 24 * 60;
@@ -108,6 +135,15 @@
 		
 		date_obj.hour = Math.floor(minutes / 60);
 		date_obj.minute = minutes % 60;
+		
+		// Store a copy in cache before returning
+		/*Date._conversion_cache[timestamp] = {
+			year: date_obj.year,
+			month: date_obj.month,
+			day: date_obj.day,
+			hour: date_obj.hour,
+			minute: date_obj.minute
+		};*/
 		
 		return date_obj;
 	};
