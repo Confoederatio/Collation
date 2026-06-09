@@ -204,22 +204,13 @@ naissance.History = class extends ve.Class {
 						tooltip: "Delete Keyframe"
 					})
 				}, {
-					style: {
-						display: "flex",
-						flexWrap: "nowrap",
-						"[component='ve-button']": { marginRight: "var(--padding)" }
-					},
+					attributes: { class: "actions-bar" },
 					x: 2, y: 0
 				})
 			}, {
+				attributes: { "naissance-ui": "HistoryKeyframes" },
 				gc: true,
-				is_folder: false,
-				style: {
-					"> table > tbody > tr": {
-						"[id='0-0']": { width: "6rem" },
-						"[id='1-0']": { width: "50%" },
-					}
-				}
+				is_folder: false
 			});
 			
 			let local_keyframe_ui = components_obj[`t_${local_key}`];
