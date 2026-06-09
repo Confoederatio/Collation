@@ -2,6 +2,7 @@
 gfx/overlays
 UF/archives
 saves
+!saves/atlas.naissance
 saves/heaps
 settings
 svea_settings.json
