@@ -75,7 +75,6 @@
 		
 		//0. Clear map
 		console.log(`DALS.Timeline.loadState called.`);
-		
 		{
 			//Clear _layers
 			main._layers.province_layers = [];
