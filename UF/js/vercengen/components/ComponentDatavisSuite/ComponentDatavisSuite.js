@@ -93,7 +93,7 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 				file_explorer: new ve.FileExplorer(undefined, {
 					style: {
 						flex: "0 0 20rem",
-						maxHeight: "50rem",
+						maxHeight: "calc(100% - var(--padding) - var(--cell-padding))",
 						overflowY: "auto"
 					},
 					x: 0, y: 0,
@@ -118,7 +118,8 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 			}, {
 				style: {
 					display: "flex",
-					flex: 1
+					flex: 1,
+					minHeight: 0,
 				}
 			})
 		};

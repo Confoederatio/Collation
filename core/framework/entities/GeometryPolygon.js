@@ -212,7 +212,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		let context_menu_button = veButton(() => {
 			try { this.history.draw(this.keyframes_ui); } catch (e) {}
-			super.open("instance", { name: this.name, ...this.window_options });
+			this.open("instance", { name: this.name, ...this.window_options });
 		}, {
 			attributes: { class: "order-101" },
 			name: "<icon>more_vert</icon>",

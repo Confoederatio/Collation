@@ -1,0 +1,7 @@
+td:has([component="ve-datavis-suite"]) {
+    position: relative;
+}
+[component="ve-datavis-suite"] {
+    position: absolute;
+    inset: 0;
+}
