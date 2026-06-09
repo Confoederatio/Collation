@@ -287,7 +287,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			name: `Keyframes`, open: true
 		});
 		if (!this.variables_ui) super.drawVariablesEditor();
-		this.history.draw(this.keyframes_ui);
+		this.update();
 		
 		//Call super.open for ve.Class
 		super.open(type, options);

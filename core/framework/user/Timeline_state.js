@@ -43,8 +43,10 @@
 					if (json[i].set_date) {
 						UI_DateMenu.setDate(json[i].set_date);
 					} else if (json[i].refresh_date === true) {
-						Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>
-							local_value.draw());
+						Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>{
+							local_value.draw();
+							local_value.update();
+						});
 					}
 				}
 			}

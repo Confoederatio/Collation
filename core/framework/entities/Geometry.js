@@ -698,6 +698,18 @@ naissance.Geometry = class extends ve.Class {
 	}
 	
 	/**
+	 * Updates the geometry UI.
+	 */
+	update () {
+		//Update name
+		if (super.isOpen("instance"))
+			this.instance_window.setName(this.name);
+		
+		//Update keyframes
+		if (this.keyframes_ui) this.history.draw(this.keyframes_ui);
+	}
+	
+	/**
 	 * Returns a map of all `naissance.Geometry.instances`.
 	 * 
 	 * @returns {{"<geometry_id>": naissance.Geometry}}

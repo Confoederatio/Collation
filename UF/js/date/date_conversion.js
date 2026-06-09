@@ -49,17 +49,22 @@
 		timestamp = parseFloat(timestamp);
 		if (isNaN(timestamp)) return Date.getBlankDate();
 		
+		//Declare local instance variables
+		let do_not_cache_timestamps = ve.registry.settings.Date.do_not_cache_timestamps;
+		
 		// Map cache for extremely fast O(1) repeat lookups
-		if (!Date._conversion_cache) Date._conversion_cache = new Map();
-		let cached_val = Date._conversion_cache.get(timestamp);
-		if (cached_val) {
-			return {
-				year: cached_val.year,
-				month: cached_val.month,
-				day: cached_val.day,
-				hour: cached_val.hour,
-				minute: cached_val.minute
-			};
+		if (!do_not_cache_timestamps) {
+			if (!Date._conversion_cache) Date._conversion_cache = new Map();
+			let cached_val = Date._conversion_cache.get(timestamp);
+			if (cached_val) {
+				return {
+					year: cached_val.year,
+					month: cached_val.month,
+					day: cached_val.day,
+					hour: cached_val.hour,
+					minute: cached_val.minute
+				};
+			}
 		}
 		
 		let date_obj = Date.getBlankDate();
@@ -138,13 +143,14 @@
 		date_obj.minute = minutes % 60;
 		
 		// Store a copy in the Map cache before returning
-		Date._conversion_cache.set(timestamp, {
-			year: date_obj.year,
-			month: date_obj.month,
-			day: date_obj.day,
-			hour: date_obj.hour,
-			minute: date_obj.minute
-		});
+		if (!do_not_cache_timestamps)
+			Date._conversion_cache.set(timestamp, {
+				year: date_obj.year,
+				month: date_obj.month,
+				day: date_obj.day,
+				hour: date_obj.hour,
+				minute: date_obj.minute
+			});
 		
 		return date_obj;
 	};
