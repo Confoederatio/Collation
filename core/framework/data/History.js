@@ -218,6 +218,10 @@ naissance.History = class extends ve.Class {
 				if (this.keyframe_context_menu) this.keyframe_context_menu.close();
 				
 				this.keyframe_context_menu = veContextMenu({
+					copy_timestamp: veButton(() => {
+						navigator.clipboard.writeText(local_key);
+						veToast(`Copied timestamp to keyboard.`);
+					}, { name: "Copy Timestamp" }),
 					copy_geometry_to_date: veButton(() => {
 						let timestamp = Date.getTimestamp(main.date);
 						
