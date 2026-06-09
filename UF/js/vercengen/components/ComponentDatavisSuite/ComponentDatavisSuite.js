@@ -63,6 +63,8 @@ ve.DatavisSuite = class extends ve.Component { //[WIP] - Finish function body
 			this.element.style.display = "flex";
 			this.element.style.flexDirection = "column";
 			this.element.style.height = "100%";
+			this.element.style.inset = "0";
+			this.element.style.position = "absolute";
 			HTML.setAttributesObject(this.element, options.attributes);
 		this.options = options;
 		
