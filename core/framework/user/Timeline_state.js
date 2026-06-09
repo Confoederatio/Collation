@@ -96,30 +96,31 @@
 		if (json.map_settings)
 			UI_MapSettings.fromJSON(json.map_settings);
 		
-		//2. Handle naissance.Geometry classes
-		//Iterate over JSON to load in each class
+		//2. Iterate over JSON to load in each class
 		Object.iterate(json, (local_key, local_value) => {
-			if (local_value.class_name && local_value.type === "geometry") {
-				let geometry_obj = new naissance[local_value.class_name]({ is_import: true });
-				
-				//ID/History/Metadata deserialisation
-				if (local_value.id) geometry_obj.setID(local_value.id);
-				geometry_obj.history.fromJSON(local_value.history);
-				if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
+			if (local_value.class_name) {
+				//2.1. Handle naissance.Geometry classes
+				if (local_value.type === "geometry") {
+					let geometry_obj = new naissance[local_value.class_name]({ is_import: true });
+					
+					//ID/History/Metadata deserialisation
+					if (local_value.id) geometry_obj.setID(local_value.id);
+					geometry_obj.history.fromJSON(local_value.history);
+					if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
+				}
+				//2.2. Handle naissance.Feature classes
+				else if (local_value.type === "feature") {
+					let feature_obj = new naissance[local_value.class_name](undefined, {
+						metadata: local_value.metadata
+					});
+					
+					if (local_value.id) feature_obj.setID(local_value.id);
+					if (local_value.value) feature_obj.json = local_value.value;
+				}
 			}
 		});
 		
-		//3. Handle naissance.Feature classes
-		Object.iterate(json, (local_key, local_value) => {
-			if (local_value.class_name && local_value.type === "feature") {
-				let feature_obj = new naissance[local_value.class_name](undefined, {
-					metadata: local_value.metadata
-				});
-				
-				if (local_value.id) feature_obj.setID(local_value.id);
-				if (local_value.value) feature_obj.json = local_value.value;
-			}
-		});
+		//3. Features must be rendered separately
 		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
 			local_feature.fromJSON(local_feature.json);
 			try {
