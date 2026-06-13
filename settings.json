@@ -19,7 +19,7 @@
   "locale": "",
   "hierarchy_ordering": "geometries_at_top",
   "hierarchy_recommended_max_geometries_in_layer": 100,
-  "ui_scaling": 0.8,
+  "ui_scaling": 1,
   "disable_mapmode_interactivity": true,
   "default_label_font_size": 10,
   "hide_labels_under_km2": 100,

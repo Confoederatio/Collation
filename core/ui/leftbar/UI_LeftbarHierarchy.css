@@ -57,7 +57,24 @@
     overflow: hidden;
     
     .actions-bar .nst-content {
-        padding: 0;
+        padding: var(--padding);
+        
+        .create-bar {
+            [component="ve-button"]:after {
+                content: "+";
+                font-weight: 700;
+                line-height: var(--body-font-size);
+                text-align: center;
+                width: var(--body-font-size);
+                
+                position: absolute;
+                transform: translate(
+                    calc(var(--body-font-size)/-2 - var(--body-font-size)/2), 
+                    calc(var(--body-font-size) + var(--padding) - var(--body-font-size)/4)
+                );
+            }
+        }
+        .label { padding-bottom: var(--padding); }
     }
     .topbar {
         margin-top: calc(var(--cell-padding)*1.25);

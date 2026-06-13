@@ -128,22 +128,46 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	
 	drawHierarchy () {
 		let actions_bar = new ve.HierarchyDatatype({
-			create_new_group: new ve.Button(() => {
-				let feature_id = Class.generateRandomID(naissance.Feature);
-				DALS.Timeline.parseAction("create_group", [{ type: "FeatureGroup", create_group: { id: feature_id } }]);
-			}, { name: "<icon>create_new_folder</icon>", tooltip: "Create New Group" }),
-			create_new_layer: new ve.Button(() => {
-				let feature_id = Class.generateRandomID(naissance.Feature);
-				DALS.Timeline.parseAction("create_layer", [{ type: "FeatureLayer", create_layer: { id: feature_id } }]);
-			}, { name: "<icon>layers</icon>", tooltip: "Create New Layer" }),
-			create_new_sketch_map: new ve.Button(() => {
-				let feature_id = Class.generateRandomID(naissance.Feature);
-				DALS.Timeline.parseAction("create_sketch_map", [{ type: "FeatureSketchMap", create_sketch_map: { id: feature_id } }]);
-			}, { name: "<icon>app_registration</icon>", tooltip: "Create New Sketch Map" }),
-			create_new_tile_layer: new ve.Button(() => {
-				let feature_id = Class.generateRandomID(naissance.Feature);
-				DALS.Timeline.parseAction("create_tile_layer", [{ type: "FeatureTileLayer", create_tile_layer: { id: feature_id } }]);
-			}, { name: "<icon>view_module</icon>", tooltip: "Create New Tile Layer" })
+			toolbox_label: veHTML("<b>Tools:</b>", { attributes: { class: "label" } }),
+			geometries: veRawInterface({
+				create_new_polygon: new ve.Button(() => {
+					let geometry_id = Class.generateRandomID(naissance.Geometry);
+					DALS.Timeline.parseAction("create_polygon", [{ type: "GeometryPolygon", create_polygon: { id: geometry_id } }]);
+				}, { name: "<icon>pentagon</icon>", tooltip: "Create New Polygon" }),
+				create_new_line: new ve.Button(() => {
+					
+				}, { name: "<icon>polyline</icon>", tooltip: "Create New Line" }),
+				create_new_point: new ve.Button(() => {
+					
+				}, { name: "<icon>location_on</icon>", tooltip: "Create New Point" }),
+				line_label: veHTML("", {
+					style: {
+						borderLeft: "1px solid var(--body-colour)",
+						height: "calc(2rem - var(--padding)",
+						marginLeft: "var(--padding)",
+						marginRight: "var(--padding)",
+						marginTop: "calc(var(--padding)/2)"
+					}
+				}),
+				create_new_group: new ve.Button(() => {
+					let feature_id = Class.generateRandomID(naissance.Feature);
+					DALS.Timeline.parseAction("create_group", [{ type: "FeatureGroup", create_group: { id: feature_id } }]);
+				}, { name: "<icon>folder</icon>", tooltip: "Create New Group" }),
+				create_new_layer: new ve.Button(() => {
+					let feature_id = Class.generateRandomID(naissance.Feature);
+					DALS.Timeline.parseAction("create_layer", [{ type: "FeatureLayer", create_layer: { id: feature_id } }]);
+				}, { name: "<icon>layers</icon>", tooltip: "Create New Layer" }),
+				create_new_sketch_map: new ve.Button(() => {
+					let feature_id = Class.generateRandomID(naissance.Feature);
+					DALS.Timeline.parseAction("create_sketch_map", [{ type: "FeatureSketchMap", create_sketch_map: { id: feature_id } }]);
+				}, { name: "<icon>app_registration</icon>", tooltip: "Create New Sketch Map" }),
+				create_new_tile_layer: new ve.Button(() => {
+					let feature_id = Class.generateRandomID(naissance.Feature);
+					DALS.Timeline.parseAction("create_tile_layer", [{ type: "FeatureTileLayer", create_tile_layer: { id: feature_id } }]);
+				}, { name: "<icon>view_module</icon>", tooltip: "Create New Tile Layer" }),
+			}, { attributes: { class: "create-bar" }}),
+			features: veRawInterface({
+			})
 		}, {
 			attributes: {
 				"ve-hierarchy-actions-bar": "true",
@@ -154,7 +178,16 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				listStyle: "none",
 				".nst-handle": { display: "none" },
 				".nst-content": {
-					paddingRight: 0
+					alignItems: "baseline",
+					flexDirection: "column",
+					
+					"[component='ve-raw-interface']": {
+						display: "flex",
+						width: "100%",
+						"[component='ve-button']": {
+							marginRight: "var(--cell-padding)"
+						}
+					}
 				}
 			}
 		});
