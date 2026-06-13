@@ -430,7 +430,7 @@ naissance.Feature = class extends ve.Class {
 			hide_visibility: veButton(() => {
 				DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
 			}, {
-				attributes: { class: "order-99" },
+				attributes: { class: "order-99 onhover-visible" },
 				name: `<icon>visibility</icon>`,
 				limit: () => this._is_visible,
 				tooltip: "Hide Feature"
@@ -438,7 +438,7 @@ naissance.Feature = class extends ve.Class {
 			show_visibility: veButton(() => {
 				DALS.Timeline.parseAction("show_feature", [{ feature_obj: this.id, set_visibility: true }]);
 			}, {
-				attributes: { class: "order-99" },
+				attributes: { class: "order-99 onhover-visible" },
 				name: "<icon>visibility_off</icon>",
 				limit: () =>  !this._is_visible,
 				tooltip: "Show Feature"
@@ -446,7 +446,7 @@ naissance.Feature = class extends ve.Class {
 			delete_button: veButton(() => {
 				DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
 			}, {
-				attributes: { class: "order-100" },
+				attributes: { class: "order-100 onhover-visible" },
 				name: "<icon>delete</icon>", 
 				tooltip: "Delete",
 			}),

@@ -226,10 +226,10 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		//Return statement
 		return new ve.HierarchyDatatype({
 			icon: new ve.HTML(`<icon>${(this.type !== "provinces") ? "layers" : "flag"}</icon>`, {
-				tooltip: `FeatureLayer - Type: ${this.type}`
+				tooltip: `Layer (${String.formatNumber(all_geometries.length)} Items)`
 			}),
 			...super.drawHierarchyDatatypeGenerics(),
-			polity_number: veHTML(`(${String.formatNumber(all_geometries.length)})`),
+			
 			edit: veButton(() => {
 				super.open("instance", {
 					id: this.id,

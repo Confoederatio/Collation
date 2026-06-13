@@ -104,10 +104,11 @@ naissance.FeatureGroup = class extends naissance.Feature {
 		
 		//Return statement
 		return new ve.HierarchyDatatype({
-			icon: new ve.HTML(`<icon>folder</icon>`),
+			icon: new ve.HTML(`<icon>folder</icon>`, { 
+				tooltip: `Group (${String.formatNumber(all_geometries.length)} Items)` 
+			}),
 			...super.drawHierarchyDatatypeGenerics(),
 			
-			polity_number: veHTML(`(${String.formatNumber(all_geometries.length)})`),
 			edit: veButton(() => {
 				super.open("instance", {
 					id: this.id,

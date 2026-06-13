@@ -18,7 +18,8 @@ global.UI_DateMenu = class extends ve.Class {
 				if (this.is_playing) return;
 				DALS.Timeline.parseAction("load_date",  [{ set_date: v }, { refresh_date: true }]);
 				naissance.Mapmode.draw();
-			}
+			},
+			x: 0, y: 0
 		});
 		
 		this.time_controls = veRawInterface({
@@ -65,6 +66,21 @@ global.UI_DateMenu = class extends ve.Class {
 					width: "20rem" 
 				});
 			}, { name: "<icon>settings</icon>", tooltip: "Settings" }),
+			help: veButton(() => {
+				
+			}, { 
+				name: "<icon>question_mark</icon> Help"
+			})
+		}, {
+			style: {
+				alignItems: "baseline",
+				display: "flex",
+				justifyContent: "end",
+				"[component='ve-button']": {
+					marginRight: "var(--cell-padding)"
+				}
+			},
+			x: 1, y: 0
 		});
 		
 		super.open("instance", {

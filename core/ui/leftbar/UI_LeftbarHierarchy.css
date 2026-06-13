@@ -26,6 +26,17 @@
     }
 
     /* -- naissance.Feature -- */
+    .onhover-visible { 
+        opacity: 0; 
+        pointer-events: none;
+        transition: opacity 0.1s ease;
+    }
+    .nst-content:hover .onhover-visible { 
+        opacity: 1; 
+        pointer-events: auto; 
+        width: auto;
+    }
+    
     .order-99 {
         margin-left: auto;
         order: 99;
@@ -78,7 +89,18 @@
     }
     .topbar {
         margin-top: calc(var(--cell-padding)*1.25);
-        margin-bottom: calc(var(--cell-padding)*1.25);
+        width: calc(100% - var(--padding));
+        
+        hr {
+            border: 1px solid var(--body-colour);
+            margin-bottom: calc(var(--padding)*1.25);
+            margin-top: calc(var(--padding)*1.25);
+            opacity: 0.5;
+            width: 5rem;
+        }
+        [ve-searchbar="true"] {
+            width: auto;
+        }
     }
     .ui-leftbar-hierarchy {
         flex-grow: 1;

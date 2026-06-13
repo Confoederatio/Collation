@@ -128,7 +128,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	
 	drawHierarchy () {
 		let actions_bar = new ve.HierarchyDatatype({
-			toolbox_label: veHTML("<b>Tools:</b>", { attributes: { class: "label" } }),
+			toolbox_label: veHTML("<b>Toolbox:</b>", { attributes: { class: "label" } }),
 			geometries: veRawInterface({
 				create_new_polygon: new ve.Button(() => {
 					let geometry_id = Class.generateRandomID(naissance.Geometry);
@@ -143,8 +143,8 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				line_label: veHTML("", {
 					style: {
 						borderLeft: "1px solid var(--body-colour)",
-						height: "calc(2rem - var(--padding)",
-						marginLeft: "var(--padding)",
+						height: "calc(2rem - var(--padding))",
+						marginLeft: "calc(var(--padding) - var(--cell-padding))",
 						marginRight: "var(--padding)",
 						marginTop: "calc(var(--padding)/2)"
 					}
@@ -356,10 +356,12 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 		let topbar_el = document.createElement("div");
 		topbar_el.classList.add("topbar");
 		
-		let searchbar_el = leftbar_hierarchy_el.querySelector(`[ve-searchbar="true"]`);
-			if (searchbar_el) searchbar_el.instance.bind(topbar_el);
 		let actions_bar_el = leftbar_hierarchy_el.querySelector(`[ve-hierarchy-actions-bar="true"]`);
 			if (actions_bar_el) topbar_el.appendChild(actions_bar_el);
+		let divider_el = document.createElement("hr");
+			topbar_el.appendChild(divider_el);
+		let searchbar_el = leftbar_hierarchy_el.querySelector(`[ve-searchbar="true"]`);
+			if (searchbar_el) searchbar_el.instance.bind(topbar_el);
 		
 		return topbar_el;
 	}
