@@ -11,6 +11,7 @@
  *   - `.disable_searchbar=false`: {@link boolean}
  *   - `.namespace=Class.generateRandomID(ve.Hierarchy)`: {@link string}
  *   - `.onitemchange`: {@link function}(v:{@link Object}, e:{ item_el:{@link HTMLElement}, old_parent_el:{@link HTMLElement}, old_parent_order:{@link Array}<{@link HTMLElement}>, new_parent_el:{@link HTMLElement}, new_parent_order:{@link Array}<{@link HTMLElement}> })
+ *   - `.searchbar_placeholder`: {@link string}
  *   - `.searchbar_style`: {@link Object} - The Telestyle object to apply to the searchbar.
  *
  * ##### Instance:
@@ -105,7 +106,7 @@ ve.Hierarchy = class extends ve.Component {
 							
 						}, {
 							attributes: {
-								placeholder: loc("ve.registry.localisation.Hierarchy_search_for_item")
+								placeholder: (this.options.searchbar_placeholder) ? this.options.searchbar_placeholder : loc("ve.registry.localisation.Hierarchy_search_for_item")
 							},
 							name: " ",
 							onuserchange: (v) => {

@@ -132,13 +132,25 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 			geometries: veRawInterface({
 				create_new_polygon: new ve.Button(() => {
 					new UI_CreateGeometry("GeometryPolygon");
-				}, { name: "<icon>pentagon</icon>", tooltip: "Create New Polygon" }),
+				}, { 
+					attributes: { class: "add-button" },
+					name: "<icon>pentagon</icon>", 
+					tooltip: "Create New Polygon"
+				}),
 				create_new_line: new ve.Button(() => {
 					new UI_CreateGeometry("GeometryLine");
-				}, { name: "<icon>polyline</icon>", tooltip: "Create New Line" }),
+				}, {
+					attributes: { class: "add-button" },
+					name: "<icon>polyline</icon>", 
+					tooltip: "Create New Line" 
+				}),
 				create_new_point: new ve.Button(() => {
 					new UI_CreateGeometry("GeometryPoint");
-				}, { name: "<icon>location_on</icon>", tooltip: "Create New Point" }),
+				}, {
+					attributes: { class: "add-button" },
+					name: "<icon>location_on</icon>", 
+					tooltip: "Create New Point" 
+				}),
 				line_label: veHTML("", {
 					style: {
 						borderLeft: "1px solid var(--body-colour)",
@@ -151,19 +163,45 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				create_new_group: new ve.Button(() => {
 					let feature_id = Class.generateRandomID(naissance.Feature);
 					DALS.Timeline.parseAction("create_group", [{ type: "FeatureGroup", create_group: { id: feature_id } }]);
-				}, { name: "<icon>folder</icon>", tooltip: "Create New Group" }),
+				}, {
+					attributes: { class: "add-button" },
+					name: "<icon>folder</icon>", 
+					tooltip: "Create New Group" 
+				}),
 				create_new_layer: new ve.Button(() => {
 					let feature_id = Class.generateRandomID(naissance.Feature);
 					DALS.Timeline.parseAction("create_layer", [{ type: "FeatureLayer", create_layer: { id: feature_id } }]);
-				}, { name: "<icon>layers</icon>", tooltip: "Create New Layer" }),
-				create_new_sketch_map: new ve.Button(() => {
-					let feature_id = Class.generateRandomID(naissance.Feature);
-					DALS.Timeline.parseAction("create_sketch_map", [{ type: "FeatureSketchMap", create_sketch_map: { id: feature_id } }]);
-				}, { name: "<icon>app_registration</icon>", tooltip: "Create New Sketch Map" }),
-				create_new_tile_layer: new ve.Button(() => {
-					let feature_id = Class.generateRandomID(naissance.Feature);
-					DALS.Timeline.parseAction("create_tile_layer", [{ type: "FeatureTileLayer", create_tile_layer: { id: feature_id } }]);
-				}, { name: "<icon>view_module</icon>", tooltip: "Create New Tile Layer" }),
+				}, {
+					attributes: { class: "add-button" },
+					name: "<icon>layers</icon>", 
+					tooltip: "Create New Layer" 
+				}),
+				
+				more_button: new ve.Button(() => {
+					if (main.interfaces.add_other_features) main.interfaces.add_other_features.remove();
+					main.interfaces.add_other_features = veWindow({
+						create_new_sketch_map: new ve.Button(() => {
+							let feature_id = Class.generateRandomID(naissance.Feature);
+							DALS.Timeline.parseAction("create_sketch_map", [{ type: "FeatureSketchMap", create_sketch_map: { id: feature_id } }]);
+						}, {
+							attributes: { class: "add-button" },
+							name: "<icon>app_registration</icon> Create Sketch Map"
+						}),
+						create_new_tile_layer: new ve.Button(() => {
+							let feature_id = Class.generateRandomID(naissance.Feature);
+							DALS.Timeline.parseAction("create_tile_layer", [{ type: "FeatureTileLayer", create_tile_layer: { id: feature_id } }]);
+						}, {
+							attributes: { class: "add-button" },
+							name: "<icon>view_module</icon> Create Tile Layer"
+						}),
+					}, {
+						can_rename: false,
+						name: "Add Other Features"
+					});
+				}, { 
+					name: "<icon>add</icon> More",
+					tooltip: "Add Other Features"
+				})
 			}, { attributes: { class: "create-bar" }}),
 			features: veRawInterface({
 			})
@@ -315,6 +353,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				//3.3. Call renderer update
 				main.renderer.update();
 			},
+			searchbar_placeholder: "Search the map ...",
 			style: {
 				padding: 0,
 				"li.nst-item > .nst-content": {

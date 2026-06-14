@@ -84,7 +84,7 @@
                 }
             }
             .create-bar {
-                [component="ve-button"]:after {
+                [component="ve-button"].add-button:after {
                     content: "+";
                     font-weight: 700;
                     line-height: var(--body-font-size);
