@@ -128,6 +128,7 @@
 			q: search_query,
 			format: "jsonv2",
 			addressdetails: "1",
+			entrances: "1",
 			extratags: "1"
 		});
 		let url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;

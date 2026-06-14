@@ -41,9 +41,11 @@ naissance.GeometryPoint.parseAction = async function (arg0_json) {
 				new_point.name = json.create_point.name;
 				delete new_point.fire_action_silently;
 			}
-			if (main.brush.selected_feature)
-				if (!json.create_point.do_not_refresh)
-					UI_LeftbarHierarchy.refresh();
+			
+			//Point handling; from search creation
+			if (json.create_point.do_not_refresh) naissance.UI_LeftbarHierarchy.do_not_refresh = true;
+			UI_LeftbarHierarchy.refresh();
+			if (json.create_point.do_not_refresh) delete naissance.UI_LeftbarHierarchy.do_not_refresh;
 		}
 	
 	//Parse commands for point_obj

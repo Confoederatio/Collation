@@ -11,6 +11,7 @@
  *   - `.disable_searchbar=false`: {@link boolean}
  *   - `.namespace=Class.generateRandomID(ve.Hierarchy)`: {@link string}
  *   - `.onitemchange`: {@link function}(v:{@link Object}, e:{ item_el:{@link HTMLElement}, old_parent_el:{@link HTMLElement}, old_parent_order:{@link Array}<{@link HTMLElement}>, new_parent_el:{@link HTMLElement}, new_parent_order:{@link Array}<{@link HTMLElement}> })
+ *   - `.onsearch`: {@link function}(v:{@link string})
  *   - `.searchbar_placeholder`: {@link string}
  *   - `.searchbar_style`: {@link Object} - The Telestyle object to apply to the searchbar.
  *
@@ -565,6 +566,9 @@ ve.Hierarchy = class extends ve.Component {
 					if (all_hierarchy_datatype_els[i].contains(all_filtered_els[x]) || all_hierarchy_datatype_els[i].instance.options.disabled === true)
 						all_hierarchy_datatype_els[i].style.display = "block";
 		}
+		
+		//Fire this.options.onsearch if specified
+		if (this.options.onsearch) this.options.onsearch(name);
 	}
 };
 

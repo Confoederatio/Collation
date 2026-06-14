@@ -353,6 +353,68 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				//3.3. Call renderer update
 				main.renderer.update();
 			},
+			
+			onsearch: async (v) => {
+				if (v === "") UI_LeftbarHierarchy.refresh();
+				
+				if (this.osm_search_el) this.osm_search_el.remove();
+				this.osm_search_el = document.createElement("div");
+				let osm_search_results = await Geospatiale.getOSMSearch(v);
+					osm_search_results.sort((a, b) => b?.importance - a?.importance);
+				
+				this.osm_search_el.innerHTML = `<div class = "osm-search-results"><b>Search Results (OSM):</b></div>`;
+				
+				//Iterate over all osm_search_results and format them
+				for (let i = 0; i < osm_search_results.length; i++) {
+					let local_result = osm_search_results[i];
+					let local_result_el = document.createElement("div");
+						local_result_el.classList.add("osm-search-result");
+						local_result_el.innerHTML = `
+							<icon id = "create-marker">location_on</icon><span id = "goto">${local_result.name} (${local_result.display_name})</span>
+						`;
+					local_result_el.addEventListener("click", () => {
+						try {
+							let bbox = local_result.boundingbox;
+							let extent = new maptalks.Extent({
+								ymin: parseFloat(bbox[0]),
+								ymax: parseFloat(bbox[1]),
+								xmin: parseFloat(bbox[2]),
+								xmax: parseFloat(bbox[3])
+							});
+							
+							map.fitExtent(extent, 0);
+						} catch (e) { console.error(`Error zooming to extent:`, e); }
+					});
+					local_result_el.querySelector(`#create-marker`).addEventListener("click", () => {
+						let select_geometry_id = Class.generateRandomID(naissance.Geometry);
+						
+						DALS.Timeline.parseAction("create_point", [{
+							type: "GeometryPoint",
+							create_point: {
+								id: select_geometry_id,
+								name: local_result.name,
+								coordinates: [parseFloat(local_result.lon), parseFloat(local_result.lat)],
+								do_not_refresh: true
+							}
+						}, {
+							type: "Brush",
+							select_geometry_id: select_geometry_id
+						}]);
+					});
+					
+					this.osm_search_el.appendChild(local_result_el);
+				}
+				if (osm_search_results.length === 0) {
+					let no_results_el = document.createElement("div");
+						no_results_el.classList.add("osm-no-results");
+						no_results_el.innerText = "No results found.";
+					this.osm_search_el.appendChild(no_results_el);
+				}
+				
+				current_hierarchy.element.prepend(this.osm_search_el);
+				let hr_el = document.createElement("hr");
+				this.osm_search_el.appendChild(hr_el);
+			},
 			searchbar_placeholder: "Search the map ...",
 			style: {
 				padding: 0,
@@ -414,6 +476,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	}
 	
 	static refresh () {
+		if (this.do_not_refresh) return; //Internal guard clause if this.do_not_refresh is true
 		this.refresh_frame = true;
 		
 		if (!this.logic_loop) this.logic_loop = setInterval(() => {
