@@ -30,7 +30,7 @@
   "default_point_symbol": {
     "markerDx": 0,
     "markerDy": 0,
-    "markerHeight": 24,
+    "markerHeight": 40,
     "markerWidth": 40,
     "markerFile": "gfx/icons/marker_default.png"
   },

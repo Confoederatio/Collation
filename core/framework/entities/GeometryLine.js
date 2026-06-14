@@ -150,7 +150,7 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		
 		//5. Add bindings
 		if (this.geometry) {
-			this.keyframes_ui.v = this.history.interface.v;
+			this.history.draw(this.keyframes_ui);
 			
 			this.geometry.addEventListener("click", (e) => {
 				if (!["node", "node_override", "node_transfer"].includes(main.brush.mode) && !HTML.ctrl_pressed)

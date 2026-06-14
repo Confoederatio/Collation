@@ -131,14 +131,13 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 			toolbox_label: veHTML("<b>Toolbox:</b>", { attributes: { class: "label" } }),
 			geometries: veRawInterface({
 				create_new_polygon: new ve.Button(() => {
-					let geometry_id = Class.generateRandomID(naissance.Geometry);
-					DALS.Timeline.parseAction("create_polygon", [{ type: "GeometryPolygon", create_polygon: { id: geometry_id } }]);
+					new UI_CreateGeometry("GeometryPolygon");
 				}, { name: "<icon>pentagon</icon>", tooltip: "Create New Polygon" }),
 				create_new_line: new ve.Button(() => {
-					
+					new UI_CreateGeometry("GeometryLine");
 				}, { name: "<icon>polyline</icon>", tooltip: "Create New Line" }),
 				create_new_point: new ve.Button(() => {
-					
+					new UI_CreateGeometry("GeometryPoint");
 				}, { name: "<icon>location_on</icon>", tooltip: "Create New Point" }),
 				line_label: veHTML("", {
 					style: {

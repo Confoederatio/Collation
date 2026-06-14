@@ -44,6 +44,10 @@
 				 */
 				HTML.mouse_y = e.clientY;
 			});
+			document.addEventListener("contextmenu", (e) => {
+				HTML.mouse_x = e.clientX;
+				HTML.mouse_y = e.clientY;
+			}, { capture: true })
 		}
 		
 		//Vercengen CSS handler
