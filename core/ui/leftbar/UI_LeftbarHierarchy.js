@@ -196,11 +196,11 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 						}),
 					}, {
 						can_rename: false,
-						name: "Add Other Features"
+						name: "Add Features"
 					});
 				}, { 
 					name: "<icon>add</icon> More",
-					tooltip: "Add Other Features"
+					tooltip: "View Different Features"
 				})
 			}, { attributes: { class: "create-bar" }}),
 			features: veRawInterface({

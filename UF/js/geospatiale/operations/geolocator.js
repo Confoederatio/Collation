@@ -72,7 +72,7 @@
 		console.log(`Fetching data from ${url}:`);
 		try {
 			let response = await fetch(url, { 
-				headers: { "User-Agent": "Geospatiale III/0.2 (vf@confoederatio.org)" } 
+				headers: { "User-Agent": "Naissance HGIS" } 
 			});
 			if (!response.ok) console.error(`HTTP Error. Status: ${response.status}`);
 			let results = await response.json();
@@ -108,4 +108,37 @@
 			console.error(e);
 		}
 	};
+	
+	/**
+	 * Performs an OSM search and returns the results in JSON form.
+	 * @alias Geospatiale.getOSMSearch
+	 * 
+	 * @param {string} arg0_search_query
+	 * 
+	 * @returns {Promise<Object[]>|undefined}
+	 */
+	Geospatiale.getOSMSearch = async function (arg0_search_query) {
+		//Convert from parameters
+		let search_query = arg0_search_query;
+		
+		if (!search_query || search_query.length === 0) return; //Internal guard clause if search_query is nonexistent
+		
+		//Declare local instance variables
+		let params = new URLSearchParams({
+			q: search_query,
+			format: "jsonv2",
+			addressdetails: "1",
+			extratags: "1"
+		});
+		let url = `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+		
+		console.log(`Fetching data from ${url}:`);
+		try {
+			let response = await fetch(url, {
+				headers: { "User-Agent": "Naissance HGIS" }
+			});
+			if (!response.ok) console.error(`HTTP Error. Status: ${response.status}`);
+			return await response.json(); //Return statement
+		} catch (e) { console.error(e); }
+	}
 }
