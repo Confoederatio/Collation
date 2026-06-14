@@ -355,7 +355,10 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 			},
 			
 			onsearch: async (v) => {
-				if (v === "") UI_LeftbarHierarchy.refresh();
+				if (v === "") {
+					delete UI_LeftbarHierarchy.do_not_refresh;
+					UI_LeftbarHierarchy.refresh();
+				}
 				
 				if (this.osm_search_el) this.osm_search_el.remove();
 				this.osm_search_el = document.createElement("div");
@@ -374,25 +377,13 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 					let local_result_el = document.createElement("div");
 						local_result_el.classList.add("osm-search-result");
 						local_result_el.innerHTML = `
-							<icon id = "create-marker">location_on</icon><span id = "goto">${local_properties.name} (${local_properties.osm_id})</span>
+							<icon id = "create-marker">location_on</icon><span id = "goto"><span style = 'font-weight: 500'>${local_properties.name}</span><br>
+							${Geospatiale.getPhotonSearchName(local_result)}</span>
 						`;
 					local_result_el.addEventListener("click", () => {
 						try {
-							if (local_properties.extent) {
-								let bbox = local_properties.extent;
-								let extent = new maptalks.Extent({
-									xmin: parseFloat(bbox[0]),
-									xmax: parseFloat(bbox[2]),
-									ymin: parseFloat(bbox[1]),
-									ymax: parseFloat(bbox[3]),
-								});
-								
-								map.fitExtent(extent, 0);
-							} else {
-								let coords = local_geometry.coordinates;
-								
-								map.panTo(coords);
-							}
+							let extent = new maptalks.Extent(Geospatiale.getPhotonExtent(local_result));
+							map.fitExtent(extent, 0);
 						} catch (e) { console.error(`Error zooming to extent:`, local_result, e); }
 					});
 					local_result_el.querySelector(`#create-marker`).addEventListener("click", () => {
@@ -404,7 +395,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 								id: select_geometry_id,
 								name: local_properties.name,
 								coordinates: local_geometry.coordinates,
-								do_not_refresh: true
+								is_search: true
 							}
 						}, {
 							type: "Brush",
@@ -461,6 +452,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	}
 	
 	refresh () {
+		console.trace(`Refresh called`);
 		//1. Save scroll state before rerender
 		this._saveScrollState();
 		
@@ -486,7 +478,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	}
 	
 	static refresh () {
-		if (this.do_not_refresh) return; //Internal guard clause if this.do_not_refresh is true
+		if (UI_LeftbarHierarchy.do_not_refresh) return; //Internal guard clause if this.do_not_refresh is true
 		this.refresh_frame = true;
 		
 		if (!this.logic_loop) this.logic_loop = setInterval(() => {

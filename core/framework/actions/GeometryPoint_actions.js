@@ -11,8 +11,8 @@ if (!global.naissance) global.naissance = {};
  * - #### Extraneous Commands:
  * - `.create_point`: {@link Object}
  *   - `.coordinates`: {@link Array}<{@link maptalks.Coordinate}>
- *   - `.do_not_refresh`: {@link boolean}
  *   - `.id`: {@link string}
+ *   - `.is_search`: {@link boolean}
  *   - `.name`: {@link string}
  * - #### Internal Commands:
  *   - `.set_coordinates`: {@link maptalks.Coordinate}
@@ -42,10 +42,12 @@ naissance.GeometryPoint.parseAction = async function (arg0_json) {
 				delete new_point.fire_action_silently;
 			}
 			
-			//Point handling; from search creation
-			if (json.create_point.do_not_refresh) naissance.UI_LeftbarHierarchy.do_not_refresh = true;
-			UI_LeftbarHierarchy.refresh();
-			if (json.create_point.do_not_refresh) delete naissance.UI_LeftbarHierarchy.do_not_refresh;
+			//Point handling; .is_search
+			if (!json.create_point.is_search) {
+				UI_LeftbarHierarchy.refresh();
+			} else {
+				UI_LeftbarHierarchy.do_not_refresh = true;
+			}
 		}
 	
 	//Parse commands for point_obj
