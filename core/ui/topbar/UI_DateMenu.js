@@ -6,6 +6,7 @@ global.UI_DateMenu = class extends ve.Class {
 		super();
 		
 		let navbar_el = document.querySelector(".ve.navbar");
+		let navbar_height = ((navbar_el) ? navbar_el.offsetHeight : 0);
 		this.is_playing = false;
 		this.tick_speed = 1000;
 		// Initialize step as a default if not set
@@ -63,7 +64,9 @@ global.UI_DateMenu = class extends ve.Class {
 				}, { 
 					can_rename: false, 
 					name: "Time Controls", 
-					width: "20rem" 
+					width: "20rem",
+					x: `calc(${window.innerWidth}px - 20rem - 8px)`,
+					y: this.instance_window.element.offsetHeight + navbar_height + 16
 				});
 			}, { name: "<icon>settings</icon>", tooltip: "Settings" }),
 			help: veButton(() => {
@@ -92,7 +95,7 @@ global.UI_DateMenu = class extends ve.Class {
 			name: "Date",
 			width: "26rem",
 			x: 8,
-			y: ((navbar_el) ? navbar_el.offsetHeight : 0) + 8
+			y: navbar_height + 8
 		});
 	}
 	
