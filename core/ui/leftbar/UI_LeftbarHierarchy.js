@@ -172,23 +172,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				"ve-hierarchy-actions-bar": "true",
 				"ve-sticky": "true"
 			},
-			disabled: true,
-			style: {
-				listStyle: "none",
-				".nst-handle": { display: "none" },
-				".nst-content": {
-					alignItems: "baseline",
-					flexDirection: "column",
-					
-					"[component='ve-raw-interface']": {
-						display: "flex",
-						width: "100%",
-						"[component='ve-button']": {
-							marginRight: "var(--cell-padding)"
-						}
-					}
-				}
-			}
+			disabled: true
 		});
 		actions_bar.element.classList.add("actions-bar");
 		let geometries_at_top = (global?.main?.settings?.hierarchy_ordering === "geometries_at_top");

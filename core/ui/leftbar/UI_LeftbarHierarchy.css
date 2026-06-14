@@ -67,26 +67,40 @@
     height: 100%;
     overflow: hidden;
     
-    .actions-bar .nst-content {
-        padding: var(--padding);
+    .actions-bar {
+        list-style: none;
+        .nst-handle { display: none; }
         
-        .create-bar {
-            [component="ve-button"]:after {
-                content: "+";
-                font-weight: 700;
-                line-height: var(--body-font-size);
-                text-align: center;
-                width: var(--body-font-size);
-
-                pointer-events: none;
-                position: absolute;
-                transform: translate(
-                    calc(var(--body-font-size)/-2 - var(--body-font-size)/2), 
-                    calc(var(--body-font-size) + var(--padding) - var(--body-font-size)/4)
-                );
+        .nst-content {
+            align-items: baseline;
+            flex-direction: column;
+            padding: var(--padding);
+            
+            [component="ve-raw-interface"] {
+                display: flex;
+                width: 100%;
+                [component="ve-button"] {
+                    margin-right: var(--cell-padding);
+                }
             }
+            .create-bar {
+                [component="ve-button"]:after {
+                    content: "+";
+                    font-weight: 700;
+                    line-height: var(--body-font-size);
+                    text-align: center;
+                    width: var(--body-font-size);
+
+                    pointer-events: none;
+                    position: absolute;
+                    transform: translate(
+                            calc(var(--body-font-size)/-2 - var(--body-font-size)/2),
+                            calc(var(--body-font-size) + var(--padding) - var(--body-font-size)/4)
+                    );
+                }
+            }
+            .label { padding-bottom: var(--padding); }
         }
-        .label { padding-bottom: var(--padding); }
     }
     .topbar {
         margin-top: calc(var(--cell-padding)*1.25);
