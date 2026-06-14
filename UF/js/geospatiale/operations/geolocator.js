@@ -110,14 +110,14 @@
 	};
 	
 	/**
-	 * Performs an OSM search and returns the results in JSON form.
-	 * @alias Geospatiale.getOSMSearch
+	 * Performs a Nominatim search and returns the results in JSON form.
+	 * @alias Geospatiale.getNominatimSearch
 	 * 
 	 * @param {string} arg0_search_query
 	 * 
 	 * @returns {Promise<Object[]>|undefined}
 	 */
-	Geospatiale.getOSMSearch = async function (arg0_search_query) {
+	Geospatiale.getNominatimSearch = async function (arg0_search_query) {
 		//Convert from parameters
 		let search_query = arg0_search_query;
 		
@@ -141,5 +141,27 @@
 			if (!response.ok) console.error(`HTTP Error. Status: ${response.status}`);
 			return await response.json(); //Return statement
 		} catch (e) { console.error(e); }
-	}
+	};
+	
+	Geospatiale.getPhotonSearch = async function (arg0_search_query) {
+		//Convert from parameters
+		let search_query = arg0_search_query;
+		
+		if (!search_query || search_query.length === 0) return; //Internal guard clause if search_query is nonexistent
+		
+		//Declare local instance variables
+		let params = new URLSearchParams({
+			q: search_query
+		});
+		let url = `https://photon.komoot.io/api/?${params.toString()}`;
+		
+		console.log(`Fetching data from ${url}:`);
+		try {
+			let response = await fetch(url, {
+				headers: { "User-Agent": "Naissance HGIS" }
+			});
+			if (!response.ok) console.error(`HTTP Error. Status: ${response.status}`);
+			return await response.json(); //Return statement
+		} catch (e) { console.error(e); }
+	};
 }

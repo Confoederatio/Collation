@@ -359,31 +359,41 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				
 				if (this.osm_search_el) this.osm_search_el.remove();
 				this.osm_search_el = document.createElement("div");
-				let osm_search_results = await Geospatiale.getOSMSearch(v);
-					osm_search_results.sort((a, b) => b?.importance - a?.importance);
+				let osm_search_results = await Geospatiale.getPhotonSearch(v);
+					osm_search_results = osm_search_results.features;
 				
 				this.osm_search_el.innerHTML = `<div class = "osm-search-results"><b>Search Results (OSM):</b></div>`;
 				
 				//Iterate over all osm_search_results and format them
 				for (let i = 0; i < osm_search_results.length; i++) {
 					let local_result = osm_search_results[i];
+					
+					let local_geometry = osm_search_results[i].geometry;
+					let local_properties = osm_search_results[i].properties;
+					
 					let local_result_el = document.createElement("div");
 						local_result_el.classList.add("osm-search-result");
 						local_result_el.innerHTML = `
-							<icon id = "create-marker">location_on</icon><span id = "goto">${local_result.name} (${local_result.display_name})</span>
+							<icon id = "create-marker">location_on</icon><span id = "goto">${local_properties.name} (${local_properties.osm_id})</span>
 						`;
 					local_result_el.addEventListener("click", () => {
 						try {
-							let bbox = local_result.boundingbox;
-							let extent = new maptalks.Extent({
-								ymin: parseFloat(bbox[0]),
-								ymax: parseFloat(bbox[1]),
-								xmin: parseFloat(bbox[2]),
-								xmax: parseFloat(bbox[3])
-							});
-							
-							map.fitExtent(extent, 0);
-						} catch (e) { console.error(`Error zooming to extent:`, e); }
+							if (local_properties.extent) {
+								let bbox = local_properties.extent;
+								let extent = new maptalks.Extent({
+									xmin: parseFloat(bbox[0]),
+									xmax: parseFloat(bbox[2]),
+									ymin: parseFloat(bbox[1]),
+									ymax: parseFloat(bbox[3]),
+								});
+								
+								map.fitExtent(extent, 0);
+							} else {
+								let coords = local_geometry.coordinates;
+								
+								map.panTo(coords);
+							}
+						} catch (e) { console.error(`Error zooming to extent:`, local_result, e); }
 					});
 					local_result_el.querySelector(`#create-marker`).addEventListener("click", () => {
 						let select_geometry_id = Class.generateRandomID(naissance.Geometry);
@@ -392,8 +402,8 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 							type: "GeometryPoint",
 							create_point: {
 								id: select_geometry_id,
-								name: local_result.name,
-								coordinates: [parseFloat(local_result.lon), parseFloat(local_result.lat)],
+								name: local_properties.name,
+								coordinates: local_geometry.coordinates,
 								do_not_refresh: true
 							}
 						}, {
