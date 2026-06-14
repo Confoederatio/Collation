@@ -90,7 +90,7 @@ global.UI_DateMenu = class extends ve.Class {
 			},
 			mode: "static_window",
 			name: "Date",
-			width: "24rem",
+			width: "26rem",
 			x: 8,
 			y: ((navbar_el) ? navbar_el.offsetHeight : 0) + 8
 		});
