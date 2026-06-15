@@ -383,34 +383,30 @@ ve.Component = class {
 	 */
 	fireFromBinding () {
 		//Convert from parameters
-		let variable_string = (this.from_binding_string) ? JSON.parse(JSON.stringify(this.from_binding_string)) : undefined;
+		let variable_string = (this.from_binding_string) ? 
+			JSON.parse(JSON.stringify(this.from_binding_string)) : undefined;
 			if (this.from_binding_fire_silently) return; //Internal guard clause if this.from_binding is to fire silently
-			if (variable_string === undefined) return; //Internal guard clause if variable_string is undefined
 		
 		//Declare local instance variables
 		let initial_object = global;
 		
 		//Parse this to this.owner; watch mutation using getter/setter, and set this.v to new value
-		if (variable_string.startsWith("this.")) {
-			variable_string = variable_string.replace("this.", "");
-			initial_object = this.owner;
-		} else if (variable_string.startsWith("window.")) {
-			variable_string = variable_string.replace("window.", "");
-			initial_object = window;
-		} else {
-			variable_string = variable_string.replace("global.", "");
-		}
+		if (variable_string)
+			if (variable_string.startsWith("this.")) {
+				variable_string = variable_string.replace("this.", "");
+				initial_object = this.owner;
+			} else if (variable_string.startsWith("window.")) {
+				variable_string = variable_string.replace("window.", "");
+				initial_object = window;
+			} else {
+				variable_string = variable_string.replace("global.", "");
+			}
 		
 		//Set this.from_binding in a to binding manner
 		if (this.from_binding_string) {
 			this.from_binding_fire_silently = true;
 			Object.setValue(initial_object, variable_string, this.v);
 			delete this.from_binding_fire_silently;
-			
-			if (typeof this.options.onchange === "function") //Fire onchange (bidirectional)
-				this.options.onchange(this.v, this);
-			if (typeof this.options.onprogramchange === "function") //Fire onprogramchange (unidirectional)
-				this.options.onprogramchange(this.v, this);
 		}
 	}
 	

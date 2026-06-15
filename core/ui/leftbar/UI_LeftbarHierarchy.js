@@ -355,66 +355,17 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 			},
 			
 			onsearch: async (v) => {
-				if (v === "") {
-					delete UI_LeftbarHierarchy.do_not_refresh;
-					UI_LeftbarHierarchy.refresh();
-				}
-				
-				if (this.osm_search_el) this.osm_search_el.remove();
-				this.osm_search_el = document.createElement("div");
-				let osm_search_results = await Geospatiale.getPhotonSearch(v);
-					osm_search_results = osm_search_results.features;
-				
-				this.osm_search_el.innerHTML = `<div class = "osm-search-results"><b>Search Results (OSM):</b></div>`;
-				
-				//Iterate over all osm_search_results and format them
-				for (let i = 0; i < osm_search_results.length; i++) {
-					let local_result = osm_search_results[i];
-					
-					let local_geometry = osm_search_results[i].geometry;
-					let local_properties = osm_search_results[i].properties;
-					
-					let local_result_el = document.createElement("div");
-						local_result_el.classList.add("osm-search-result");
-						local_result_el.innerHTML = `
-							<icon id = "create-marker">location_on</icon><span id = "goto"><span style = 'font-weight: 500'>${local_properties.name}</span><br>
-							${Geospatiale.getPhotonSearchName(local_result)}</span>
-						`;
-					local_result_el.addEventListener("click", () => {
-						try {
-							let extent = new maptalks.Extent(Geospatiale.getPhotonExtent(local_result));
-							map.fitExtent(extent, 0);
-						} catch (e) { console.error(`Error zooming to extent:`, local_result, e); }
-					});
-					local_result_el.querySelector(`#create-marker`).addEventListener("click", () => {
-						let select_geometry_id = Class.generateRandomID(naissance.Geometry);
-						
-						DALS.Timeline.parseAction("create_point", [{
-							type: "GeometryPoint",
-							create_point: {
-								id: select_geometry_id,
-								name: local_properties.name,
-								coordinates: local_geometry.coordinates,
-								is_search: true
-							}
-						}, {
-							type: "Brush",
-							select_geometry_id: select_geometry_id
-						}]);
-					});
-					
-					this.osm_search_el.appendChild(local_result_el);
-				}
-				if (osm_search_results.length === 0) {
-					let no_results_el = document.createElement("div");
-						no_results_el.classList.add("osm-no-results");
-						no_results_el.innerText = "No results found.";
-					this.osm_search_el.appendChild(no_results_el);
-				}
-				
-				current_hierarchy.element.prepend(this.osm_search_el);
-				let hr_el = document.createElement("hr");
-				this.osm_search_el.appendChild(hr_el);
+				if (!this.osm_search) this.osm_search = new UI_OSMSearch(undefined, {
+					onprogramchange: (v, e) => {
+						if (v === "") {
+							delete UI_LeftbarHierarchy.do_not_refresh;
+							UI_LeftbarHierarchy.refresh();
+						} else {
+							current_hierarchy.element.prepend(e.element);
+						}
+					}
+				});
+				this.osm_search.v = v;
 			},
 			searchbar_placeholder: "Search the map ...",
 			style: {
