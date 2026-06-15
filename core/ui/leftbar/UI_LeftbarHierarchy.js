@@ -367,18 +367,7 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 				});
 				this.osm_search.v = v;
 			},
-			searchbar_placeholder: "Search the map ...",
-			style: {
-				padding: 0,
-				"li.nst-item > .nst-content": {
-					width: "20rem"
-				},
-				".nst-content .nst-button": { display: "block" },
-				
-				"[data-entities='0']": {
-					".nst-content .nst-button": { display: "none" }
-				}
-			}
+			searchbar_placeholder: "Search the map ..."
 		});
 		
 		return current_hierarchy;
@@ -403,7 +392,6 @@ global.UI_LeftbarHierarchy = class { //[WIP] - Finish naissance.Feature first
 	}
 	
 	refresh () {
-		console.trace(`Refresh called`);
 		//1. Save scroll state before rerender
 		this._saveScrollState();
 		

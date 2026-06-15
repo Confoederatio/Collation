@@ -123,6 +123,11 @@
         overflow: auto;
         scrollbar-color: white transparent;
         scrollbar-width: thin;
+        
+        li.nst-item > .nst-content { width: 20rem; }
+        .nst-content .nst-button { display: block; }
+        
+        [data-entities="0"] { .nst-content .nst-button { display: none; } }
     }
     
     /* -- Search Results -- */
