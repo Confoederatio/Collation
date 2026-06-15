@@ -1,42 +1,4 @@
 [component="ve-hierarchy"].ui-leftbar-hierarchy {
-    [data-is-selected="true"] > .nst-content {
-        border: 3px dashed var(--geometry-selection-colour);
-    }
-    [data-selected-geometry="true"] > .nst-content {
-        border: 3px solid var(--geometry-selection-colour);
-    }
-    [data-is-visible="false"]:not([data-selected-geometry="true"]) > .nst-content {
-        opacity: 0.4;
-    }
-    [data-is-visible="false"][data-selected-geometry="true"] > .nst-content {
-        opacity: 0.7;
-    }
-    
-    .naissance-selected-feature {
-        > .nst-content {
-            border: 3px solid var(--accent-secondary-colour);
-        }
-        > ol {
-            border-left: dashed 3px var(--accent-secondary-colour);
-        }
-
-        [component="ve-hierarchy-datatype"] > .nst-content {
-            box-shadow: 0 0 0 1px solid var(--bg-primary-colour);
-        }
-    }
-
-    /* -- naissance.Feature -- */
-    .onhover-visible { 
-        opacity: 0; 
-        pointer-events: none;
-        transition: opacity 0.1s ease;
-    }
-    .nst-content:hover .onhover-visible { 
-        opacity: 1; 
-        pointer-events: auto; 
-        width: auto;
-    }
-    
     .order-99 {
         margin-left: auto;
         order: 99;
@@ -54,6 +16,39 @@
     [data-type="GeometryPolygon"] {
         [component="ve-button"] > button { border: 0; }
         .nst-content { padding-right: 0; }
+    }
+
+    /* -- Selection -- */
+    [data-is-selected="true"] > .nst-content {
+        border: 3px dashed var(--geometry-selection-colour);
+    }
+    [data-selected-geometry="true"] > .nst-content {
+        border: 3px solid var(--geometry-selection-colour);
+    }
+    .naissance-selected-feature {
+        > .nst-content {
+            border: 3px solid var(--accent-secondary-colour);
+        }
+        > ol {
+            border-left: dashed 3px var(--accent-secondary-colour);
+        }
+
+        [component="ve-hierarchy-datatype"] > .nst-content {
+            box-shadow: 0 0 0 1px solid var(--bg-primary-colour);
+        }
+    }
+
+    /* -- Visibility -- */
+    .onhover-visible {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.1s ease;
+    }
+    .nst-content:has(#metadata[is-visible="false"]) { opacity: 0.4; }
+    .nst-content:hover .onhover-visible {
+        opacity: 1;
+        pointer-events: auto;
+        width: auto;
     }
 }
 

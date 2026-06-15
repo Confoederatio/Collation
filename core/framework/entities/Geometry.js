@@ -202,6 +202,12 @@ naissance.Geometry = class extends ve.Class {
 		
 		//Return statement
 		return {
+			metadata: veHTML("", {
+				attributes: {
+					id: "metadata",
+					"is-visible": String(!current_keyframe.value[2]?.hidden)
+				}
+			}),
 			multitag: veButton(() => {
 				if (this.tags_editor) this.tags_editor.close();
 				this.tags_editor = veWindow({

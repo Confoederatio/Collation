@@ -427,6 +427,12 @@ naissance.Feature = class extends ve.Class {
 	drawHierarchyDatatypeGenerics () {
 		//Return statement
 		return {
+			metadata: veHTML("", {
+				attributes: {
+					id: "metadata",
+					"is-visible": String(this._is_visible)
+				}
+			}),
 			hide_visibility: veButton(() => {
 				DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
 			}, {
