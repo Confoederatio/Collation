@@ -123,45 +123,7 @@ naissance.FeatureSketchMap = class extends naissance.Feature {
 	}
 	
 	drawHierarchyDatatype () {
-		//Declare local instance variables
-		this.interface = new ve.HierarchyDatatype({
-			icon: new ve.HTML(`<icon>app_registration</icon>`),
-			...super.drawHierarchyDatatypeGenerics(),
-			edit: veButton(() => {
-				super.open("instance", {
-					id: this.id,
-					name: this._name,
-					width: "24rem"
-				});
-				this.draw();
-			}, {
-				name: "<icon>more_vert</icon>",
-				tooltip: "Edit Sketch Map",
-				style: { order: 100, padding: 0 }
-			})
-		}, {
-			ignore_component: true,
-			instance: this,
-			name: this.name,
-			name_options: {
-				onchange: (v) => {
-					this.name = v;
-					this.drawHierarchyDatatype();
-				}
-			},
-			type: "item",
-			style: {
-				".nst-content": {
-					paddingRight: 0
-				},
-				"[component='ve-button'] > button": {
-					border: 0
-				}
-			}
-		});
-		
-		//Return statement
-		return this.interface;
+		return naissance.Entity.drawHierarchyDatatype_FeatureSketchMap.call(this);
 	}
 	
 	fromJSON (arg0_json) {
