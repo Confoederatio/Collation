@@ -1,5 +1,5 @@
 if (!global.naissance) global.naissance = {};
-naissance.Feature = class extends ve.Class {
+naissance.Feature = class extends naissance.Entity {
 	static instances = {};
 	
 	constructor (arg0_options) {
@@ -9,7 +9,6 @@ naissance.Feature = class extends ve.Class {
 		//Declare local instance variables
 		super();
 		this.id = Class.generateRandomID(naissance.Feature);
-		this.instance = this;
 		this.is_naissance_feature = true;
 		this._is_visible = true;
 		this.metadata = (options.metadata) ? options.metadata : {};

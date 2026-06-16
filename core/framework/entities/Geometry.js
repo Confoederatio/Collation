@@ -1,5 +1,5 @@
 if (!global.naissance) global.naissance = {};
-naissance.Geometry = class extends ve.Class {
+naissance.Geometry = class extends naissance.Entity {
 	static history_localisation_function = (new_keyframe, old_keyframe) => { //[WIP] - Finish function
 		//Declare local instance variables
 		let return_string = [];
@@ -58,7 +58,6 @@ naissance.Geometry = class extends ve.Class {
 			localisation_function: naissance.Geometry.history_localisation_function
 		});
 		this.id = Class.generateRandomID(naissance.Geometry);
-		this.instance = this;
 		this.is_naissance_geometry = true; //Identifier flag for Naissance-bound reflection engine
 		this.metadata = {};
 		
