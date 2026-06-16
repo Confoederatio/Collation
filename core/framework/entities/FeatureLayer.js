@@ -3,6 +3,11 @@ if (!global.naissance) global.naissance = {};
  * @type {naissance.FeatureLayer}
  */
 naissance.FeatureLayer = class extends naissance.Feature {
+	static hierarchy_symbol = {
+		icon: "layers",
+		name: "Layer"
+	};
+	
 	constructor (arg0_entities, arg1_options) {
 		super(arg1_options);
 		this.cannot_nest_self = true;
@@ -156,113 +161,6 @@ naissance.FeatureLayer = class extends naissance.Feature {
 			this.entities.push(naissance_obj);
 			if (!do_not_refresh) this.drawHierarchyDatatype();
 		}
-	}
-	
-	drawHierarchyDatatype () {
-		//Declare local instance variables
-		let all_geometries = this.getAllGeometries();
-		let hierarchy_obj = {};
-		let show_layer_features = (this.metadata?.show_layer_features) ? true : false;
-		let show_layer_geometries = (this.metadata?.show_layer_geometries) ? true : false;
-		
-		//Delete any self-references; already assigned entities with other .parent
-		for (let i = this.entities.length - 1; i >= 0; i--)
-			if (this.entities[i].class_name === "FeatureLayer" && this.entities[i].id === this.id) {
-				console.warn(`Deleting self-reference`, this.entities[i], `from`, this);
-				this.entities.splice(i, 1);
-			} else if (this.entities[i].parent && this.entities[i].parent.id !== this.id) {
-				this.entities.splice(i, 1);
-			}
-		
-		//Iterate over this.entities, if naissance.FeatureGroup/naissance.FeatureLayer, call .draw() recursively
-		for (let i = 0; i < this.entities.length; i++) {
-			let local_entity = this.entities[i];
-			let local_key = `${local_entity.class_name}-${local_entity.id}`;
-			
-			//naissance.FeatureGroup, naissance.FeatureLayer handling
-			if (show_layer_features || show_layer_geometries)
-				if (local_entity instanceof naissance.Feature && local_entity.drawHierarchyDatatype) {
-					//console.log(this, `is calling`, local_entity)
-					if (!show_layer_features) continue;
-					hierarchy_obj[local_key] = local_entity.drawHierarchyDatatype({
-						hide_features: (!show_layer_features),
-						hide_geometries: (!show_layer_geometries),
-					});
-				} else {
-					//naissance.Feature generic handling
-					if (local_entity instanceof naissance.Feature) {
-						hierarchy_obj[local_key] = new ve.HierarchyDatatype({
-							icon: new ve.HTML(`<icon>inventory_2</icon>`, {
-								tooltip: local_entity.class_name } )
-						}, { instance: local_entity });
-					}
-					
-					//naissance.Geometry generic handling
-					if (!show_layer_geometries) continue;
-					if (local_entity instanceof naissance.Geometry) {
-						if (local_entity.drawHierarchyDatatype) {
-							hierarchy_obj[local_key] = local_entity.drawHierarchyDatatype();
-						} else { //[WIP] - Implement naissance.Geometry.name accessor
-							hierarchy_obj[local_key] = new ve.HierarchyDatatype({
-								icon: new ve.HTML(`<icon>shapes</icon>`, {
-									tooltip: local_entity.class_name } )
-							}, {
-								instance: local_entity,
-								name: local_entity.name,
-								name_options: {
-									onprogramchange: () => {
-										this.drawHierarchyDatatype();
-									},
-									onuserchange: (v) => {
-										local_entity.name = v;
-									}
-								}
-							});
-						}
-					}
-				}
-		}
-		
-		//Return statement
-		return new ve.HierarchyDatatype({
-			icon: new ve.HTML(`<icon>${(this.type !== "provinces") ? "layers" : "flag"}</icon>`, {
-				tooltip: `Layer (${String.formatNumber(all_geometries.length)} Items)`
-			}),
-			...super.drawHierarchyDatatypeGenerics(),
-			
-			edit: veButton(() => {
-				super.open("instance", {
-					id: this.id,
-					name: this._name,
-					width: "24rem"
-				});
-				this.draw();
-			}, {
-				name: `<icon>more_vert</icon>`,
-				tooltip: "Edit Layer",
-				style: { order: 100, padding: 0 }
-			}),
-			
-			...hierarchy_obj
-		}, {
-			instance: this,
-			name: this.name,
-			name_options: {
-				onchange: (v) => {
-					this.name = v;
-					this.drawHierarchyDatatype();
-				}
-			},
-			style: {
-				".nst-content": {
-					paddingRight: 0
-				},
-				"[component='ve-button'] > button": {
-					border: 0
-				}
-			},
-			type: "group"
-		});
 	}
 	
 	fromJSON (arg0_json) {
