@@ -126,8 +126,7 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	get name () {
 		//Declare local instance variables
-		let current_keyframe = (this._current_keyframe) ? 
-			this._current_keyframe : this.history.getKeyframe();
+		let current_keyframe = this.history.getKeyframe();
 		let current_value = current_keyframe.value;
 		
 		let current_name;
@@ -432,63 +431,62 @@ naissance.Geometry = class extends naissance.Entity {
 		if (!options.name) options.name = this.name;
 		if (!options.width) options.width = "24rem";
 		
-		//Declare local instance variables
-		let current_keyframe = (this._current_keyframe) ?
-			this._current_keyframe : this.current_keyframe;
-		
-		if (!this.quick_actions) this.quick_actions = veRawInterface({
-			multitag: veButton(() => {
-				if (this.tags_editor) this.tags_editor.close();
-				this.tags_editor = veWindow({
-					tags_list: veMultiTag(this.metadata.tags, {
-						onuserchange: (v) => this.metadata.tags = v
+		//Declare UI in order
+		{
+			if (!this.quick_actions) this.quick_actions = veRawInterface({
+				multitag: veButton(() => {
+					if (this.tags_editor) this.tags_editor.close();
+					this.tags_editor = veWindow({
+						tags_list: veMultiTag(this.metadata.tags, {
+							onuserchange: (v) => this.metadata.tags = v
+						})
+					}, {
+						name: `Edit Tags (${this.name})`,
+						can_rename: false,
+						width: "20rem",
+						
+						onuserchange: (v) => {
+							if (v.close)
+								DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
+						}
 					})
 				}, {
-					name: `Edit Tags (${this.name})`,
-					can_rename: false,
-					width: "20rem",
-					
-					onuserchange: (v) => {
-						if (v.close)
-							DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
-					}
+					attributes: { class: "order-99" },
+					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
+				}),
+				hide_geometry: veButton(() => {
+					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
+				}, {
+					attributes: { class: "order-100" },
+					name: `<icon>visibility</icon>`,
+					limit: () => !this.value[2]?.hidden,
+					tooltip: "Hide Geometry"
+				}),
+				show_geometry: veButton(() => {
+					DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
+				}, {
+					attributes: { class: "order-100" },
+					name: "<icon>visibility_off</icon>",
+					limit: () => this.value[2]?.hidden,
+					tooltip: "Show Geometry"
+				}),
+				delete_button: veButton(() => {
+					DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
+				}, {
+					attributes: { class: "order-101" },
+					name: "<icon>delete</icon>",
+					tooltip: "Delete Geometry"
 				})
 			}, {
-				attributes: { class: "order-99" },
-				name: "<icon>new_label</icon>", tooltip: "Manage Tags"
-			}),
-			hide_geometry: veButton(() => {
-				DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
-			}, {
-				attributes: { class: "order-100" },
-				name: `<icon>visibility</icon>`,
-				limit: () => !current_keyframe.value[2]?.hidden,
-				tooltip: "Hide Geometry"
-			}),
-			show_geometry: veButton(() => {
-				DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
-			}, {
-				attributes: { class: "order-100" },
-				name: "<icon>visibility_off</icon>",
-				limit: () => current_keyframe.value[2]?.hidden,
-				tooltip: "Show Geometry"
-			}),
-			delete_button: veButton(() => {
-				DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
-			}, {
-				attributes: { class: "order-101" },
-				name: "<icon>delete</icon>",
-				tooltip: "Delete Geometry"
-			})
-		}, {
-			name: "<b>Quick Actions:</b>",
-			style: {
-				alignItems: "center",
-				display: "flex",
-				"[component='ve-button']": { marginLeft: "var(--padding)" }
-			},
-			width: 99
-		});
+				name: "<b>Quick Actions:</b>",
+				style: {
+					alignItems: "center",
+					display: "flex",
+					"[component='ve-button']": { marginLeft: "var(--padding)" }
+				},
+				width: 99
+			});
+		}
 		
 		if (!this._interface) this._interface = veInterface({
 			quick_actions: this.quick_actions,
