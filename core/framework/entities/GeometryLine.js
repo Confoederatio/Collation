@@ -150,41 +150,18 @@ naissance.GeometryLine = class extends naissance.Geometry {
 	}
 	
 	drawUI () {
-		this.interface = veInterface({
-			information: veHTML(() => {
-				//Declare local instance variables
-				let length_km = (this.geometry && this.isOpen("instance")) ?
-					this.geometry.getLength()/1000 : 0;
-				
-				//Return statement
-				return `ID: ${this.id} | Length: ${String.formatNumber(length_km)}km`
-			}, { width: 99, x: 0, y: 0 }),
-			move_to_brush: veButton(() => DALS.Timeline.parseAction("select_geometry", [{
-				type: "Brush", select_geometry_id: this.id
-			}]), { name: "Move To Brush", limit: () => (main.brush.selected_geometry?.id !== this.id), x: 0, y: 1 }),
-			finish_line: veButton(() => DALS.Timeline.parseAction("deselect_geometry", [{
-				type: "Brush", select_geometry_id: false
-			}]), { name: "Finish Line", limit: () => (main.brush.selected_geometry?.id === this.id), x: 0, y: 1 }),
-			
-			selected: veCheckbox(this.selected, {
-				name: "Selected",
-				onuserchange: (v) => this.selected = v,
-				x: 1, y: 1
-			})
-		}, { is_folder: false });
-		this.edit_symbol_ui = veInterface({
-			edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
-				name: "Label",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			}),
-			edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
-				name: "Stroke",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			})
-		}, { name: "Edit Symbol" });
-		this.keyframes_ui = veInterface({}, {
-			name: "Keyframes", open: true
-		});
-		super.drawVariablesEditor();
+		//Return statement
+		return {
+			edit_symbol_ui: veInterface({
+				edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
+					name: "Label",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				}),
+				edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
+					name: "Stroke",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				})
+			}, { name: "Edit Symbol" })
+		};
 	}
 };

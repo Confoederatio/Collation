@@ -290,7 +290,7 @@ naissance.Geometry = class extends naissance.Entity {
 					"[component='ve-button']": { marginRight: `var(--padding)` }
 				}
 			})
-		}, { name: "Variables", open: true });
+		}, { name: "Variables", do_not_display: true, open: true });
 		
 		//Wait a tick for metadata to load
 		setTimeout(() => {
@@ -433,7 +433,59 @@ naissance.Geometry = class extends naissance.Entity {
 		
 		//Declare UI in order
 		{
-			if (!this.quick_actions) this.quick_actions = veRawInterface({
+			if (!this.keyframes_ui) this.keyframes_ui = veInterface({}, {
+				name: `Keyframes`, 
+				do_not_display: true,
+				open: true
+			});
+			this.history.draw(this.keyframes_ui);
+			this.drawVariablesEditor();
+		}
+		
+		if (!this._interface) this._interface = veInterface({
+			information: veHTML(() => {
+				//Declare local instance variables
+				let format_string = `ID: ${this.id}`;
+				
+				if (this.class_name === "GeometryPolygon") {
+					let area_km2 = (this.geometry && this.isOpen("instance")) ?
+						this.geometry.getArea()/1000000 : 0;
+					return `${format_string} | Area: ${String.formatNumber(area_km2)}km^2`;
+				} else if (this.class_name === "GeometryLine") {
+					let length_km = (this.geometry && this.isOpen("instance")) ?
+						this.geometry.getLength()/1000 : 0;
+					return `${format_string} | Length: ${String.formatNumber(length_km)}km`;
+				} else if (this.class_name === "GeometryPoint") {
+					let coordinates = (this.geometry && this.isOpen("instance")) ?
+						this.geometry.getCoordinates().toJSON() : { x: 0, y: 0 }
+					return `${format_string} | X: ${String.formatNumber(coordinates.x, 4)}, Y: ${String.formatNumber(coordinates.y, 4)}`;
+				}
+					
+			}),
+			quick_actions: veRawInterface({
+				selected: veCheckbox(this.selected, {
+					name: "Selected",
+					onuserchange: (v) => this.selected = v
+				}),
+				move_to_brush: veButton(() => {
+					DALS.Timeline.parseAction("select_geometry", [{
+						type: "Brush", select_geometry_id: this.id
+					}]);
+				}, {
+					name: `<icon>brush</icon>`,
+					tooltip: "Move to Brush",
+					limit: () => (main.brush.selected_geometry?.id !== this.id)
+				}),
+				finish_geometry: veButton(() => {
+					DALS.Timeline.parseAction("deselect_geometry", [{
+						type: "Brush", select_geometry_id: false
+					}]);
+				}, { 
+					name: `<icon>download_done</icon>`,
+					tooltip: "Finish Geometry",
+					limit: () => (main.brush.selected_geometry?.id === this.id)
+				}),
+				
 				multitag: veButton(() => {
 					if (this.tags_editor) this.tags_editor.close();
 					this.tags_editor = veWindow({
@@ -451,21 +503,20 @@ naissance.Geometry = class extends naissance.Entity {
 						}
 					})
 				}, {
-					attributes: { class: "order-99" },
 					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
 				}),
 				hide_geometry: veButton(() => {
 					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
+					this.history.draw(this.keyframes_ui);
 				}, {
-					attributes: { class: "order-100" },
 					name: `<icon>visibility</icon>`,
 					limit: () => !this.value[2]?.hidden,
 					tooltip: "Hide Geometry"
 				}),
 				show_geometry: veButton(() => {
 					DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
+					this.history.draw(this.keyframes_ui);
 				}, {
-					attributes: { class: "order-100" },
 					name: "<icon>visibility_off</icon>",
 					limit: () => this.value[2]?.hidden,
 					tooltip: "Show Geometry"
@@ -473,29 +524,27 @@ naissance.Geometry = class extends naissance.Entity {
 				delete_button: veButton(() => {
 					DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
 				}, {
-					attributes: { class: "order-101" },
 					name: "<icon>delete</icon>",
 					tooltip: "Delete Geometry"
 				})
 			}, {
-				name: "<b>Quick Actions:</b>",
+				do_not_display: true,
 				style: {
 					alignItems: "center",
 					display: "flex",
 					"[component='ve-button']": { marginLeft: "var(--padding)" }
 				},
 				width: 99
-			});
-		}
-		
-		if (!this._interface) this._interface = veInterface({
-			quick_actions: this.quick_actions,
+			}),
 			
 			...((typeof this.drawUI === "function") ? this.drawUI() : {}),
-			...ve.Class.getVercengenComponents(this)
+			...ve.Class.getVercengenComponents(this),
+			variables_ui: this.variables_ui
 		}, { is_folder: false });
 		
+		
 		//Call super.open for naissance.Entity
+		this.update();
 		super.open(type, options);
 	}
 	

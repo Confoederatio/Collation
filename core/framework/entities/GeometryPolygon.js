@@ -162,54 +162,22 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 	}
 	
 	drawUI () {
-		//Declare local instance variables
-		if (!this.interface) this.interface = veInterface({
-			information: veHTML(() => {
-				//Declare local instance variables
-				let area_km2 = (this.geometry && this.isOpen("instance")) ?
-					this.geometry.getArea()/1000000 : 0;
-				
-				//Return statement
-				return `ID: ${this.id} | Area: ${String.formatNumber(area_km2)}km^2`;
-			}, { width: 99, x: 0, y: 0 }),
-			move_to_brush: veButton(() => DALS.Timeline.parseAction("select_geometry", [{
-				type: "Brush", select_geometry_id: this.id
-			}]), { name: "Move To Brush", limit: () => (main.brush.selected_geometry?.id !== this.id), x: 0, y: 1 }),
-			finish_polygon: veButton(() => DALS.Timeline.parseAction("deselect_geometry", [{
-				type: "Brush", select_geometry_id: false
-			}]), { name: "Finish Polygon", limit: () => (main.brush.selected_geometry?.id === this.id), x: 0, y: 1 }),
-			
-			selected: veCheckbox(this.selected, {
-				name: "Selected",
-				onuserchange: (v) => this.selected = v,
-				x: 1, y: 1
-			}),
-			debug: veButton(() => {
-				console.log(`$geometry - naissance.GeometryPolygon (ID: ${this.id}):`, this);
-				window.$geometry = this;
-			}, {
-				name: "Debug",
-				x: 2, y: 1
-			})
-		}, { is_folder: false });
-		if (!this.edit_symbol_ui) this.edit_symbol_ui = veInterface({
-			edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
-				name: "Label",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			}),
-			edit_polygon: new UI_PolygonSymbol(main.settings.default_polygon_symbol, {
-				name: "Polygon",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			}),
-			edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
-				name: "Stroke",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			})
-		}, { name: "Edit Symbol" });
-		if (!this.keyframes_ui) this.keyframes_ui = veInterface({}, {
-			name: `Keyframes`, open: true
-		});
-		if (!this.variables_ui) super.drawVariablesEditor();
-		this.update();
+		//Return statement
+		return {
+			edit_symbol_ui: veInterface({
+				edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
+					name: "Label",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				}),
+				edit_polygon: new UI_PolygonSymbol(main.settings.default_polygon_symbol, {
+					name: "Polygon",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				}),
+				edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
+					name: "Stroke",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				})
+			}, { name: "Edit Symbol" })
+		};
 	}
 };

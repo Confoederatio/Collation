@@ -140,15 +140,8 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 	}
 	
 	drawUI () {
-		//Declare UI
-		this.interface = veInterface({
-			information: veHTML(() => {
-				//Declare local instance variables
-				let coordinates = (this.geometry && this.isOpen("instance")) ?
-					this.geometry.getCoordinates().toJSON() : { x: 0, y: 0 }
-				
-				return `ID: ${this.id} | X: ${String.formatNumber(coordinates.x, 4)}, Y: ${String.formatNumber(coordinates.y, 4)}`;
-			}, { width: 99, x: 0, y: 0 }),
+		//Return statement
+		return {
 			move_marker: veButton((v, local_component) => {
 				if (!this._is_being_moved) {
 					veToast(`Click a new location on the map to move this marker to.`);
@@ -174,21 +167,17 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 					this.draw();
 					local_component.name = `Move Marker`;
 				}
-			}, { name: "Move Marker", x: 0, y: 1 })
-		}, { is_folder: false });
-		this.edit_symbol_ui = veInterface({
-			edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
-				name: "Label",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			}),
-			edit_point: new UI_PointSymbol(main.settings.default_point_symbol, {
-				name: "Point",
-				special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-			})
-		}, { name: "Edit Symbol" });
-		this.keyframes_ui = veInterface({}, {
-			name: "Keyframes", open: true
-		});
-		super.drawVariablesEditor();
+			}, { name: "Move Marker", x: 0, y: 1 }),
+			edit_symbol_ui: veInterface({
+				edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
+					name: "Label",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				}),
+				edit_point: new UI_PointSymbol(main.settings.default_point_symbol, {
+					name: "Point",
+					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
+				})
+			}, { name: "Edit Symbol" })
+		};
 	}
 };
