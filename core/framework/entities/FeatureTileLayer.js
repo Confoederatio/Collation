@@ -3,7 +3,7 @@ if (!global.naissance) global.naissance = {};
  * @type {naissance.FeatureTileLayer}
  */
 naissance.FeatureTileLayer = class extends naissance.Feature {
-	static symbol_obj = {
+	static hierarchy_symbol = {
 		icon: "map",
 		name: "Tile Layer"
 	};
@@ -24,68 +24,6 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 		//Declare local instance variables
 		this._is_visible = true;
 		this._name = "New Tile Layer";
-		
-		let preset_options = {};
-		let presets_obj = config.features.tile_layer.tilemap_presets;
-		
-		//Populate preset_options
-		Object.iterate(presets_obj, (local_key, local_value) => {
-			preset_options[local_key] = {
-				name: local_value.name,
-				selected: (this.options.preset === local_key)
-			};
-		});
-		
-		//Set this.interface
-		this.interface = veInterface({
-			opacity: veRange(Math.returnSafeNumber(this.layer?.options?.opacity, 0), {
-				name: "Opacity",
-				onuserchange: (v) => this._DALS_addOptions({ opacity: v })
-			}),
-			resolution: veSelect({
-				"256/": {
-					name: "256",
-					selected: true
-				},
-				"null": {
-					name: "512"
-				}
-			}, {
-				name: "Resolution",
-				onuserchange: (v) => this._DALS_recalculatePreset(this.options.preset)
-			}),
-			set_preset: veSelect(preset_options, {
-				name: "Tilemap Preset",
-				onuserchange: (v) => {
-					this.options.preset = v;
-					this._DALS_recalculatePreset(this.options.preset);
-				}
-			}),
-			
-			advanced_options: veInterface({
-				maptiler_key: veText("xWbyIIrJg1lF1fmQFByp", { name: "Maptiler Key" }),
-				url_template: veURL("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-					name: "URL Template",
-					onuserchange: (v) => this._DALS_addOptions({ urlTemplate: v })
-				}),
-				subdomains: veText(["a", "b", "c", "d"], {
-					name: "Subdomains",
-					onuserchange: (v) => this._DALS_addOptions({ subdomains: v })
-				}),
-				
-				max_available_zoom: veNumber(0, {
-					name: "Max Available Zoom",
-					min: -1,
-					onuserchange: (v) => this._DALS_addOptions({ maxAvailableZoom: (v > 0) ? v : null })
-				}),
-				repeat_world: veToggle(false, {
-					name: "Repeat World",
-					onuserchange: (v) => this._DALS_addOptions({ repeatWorld: v })
-				})
-			}, { name: "Advanced Options" }),
-			
-			apply_as_base_layer: veButton(() => this._DALS_applyAsBaseLayer(), { name: "Apply as Base Layer" })
-		}, { is_folder: false });
 		this.layer = new maptalks.TileLayer(this.id, this.options);
 	}
 	
@@ -180,6 +118,76 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 	hide () {
 		this._is_visible = false;
 		this.draw();
+	}
+	
+	open (arg0_type, arg1_options) {
+		//Convert from parameters
+		let type = arg0_type;
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Declare local instance variables
+		let preset_options = {};
+		let presets_obj = config.features.tile_layer.tilemap_presets;
+		
+		//Populate preset_options
+		Object.iterate(presets_obj, (local_key, local_value) => {
+			preset_options[local_key] = {
+				name: local_value.name,
+				selected: (this.options.preset === local_key)
+			};
+		});
+		
+		//Set this.interface
+		if (!this.interface) this.interface = veInterface({
+			opacity: veRange(Math.returnSafeNumber(this.layer?.options?.opacity, 0), {
+				name: "Opacity",
+				onuserchange: (v) => this._DALS_addOptions({ opacity: v })
+			}),
+			resolution: veSelect({
+				"256/": {
+					name: "256",
+					selected: true
+				},
+				"null": {
+					name: "512"
+				}
+			}, {
+				name: "Resolution",
+				onuserchange: (v) => this._DALS_recalculatePreset(this.options.preset)
+			}),
+			set_preset: veSelect(preset_options, {
+				name: "Tilemap Preset",
+				onuserchange: (v) => {
+					this.options.preset = v;
+					this._DALS_recalculatePreset(this.options.preset);
+				}
+			}),
+			
+			advanced_options: veInterface({
+				maptiler_key: veText("xWbyIIrJg1lF1fmQFByp", { name: "Maptiler Key" }),
+				url_template: veURL("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+					name: "URL Template",
+					onuserchange: (v) => this._DALS_addOptions({ urlTemplate: v })
+				}),
+				subdomains: veText(["a", "b", "c", "d"], {
+					name: "Subdomains",
+					onuserchange: (v) => this._DALS_addOptions({ subdomains: v })
+				}),
+				
+				max_available_zoom: veNumber(0, {
+					name: "Max Available Zoom",
+					min: -1,
+					onuserchange: (v) => this._DALS_addOptions({ maxAvailableZoom: (v > 0) ? v : null })
+				}),
+				repeat_world: veToggle(false, {
+					name: "Repeat World",
+					onuserchange: (v) => this._DALS_addOptions({ repeatWorld: v })
+				})
+			}, { name: "Advanced Options" }),
+			
+			apply_as_base_layer: veButton(() => this._DALS_applyAsBaseLayer(), { name: "Apply as Base Layer" })
+		}, { is_folder: false });
+		super.open(type, options);
 	}
 	
 	remove () {
