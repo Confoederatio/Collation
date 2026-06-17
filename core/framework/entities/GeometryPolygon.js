@@ -8,6 +8,13 @@ if (!global.naissance) global.naissance = {};
  * @type {naissance.GeometryPolygon}
  */
 naissance.GeometryPolygon = class extends naissance.Geometry {
+	static hierarchy_symbol = {
+		icon: "pentagon",
+		name: "Polygon",
+		
+		colour: "fill" //Either 'fill'/'stroke'
+	};
+	
 	constructor (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -174,10 +181,10 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			}">pentagon</icon>`, {
 				tooltip: "GeometryPolygon"
 			}),
-			...super.drawHierarchyDatatypeGenerics(),
+			...this.drawHierarchyDatatypeGenerics(),
 			context_menu: veButton(() => {
 				try { this.history.draw(this.keyframes_ui); } catch (e) {}
-				super.open("instance", { name: this.name, ...this.window_options });
+				this.open("instance", { name: this.name, ...this.window_options });
 			}, {
 				attributes: { class: "order-101" },
 				name: "<icon>more_vert</icon>",

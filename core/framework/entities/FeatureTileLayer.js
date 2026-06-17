@@ -86,45 +86,7 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 		} catch (e) {}
 	}
 	
-	/*drawHierarchyDatatype () {
-		return naissance.Entity.drawHierarchyDatatype_FeatureTileLayer.call(this);
-	}*/
-	
-	fromJSON (arg0_json) {
-		let json = (typeof arg0_json !== "object") ? JSON.parse(arg0_json) : arg0_json;
-		
-		this.id = json.id;
-		this.is_base_layer = json.is_base_layer;
-		this._name = json.name;
-		this.options = json.options;
-		
-		// Re-sync the maptalks layer object with the loaded options
-		if (this.layer) {
-			this.layer._setOptions(this.options);
-			this.layer.setId(this.id);
-		} else {
-			this.layer = new maptalks.TileLayer(this.id, this.options);
-		}
-		
-		this.draw();
-		if (this.is_base_layer) {
-			// Delay slightly or ensure map exists before applying base layer
-			setTimeout(() => {
-				if (global.map) this._DALS_applyAsBaseLayer(true);
-			}, 0);
-		}
-	}
-	
-	hide () {
-		this._is_visible = false;
-		this.draw();
-	}
-	
-	open (arg0_type, arg1_options) {
-		//Convert from parameters
-		let type = arg0_type;
-		let options = (arg1_options) ? arg1_options : {};
-		
+	drawUI () {
 		//Declare local instance variables
 		let preset_options = {};
 		let presets_obj = config.features.tile_layer.tilemap_presets;
@@ -137,8 +99,8 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 			};
 		});
 		
-		//Set this.interface
-		if (!this.interface) this.interface = veInterface({
+		//Return statement
+		return {
 			opacity: veRange(Math.returnSafeNumber(this.layer?.options?.opacity, 0), {
 				name: "Opacity",
 				onuserchange: (v) => this._DALS_addOptions({ opacity: v })
@@ -186,8 +148,37 @@ naissance.FeatureTileLayer = class extends naissance.Feature {
 			}, { name: "Advanced Options" }),
 			
 			apply_as_base_layer: veButton(() => this._DALS_applyAsBaseLayer(), { name: "Apply as Base Layer" })
-		}, { is_folder: false });
-		super.open(type, options);
+		};
+	}
+	
+	fromJSON (arg0_json) {
+		let json = (typeof arg0_json !== "object") ? JSON.parse(arg0_json) : arg0_json;
+		
+		this.id = json.id;
+		this.is_base_layer = json.is_base_layer;
+		this._name = json.name;
+		this.options = json.options;
+		
+		// Re-sync the maptalks layer object with the loaded options
+		if (this.layer) {
+			this.layer._setOptions(this.options);
+			this.layer.setId(this.id);
+		} else {
+			this.layer = new maptalks.TileLayer(this.id, this.options);
+		}
+		
+		this.draw();
+		if (this.is_base_layer) {
+			// Delay slightly or ensure map exists before applying base layer
+			setTimeout(() => {
+				if (global.map) this._DALS_applyAsBaseLayer(true);
+			}, 0);
+		}
+	}
+	
+	hide () {
+		this._is_visible = false;
+		this.draw();
 	}
 	
 	remove () {

@@ -18,17 +18,6 @@ naissance.FeatureGroup = class extends naissance.Feature {
 		
 		//Declare local instance variables
 		this._name = "New Group";
-		
-		//Declare UI; attached to UI_LeftbarHierarchy
-		this.interface = veInterface({
-			actions: this.drawActionsPalette({
-				name: "Group",
-				type: "group",
-				
-				move_to_filters: ["FeatureGroup"] 
-			})
-		}, { is_folder: false });
-		this.drawHierarchyDatatype();
 	}
 	
 	addEntity (arg0_naissance_obj, arg1_do_not_refresh) {
@@ -44,6 +33,18 @@ naissance.FeatureGroup = class extends naissance.Feature {
 			this.entities.push(naissance_obj);
 			if (!do_not_refresh) this.drawHierarchyDatatype();
 		}
+	}
+	
+	drawUI () {
+		//Return statement
+		return {
+			actions: this.drawActionsPalette({
+				name: "Group",
+				type: "group",
+				
+				move_to_filters: ["FeatureGroup"]
+			})
+		};
 	}
 	
 	fromJSON (arg0_json) {

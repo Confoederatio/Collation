@@ -23,78 +23,6 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		this._name = "New Layer";
 		this._type = "default"; //Either 'default'/'provinces'
 		this._ui = {};
-		
-		//Declare UI
-		this.interface = veInterface({
-			open_table: veButton(() => this.window.refresh(), { name: "View Geometries", x: 0, y: 0 }),
-			debug: veButton(() => {
-				console.log(`$feature - naissance.FeatureLayer (ID: ${this.id}):`, this);
-				window.$feature = this;
-			}, {
-				name: "Debug",
-				x: 1, y: 0
-			}),
-			show_features: veToggle(this.metadata?.show_layer_features, {
-				name: "Show Layer Features",
-				onuserchange: (v) => {
-					if (v === false) {
-						if (this.metadata) delete this.metadata.show_layer_features;
-					} else {
-						if (!this.metadata) this.metadata = {};
-						this.metadata.show_layer_features = true;
-					}
-					UI_LeftbarHierarchy.refresh();
-				}
-			}),
-			show_geometries: veToggle(this.metadata?.show_layer_geometries, {
-				name: "Show Layer Geometries",
-				onuserchange: (v, e) => {
-					let all_geometries = this.getAllGeometries();
-					let max_recommended = Math.returnSafeNumber(main.settings.hierarchy_recommended_max_geometries_in_layer, 100);
-					let showLayerGeometries = () => {
-						if (!this.metadata) this.metadata = {};
-						this.metadata.show_layer_geometries = true;
-						UI_LeftbarHierarchy.refresh();
-					};
-					
-					if (v === false) {
-						if (this.metadata) delete this.metadata.show_layer_geometries;
-						UI_LeftbarHierarchy.refresh();
-					} else {
-						if (all_geometries.length > max_recommended) {
-							veConfirm(`This Layer contains ${String.formatNumber(all_geometries.length)} geometries. Are you sure you want to view its scene tree? (Recommended: ${String.formatNumber(max_recommended)})`, {
-								onclose: () => e.v = false,
-								special_function: () => showLayerGeometries()
-							})
-						} else { showLayerGeometries(); }
-					}
-				}
-			}),
-			
-			layer_type: veSelect({
-				default: {
-					name: "Default"
-				},
-				provinces: {
-					name: "Provinces"
-				}
-			}, {
-				name: "Layer Type",
-				selected: this._type,
-				
-				onuserchange: (v) => DALS.Timeline.parseAction("set_layer_type", [{
-					feature_obj: this.id,
-					set_layer_option: { key: "type", value: v }
-				}])
-			}),
-			
-			actions: this.drawActionsPalette({
-				name: "Layer",
-				type: "layer",
-				
-				move_to_filters: ["FeatureLayer"] 
-			})
-		}, { is_folder: false });
 	}
 	
 	get type () {
@@ -161,6 +89,80 @@ naissance.FeatureLayer = class extends naissance.Feature {
 			this.entities.push(naissance_obj);
 			if (!do_not_refresh) this.drawHierarchyDatatype();
 		}
+	}
+	
+	drawUI () {
+		//Return statement
+		return {
+			open_table: veButton(() => this.window.refresh(), { name: "View Geometries", x: 0, y: 0 }),
+			debug: veButton(() => {
+				console.log(`$feature - naissance.FeatureLayer (ID: ${this.id}):`, this);
+				window.$feature = this;
+			}, {
+				name: "Debug",
+				x: 1, y: 0
+			}),
+			show_features: veToggle(this.metadata?.show_layer_features, {
+				name: "Show Layer Features",
+				onuserchange: (v) => {
+					if (v === false) {
+						if (this.metadata) delete this.metadata.show_layer_features;
+					} else {
+						if (!this.metadata) this.metadata = {};
+						this.metadata.show_layer_features = true;
+					}
+					UI_LeftbarHierarchy.refresh();
+				}
+			}),
+			show_geometries: veToggle(this.metadata?.show_layer_geometries, {
+				name: "Show Layer Geometries",
+				onuserchange: (v, e) => {
+					let all_geometries = this.getAllGeometries();
+					let max_recommended = Math.returnSafeNumber(main.settings.hierarchy_recommended_max_geometries_in_layer, 100);
+					let showLayerGeometries = () => {
+						if (!this.metadata) this.metadata = {};
+						this.metadata.show_layer_geometries = true;
+						UI_LeftbarHierarchy.refresh();
+					};
+					
+					if (v === false) {
+						if (this.metadata) delete this.metadata.show_layer_geometries;
+						UI_LeftbarHierarchy.refresh();
+					} else {
+						if (all_geometries.length > max_recommended) {
+							veConfirm(`This Layer contains ${String.formatNumber(all_geometries.length)} geometries. Are you sure you want to view its scene tree? (Recommended: ${String.formatNumber(max_recommended)})`, {
+								onclose: () => e.v = false,
+								special_function: () => showLayerGeometries()
+							})
+						} else { showLayerGeometries(); }
+					}
+				}
+			}),
+			
+			layer_type: veSelect({
+				default: {
+					name: "Default"
+				},
+				provinces: {
+					name: "Provinces"
+				}
+			}, {
+				name: "Layer Type",
+				selected: this._type,
+				
+				onuserchange: (v) => DALS.Timeline.parseAction("set_layer_type", [{
+					feature_obj: this.id,
+					set_layer_option: { key: "type", value: v }
+				}])
+			}),
+			
+			actions: this.drawActionsPalette({
+				name: "Layer",
+				type: "layer",
+				
+				move_to_filters: ["FeatureLayer"]
+			})
+		};
 	}
 	
 	fromJSON (arg0_json) {

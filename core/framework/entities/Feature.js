@@ -423,41 +423,6 @@ naissance.Feature = class extends naissance.Entity {
 		});
 	}
 	
-	drawHierarchyDatatypeGenerics () {
-		//Return statement
-		return {
-			metadata: veHTML("", {
-				attributes: {
-					id: "metadata",
-					"is-visible": String(this._is_visible)
-				}
-			}),
-			hide_visibility: veButton(() => {
-				DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
-			}, {
-				attributes: { class: "order-99 onhover-visible" },
-				name: `<icon>visibility</icon>`,
-				limit: () => this._is_visible,
-				tooltip: "Hide Feature"
-			}),
-			show_visibility: veButton(() => {
-				DALS.Timeline.parseAction("show_feature", [{ feature_obj: this.id, set_visibility: true }]);
-			}, {
-				attributes: { class: "order-99 onhover-visible" },
-				name: "<icon>visibility_off</icon>",
-				limit: () =>  !this._is_visible,
-				tooltip: "Show Feature"
-			}),
-			delete_button: veButton(() => {
-				DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
-			}, {
-				attributes: { class: "order-100 onhover-visible" },
-				name: "<icon>delete</icon>", 
-				tooltip: "Delete",
-			}),
-		};
-	}
-	
 	/**
 	 * Returns an array of all {@link naissance.Geometry}|{@link naissance.Feature} instances housed in the Feature.
 	 * - Method of: {@link naissance.Feature}
@@ -577,6 +542,60 @@ naissance.Feature = class extends naissance.Entity {
 			for (let i = 0; i < this.entities.length; i++)
 				if (this.entities[i].hide)
 					this.entities[i].hide();
+	}
+	
+	open (arg0_type, arg1_options) {
+		//Convert from parameters
+		let type = arg0_type;
+		let options = (arg1_options) ? arg1_options : {};
+		
+		if (!this.quick_actions) this.quick_actions = veRawInterface({
+			hide_visibility: veButton(() => {
+				DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
+			}, {
+				attributes: { class: "order-99 onhover-visible" },
+				name: `<icon>visibility</icon>`,
+				limit: () => this._is_visible,
+				tooltip: "Hide Feature"
+			}),
+			show_visibility: veButton(() => {
+				DALS.Timeline.parseAction("show_feature", [{ feature_obj: this.id, set_visibility: true }]);
+			}, {
+				attributes: { class: "order-99 onhover-visible" },
+				name: "<icon>visibility_off</icon>",
+				limit: () =>  !this._is_visible,
+				tooltip: "Show Feature"
+			}),
+			delete_button: veButton(() => {
+				DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
+				super.close("instance");
+			}, {
+				attributes: { class: "order-100 onhover-visible" },
+				name: "<icon>delete</icon>",
+				tooltip: "Delete",
+			}),
+			
+			debug: veButton(() => {
+				console.log(this);
+			}, { name: "Debug" })
+		}, {
+			name: "<b>Quick Actions:</b>",
+			style: {
+				alignItems: "center",
+				display: "flex",
+				"[component='ve-button']": { marginLeft: "var(--padding)" },
+			},
+			width: 99
+		});
+		if (!this._interface) this._interface = veInterface({
+			quick_actions: this.quick_actions,
+			
+			...((typeof this.drawUI === "function") ? this.drawUI() : {}),
+			...ve.Class.getVercengenComponents(this)
+		}, { is_folder: false });
+		
+		//Call super.open for naissance.Entity
+		super.open(type, options);
 	}
 	
 	remove () {
