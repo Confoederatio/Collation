@@ -212,22 +212,4 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		if (!this.variables_ui) super.drawVariablesEditor();
 		this.update();
 	}
-	
-	getActionsBarElement () {
-		//Declare local instance variables
-		let actions_bar_el = super.getActionsBarElement();
-		
-		let context_menu_button = veButton(() => {
-			try { this.history.draw(this.keyframes_ui); } catch (e) {}
-			this.open("instance", { name: this.name, ...this.window_options });
-		}, {
-			attributes: { class: "order-101" },
-			name: "<icon>more_vert</icon>",
-			tooltip: "More Actions"
-		});
-			context_menu_button.bind(actions_bar_el);
-		
-		//Return statement
-		return actions_bar_el;
-	}
 };

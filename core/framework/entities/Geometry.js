@@ -190,70 +190,6 @@ naissance.Geometry = class extends naissance.Entity {
 	}
 	
 	/**
-	 * Returns an object of hierarchy generics that can be destructured when `drawHierarchyDatatype()` is called.
-	 * 
-	 * @returns {Object}
-	 */
-	drawHierarchyDatatypeGenerics () {
-		//Declare local instance variables
-		let current_keyframe = (this._current_keyframe) ? 
-			this._current_keyframe : this.current_keyframe;
-		
-		//Return statement
-		return {
-			metadata: veHTML("", {
-				attributes: {
-					id: "metadata",
-					"is-visible": String(!current_keyframe.value[2]?.hidden)
-				}
-			}),
-			multitag: veButton(() => {
-				if (this.tags_editor) this.tags_editor.close();
-				this.tags_editor = veWindow({
-					tags_list: veMultiTag(this.metadata.tags, {
-						onuserchange: (v) => this.metadata.tags = v
-					})
-				}, {
-					name: `Edit Tags (${this.name})`,
-					can_rename: false,
-					width: "20rem",
-					
-					onuserchange: (v) => {
-						if (v.close)
-							DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
-					}
-				})
-			}, {
-				attributes: { class: "order-99" },
-				name: "<icon>new_label</icon>", tooltip: "Manage Tags"
-			}),
-			hide_geometry: veButton(() => {
-				DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
-			}, {
-				attributes: { class: "order-100" },
-				name: `<icon>visibility</icon>`,
-				limit: () => !current_keyframe.value[2]?.hidden,
-				tooltip: "Hide Geometry"
-			}),
-			show_geometry: veButton(() => {
-				DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
-			}, {
-				attributes: { class: "order-100" },
-				name: "<icon>visibility_off</icon>",
-				limit: () => current_keyframe.value[2]?.hidden,
-				tooltip: "Show Geometry"
-			}),
-			delete_button: veButton(() => {
-				DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
-			}, {
-				attributes: { class: "order-101" },
-				name: "<icon>delete</icon>",
-				tooltip: "Delete Geometry"
-			})
-		};
-	}
-	
-	/**
 	 * Draws the variables editor for the current geometry UI.
 	 */
 	drawVariablesEditor () {
@@ -368,25 +304,6 @@ naissance.Geometry = class extends naissance.Entity {
 	 */
 	fromJSON () {
 		console.warn(`naissance.Geometry.fromJSON() was called for: ${this.class_name}, but was not defined.`);
-	}
-	
-	/**
-	 * Returns the actions bar element with geometry generics.
-	 * 
-	 * @returns {HTMLElement}
-	 */
-	getActionsBarElement () {
-		//Declare local instance variables
-		let actions_bar_el = document.createElement("div");
-			actions_bar_el.id = `actions-bar`;
-		let hierarchy_generics = this.drawHierarchyDatatypeGenerics();
-			
-		//Iterate over hierarchy_generics
-		Object.iterate(hierarchy_generics, (local_key, local_value) => 
-			local_value.bind(actions_bar_el));
-		
-		//Return statement
-		return actions_bar_el;
 	}
 	
 	/**
@@ -511,8 +428,59 @@ naissance.Geometry = class extends naissance.Entity {
 		let type = (arg0_type) ? arg0_type : "instance";
 		let options = (arg1_options) ? arg1_options : {};
 		
+		//Initialise options
+		if (!options.name) options.name = this.name;
+		if (!options.width) options.width = "24rem";
+		
 		//Declare local instance variables
-		if (!this.quick_actions) this.quick_actions = veRawInterface(this.drawHierarchyDatatypeGenerics(), {
+		let current_keyframe = (this._current_keyframe) ?
+			this._current_keyframe : this.current_keyframe;
+		
+		if (!this.quick_actions) this.quick_actions = veRawInterface({
+			multitag: veButton(() => {
+				if (this.tags_editor) this.tags_editor.close();
+				this.tags_editor = veWindow({
+					tags_list: veMultiTag(this.metadata.tags, {
+						onuserchange: (v) => this.metadata.tags = v
+					})
+				}, {
+					name: `Edit Tags (${this.name})`,
+					can_rename: false,
+					width: "20rem",
+					
+					onuserchange: (v) => {
+						if (v.close)
+							DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
+					}
+				})
+			}, {
+				attributes: { class: "order-99" },
+				name: "<icon>new_label</icon>", tooltip: "Manage Tags"
+			}),
+			hide_geometry: veButton(() => {
+				DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
+			}, {
+				attributes: { class: "order-100" },
+				name: `<icon>visibility</icon>`,
+				limit: () => !current_keyframe.value[2]?.hidden,
+				tooltip: "Hide Geometry"
+			}),
+			show_geometry: veButton(() => {
+				DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
+			}, {
+				attributes: { class: "order-100" },
+				name: "<icon>visibility_off</icon>",
+				limit: () => current_keyframe.value[2]?.hidden,
+				tooltip: "Show Geometry"
+			}),
+			delete_button: veButton(() => {
+				DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
+			}, {
+				attributes: { class: "order-101" },
+				name: "<icon>delete</icon>",
+				tooltip: "Delete Geometry"
+			})
+		}, {
 			name: "<b>Quick Actions:</b>",
 			style: {
 				alignItems: "center",
