@@ -1,4 +1,10 @@
 [component="ve-hierarchy"].ui-leftbar-hierarchy {
+    /* -- Buttons -- */
+    [data-type] {
+        [component="ve-button"] button { border: 0; }
+        .nst-content { padding-right: 0; }
+    }
+    
     .order-99 {
         margin-left: auto;
         order: 99;
@@ -6,17 +12,6 @@
     }
     .order-100 { order: 100; padding: 0; }
     .order-101 { order: 101; padding: 0; }
-
-    /* -- naissance.FeatureGroup -- */
-    [data-type="FeatureGroup"] {
-        [component="ve-button"] > button { border: 0; }
-        .nst-content { padding-right: 0; }
-    }
-    /* -- naissance.GeometryPolygon -- */
-    [data-type="GeometryPolygon"] {
-        [component="ve-button"] > button { border: 0; }
-        .nst-content { padding-right: 0; }
-    }
 
     /* -- Selection -- */
     [data-is-selected="true"] > .nst-content {

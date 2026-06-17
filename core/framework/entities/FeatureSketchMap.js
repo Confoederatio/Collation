@@ -3,6 +3,11 @@ if (!global.naissance) global.naissance = {};
  * @type {naissance.FeatureLayer}
  */
 naissance.FeatureSketchMap = class extends naissance.Feature {
+	static hierarchy_symbol = {
+		icon: "app_registration",
+		name: "Sketch Map"
+	};
+	
 	constructor (arg0_entities, arg1_options) {
 		super();
 		this.class_name = "FeatureSketchMap";
@@ -120,10 +125,6 @@ naissance.FeatureSketchMap = class extends naissance.Feature {
 			for (let i = 0; i < this._entities.length; i++)
 				this._entities[i].hide();
 		}
-	}
-	
-	drawHierarchyDatatype () {
-		return naissance.Entity.drawHierarchyDatatype_FeatureSketchMap.call(this);
 	}
 	
 	fromJSON (arg0_json) {
