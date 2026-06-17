@@ -17,11 +17,42 @@ naissance.Entity = class extends ve.Class {
 		let all_geometries;
 		let attributes_obj = {};
 		let hierarchy_obj = {};
+		let icon_style = "";
 		let symbol_obj = (naissance[this.class_name].hierarchy_symbol || {});
 		
 		let symbol_name = (symbol_obj.name) ? symbol_obj.name : this.class_name;
 		
+		//Remove previous hierarchy_datatype
+		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
+		
 		//Geometry: Keyframe handling
+		if (this.class_name.startsWith("Geometry")) {
+			let current_keyframe = this.history.getKeyframe({
+				guaranteed_indexes: [1]
+			});
+				this._current_keyframe = current_keyframe;
+			let current_symbol = current_keyframe.value[1];
+			let is_visible = false;
+			
+			try {
+				if (current_keyframe.value[0] !== undefined && Object.keys(current_keyframe.value[0]).length)
+					is_visible = true;
+			} catch (e) {}
+			
+			//Set attributes
+			attributes_obj["data-is-selected"] = this.selected;
+			attributes_obj["data-is-visible"] = String(is_visible);
+			attributes_obj["data-selected-geometry"] = (main.brush.selected_geometry?.id === this.id);
+			
+			//Set symbol
+			if (symbol_obj.colour === "fill") {
+				if (current_symbol?.polygonFill) 
+					icon_style += `color:${current_symbol.polygonFill};`;
+			} else if (symbol_obj.colour === "stroke") {
+				if (current_symbol?.lineColor)
+					icon_style += `color:${current_symbol.lineColor};`;
+			}
+		}
 		
 		//Feature: this.entities handling
 		if (this.entities) {
@@ -85,8 +116,8 @@ naissance.Entity = class extends ve.Class {
 		}
 		
 		//Return statement
-		return new ve.HierarchyDatatype({
-			icon: new ve.HTML(`${(symbol_obj.icon) ? `<icon>${symbol_obj.icon}</icon>` : ""}`, {
+		this.hierarchy_datatype = new ve.HierarchyDatatype({
+			icon: new ve.HTML(`${(symbol_obj.icon) ? `<icon style="${icon_style}">${symbol_obj.icon}</icon>` : ""}`, {
 				tooltip: `${symbol_name}${(all_geometries) ? ` (${String.formatNumber(all_geometries.length)} Items)` : ""}`,
 			}),
 			
@@ -110,12 +141,13 @@ naissance.Entity = class extends ve.Class {
 				"data-type": this.class_name
 			},
 			instance: this,
+			ignore_component: true,
 			is_collapsed: this.is_collapsed,
 			name: this.name,
 			name_options: {
 				onchange: (v) => {
 					this.name = v;
-					this.drawHierarchyDatatype();
+					setTimeout(() => this.drawHierarchyDatatype()); //Prevents a race condition
 				}
 			},
 			oncollapse: (v, e) => {
@@ -124,6 +156,8 @@ naissance.Entity = class extends ve.Class {
 					UI_LeftbarHierarchy.refresh();
 			},
 			type: (!this.entities) ? "item" : "group"
-		})
+		});
+		delete this._current_keyframe;
+		return this.hierarchy_datatype;
 	}
 };

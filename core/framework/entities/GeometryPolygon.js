@@ -161,58 +161,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		}
 	}
 	
-	drawHierarchyDatatype () {
-		//Declare local instance variables
-		let current_keyframe = this.history.getKeyframe();
-			this._current_keyframe = current_keyframe;
-		let current_symbol = current_keyframe.value[1];
-		let is_visible = false;
-		
-		try {
-			if (current_keyframe.value[0] !== undefined && Object.keys(current_keyframe.value[0]).length)
-				is_visible = true;
-		} catch (e) {}
-		
-		//Return statement
-		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
-		this.hierarchy_datatype = new ve.HierarchyDatatype({
-			icon: veHTML(`<icon style = "${
-				(current_symbol?.polygonFill) ? `color: ${current_symbol?.polygonFill};` : ""
-			}">pentagon</icon>`, {
-				tooltip: "GeometryPolygon"
-			}),
-			...this.drawHierarchyDatatypeGenerics(),
-			context_menu: veButton(() => {
-				try { this.history.draw(this.keyframes_ui); } catch (e) {}
-				this.open("instance", { name: this.name, ...this.window_options });
-			}, {
-				attributes: { class: "order-101" },
-				name: "<icon>more_vert</icon>",
-				tooltip: "More Actions"
-			})
-		},  {
-			attributes: {
-				"data-is-selected": this.selected,
-				"data-is-visible": (is_visible) ? "true" : "false",
-				"data-selected-geometry": (main.brush.selected_geometry?.id === this.id),
-				"data-type": "GeometryPolygon"
-			},
-			do_not_display: true,
-			instance: this,
-			name: this.name,
-			name_options: {
-				onprogramchange: () => {
-					this.drawHierarchyDatatype();
-				},
-				onuserchange: (v) => {
-					this.name = v;
-				}
-			}
-		});
-		delete this._current_keyframe;
-		return this.hierarchy_datatype;
-	}
-	
 	getActionsBarElement () {
 		//Declare local instance variables
 		let actions_bar_el = super.getActionsBarElement();

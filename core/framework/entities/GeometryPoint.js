@@ -1,6 +1,11 @@
 if (!global.naissance) global.naissance = {};
 
 naissance.GeometryPoint = class extends naissance.Geometry {
+	static hierarchy_symbol = {
+		icon: "location_on",
+		name: "Point"
+	};
+	
 	constructor () {
 		super();
 		this.class_name = "GeometryPoint";
@@ -183,49 +188,5 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 					this.label_geometries[i].remove();
 			if (this.selected_geometry) this.selected_geometry.remove();
 		}
-	}
-	
-	drawHierarchyDatatype () {
-		//Declare local instance variables
-		let current_keyframe = this.history.getKeyframe();
-		let current_symbol = current_keyframe.value[1];
-		
-		//Return statement
-		return new ve.HierarchyDatatype({
-			icon: veHTML(`<icon>location_on</icon>`, { tooltip: "GeometryPoint" }),
-			...super.drawHierarchyDatatypeGenerics(),
-			context_menu: veButton(() => {
-				this.history.draw(this.keyframes_ui);
-				super.open("instance", { name: this.name, ...this.window_options })
-			}, {
-				name: "<icon>more_vert</icon>",
-				tooltip: "More Actions",
-				style: { cursor: "padding", order: 101, padding: 0 }
-			})
-		}, {
-			attributes: {
-				"data-is-selected": this.selected,
-				"data-is-visible": (current_keyframe.value[0] !== undefined && Object.keys(current_keyframe.value[0]).length) ? "true" : "false",
-				"data-selected-geometry": (main.brush.selected_geometry?.id === this.id),
-			},
-			instance: this,
-			name: this.name,
-			name_options: {
-				onprogramchange: () => {
-					this.drawHierarchyDatatype();
-				},
-				onuserchange: (v) => {
-					this.name = v;
-				}
-			},
-			style: {
-				".nst-content": {
-					paddingRight: 0
-				},
-				"[component='ve-button'] > button": {
-					border: 0
-				}
-			}
-		});
 	}
 };
