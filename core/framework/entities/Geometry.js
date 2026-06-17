@@ -544,7 +544,6 @@ naissance.Geometry = class extends naissance.Entity {
 		
 		
 		//Call super.open for naissance.Entity
-		this.update();
 		super.open(type, options);
 	}
 	
