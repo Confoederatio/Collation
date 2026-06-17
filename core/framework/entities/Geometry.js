@@ -529,11 +529,6 @@ naissance.Geometry = class extends naissance.Entity {
 				})
 			}, {
 				do_not_display: true,
-				style: {
-					alignItems: "center",
-					display: "flex",
-					"[component='ve-button']": { marginLeft: "var(--padding)" }
-				},
 				width: 99
 			}),
 			
