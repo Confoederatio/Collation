@@ -528,6 +528,9 @@ naissance.Geometry = class extends naissance.Entity {
 					tooltip: "Delete Geometry"
 				})
 			}, {
+				attributes: {
+					"naissance-ui": "geometry-actions-bar"
+				},
 				do_not_display: true,
 				width: 99
 			}),
