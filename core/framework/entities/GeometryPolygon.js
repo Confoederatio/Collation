@@ -161,29 +161,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		}
 	}
 	
-	getActionsBarElement () {
-		//Declare local instance variables
-		let actions_bar_el = super.getActionsBarElement();
-		
-		let context_menu_button = veButton(() => {
-			try { this.history.draw(this.keyframes_ui); } catch (e) {}
-			this.open("instance", { name: this.name, ...this.window_options });
-		}, {
-			attributes: { class: "order-101" },
-			name: "<icon>more_vert</icon>",
-			tooltip: "More Actions"
-		});
-			context_menu_button.bind(actions_bar_el);
-		
-		//Return statement
-		return actions_bar_el;
-	}
-	
-	open (arg0_type, arg1_options) {
-		//Convert from parameters
-		let type = (arg0_type) ? arg0_type : "instance";
-		let options = (arg1_options) ? arg1_options : {};
-		
+	drawUI () {
 		//Declare local instance variables
 		if (!this.interface) this.interface = veInterface({
 			information: veHTML(() => {
@@ -212,16 +190,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			}, {
 				name: "Debug",
 				x: 2, y: 1
-			}),
-			
-			actions_bar: veRawInterface(this.drawHierarchyDatatypeGenerics(), {
-				name: "<b>Quick Actions:</b>",
-				style: {
-					alignItems: "center",
-					display: "flex",
-					"[component='ve-button']": { marginLeft: "var(--padding)" }
-				},
-				width: 99
 			})
 		}, { is_folder: false });
 		if (!this.edit_symbol_ui) this.edit_symbol_ui = veInterface({
@@ -243,8 +211,23 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		});
 		if (!this.variables_ui) super.drawVariablesEditor();
 		this.update();
+	}
+	
+	getActionsBarElement () {
+		//Declare local instance variables
+		let actions_bar_el = super.getActionsBarElement();
 		
-		//Call super.open for ve.Class
-		super.open(type, options);
+		let context_menu_button = veButton(() => {
+			try { this.history.draw(this.keyframes_ui); } catch (e) {}
+			this.open("instance", { name: this.name, ...this.window_options });
+		}, {
+			attributes: { class: "order-101" },
+			name: "<icon>more_vert</icon>",
+			tooltip: "More Actions"
+		});
+			context_menu_button.bind(actions_bar_el);
+		
+		//Return statement
+		return actions_bar_el;
 	}
 };

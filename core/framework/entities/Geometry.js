@@ -506,6 +506,33 @@ naissance.Geometry = class extends naissance.Entity {
 		this.draw();
 	}
 	
+	open (arg0_type, arg1_options) {
+		//Convert from parameters
+		let type = (arg0_type) ? arg0_type : "instance";
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Declare local instance variables
+		if (!this.quick_actions) this.quick_actions = veRawInterface(this.drawHierarchyDatatypeGenerics(), {
+			name: "<b>Quick Actions:</b>",
+			style: {
+				alignItems: "center",
+				display: "flex",
+				"[component='ve-button']": { marginLeft: "var(--padding)" }
+			},
+			width: 99
+		});
+		
+		if (!this._interface) this._interface = veInterface({
+			quick_actions: this.quick_actions,
+			
+			...((typeof this.drawUI === "function") ? this.drawUI() : {}),
+			...ve.Class.getVercengenComponents(this)
+		}, { is_folder: false });
+		
+		//Call super.open for naissance.Entity
+		super.open(type, options);
+	}
+	
 	/**
 	 * Removes the current {@link naissance.Geometry} instance.
 	 */
