@@ -442,7 +442,7 @@ naissance.Geometry = class extends naissance.Entity {
 			this.drawVariablesEditor();
 		}
 		
-		if (!this._interface) this._interface = veInterface({
+		if (!this.interface) this.interface = veInterface({
 			information: veHTML(() => {
 				//Declare local instance variables
 				let format_string = `ID: ${this.id}`;
