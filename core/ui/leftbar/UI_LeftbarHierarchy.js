@@ -156,13 +156,21 @@ global.UI_LeftbarHierarchy = class {
 		main.renderer.update();
 	}
 	
-	handleSearch (v) {
+	handleSearch (arg0_value) {
+		//Convert from parameters
+		let value = (arg0_value) ? arg0_value : "";
+		
 		if (!this.osm_search) this.osm_search = new UI_OSMSearch(undefined, {
-			onprogramchange: (val, evt) => {
-				(val === "") ? (delete UI_LeftbarHierarchy.do_not_refresh, UI_LeftbarHierarchy.refresh()) : this.hierarchy.element.prepend(evt.element);
+			onprogramchange: (v, e) => {
+				if (v === "") {
+					delete UI_LeftbarHierarchy.do_not_refresh;
+					UI_LeftbarHierarchy.refresh();
+				} else {
+					this.hierarchy.element.prepend(e.element);
+				}
 			}
 		});
-		this.osm_search.v = v;
+		this.osm_search.v = value;
 	}
 	
 	drawFeatures () {
