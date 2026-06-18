@@ -573,11 +573,7 @@ naissance.Feature = class extends naissance.Entity {
 				attributes: { class: "order-100 onhover-visible" },
 				name: "<icon>delete</icon>",
 				tooltip: "Delete",
-			}),
-			
-			debug: veButton(() => {
-				console.log(this);
-			}, { name: "Debug" })
+			})
 		}, {
 			name: "<b>Quick Actions:</b>",
 			style: {

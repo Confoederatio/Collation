@@ -528,8 +528,9 @@ naissance.Geometry = class extends naissance.Entity {
 		}
 		
 		//Return statement
-		return veRawInterface(components_obj, {
+		return new ve.RawInterface(components_obj, {
 			attributes: {
+				"class": options.mode,
 				"naissance-ui": "geometry-actions-bar"
 			},
 			do_not_display: true,
