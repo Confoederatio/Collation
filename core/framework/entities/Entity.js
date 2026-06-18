@@ -22,8 +22,9 @@ naissance.Entity = class extends ve.Class {
 		
 		let symbol_name = (symbol_obj.name) ? symbol_obj.name : this.class_name;
 		
-		//Remove previous hierarchy_datatype
+		//Remove previous hierarchy_datatype; handle attributes
 		if (this.hierarchy_datatype?.remove) this.hierarchy_datatype.remove();
+		if (options.is_search) attributes_obj["data-is-search"] = "true";
 		
 		//Geometry: Keyframe handling
 		if (this.class_name.startsWith("Geometry")) {

@@ -8,6 +8,7 @@
  * - `arg0_components_obj`: {@link Object}<{@link ve.Component}|{@link ve.HierarchyDatatype}> - The individual items to append to the current hierarchy.
  * - `arg1_options`: {@link Object}
  *   - `.allow_disabled_reordering=false`: {@link boolean}
+ *   - `.disable_default_search=false`: {@link boolean}
  *   - `.disable_searchbar=false`: {@link boolean}
  *   - `.namespace=Class.generateRandomID(ve.Hierarchy)`: {@link string}
  *   - `.onitemchange`: {@link function}(v:{@link Object}, e:{ item_el:{@link HTMLElement}, old_parent_el:{@link HTMLElement}, old_parent_order:{@link Array}<{@link HTMLElement}>, new_parent_el:{@link HTMLElement}, new_parent_order:{@link Array}<{@link HTMLElement}> })
@@ -435,28 +436,30 @@ ve.Hierarchy = class extends ve.Component {
 		//Convert from parameters
 		let name = (arg0_name) ? arg0_name : "";
 		
-		//Declare local instance variables
-		let all_hierarchy_datatype_els = this.element.querySelectorAll(`[component="ve-hierarchy-datatype"]`);
-		
-		//If name is nothing, restore visibility to all hidden results
-		if (name.length === 0) {
-			for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
-				all_hierarchy_datatype_els[i].style.display = "block";
-		} else {
-			let all_filtered_els = [];
+		//Default search handler
+		if (!this.options.disable_default_search) {
+			let all_hierarchy_datatype_els = this.element.querySelectorAll(`[component="ve-hierarchy-datatype"]`);
 			
-			for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
-				if (all_hierarchy_datatype_els[i].instance.name.toLowerCase().trim().indexOf(name.toLowerCase().trim()) !== -1) {
+			//If name is nothing, restore visibility to all hidden results
+			if (name.length === 0) {
+				for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
 					all_hierarchy_datatype_els[i].style.display = "block";
-					all_filtered_els.push(all_hierarchy_datatype_els[i]);
-				} else {
-					all_hierarchy_datatype_els[i].style.display = "none";
-				}
-			
-			for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
-				for (let x = 0; x < all_filtered_els.length; x++)
-					if (all_hierarchy_datatype_els[i].contains(all_filtered_els[x]) || all_hierarchy_datatype_els[i].instance.options.disabled === true)
+			} else {
+				let all_filtered_els = [];
+				
+				for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
+					if (all_hierarchy_datatype_els[i].instance.name.toLowerCase().trim().indexOf(name.toLowerCase().trim()) !== -1) {
 						all_hierarchy_datatype_els[i].style.display = "block";
+						all_filtered_els.push(all_hierarchy_datatype_els[i]);
+					} else {
+						all_hierarchy_datatype_els[i].style.display = "none";
+					}
+				
+				for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
+					for (let x = 0; x < all_filtered_els.length; x++)
+						if (all_hierarchy_datatype_els[i].contains(all_filtered_els[x]) || all_hierarchy_datatype_els[i].instance.options.disabled === true)
+							all_hierarchy_datatype_els[i].style.display = "block";
+			}
 		}
 		
 		//Fire this.options.onsearch if specified

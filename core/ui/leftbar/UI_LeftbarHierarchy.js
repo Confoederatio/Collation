@@ -13,14 +13,18 @@ global.UI_LeftbarHierarchy = class {
 			style: { padding: 0 }
 		});
 		
-		// Persistent elements
+		//Persistent elements
 		this.topbar_el = document.createElement("div");
 		this.topbar_el.classList.add("topbar");
+		this.results_el = document.createElement("div");
+		this.results_el.id = "results";
+		
 		this.value.element.innerHTML = "";
 		this.value.element.appendChild(this.topbar_el);
 		
 		this.hierarchy = new ve.Hierarchy({}, {
 			attributes: { class: "ui-leftbar-hierarchy" },
+			disable_default_search: true,
 			onuserchange: (v, e) => {
 				this.handleHierarchyChange(v, e);
 			},
@@ -30,6 +34,8 @@ global.UI_LeftbarHierarchy = class {
 			searchbar_placeholder: "Search the map ..."
 		});
 		this.value.element.appendChild(this.hierarchy.element);
+		
+		this.value.element.appendChild(this.results_el);
 		
 		this.refresh();
 		this.attachDelegatedEvents();
@@ -159,7 +165,12 @@ global.UI_LeftbarHierarchy = class {
 	handleSearch (arg0_value) {
 		//Convert from parameters
 		let value = (arg0_value) ? arg0_value : "";
+			value = value.trim().toLowerCase();
 		
+		//Declare local instance variables
+		let hierarchy_obj = {};
+		
+		//1. OSM search handler
 		if (!this.osm_search) this.osm_search = new UI_OSMSearch(undefined, {
 			onprogramchange: (v, e) => {
 				if (v === "") {
@@ -171,6 +182,48 @@ global.UI_LeftbarHierarchy = class {
 			}
 		});
 		this.osm_search.v = value;
+		
+		//2. Clear default hierarchy search
+		let all_hierarchy_datatype_els = this.hierarchy.element.querySelectorAll("[component='ve-hierarchy-datatype']");
+		let all_result_els = this.hierarchy.element.querySelectorAll("[data-is-search]");
+		
+		for (let i = 0; i < all_hierarchy_datatype_els.length; i++)
+			all_hierarchy_datatype_els[i].style.display = "none";
+		for (let i = 0; i < all_result_els.length; i++)
+			all_result_els[i].remove();
+		
+		//If name is nothing, restore visibility to all hidden results, and move temporarily appended results
+		this.results_el.innerHTML = "";
+		
+		if (value.length === 0) {
+			delete UI_LeftbarHierarchy.do_not_refresh;
+			UI_LeftbarHierarchy.refresh();
+		} else {
+			let checkEntity = (local_entity) => {
+				//Declare local instance variables
+				let all_names = (typeof local_entity.getAllNames === "function") ? 
+					local_entity.getAllNames().join(", ") : local_entity.name;
+				all_names = all_names.trim().toLowerCase();
+				
+				//Return statement
+				if (all_names.includes(value)) return true;
+			};
+			
+			//Feature search
+			Object.iterate(naissance.Feature.instances, (local_key, local_value) => {
+				if (checkEntity(local_value))
+					hierarchy_obj[local_value.id] = local_value.drawHierarchyDatatype({ is_search: true });
+			});
+			//Geometry search
+			Object.iterate(naissance.Geometry.instances, (local_key, local_value) => {
+				if (checkEntity(local_value))
+					hierarchy_obj[local_value.id] = local_value.drawHierarchyDatatype({ is_search: true });
+			});
+			
+			//Append matches to this.results_el
+			Object.iterate(hierarchy_obj, (local_key, local_value) =>
+				this.hierarchy.element.appendChild(local_value.element));
+		}
 	}
 	
 	drawFeatures () {

@@ -12,6 +12,24 @@
     }
     .order-100 { order: 100; padding: 0; }
     .order-101 { order: 101; padding: 0; }
+    
+    /* -- Search -- */
+    [data-is-search] {
+        background-color: var(--bg-secondary-colour);
+        border: 1px solid var(--bg-primary-colour);
+        border-radius: 3px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+        padding: 0 0 0 0.5rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        
+        align-items: center;
+        display: flex;
+        width: 20rem;
+        
+        .nst-handle { display: none; }
+    }
 
     /* -- Selection -- */
     [data-is-selected="true"] > .nst-content {
