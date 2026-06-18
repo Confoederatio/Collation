@@ -799,11 +799,12 @@ naissance.Geometry = class extends naissance.Entity {
 	 */
 	update () {
 		//Update name
-		if (super.isOpen("instance"))
+		if (super.isOpen("instance")) {
 			this.instance_window.setName(this.name);
-		
-		//Update keyframes
-		if (this.keyframes_ui) this.history.draw(this.keyframes_ui);
+			
+			//Update keyframes
+			if (this.keyframes_ui) this.history.draw(this.keyframes_ui);
+		}
 	}
 	
 	/**
