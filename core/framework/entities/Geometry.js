@@ -415,6 +415,129 @@ naissance.Geometry = class extends naissance.Entity {
 	}
 	
 	/**
+	 * Returns a quick actions component with the specified size.
+	 * 
+	 * @param {Object} [arg0_options]
+	 *  @param {string} [arg0_options.mode="large"] - Either 'small'/'large'.
+	 * 
+	 * @returns {ve.RawInterface}
+	 */
+	getQuickActionsComponent (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		if (!options.mode) options.mode = "large";
+		
+		//Declare local instance variables
+		let components_obj = {};
+		
+		//Compare options.mode
+		if (options.mode === "small") {
+			components_obj = {
+				move_to_brush: veButton(() => {
+					DALS.Timeline.parseAction("select_geometry", [{
+						type: "Brush", select_geometry_id: this.id
+					}]);
+				}, {
+					name: `<icon>brush</icon>`,
+					tooltip: "Move to Brush",
+					limit: () => (main.brush.selected_geometry?.id !== this.id)
+				}),
+				finish_geometry: veButton(() => {
+					DALS.Timeline.parseAction("deselect_geometry", [{
+						type: "Brush", select_geometry_id: false
+					}]);
+				}, {
+					name: `<icon>download_done</icon>`,
+					tooltip: "Finish Geometry",
+					limit: () => (main.brush.selected_geometry?.id === this.id)
+				}),
+				open_button: veButton(() => {
+					this.open();
+				}, { name: "<icon>more_vert</icon>", tooltip: "Edit Geometry" })
+			};
+		} else if (options.mode === "large") {
+			//Return statement
+			components_obj = {
+				selected: veCheckbox(this.selected, {
+					name: "Selected",
+					onuserchange: (v) => this.selected = v
+				}),
+				move_to_brush: veButton(() => {
+					DALS.Timeline.parseAction("select_geometry", [{
+						type: "Brush", select_geometry_id: this.id
+					}]);
+				}, {
+					name: `<icon>brush</icon>`,
+					tooltip: "Move to Brush",
+					limit: () => (main.brush.selected_geometry?.id !== this.id)
+				}),
+				finish_geometry: veButton(() => {
+					DALS.Timeline.parseAction("deselect_geometry", [{
+						type: "Brush", select_geometry_id: false
+					}]);
+				}, {
+					name: `<icon>download_done</icon>`,
+					tooltip: "Finish Geometry",
+					limit: () => (main.brush.selected_geometry?.id === this.id)
+				}),
+				
+				multitag: veButton(() => {
+					if (this.tags_editor) this.tags_editor.close();
+					this.tags_editor = veWindow({
+						tags_list: veMultiTag(this.metadata.tags, {
+							onuserchange: (v) => this.metadata.tags = v
+						})
+					}, {
+						name: `Edit Tags (${this.name})`,
+						can_rename: false,
+						width: "20rem",
+						
+						onuserchange: (v) => {
+							if (v.close)
+								DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
+						}
+					})
+				}, {
+					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
+				}),
+				hide_geometry: veButton(() => {
+					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
+					this.history.draw(this.keyframes_ui);
+				}, {
+					name: `<icon>visibility</icon>`,
+					limit: () => !this.value[2]?.hidden,
+					tooltip: "Hide Geometry"
+				}),
+				show_geometry: veButton(() => {
+					DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
+					this.history.draw(this.keyframes_ui);
+				}, {
+					name: "<icon>visibility_off</icon>",
+					limit: () => this.value[2]?.hidden,
+					tooltip: "Show Geometry"
+				}),
+				delete_button: veButton(() => {
+					DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
+				}, {
+					name: "<icon>delete</icon>",
+					tooltip: "Delete Geometry"
+				})
+			};
+		}
+		
+		//Return statement
+		return veRawInterface(components_obj, {
+			attributes: {
+				"naissance-ui": "geometry-actions-bar"
+			},
+			do_not_display: true,
+			width: 99
+		});
+	}
+	
+	/**
 	 * Hides the present Geometry. Used by {@link naissance.Feature}, not internally used.
 	 */
 	hide () {
@@ -462,78 +585,7 @@ naissance.Geometry = class extends naissance.Entity {
 				}
 					
 			}),
-			quick_actions: veRawInterface({
-				selected: veCheckbox(this.selected, {
-					name: "Selected",
-					onuserchange: (v) => this.selected = v
-				}),
-				move_to_brush: veButton(() => {
-					DALS.Timeline.parseAction("select_geometry", [{
-						type: "Brush", select_geometry_id: this.id
-					}]);
-				}, {
-					name: `<icon>brush</icon>`,
-					tooltip: "Move to Brush",
-					limit: () => (main.brush.selected_geometry?.id !== this.id)
-				}),
-				finish_geometry: veButton(() => {
-					DALS.Timeline.parseAction("deselect_geometry", [{
-						type: "Brush", select_geometry_id: false
-					}]);
-				}, { 
-					name: `<icon>download_done</icon>`,
-					tooltip: "Finish Geometry",
-					limit: () => (main.brush.selected_geometry?.id === this.id)
-				}),
-				
-				multitag: veButton(() => {
-					if (this.tags_editor) this.tags_editor.close();
-					this.tags_editor = veWindow({
-						tags_list: veMultiTag(this.metadata.tags, {
-							onuserchange: (v) => this.metadata.tags = v
-						})
-					}, {
-						name: `Edit Tags (${this.name})`,
-						can_rename: false,
-						width: "20rem",
-						
-						onuserchange: (v) => {
-							if (v.close)
-								DALS.Timeline.parseAction("edit_geometry_tags", [{ geometry_obj: this.id, set_tags: this.metadata.tags }]);
-						}
-					})
-				}, {
-					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
-				}),
-				hide_geometry: veButton(() => {
-					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
-					this.history.draw(this.keyframes_ui);
-				}, {
-					name: `<icon>visibility</icon>`,
-					limit: () => !this.value[2]?.hidden,
-					tooltip: "Hide Geometry"
-				}),
-				show_geometry: veButton(() => {
-					DALS.Timeline.parseAction("show_geometry", [{ geometry_obj: this.id, set_properties: { hidden: false } }]);
-					this.history.draw(this.keyframes_ui);
-				}, {
-					name: "<icon>visibility_off</icon>",
-					limit: () => this.value[2]?.hidden,
-					tooltip: "Show Geometry"
-				}),
-				delete_button: veButton(() => {
-					DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
-				}, {
-					name: "<icon>delete</icon>",
-					tooltip: "Delete Geometry"
-				})
-			}, {
-				attributes: {
-					"naissance-ui": "geometry-actions-bar"
-				},
-				do_not_display: true,
-				width: 99
-			}),
+			quick_actions: this.getQuickActionsComponent(),
 			
 			...((typeof this.drawUI === "function") ? this.drawUI() : {}),
 			...ve.Class.getVercengenComponents(this),
