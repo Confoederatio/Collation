@@ -314,8 +314,6 @@ naissance.History = class extends ve.Class {
 			let remaining_guarantees = (options.guaranteed_indexes) ?
 				[...options.guaranteed_indexes] : [];
 			
-			if (all_keyframes[0] > timestamp)
-				if (!options.refresh_localisation) return return_keyframe; //Internal guard clause
 			for (let i = 0; i < all_keyframes.length; i++) {
 				let local_keyframe = this.keyframes[all_keyframes[i]];
 				let is_past_timestamp = (Date.convertTimestampToInt(all_keyframes[i]) > Date.convertTimestampToInt(timestamp));

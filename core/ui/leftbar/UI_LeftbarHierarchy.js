@@ -319,7 +319,14 @@ global.UI_LeftbarHierarchy = class {
 		actions_bar.element.classList.add("actions-bar");
 		
 		let geometries_at_top = (global?.main?.settings?.hierarchy_ordering === "geometries_at_top");
-		(!geometries_at_top) ? (this.drawFeatures(), this.drawGeometries()) : (this.drawGeometries(), this.drawFeatures());
+		
+		if (!geometries_at_top) {
+			this.drawFeatures();
+			this.drawGeometries();
+		} else {
+			this.drawGeometries();
+			this.drawFeatures();
+		}
 		
 		// ve.Hierarchy's 'v' setter handles scroll saving and internal diffing
 		this.hierarchy.v = {

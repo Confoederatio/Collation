@@ -32,7 +32,7 @@ naissance.Entity = class extends ve.Class {
 				guaranteed_indexes: [1]
 			});
 				this._current_keyframe = current_keyframe;
-			let current_symbol = this.value[1];
+			let current_symbol = current_keyframe.value[1];
 			let is_visible = false;
 			
 			try {
