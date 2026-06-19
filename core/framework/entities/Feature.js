@@ -155,7 +155,21 @@ naissance.Feature = class extends naissance.Entity {
 					})
 				}, { name: "Add Descriptions" }),
 				add_field: veButton(() => {
-					
+					if (this.add_field_window) this.add_field_window.close();
+					this.add_field_window = veWindow({
+						field_name: veText(this.ui_add_field_name, {
+							name: "Field Name",
+							onuserchange: (v) => this.ui.add_field_name = v
+						}),
+						
+						confirm: veButton(() => {
+							
+						})
+					}, {
+						name: "Add Field",
+						can_rename: false,
+						width: "30rem"
+					});
 				}, { name: "Add Field", disabled: true }),
 				add_variable: veButton(() => {
 					if (this.add_variable_window) this.add_variable_window.close();
@@ -217,8 +231,18 @@ naissance.Feature = class extends naissance.Entity {
 					});
 				}, { name: "Add Variable" }),
 				clear_descriptions: veButton(() => {
-					
-				}, { name: "Clear Descriptions", disabled: true }),
+					veConfirm(`Are you sure you want to clear all descriptions in ${this.name}?`, {
+						special_function: () => {
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							
+							//Iterate over all_geometries and remove .metadata.description
+							for (let i = 0; i < all_geometries.length; i++)
+								delete all_geometries[i].metadata.description;
+							veToast(`Removed descriptions for ${String.formatNumber(all_geometries.length)} items.`);
+						}
+					});
+				}, { name: "Clear Descriptions" }),
 				clean_geometry_tags: veButton(() => {
 					veConfirm(`Are you sure you want to clean all geometry tags in ${this.name}?`, {
 						special_function: () => {

@@ -53,6 +53,7 @@
  * ##### Methods:
  * - <span color=00ffff>{@link ve.Component.addComponent|addComponent}</span>() - Attempts to mount the current component on its parent_el.
  * - <span color=00ffff>{@link ve.Component.bind|bind}</span>(arg0_container_el:{@link HTMLElement}) - Manually mounts the current component to arg0_container_el.
+ * - <span color=00ffff>{@link ve.Component.copy|copy}</span>() | {@link ve.Component} - Copies the current component.
  * - <span color=00ffff>{@link ve.Component.fireFromBinding|fireFromBinding}</span>() - Pseudo-setter from binding. Fires only upon program-driven changes to `.v` directly.
  * - <span color=00ffff>{@link ve.Component.fireToBinding|fireToBinding}</span>() - Pseudo-setter to binding. Fires only upon user-driven changes to `.v`.
  * - <span color=00ffff>{@link ve.Component.gc|gc}</span>() - Adds the component to garbage collection.
@@ -538,6 +539,28 @@ ve.Component = class {
 		
 		//Set variable_key, append to container_el
 		container_el.append(this.element);
+	}
+	
+	/**
+	 * Copies the current component and returns a new instance of it.
+	 * - Method of: {@link ve.Component}
+	 * 
+	 * @returns {ve.Component}
+	 */
+	copy () {
+		let components_obj = {};
+		
+		if (this.components_obj) {
+			Object.iterate(this.components_obj, (local_key, local_value) => {
+				if (typeof local_value.copy === "function")
+					components_obj[local_key] = local_value.copy()
+			});
+			
+			//Return statement
+			return new this.constructor(components_obj, this.options);
+		} else {
+			return new this.constructor(this.v, this.options);
+		}
 	}
 	
 	/**

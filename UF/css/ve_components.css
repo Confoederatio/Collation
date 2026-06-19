@@ -218,6 +218,13 @@
     height: 100%;
     width: 100%;
 }
+
+/* -- ve.Hierarchy -- */
+[component="ve-hierarchy"] {
+    scrollbar-color: var(--body-colour) transparent;
+    scrollbar-width: thin;
+}
+
 /* -- ve.HTML -- */
 [component="ve-html"]:empty {
     padding: 0;
