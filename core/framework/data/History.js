@@ -372,7 +372,10 @@ naissance.History = class extends ve.Class {
 							if (baked_keyframe.value[0])
 								last_geometry = structuredClone(baked_keyframe.value[0]);
 							baked_keyframe.value[0] = null;
-						} else if (baked_keyframe?.value?.[2]?.hidden === false) {
+						} else if (
+							baked_keyframe?.value?.[2]?.hidden === false && 
+							!(return_keyframe.value[0] || return_keyframe.value[0] === null)
+						) {
 							if (last_geometry) baked_keyframe.value[0] = structuredClone(last_geometry);
 						}
 					}
