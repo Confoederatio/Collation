@@ -316,13 +316,62 @@ naissance.Feature = class extends naissance.Entity {
 				add_tag: veButton(() => {
 					if (this.add_tag_window) this.add_tag_window.close();
 					this.add_tag_window = veWindow({
-						
+						tag_key: veText(this.ui.add_tag_key, {
+							name: "Tag Key",
+							onuserchange: (v) => this.ui.add_tag_key = v
+						}),
+						tag_mode: veSelect({
+							append: { name: "Append" },
+							insert: { name: "Insert" },
+							prepend: { name: "Prepend" }
+						}, {
+							name: "Tag Mode",
+							onuserchange: (v) => this.ui.add_tag_mode = v,
+							selected: (this.ui.add_tag_mode) ? this.ui.add_tag_mode : "append"
+						}),
+						insert_at_position: veNumber(this.ui.add_tag_insert_at_position, {
+							name: "Insert at Position",
+							limit: () => (this.ui.add_tag_mode === "insert"),
+							min: 0,
+							onuserchange: (v) => this.ui.add_tag_insert_at_position = v,
+						}),
+						confirm: veButton(() => {
+							if (!(this.ui?.add_tag_key?.length > 0)) {
+								veToast(`<icon>warning</icon> You must specify a valid tag key to add.`);
+								return;
+							}
+							
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							let tag_mode = (this.ui.add_tag_mode) ? this.ui.add_tag_mode : "append";
+							
+							//Ensure Objects exist for all_geometries
+							for (let i = 0; i < all_geometries.length; i++) {
+								if (!all_geometries[i].metadata) all_geometries[i].metadata = {};
+								if (!all_geometries[i].metadata.tags) all_geometries[i].metadata.tags = [];
+							}
+							
+							//Iteerate over all_geometries and parse tag_mode
+							if (tag_mode === "append") {
+								for (let i = 0; i < all_geometries.length; i++)
+									all_geometries[i].metadata.tags.push(this.ui.add_tag_key);
+							} else if (tag_mode === "insert") {
+								for (let i = 0; i < all_geometries.length; i++)
+									all_geometries[i].metadata.tags.splice(
+										Math.returnSafeNumber(this.ui.add_tag_insert_at_position), 0, this.ui.add_tag_key);
+							} else if (tag_mode === "prepend") {
+								for (let i = 0; i < all_geometries.length; i++)
+									all_geometries[i].metadata.tags.unshift(this.ui.add_tag_key);
+							}
+							
+							veToast(`Added ${this.ui.add_tag_key} to ${String.formatNumber(all_geometries.length)} geometries.`);
+						}, { name: "Confirm" })
 					}, {
 						name: "Add Tag",
 						can_rename: false,
 						width: "30rem"
 					});
-				}, { name: "Add Tag", disabled: true }),
+				}, { name: "Add Tag" }),
 				clear_descriptions: veButton(() => {
 					veConfirm(`Are you sure you want to clear all descriptions in ${this.name}?`, {
 						special_function: () => {
@@ -436,14 +485,140 @@ naissance.Feature = class extends naissance.Entity {
 					}, { name: "Simplify Polygons", can_rename: false });
 				}, { name: "Simplify Polygons" }),
 				remove_property: veButton(() => {
-					
-				}, { name: "Remove Property", disabled: true }),
+					if (this.remove_property_window) this.remove_property_window.close();
+					this.remove_property_window = veWindow({
+						property_key: veText(this.ui.remove_property_key, {
+							name: "Property Key",
+							onuserchange: (v) => this.ui.remove_property_key = v
+						}),
+						property_date: veDate(main.date, {
+							name: "Date (Optional)",
+							onuserchange: (v) => this.ui.remove_property_date = v
+						}),
+						confirm: veButton(() => {
+							if (!this.ui.remove_property_key) {
+								veToast(`<icon>warning</icon> You must provide a valid property key.`);
+								return;
+							}
+							
+							let all_geometries = this.getAllGeometries();
+							let all_geometry_ids = [];
+							
+							for (let i = 0; i < all_geometries.length; i++)
+								if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+							
+							naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
+								command: "remove_property",
+								key: "remove_property",
+								name: "Remove F.Property",
+								type: "Geometry",
+								value: {
+									date: this.ui.remove_property_date,
+									key: this.ui.remove_property_key
+								}
+							});
+							veToast(`Removed property ${this.ui.remove_property_key} from ${String.formatNumber(all_geometry_ids.length)} geometries.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Remove Property",
+						can_rename: false,
+						width: "20rem"
+					});
+				}, { name: "Remove Property" }),
 				remove_variable: veButton(() => {
-					
-				}, { name: "Remove Variable", disabled: true }),
+					if (this.remove_variable_window) this.remove_variable_window.close();
+					this.remove_variable_window = veWindow({
+						variable_key: veText(this.ui.remove_variable_key, {
+							name: "Variable Key",
+							onuserchange: (v) => this.ui.remove_variable_key = v
+						}),
+						keyframe: veSelect({
+							end: { name: "End Date" },
+							manual: { name: "Manual Date" },
+							start: { name: "Start Date" },
+						}, {
+							name: "Keyframe",
+							selected: (this.ui.remove_variable_keyframe) ? this.ui.remove_variable_keyframe : "start",
+							onuserchange: (v) => this.ui.remove_variable_keyframe = v
+						}),
+						date: veDate(main.date, {
+							name: "Date",
+							limit: () => this.ui.remove_variable_keyframe === "manual",
+							onuserchange: (v) => this.ui.remove_variable_date = v
+						}),
+						confirm: veButton(() => {
+							if (!this.ui.remove_variable_key) {
+								veToast(`<icon>warning</icon> You must provide a valid variable key.`);
+								return;
+							}
+							
+							let actual_date = (this.ui.remove_variable_keyframe === "manual") ?
+								((this.ui.remove_variable_date) ? this.ui.remove_variable_date : main.date) :
+								((this.ui.remove_variable_keyframe) ? this.ui.remove_variable_keyframe : "start");
+							
+							let all_geometries = this.getAllGeometries();
+							let all_geometry_ids = [];
+							
+							for (let i = 0; i < all_geometries.length; i++)
+								if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+							
+							naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
+								command: "remove_variable",
+								key: "remove_variable",
+								name: "Remove F.Variable",
+								type: "Geometry",
+								value: {
+									date: actual_date,
+									key: this.ui.remove_variable_key
+								}
+							});
+							veToast(`Removed variable ${this.ui.remove_variable_key} from ${String.formatNumber(all_geometry_ids.length)} geometries.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Remove Variable",
+						can_rename: false,
+						width: "20rem"
+					});
+				}, { name: "Remove Variable" }),
 				remove_tags: veButton(() => {
-					
-				}, { name: "Remove Tag", disabled: true }),
+					if (this.remove_tag_window) this.remove_tag_window.close();
+					this.remove_tag_window = veWindow({
+						tag_key: veText(this.ui.remove_tag_key, {
+							name: "Tag Key",
+							onuserchange: (v) => this.ui.remove_tag_key = v
+						}),
+						confirm: veButton(() => {
+							if (!this.ui.remove_tag_key) {
+								veToast(`<icon>warning</icon> You must specify a valid tag key to remove.`);
+								return;
+							}
+							
+							let all_geometries = this.getAllGeometries();
+							let all_geometry_ids = [];
+							
+							for (let i = 0; i < all_geometries.length; i++) {
+								if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+								if (all_geometries[i].metadata?.tags) {
+									let tags = all_geometries[i].metadata.tags;
+									for (let x = tags.length - 1; x >= 0; x--)
+										if (tags[x] === this.ui.remove_tag_key) tags.splice(x, 1);
+								}
+							}
+							
+							naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
+								command: "set_tags",
+								key: "set_tags",
+								name: "Remove F.Tag",
+								type: "Geometry"
+							});
+							veToast(`Removed tag ${this.ui.remove_tag_key} from ${String.formatNumber(all_geometry_ids.length)} geometries.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Remove Tag",
+						can_rename: false,
+						width: "20rem"
+					});
+				}, { name: "Remove Tag" }),
 				replace_descriptions: veButton(() => { //[WIP] - Should be changed to replace_descriptions
 					if (this.replace_descriptions_window) this.replace_descriptions_window.close();
 					this.replace_descriptions_window = veWindow({
