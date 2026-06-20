@@ -431,7 +431,40 @@ naissance.Feature = class extends naissance.Entity {
 					name: "Flatten All Geometries"
 				}),
 				merge_layers: veButton(() => {
-					
+					if (this.merge_layers_window) this.merge_layers_window.close();
+					this.merge_layers_window = veWindow({
+						mode: veSelect({
+							auto: { name: "Auto" },
+							manual_dates: { name: "Manual Dates" }
+						}, {
+							name: "Mode",
+							selected: (this.ui.merge_layers_mode) ? this.ui.merge_layers_mode : "auto",
+							onuserchange: (v) => this.ui.merge_layers_mode = v
+						}),
+						to_layer: new UI_FeatureDatalist(this.ui.merge_layers_to_layer, {
+							name: "To Layer",
+							onuserchange: (v) => this.ui.merge_layers_to_layer = v
+						}),
+						
+						start_date: veDate(undefined, {
+							name: "Start Date",
+							limit: () => this.ui.merge_layers_mode === "manual_dates",
+							onuserchange: (v) => this.ui.merge_layers_start_date = v
+						}),
+						end_date: veDate(undefined, {
+							name: "End Date",
+							limit: () => this.ui.merge_layers_mode === "manual_dates",
+							onuserchange: (v) => this.ui.merge_layers_end_date = v
+						}),
+						
+						confirm: veButton(() => {
+							
+						}, { name: "Confirm" })
+					}, {
+						name: "Merge Layers",
+						can_rename: false,
+						width: "30rem"
+					})
 				}, { 
 					name: "Merge Layers",
 					limit: () => this.class_name === "FeatureLayer"
