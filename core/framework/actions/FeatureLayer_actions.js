@@ -53,9 +53,9 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			let all_timestamps = [...new Set([...from_layer_timestamps, ...to_layer_timestamps])]
 			.sort((a, b) => a - b);
 			let end_date = (json.merge_layer.end_date) ?
-				Date.getTimestamp(json.merge_layer.end_date) : from_layer_timestamps[from_layer_timestamps.length - 1];
+				Date.getTimestamp(json.merge_layer.end_date) : all_timestamps[all_timestamps.length - 1];
 			let start_date = (json.merge_layer.start_date) ?
-				Date.getTimestamp(json.merge_layer.start_date) : from_layer_timestamps[0];
+				Date.getTimestamp(json.merge_layer.start_date) : all_timestamps[0];
 			
 			//1. Difference Layer A from Layer B to ensure unlinked source polygons have room in to_layer
 			let from_layer_union;
