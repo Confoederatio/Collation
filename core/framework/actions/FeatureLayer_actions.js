@@ -41,6 +41,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 	//Parse commands for layer_obj
 	if (layer_obj) {
 		//merge_layer
+		//merge_layer
 		if (json.merge_layer) {
 			//Declare local instance variables
 			let from_layer_geometries = layer_obj.getAllGeometries();
@@ -53,18 +54,47 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			let from_timestamp_set = new Set(from_layer_timestamps);
 			let to_timestamp_set = new Set(to_layer_timestamps);
 			let all_timestamps = [...new Set([...from_layer_timestamps, ...to_layer_timestamps])]
-				.sort((a, b) => a - b);
+			.sort((a, b) => a - b);
 			
 			let end_date = (json.merge_layer.end_date) ?
 				Date.getTimestamp(json.merge_layer.end_date) : all_timestamps[all_timestamps.length - 1];
 			let start_date = (json.merge_layer.start_date) ?
 				Date.getTimestamp(json.merge_layer.start_date) : all_timestamps[0];
 			
+			//0. Pre-bake keyframes for both layers
+			let baked_from = {};
+			for (let i = 0; i < from_layer_geometries.length; i++) {
+				baked_from[from_layer_geometries[i].id] = from_layer_geometries[i].history.getKeyframe({ bake_keyframes: true });
+			}
+			
+			let baked_to = {};
+			for (let i = 0; i < to_layer_geometries.length; i++) {
+				baked_to[to_layer_geometries[i].id] = to_layer_geometries[i].history.getKeyframe({ bake_keyframes: true });
+			}
+			
+			// Active state trackers for sequential O(1) access without looping over timestamps
+			let active_from_states = {};
+			let active_to_states = {};
+			
 			//1. Difference Layer A from Layer B to ensure unlinked source polygons have room in to_layer
 			let from_layer_union;
 			
 			for (let i = 0; i < all_timestamps.length; i++) {
+				console.time(`1. Differencing ${all_timestamps[i]} (${i}/${all_timestamps.length})`);
 				let current_timestamp = all_timestamps[i];
+				
+				//Update active states
+				for (let x = 0; x < from_layer_geometries.length; x++) {
+					let geom_id = from_layer_geometries[x].id;
+					if (baked_from[geom_id] && baked_from[geom_id][current_timestamp])
+						active_from_states[geom_id] = baked_from[geom_id][current_timestamp];
+				}
+				for (let x = 0; x < to_layer_geometries.length; x++) {
+					let geom_id = to_layer_geometries[x].id;
+					if (baked_to[geom_id] && baked_to[geom_id][current_timestamp])
+						active_to_states[geom_id] = baked_to[geom_id][current_timestamp];
+				}
+				
 				if (current_timestamp >= start_date && current_timestamp <= end_date) {
 					//Update the current union of geometries in the source layer at this timestamp
 					if (from_timestamp_set.has(current_timestamp)) {
@@ -72,7 +102,8 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 						
 						for (let x = 0; x < from_layer_geometries.length; x++) {
 							let local_geometry = from_layer_geometries[x];
-							let local_keyframe_val = local_geometry.getGeometryKeyframeAtDate(current_timestamp);
+							let local_keyframe = active_from_states[local_geometry.id];
+							let local_keyframe_val = local_keyframe ? local_keyframe.value[0] : undefined;
 							
 							if (local_keyframe_val && local_geometry.class_name === "GeometryPolygon") {
 								let maptalks_json = maptalks.Geometry.fromJSON(local_keyframe_val);
@@ -88,7 +119,8 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 					if (from_layer_union && (from_timestamp_set.has(current_timestamp) || to_timestamp_set.has(current_timestamp))) {
 						for (let x = 0; x < to_layer_geometries.length; x++) {
 							let target_geometry = to_layer_geometries[x];
-							let target_keyframe_val = target_geometry.getGeometryKeyframeAtDate(current_timestamp);
+							let target_keyframe = active_to_states[target_geometry.id];
+							let target_keyframe_val = target_keyframe ? target_keyframe.value[0] : undefined;
 							
 							if (target_keyframe_val && target_geometry.class_name === "GeometryPolygon") {
 								let maptalks_target = maptalks.Geometry.fromJSON(target_keyframe_val);
@@ -100,12 +132,15 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 									maptalks_result.toJSON() : null;
 								
 								target_geometry.history.addKeyframe(current_timestamp, result_json);
+								
+								// Propagate changes to active state to mirror immediate evaluation of updated history
+								active_to_states[target_geometry.id] = { value: [result_json] };
 							}
 						}
 					}
 				}
 				
-				console.log(`1. Differencing`, all_timestamps[i], `(${i}/${all_timestamps.length})`);
+				console.timeEnd(`1. Differencing ${all_timestamps[i]} (${i}/${all_timestamps.length})`);
 			}
 			console.log(`1. Finished differencing.`);
 			
@@ -128,21 +163,37 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 						let to_keys = Object.keys(to_geometry.history.keyframes).map(Number);
 						let union_timestamps = [...new Set([...from_keys, ...to_keys])].sort((a, b) => a - b);
 						
+						let active_from;
+						let active_to;
+						
 						for (let x = 0; x < union_timestamps.length; x++) {
 							let current_timestamp = union_timestamps[x];
+							
+							if (baked_from[from_geometry.id] && baked_from[from_geometry.id][current_timestamp])
+								active_from = baked_from[from_geometry.id][current_timestamp];
+							if (baked_to[to_geometry.id] && baked_to[to_geometry.id][current_timestamp])
+								active_to = baked_to[to_geometry.id][current_timestamp];
+							
 							if (current_timestamp < start_date || current_timestamp > end_date) continue;
 							
-							let from_val = from_geometry.getGeometryKeyframeAtDate(current_timestamp);
-							let to_val = to_geometry.getGeometryKeyframeAtDate(current_timestamp);
+							let from_val = active_from ? active_from.value[0] : undefined;
+							let to_val = active_to ? active_to.value[0] : undefined;
+							
 							let from_turf = (from_val) ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(from_val)) : undefined;
 							let to_turf = (to_val) ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(to_val)) : undefined;
 							
+							let result_json;
 							if (from_turf && to_turf) {
 								let turf_union = turf.union(turf.featureCollection([from_turf, to_turf]));
-								to_geometry.history.addKeyframe(current_timestamp, Geospatiale.convertTurfToMaptalks(turf_union).toJSON());
+								result_json = Geospatiale.convertTurfToMaptalks(turf_union).toJSON();
+								to_geometry.history.addKeyframe(current_timestamp, result_json);
 							} else if (from_turf || to_turf) {
-								to_geometry.history.addKeyframe(current_timestamp, Geospatiale.convertTurfToMaptalks(from_turf || to_turf).toJSON());
+								result_json = Geospatiale.convertTurfToMaptalks(from_turf || to_turf).toJSON();
+								to_geometry.history.addKeyframe(current_timestamp, result_json);
 							}
+							
+							// Propagate changes to active state
+							if (result_json) active_to = { value: [result_json] };
 							
 							let from_keyframe = from_geometry.history.keyframes[current_timestamp];
 							if (from_keyframe && from_keyframe.value.length > 1) {
@@ -167,13 +218,15 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 					
 					if (entity_timestamps.length > 0) {
 						if (entity_timestamps[0] < start_date) {
-							let start_val = local_entity.getGeometryKeyframeAtDate(start_date);
-							let start_keyframe = entity_history.getKeyframe({ date: start_date });
+							let start_keyframe = baked_from[local_entity.id] ? baked_from[local_entity.id][start_date] : undefined;
+							let start_val = start_keyframe ? start_keyframe.value[0] : undefined;
+							
 							if (start_val && start_keyframe) entity_history.addKeyframe(start_date, ...start_keyframe.value.slice());
 						}
 						if (entity_timestamps[entity_timestamps.length - 1] > end_date) {
-							let end_val = local_entity.getGeometryKeyframeAtDate(end_date);
-							let end_keyframe = entity_history.getKeyframe({ date: end_date });
+							let end_keyframe = baked_from[local_entity.id] ? baked_from[local_entity.id][end_date] : undefined;
+							let end_val = end_keyframe ? end_keyframe.value[0] : undefined;
+							
 							if (end_val && end_keyframe) entity_history.addKeyframe(end_date, ...end_keyframe.value.slice());
 						}
 						
@@ -190,6 +243,10 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 				console.log(`4. Clip/transfer`, all_timestamps[i], `(${i}/${all_timestamps.length})`);
 			}
 			console.log(`4. Finished clip/transfer`);
+			
+			//Dispose of baked mapped memory objects
+			baked_from = undefined;
+			baked_to = undefined;
 			
 			//5. Transfer unlinked entities
 			to_layer.entities = to_layer.entities.concat(layer_obj.entities);

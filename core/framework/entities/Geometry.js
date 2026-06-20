@@ -388,6 +388,9 @@ naissance.Geometry = class extends naissance.Entity {
 		return unique_timestamps;
 	}
 	
+	
+	//console.time(`1. Differencing ${all_timestamps[i]} (${i}/${all_timestamps.length})`);
+	
 	/**
 	 * Returns the Maptalks geometry at the specific date.
 	 * 

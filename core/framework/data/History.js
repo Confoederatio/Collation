@@ -278,6 +278,7 @@ naissance.History = class extends ve.Class {
 	
 	/**
 	 * @param {Object} [arg0_options]
+	 *  @param {boolean} [arg0_options.bake_keyframes=false]
 	 *  @param {number[]} [arg0_options.guaranteed_indexes]
 	 */
 	getKeyframe (arg0_options) {
@@ -288,6 +289,7 @@ naissance.History = class extends ve.Class {
 		if (options.date === undefined) options.date = main.date;
 		
 		//Declare local instance variables
+		let return_keyframes = {};
 		let return_keyframe = {};
 		let timestamp = Date.getTimestamp(options.date);
 		
@@ -313,6 +315,7 @@ naissance.History = class extends ve.Class {
 			let all_keyframes = this.getTimestamps();
 			let remaining_guarantees = (options.guaranteed_indexes) ?
 				[...options.guaranteed_indexes] : [];
+			let last_geometry;
 			
 			for (let i = 0; i < all_keyframes.length; i++) {
 				let local_keyframe = this.keyframes[all_keyframes[i]];
@@ -323,7 +326,7 @@ naissance.History = class extends ve.Class {
 					local_keyframe.localisation = (this.options.localisation_function) ?
 						this.options.localisation_function(local_keyframe, return_keyframe) : "";
 				
-				if (!is_past_timestamp || remaining_guarantees.length > 0) {
+				if (!is_past_timestamp || remaining_guarantees.length > 0 || options.bake_keyframes) {
 					for (let x = 0; x < local_keyframe.value.length; x++) {
 						let is_guaranteed = (options.guaranteed_indexes) ?
 							options.guaranteed_indexes.includes(x) : false;
@@ -359,13 +362,27 @@ naissance.History = class extends ve.Class {
 								remaining_guarantees = remaining_guarantees.filter(idx => idx !== x);
 						}
 					}
+					
+					//options.bake_keyframes handler
+					if (options.bake_keyframes) {
+						return_keyframes[all_keyframes[i]] = structuredClone(return_keyframe);
+						let baked_keyframe = return_keyframes[all_keyframes[i]];
+						
+						if (baked_keyframe?.value?.[2]?.hidden === true) {
+							if (baked_keyframe.value[0])
+								last_geometry = structuredClone(baked_keyframe.value[0]);
+							baked_keyframe.value[0] = null;
+						} else if (baked_keyframe?.value?.[2]?.hidden === false) {
+							if (last_geometry) baked_keyframe.value[0] = structuredClone(last_geometry);
+						}
+					}
 				} else {
 					if (!options.refresh_localisation) break;
 				}
 			}
 			
 			//Return statement
-			return return_keyframe;
+			return (!options.bake_keyframes) ? return_keyframe : return_keyframes;
 		}
 	}
 	
