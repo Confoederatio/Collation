@@ -263,6 +263,12 @@ naissance.Feature = class extends naissance.Entity {
 						width: "30rem"
 					});
 				}, { name: "Add Variables" }),
+				add_property: veButton(() => {
+					
+				}, { name: "Add Property", disabled: true }),
+				add_tag: veButton(() => {
+					
+				}, { name: "Add Tag", disabled: true }),
 				clear_descriptions: veButton(() => {
 					veConfirm(`Are you sure you want to clear all descriptions in ${this.name}?`, {
 						special_function: () => {
@@ -375,12 +381,15 @@ naissance.Feature = class extends naissance.Entity {
 						}, { name: "Confirm" })
 					}, { name: "Simplify Polygons", can_rename: false });
 				}, { name: "Simplify Polygons" }),
-				remove_field: veButton(() => {
+				remove_property: veButton(() => {
 					
-				}, { name: "Remove Field", disabled: true }),
+				}, { name: "Remove Property", disabled: true }),
 				remove_variable: veButton(() => {
 					
 				}, { name: "Remove Variable", disabled: true }),
+				remove_tags: veButton(() => {
+					
+				}, { name: "Remove Tag", disabled: true }),
 				replace_descriptions: veButton(() => { //[WIP] - Should be changed to replace_descriptions
 					if (this.replace_descriptions_window) this.replace_descriptions_window.close();
 					this.replace_descriptions_window = veWindow({
