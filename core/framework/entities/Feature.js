@@ -430,6 +430,12 @@ naissance.Feature = class extends naissance.Entity {
 				}, {
 					name: "Flatten All Geometries"
 				}),
+				merge_layers: veButton(() => {
+					
+				}, { 
+					name: "Merge Layers",
+					limit: () => this.class_name === "FeatureLayer"
+				}),
 				move_entities_to: veButton(() => {
 					if (this.move_entities_window) this.move_entities_window.close();
 					this.move_entities_window = veWindow({

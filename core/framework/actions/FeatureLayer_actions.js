@@ -46,6 +46,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 		if (json.merge_layer) {
 			//Declare local instance variables
 			let from_layer_geometries = layer_obj.getAllGeometries();
+			let from_layer_json = layer_obj.toJSON();
 			let from_layer_timestamps = layer_obj.getTimestamps();
 			let to_layer = naissance.Feature.instances[json.merge_layer.to_layer_id];
 			let to_layer_geometries = to_layer.getAllGeometries();
@@ -211,8 +212,12 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			//5. Move remaining entities from Layer A into Layer B
 			to_layer.entities = to_layer.entities.concat(to_layer.entities, layer_obj.entities);
 			
-			//6. Delete Layer B
-			layer_obj.remove();
+			//6. Delete Layer B if requested
+			if (!json.merge_layer.do_not_delete_after) {
+				layer_obj.remove();
+			} else {
+				layer_obj.fromJSON(from_layer_json);
+			}
 		}
 		
 		//set_layer_option
