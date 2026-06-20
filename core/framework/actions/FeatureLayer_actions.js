@@ -1,3 +1,24 @@
+/**
+ * Parses a JSON action for a target FeatureLayer.
+ * - Static method of: {@link naissance.FeatureLayer}
+ *
+ * `arg0_json`: {@link Object}|{@link string}
+ * - `.feature_obj`: {@link Object}|{@link string} - Identifier. The {@link naissance.Feature} ID to target changes for.
+ * <br>
+ * - #### Extraneous Commands:
+ *   - `.create_layer`: {@link Object}
+ *     - `.do_not_refresh=false`: {@link boolean}
+ *     - `.id`: {@link string}
+ *   - `.merge_layer`: {@link Object}
+ *     - `.do_not_delete_after=false`: {@link boolean}
+ *     - `.end_date`: {@link number}|{@link Object}
+ *     - `.start_date`: {@link number}|{@link Object}
+ *     - `.to_layer_id`: {@link string} - The ID of the layer to merge the current layer into.
+ * - #### Internal Commands:
+ *   - `.set_layer_option`: {@link Object}
+ *     - `.key`: {@link string} - The key to change for the selected layer.
+ *     - `.value`: {@link any} - What to change the value of the key to.
+ */
 naissance.FeatureLayer.parseAction = async function (arg0_json) {
 	//Convert from parameters
 	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;

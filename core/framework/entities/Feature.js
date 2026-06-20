@@ -456,9 +456,50 @@ naissance.Feature = class extends naissance.Entity {
 							limit: () => this.ui.merge_layers_mode === "manual_dates",
 							onuserchange: (v) => this.ui.merge_layers_end_date = v
 						}),
+						delete_layer_after: veToggle((this.ui.merge_layers_delete_layer_after !== undefined) ? this.ui.merge_layers_delete_layer_after : true, {
+							name: "Delete Layer After",
+							onuserchange: (v) => this.ui.merge_layers_delete_layer_after = v
+						}),
 						
 						confirm: veButton(() => {
+							//Internal guard clause to ensure this.ui.merge_layers_to_layer is valid
+							if (!this.ui.merge_layers_to_layer) {
+								veToast(`<icon>warning</icon> You must select a valid Layer to merge ${this.name} into.`);
+								return;
+							}
 							
+							let to_layer_obj = naissance.Feature.instances[this.ui.merge_layers_to_layer];
+							if (!to_layer_obj) {
+								veToast(`<icon>warning</icon> No Layer with the specified ID could be found.`);
+								return;
+							}
+							if (to_layer_obj.class_name !== "FeatureLayer") {
+								veToast(`<icon>warning</icon> You cannot merge ${this.name} into a ${to_layer_obj.class_name}.`);
+								return;
+							}
+							
+							//Declare local instance variables
+							let options = {};
+							
+							if (this.ui.merge_layers_mode === "manual_dates") {
+								if (this.ui.merge_layers_end_date !== undefined) options.end_date = this.ui.merge_layers_end_date;
+								if (this.ui.merge_layers_start_date !== undefined) options.start_date = this.ui.merge_layers_start_date;
+								if (this.ui.merge_layers_delete_layer_after) options.do_not_delete_after = true;
+							}
+							
+							//Execute action; close windows after
+							DALS.Timeline.parseAction(`merge_layer_${to_layer_obj.id}`, [{
+								feature_obj: this.id,
+								type: "FeatureLayer",
+								merge_layer: {
+									to_layer_id: to_layer_obj.id,
+									...options
+								}
+							}]);
+							
+							veToast(`Successfully merged this layer into ${to_layer_obj.name}.`);
+							this.merge_layers_window.close();
+							this.close("instance");
 						}, { name: "Confirm" })
 					}, {
 						name: "Merge Layers",
