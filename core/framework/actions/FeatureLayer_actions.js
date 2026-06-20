@@ -205,7 +205,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 					from_geometry.remove(true);
 				}
 				
-				console.log(`3. Unioning linked polygons`, all_timestamps[i], `(${i}/${all_timestamps.length})`);
+				console.log(`3. Unioning linked polygons`, from_layer_geometries[i].id, `(${i}/${from_layer_geometries.length})`);
 			}
 			console.log(`3. Finished unioning linked polygons.`);
 			
@@ -240,7 +240,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 					if (Object.keys(entity_history.keyframes).length === 0) local_entity.remove(true);
 				}
 				
-				console.log(`4. Clip/transfer`, all_timestamps[i], `(${i}/${all_timestamps.length})`);
+				console.log(`4. Clip/transfer`, layer_obj.entities[i].id, `(${i}/${layer_obj.entities.length})`);
 			}
 			console.log(`4. Finished clip/transfer`);
 			
