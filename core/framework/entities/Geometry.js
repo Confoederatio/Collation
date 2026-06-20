@@ -399,9 +399,13 @@ naissance.Geometry = class extends naissance.Entity {
 		//Convert from parameters
 		let date = (arg0_date) ? arg0_date : main.date;
 			date = Date.convertTimestampToDate(date);
+			
+		//Declare local instance variables
+		let keyframe_obj = this.history.getKeyframe({ date: date });
 		
 		//Return statement
-		return this.history.getKeyframe({ date: date }).value[0];
+		if (keyframe_obj.value?.[2]?.hidden) return null;
+		return keyframe_obj.value[0];
 	}
 	
 	/**
