@@ -46,7 +46,8 @@ naissance.Geometry = class extends naissance.Entity {
 					if (!naissance.Geometry.special_properties.includes(all_property_keys[i]))
 						remainder_obj[all_property_keys[i]] = new_keyframe.value[2][all_property_keys[i]];
 				
-				return_string.push(`Properties changed to: ${String.formatObject(remainder_obj)}`);
+				if (Object.keys(remainder_obj).length > 0)
+					return_string.push(`Properties changed to: ${String.formatObject(remainder_obj)}`);
 			}
 		} catch (e) {
 			try {
@@ -622,7 +623,10 @@ naissance.Geometry = class extends naissance.Entity {
 	/**
 	 * Removes the current {@link naissance.Geometry} instance.
 	 */
-	remove () {
+	remove (arg0_do_not_refresh) {
+		//Convert from parameters
+		let do_not_refresh = arg0_do_not_refresh;
+		
 		super.close("instance"); //Close any open UIs
 		
 		//Remove from naissance.Feature .entities
@@ -638,7 +642,8 @@ naissance.Geometry = class extends naissance.Entity {
 		
 		//Rerender deleted geometry and remove it from the map
 		this.history = new naissance.History();
-		this.draw();
+		if (!do_not_refresh)
+			this.draw();
 	}
 	
 	/**

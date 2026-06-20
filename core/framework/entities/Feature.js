@@ -828,6 +828,23 @@ naissance.Feature = class extends naissance.Entity {
 		});
 	}
 	
+	getTimestamps () {
+		//Declare local instance variables
+		let all_geometries = this.getAllGeometries();
+		let all_timestamps = [];
+		
+		//Iterate over all_geometries and their .history.keyframes
+		for (let i = 0; i < all_geometries.length; i++) {
+			all_timestamps = [...new Set([
+				...all_timestamps, 
+				...Object.keys(all_geometries[i].history.keyframes).map(Number)
+			])];
+		}
+		
+		//Return statement
+		return all_timestamps.sort((a, b) => a - b);
+	}
+	
 	hide () {
 		//Declare local instance variables
 		this._is_visible = false;
