@@ -1,32 +1,9 @@
-if (!global.naissance) global.naissance = {};
-
-/**
- * Parses a JSON action for a target FeatureLayer.
- * - Static method of: {@link naissance.FeatureLayer}
- *
- * `arg0_json`: {@link Object}|{@link string}
- * - `.feature_obj`: {@link Object}|{@link string} - Identifier. The {@link naissance.Feature} ID to target changes for.
- * <br>
- * - #### Extraneous Commands:
- *   - `.create_layer`: {@link Object}
- *     - `.do_not_refresh=false`: {@link boolean}
- *     - `.id`: {@link string}
- *   - `.merge_layer`: {@link Object}
- *     - `.do_not_delete_after=false`: {@link boolean}
- *     - `.end_date`: {@link number}|{@link Object}
- *     - `.start_date`: {@link number}|{@link Object}
- *     - `.to_layer_id`: {@link string} - The ID of the layer to merge the current layer into.
- * - #### Internal Commands:
- *   - `.set_layer_option`: {@link Object}
- *     - `.key`: {@link string} - The key to change for the selected layer.
- *     - `.value`: {@link any} - What to change the value of the key to.
- */
 naissance.FeatureLayer.parseAction = async function (arg0_json) {
 	//Convert from parameters
 	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
 	
 	//Declare local instance variables
-	let layer_obj = (typeof json.feature_obj === "string") ? 
+	let layer_obj = (typeof json.feature_obj === "string") ?
 		naissance.Feature.instances[json.feature_obj] : json.feature_obj;
 	
 	//Parse extraneous commands
@@ -34,7 +11,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 	if (json.create_layer)
 		if (json.create_layer.id) {
 			let new_layer = new naissance.FeatureLayer();
-				new_layer.setID(json.create_layer.id);
+			new_layer.setID(json.create_layer.id);
 			
 			if (!json.create_layer.do_not_refresh)
 				UI_LeftbarHierarchy.refresh();
@@ -53,13 +30,13 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			let to_layer_timestamps = to_layer.getTimestamps();
 			
 			let all_timestamps = [...new Set([...from_layer_timestamps, ...to_layer_timestamps])];
-				all_timestamps = all_timestamps.sort((a, b) => a - b);
+			all_timestamps = all_timestamps.sort((a, b) => a - b);
 			let end_date = (json.merge_layer.end_date) ?
 				json.merge_layer.end_date : from_layer_timestamps[from_layer_timestamps.length - 1];
-				end_date = Date.getTimestamp(end_date);
-			let start_date = (json.merge_layer.start_date) ? 
+			end_date = Date.getTimestamp(end_date);
+			let start_date = (json.merge_layer.start_date) ?
 				json.merge_layer.start_date : from_layer_timestamps[0];
-				start_date = Date.getTimestamp(start_date);
+			start_date = Date.getTimestamp(start_date);
 			
 			//1. Difference Layer A from Layer B
 			let from_layer_union;
@@ -98,7 +75,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 							if (!has_geometry_keyframe) continue;
 							
 							let local_keyframe = local_geometry.history.keyframes[all_timestamps[i]];
-						
+							
 							if (local_geometry.class_name === "GeometryPolygon") {
 								let local_maptalks_geometry = maptalks.Geometry.fromJSON(local_keyframe.value[0]);
 								let local_turf_geometry = Geospatiale.convertMaptalksToTurf(local_maptalks_geometry);
@@ -141,14 +118,14 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 						let from_keyframes = Object.keys(from_geometry.history.keyframes).map(Number);
 						let to_keyframes = Object.keys(to_geometry.history.keyframes).map(Number);
 						let unique_timestamps = [...new Set([...from_keyframes, ...to_keyframes])];
-							unique_timestamps = unique_timestamps.sort((a, b) => a - b);
+						unique_timestamps = unique_timestamps.sort((a, b) => a - b);
 						
 						//Iterate over all unique_timestamps and perform a merge
-						for (let i = 0; i < unique_timestamps.length; i++) {
-							if (!(start_date >= unique_timestamps[i] && end_date <= unique_timestamps[i])) continue; //Skip merge if not within the bounded range
+						for (let x = 0; x < unique_timestamps.length; x++) {
+							if (unique_timestamps[x] < start_date || unique_timestamps[x] > end_date) continue;
 							
-							let from_keyframe = from_geometry.history.keyframes[unique_timestamps[i]];
-							let to_keyframe = to_geometry.history.keyframes[unique_timestamps[i]];
+							let from_keyframe = from_geometry.history.keyframes[unique_timestamps[x]];
+							let to_keyframe = to_geometry.history.keyframes[unique_timestamps[x]];
 							
 							if (from_keyframe)
 								if (from_keyframe.value[0] !== undefined && from_keyframe.value[0] !== "undefined") {
@@ -158,7 +135,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 									active_from_geometry = undefined;
 								}
 							if (to_keyframe)
-								if (to_keyframe.value[0] !== undefined && from_keyframe.value[0] !== "undefined") {
+								if (to_keyframe.value[0] !== undefined && to_keyframe.value[0] !== "undefined") {
 									let maptalks_geometry = maptalks.Geometry.fromJSON(to_keyframe.value[0]);
 									active_to_geometry = Geospatiale.convertMaptalksToTurf(maptalks_geometry);
 								} else if (to_keyframe.value[0] === null) {
@@ -171,15 +148,16 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 								
 								to_keyframe.value[0] = Geospatiale.convertTurfToMaptalks(turf_union).toJSON();
 							} else {
-								to_geometry.history.addKeyframe(unique_timestamps[i],
+								to_geometry.history.addKeyframe(unique_timestamps[x],
 									Geospatiale.convertTurfToMaptalks((active_from_geometry) ?
 										active_from_geometry : active_to_geometry).toJSON());
 							}
 							
 							//Merge values after [0] for from_keyframe
 							if (from_keyframe && from_keyframe.value.length > 1) {
-								from_keyframe.value.shift(); //Pop geometry coords
-								to_geometry.history.addKeyframe(unique_timestamps[i], undefined, ...from_keyframe.value);
+								let extra_values = [...from_keyframe.value];
+								extra_values.shift(); //Pop geometry coords
+								to_geometry.history.addKeyframe(unique_timestamps[x], undefined, ...extra_values);
 							}
 						}
 					}
@@ -194,23 +172,23 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 				
 				if (local_entity.class_name.startsWith("Geometry")) {
 					let from_timestamps = local_entity.history.getTimestamps().map(Number);
-						from_timestamps.sort((a, b) => a - b);
+					from_timestamps.sort((a, b) => a - b);
 					
 					if (from_timestamps[0] < start_date) {
 						local_entity.history.keyframes[start_date] = local_entity.history.getKeyframe(start_date);
 						
 						//Iterate over all from_timestamps and remove the ones before start_date; after end_date
 						for (let x = 0; x < from_timestamps.length; x++)
-							if (from_timestamps[i] < start_date || from_timestamps[i] > end_date)
-								delete local_entity.history.keyframes[start_date];
+							if (from_timestamps[x] < start_date || from_timestamps[x] > end_date)
+								delete local_entity.history.keyframes[from_timestamps[x]];
 					}
-					if (Object.key(local_entity.history.keyframes).length === 0) //Remove empty geometries outside the domain
+					if (Object.keys(local_entity.history.keyframes).length === 0) //Remove empty geometries outside the domain
 						local_entity.remove(true);
 				}
 			}
 			
 			//5. Move remaining entities from Layer A into Layer B
-			to_layer.entities = to_layer.entities.concat(to_layer.entities, layer_obj.entities);
+			to_layer.entities = to_layer.entities.concat(layer_obj.entities);
 			
 			//6. Delete Layer B if requested
 			if (!json.merge_layer.do_not_delete_after) {
