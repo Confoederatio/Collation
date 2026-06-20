@@ -1,5 +1,7 @@
 if (!global.naissance) global.naissance = {};
 naissance.Geometry = class extends naissance.Entity {
+	static special_properties = ["hidden", "label_geometries", "label_name", "label_symbol", "max_zoom", "min_zoom", "name", "variables"];
+	
 	static history_localisation_function = (new_keyframe, old_keyframe) => {
 		//Declare local instance variables
 		let return_string = [];
@@ -35,6 +37,17 @@ naissance.Geometry = class extends naissance.Entity {
 				return_string.push(`Name changed to ${new_keyframe.value[2].name}`);
 			if (new_keyframe.value[2]?.variables)
 				return_string.push(`Variables changed to: ${String.formatObject(new_keyframe.value[2].variables)}`);
+			
+			if (new_keyframe.value[2]) {
+				let all_property_keys = Object.keys(new_keyframe.value[2]);
+				let remainder_obj = {};
+				
+				for (let i = 0; i < all_property_keys.length; i++)
+					if (!naissance.Geometry.special_properties.includes(all_property_keys[i]))
+						remainder_obj[all_property_keys[i]] = new_keyframe.value[2][all_property_keys[i]];
+				
+				return_string.push(`Properties changed to: ${String.formatObject(remainder_obj)}`);
+			}
 		} catch (e) {
 			try {
 				JSON.stringify(old_keyframe);
@@ -501,6 +514,14 @@ naissance.Geometry = class extends naissance.Entity {
 					})
 				}, {
 					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
+				}),
+				debug_geometry: veButton(() => {
+					window.$geometry = this;
+					console.log(`Geometry logged as:`, window.$geometry);
+					veToast(`Geometry logged to console.`);
+				}, {
+					name: `<icon>code</icon>`,
+					tooltip: "Debug Geometry"
 				}),
 				hide_geometry: veButton(() => {
 					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);

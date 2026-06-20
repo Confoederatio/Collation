@@ -264,10 +264,64 @@ naissance.Feature = class extends naissance.Entity {
 					});
 				}, { name: "Add Variables" }),
 				add_property: veButton(() => {
+					if (this.add_property_window) this.add_property_window.close();
+					this.add_property_window = veWindow({
+						edit_values: veList(veRawInterface({
+							date: veDate(),
+							value: veObjectEditor()
+						}), {
+							name: "Edit Values",
+							onuserchange: (v) => {
+								//Declare local instance variables
+								let values = [];
+								
+								//Iterate over all v entries
+								for (let i = 0; i < v.length; i++)
+									values.push({
+										date: Date.getTimestamp(v[i].date.v),
+										value: v[i].value.v
+									});
+								
+								this.ui.add_property_values = values;
+							}
+						}),
+						confirm: veButton(() => {
+							if (!(this.ui.add_property_values?.length > 0)) {
+								veToast(`<icon>warning</icon> Adding a property requires a valid field and value.`);
+								return;
+							}
+							
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							let all_geometry_ids = [];
+								for (let i = 0; i < all_geometries.length; i++)
+									all_geometry_ids.push(all_geometries[i].id);
+							
+							//Iterate over all this.ui.add_property_values.length to finish adding properties
+							for (let i = 0; i < this.ui.add_property_values.length; i++) {
+								let local_property = this.ui.add_property_values[i];
+								
+								naissance.Geometry.setProperties(all_geometry_ids, local_property);
+							}
+							
+							veToast(`Successfully altered ${String.formatNumber(this.ui.add_property_values.length)} properties for ${String.formatNumber(all_geometries.length)} geometries.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Add Property",
+						can_rename: false,
+						width: "30rem"
+					});
 					
-				}, { name: "Add Property", disabled: true }),
+				}, { name: "Add Property" }),
 				add_tag: veButton(() => {
-					
+					if (this.add_tag_window) this.add_tag_window.close();
+					this.add_tag_window = veWindow({
+						
+					}, {
+						name: "Add Tag",
+						can_rename: false,
+						width: "30rem"
+					});
 				}, { name: "Add Tag", disabled: true }),
 				clear_descriptions: veButton(() => {
 					veConfirm(`Are you sure you want to clear all descriptions in ${this.name}?`, {
