@@ -855,8 +855,8 @@ naissance.Geometry = class extends naissance.Entity {
 			
 			dals_value_array.push({ 
 				type: options.type,
-				geometry_id: geometry_ids[i], 
-				[options.command]: options.value 
+				geometry_obj: geometry_ids[i], 
+				[options.command]: local_value
 			});
 		}
 		
@@ -865,6 +865,7 @@ naissance.Geometry = class extends naissance.Entity {
 			old_date = JSON.parse(JSON.stringify(main.date));
 			UI_DateMenu.setDate(options.date);
 		}
+		console.log(options.key, dals_value_array);
 		DALS.Timeline.parseAction(options.key, dals_value_array);
 		if (options.date)
 			UI_DateMenu.setDate(old_date);

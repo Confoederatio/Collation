@@ -55,7 +55,7 @@ naissance.Feature.parseAction = async function (arg0_json) {
 				key: "add_column",
 				name: "Add F.Field",
 				type: "Geometry",
-				value: json.add_field,
+				value: json.add_column,
 			});
 		}
 		

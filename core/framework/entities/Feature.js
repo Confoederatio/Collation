@@ -172,9 +172,10 @@ naissance.Feature = class extends naissance.Entity {
 								
 								//Iterate over all v entries
 								for (let i = 0; i < v.length; i++)
-									values.push(Date.getTimestamp(v[i].date.v), v[i].value.v);
+									values.push([Date.getTimestamp(v[i].date.v), v[i].value.v]);
 								
 								this.ui.add_field_values = values;
+								console.log(this.ui.add_field_values);
 							}
 						}),
 						
