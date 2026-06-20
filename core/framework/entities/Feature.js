@@ -73,7 +73,7 @@ naissance.Feature = class extends naissance.Entity {
 		//Return statement
 		return veInterface({
 			actions_palette: veSearchSelect({
-				add_descriptions: veButton(() => { //[WIP] - Add line_break toggle, whole line/substring searching for duplicates
+				add_descriptions: veButton(() => {
 					//Set defaults
 					if (this.ui.add_descriptions_avoid_duplicates === undefined) this.ui.add_descriptions_avoid_duplicates = true;
 					if (this.ui.add_descriptions_insert_at === undefined) this.ui.add_descriptions_insert_at = "append";
@@ -154,62 +154,11 @@ naissance.Feature = class extends naissance.Entity {
 						width: "30rem"
 					})
 				}, { name: "Add Descriptions" }),
-				add_field: veButton(() => {
-					if (this.add_field_window) this.add_field_window.close();
-					this.add_field_window = veWindow({
-						field_name: veText(this.ui.add_field_key, {
-							name: "Field Name",
-							onuserchange: (v) => this.ui.add_field_key = v
-						}),
-						edit_ontologies: veList(veRawInterface({
-							date: veDate(),
-							value: veText()
-						}), {
-							name: "Edit Ontologies",
-							onuserchange: (v) => {
-								//Declare local instance variables
-								let values = [];
-								
-								//Iterate over all v entries
-								for (let i = 0; i < v.length; i++)
-									values.push([Date.getTimestamp(v[i].date.v), v[i].value.v]);
-								
-								this.ui.add_field_values = values;
-								console.log(this.ui.add_field_values);
-							}
-						}),
-						
-						confirm: veButton(() => {
-							//Declare local instance variables
-							let all_geometries = this.getAllGeometries();
-							let values = (this.ui.add_field_values) ? this.ui.add_field_values : [];
-							
-							if (!this.ui.add_field_key) {
-								veToast(`<icon>warning</icon> You must set a valid field name.`);
-								return;
-							}
-							
-							//Add data to field
-							DALS.Timeline.parseAction(`add_field_${this.ui.add_field_key}`, [{
-								feature_obj: this.id,
-								add_column: {
-									key: this.ui.add_field_key,
-									values: values
-								}
-							}]);
-							veToast(`Added ${this.ui.add_field_key} as a variable column to ${String.formatNumber(all_geometries.length)} geometries.`);
-						}, { name: "Confirm" })
-					}, {
-						name: "Add Field",
-						can_rename: false,
-						width: "30rem"
-					});
-				}, { name: "Add Field" }),
 				add_variable: veButton(() => {
 					if (this.add_variable_window) this.add_variable_window.close();
 					this.add_variable_window = veWindow({
 						variable_key: veText(this.ui.add_variable_key, {
-							name: "Field/Variable Key",
+							name: "Variable Key",
 							onuserchange: (v) => this.ui.add_variable_key = v
 						}),
 						value: veText(this.ui.add_variable_value, {
@@ -264,6 +213,56 @@ naissance.Feature = class extends naissance.Entity {
 						width: "20rem"
 					});
 				}, { name: "Add Variable" }),
+				add_variables: veButton(() => {
+					if (this.add_field_window) this.add_field_window.close();
+					this.add_field_window = veWindow({
+						field_name: veText(this.ui.add_variables_key, {
+							name: "Variable Key",
+							onuserchange: (v) => this.ui.add_variables_key = v
+						}),
+						edit_values: veList(veRawInterface({
+							date: veDate(),
+							value: veText()
+						}), {
+							name: "Edit Values",
+							onuserchange: (v) => {
+								//Declare local instance variables
+								let values = [];
+								
+								//Iterate over all v entries
+								for (let i = 0; i < v.length; i++)
+									values.push([Date.getTimestamp(v[i].date.v), v[i].value.v]);
+								
+								this.ui.add_variables_values = values;
+							}
+						}),
+						
+						confirm: veButton(() => {
+							//Declare local instance variables
+							let all_geometries = this.getAllGeometries();
+							let values = (this.ui.add_variables_values) ? this.ui.add_variables_values : [];
+							
+							if (!this.ui.add_variables_key) {
+								veToast(`<icon>warning</icon> You must set a valid field name.`);
+								return;
+							}
+							
+							//Add data to field
+							DALS.Timeline.parseAction(`add_column_${this.ui.add_variables_key}`, [{
+								feature_obj: this.id,
+								add_column: {
+									key: this.ui.add_variables_key,
+									values: values
+								}
+							}]);
+							veToast(`Added ${this.ui.add_variables_key} as a variable column to ${String.formatNumber(all_geometries.length)} geometries.`);
+						}, { name: "Confirm" })
+					}, {
+						name: "Add Variables",
+						can_rename: false,
+						width: "30rem"
+					});
+				}, { name: "Add Variables" }),
 				clear_descriptions: veButton(() => {
 					veConfirm(`Are you sure you want to clear all descriptions in ${this.name}?`, {
 						special_function: () => {
