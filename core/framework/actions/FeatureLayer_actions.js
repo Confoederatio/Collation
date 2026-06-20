@@ -53,7 +53,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			let from_timestamp_set = new Set(from_layer_timestamps);
 			let to_timestamp_set = new Set(to_layer_timestamps);
 			let all_timestamps = [...new Set([...from_layer_timestamps, ...to_layer_timestamps])]
-			.sort((a, b) => a - b);
+				.sort((a, b) => a - b);
 			
 			let end_date = (json.merge_layer.end_date) ?
 				Date.getTimestamp(json.merge_layer.end_date) : all_timestamps[all_timestamps.length - 1];
@@ -62,14 +62,12 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			
 			//0. Pre-bake keyframes for both layers
 			let baked_from = {};
-			for (let i = 0; i < from_layer_geometries.length; i++) {
+			for (let i = 0; i < from_layer_geometries.length; i++)
 				baked_from[from_layer_geometries[i].id] = from_layer_geometries[i].history.getKeyframe({ bake_keyframes: true });
-			}
 			
 			let baked_to = {};
-			for (let i = 0; i < to_layer_geometries.length; i++) {
+			for (let i = 0; i < to_layer_geometries.length; i++)
 				baked_to[to_layer_geometries[i].id] = to_layer_geometries[i].history.getKeyframe({ bake_keyframes: true });
-			}
 			
 			//Active state trackers for sequential O(1) access without looping over timestamps
 			let active_from_states = {};
@@ -155,6 +153,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			for (let i = 0; i < from_layer_geometries.length; i++) {
 				let from_geometry = from_layer_geometries[i];
 				let linked_id = from_geometry?.metadata?.linked_id;
+				
 				if (linked_id) {
 					let to_geometry = naissance.Geometry.instances[linked_id];
 					if (to_geometry) {
@@ -211,6 +210,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			//4. Clip unlinked entities and prepare for transfer
 			for (let i = layer_obj.entities.length - 1; i >= 0; i--) {
 				let local_entity = layer_obj.entities[i];
+				
 				if (local_entity.class_name.startsWith("Geometry")) {
 					let entity_history = local_entity.history;
 					let entity_timestamps = entity_history.getTimestamps().map(Number).sort((a, b) => a - b);
