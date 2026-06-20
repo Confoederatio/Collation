@@ -147,7 +147,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 								let turf_union = turf.union(turf.featureCollection([active_from_geometry, active_to_geometry]));
 								
 								to_keyframe.value[0] = Geospatiale.convertTurfToMaptalks(turf_union).toJSON();
-							} else {
+							} else if (active_from_geometry || active_to_geometry) {
 								to_geometry.history.addKeyframe(unique_timestamps[x],
 									Geospatiale.convertTurfToMaptalks((active_from_geometry) ?
 										active_from_geometry : active_to_geometry).toJSON());
