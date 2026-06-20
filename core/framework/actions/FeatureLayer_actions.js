@@ -67,7 +67,6 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 				let current_timestamp = all_timestamps[i];
 				if (current_timestamp >= start_date && current_timestamp <= end_date) {
 					//Update the current union of geometries in the source layer at this timestamp
-					//Only recalculate if the source layer actually has a keyframe here
 					if (from_timestamp_set.has(current_timestamp)) {
 						from_layer_union = undefined;
 						
