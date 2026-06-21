@@ -35,8 +35,16 @@ naissance.Geometry = class extends naissance.Entity {
 				return_string.push(`Minimum zoom set to ${new_keyframe.value[2].min_zoom}`);
 			if (new_keyframe.value[2]?.name)
 				return_string.push(`Name changed to ${new_keyframe.value[2].name}`);
-			if (new_keyframe.value[2]?.variables)
-				return_string.push(`Variables changed to: ${String.formatObject(new_keyframe.value[2].variables)}`);
+			if (new_keyframe.value[2]?.variables) {
+				let variables_obj = JSON.parse(JSON.stringify(new_keyframe.value[2].variables));
+				
+				if (variables_obj.Relation) {
+					return_string.push(naissance.Geometry.parseRelationsString(new_keyframe.timestamp, variables_obj.Relation));
+					delete variables_obj.Relation;
+				}
+				if (Object.keys(variables_obj).length > 0)
+					return_string.push(`Variables changed to: ${String.formatObject(variables_obj)}`);
+			}
 			
 			if (new_keyframe.value[2]) {
 				let all_property_keys = Object.keys(new_keyframe.value[2]);

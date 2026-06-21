@@ -142,8 +142,51 @@
 		return "";
 	};
 	
-	naissance.Geometry.parseRelationsString = function (arg0_relations_string) {
+	naissance.Geometry.parseRelationsString = function (arg0_timestamp, arg1_relations_string) {
 		//Convert from parameters
-		let relations_string = (arg0_relations_string) ? arg0_relations_string : "";
+		let timestamp = Date.getTimestamp(arg0_timestamp);
+		let relations_string = (arg1_relations_string) ? arg1_relations_string : "";
+		
+		//Declare local instance variables
+		let all_relations = relations_string.split(",");
+		let relations_array = [];
+		
+		//Iterate over all_relations
+		for (let i = 0; i < all_relations.length; i++) {
+			let ot_entity_name;
+			let split_relation = all_relations[i].split("-");
+			
+			//1. Fetch ot_entity_name
+			if (naissance.Geometry.instances[split_relation[1]]) {
+				console.log(split_relation[1]);
+				let local_ot_geometry = naissance.Geometry.instances[split_relation[1]];
+				let local_ot_keyframe = local_ot_geometry.history.getKeyframe({ 
+					date: timestamp
+				});
+				
+				if (local_ot_keyframe?.value?.[2]?.name)
+					ot_entity_name = local_ot_keyframe.value[2].name;
+			} else {
+				ot_entity_name = split_relation[1];
+			}
+			
+			//2. Push to relations_array
+			if (split_relation[0] === "add") {
+				if (ot_entity_name !== "indirect") {
+					relations_array.push(`Added ${split_relation[2]} with ${ot_entity_name}`);
+				} else {
+					relations_array.push(`Joined ${split_relation[2]}`);
+				}
+			} else if (split_relation[0] === "remove") {
+				if (ot_entity_name !== "indirect") {
+					relations_array.push(`Removed ${split_relation[2]} with ${ot_entity_name}`);
+				} else {
+					relations_array.push(`Left ${split_relation[2]}`);
+				}
+			}
+		}
+		
+		//Return statement
+		return `Relations changed: ${relations_array.join(", ")}`;
 	};
 }
