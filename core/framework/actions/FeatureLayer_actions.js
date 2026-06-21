@@ -199,6 +199,8 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 								to_geometry.history.addKeyframe(current_timestamp, undefined, ...extra_values);
 							}
 						}
+						
+						console.log(`3. Detected link with:`, from_geometry);
 					}
 					from_geometry.remove(true);
 				}
