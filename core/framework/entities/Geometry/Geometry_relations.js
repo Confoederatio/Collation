@@ -37,14 +37,14 @@
 				veToast(`<icon>warning</icon> You must specify a valid relation type.`);
 				return;
 			}
-			return `add-${this.ui.add_relation_with_id}-${this.ui.add_relation_type}`;
+			return `${(this.ui.add_relation_modifier || "add")}-${this.ui.add_relation_with_id}-${this.ui.add_relation_type}`;
 		}
 		let _getIndirectRelationString = () => {
 			if (!this.ui.add_relation_type || this.ui.add_relation_type.length === 0) {
 				veToast(`<icon>warning</icon> You must specify a valid relation type.`);
 				return;
 			}
-			return `add-indirect-${this.ui.add_relation_type}`;
+			return `${(this.ui.add_relation_modifier || "add")}-indirect-${this.ui.add_relation_type}`;
 		}
 		
 		//Parse relation_mode for add/remove
@@ -118,7 +118,7 @@
 		
 		//Iterate over all .history.keyframes in order
 		Object.iterate(this.history.keyframes, (local_key, local_value) => {
-			if (local_key <= main.timestamp)
+			if (parseFloat(local_key) <= main.timestamp)
 				if (local_value?.value?.[2]?.variables) {
 					let local_relation = local_value?.value?.[2]?.variables?.Relation;
 					
@@ -129,7 +129,7 @@
 							if (all_local_relations[i].startsWith("add-")) {
 								relation_obj[all_local_relations[i]] = true;
 							} else if (all_local_relations[i].startsWith("remove-")) {
-								delete relation_obj[all_local_relations[i]];
+								delete relation_obj[all_local_relations[i].replace("remove-", "add-")];
 							}
 					}
 				}
@@ -140,5 +140,10 @@
 		if (all_relation_keys.length > 0)
 			return all_relation_keys.join(",");
 		return "";
+	};
+	
+	naissance.Geometry.parseRelationsString = function (arg0_relations_string) {
+		//Convert from parameters
+		let relations_string = (arg0_relations_string) ? arg0_relations_string : "";
 	};
 }

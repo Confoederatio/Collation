@@ -266,6 +266,14 @@ naissance.Geometry = class extends naissance.Entity {
 				manage_relations: veButton(() => {
 					if (this.add_relation_window) this.add_relation_window.close();
 					this.add_relation_window = veWindow({
+						add_remove: veSelect({
+							add: { name: "Start" },
+							remove: { name: "End" }
+						}, {
+							name: "Start/End Relationship",
+							onuserchange: (v) => this.ui.add_relation_modifier = v,
+							selected: (this.ui.add_relation_with_id) ? this.ui.add_relation_with_id : "add"
+						}),
 						relation_mode: veSelect({
 							clear: { name: "Clear" },
 							direct: { name: "Direct" },
@@ -290,8 +298,8 @@ naissance.Geometry = class extends naissance.Entity {
 							onuserchange: (v) => this.ui.add_relation_date = v,
 							tooltip: "The date at which this relation begins."
 						}),
-						relation_type: veText(this.ui.add_relation_type, {
-							name: "Relation Type:",
+						relation_name: veText(this.ui.add_relation_type, {
+							name: "Relation Name:",
 							limit: () => !["clear"].includes(this.ui.add_relation_mode),
 							onuserchange: (v) => this.ui.add_relation_type = v
 						}),

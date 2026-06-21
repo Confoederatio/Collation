@@ -6,19 +6,10 @@ config.mapmodes.relations = {
 	//Robust helper function to parse generic Relation variable: 'add-<id>-<type>'
 	//For indirect relations: 'add-indirect-<type>'
 	getRelations: (geometry_instance) => {
-		let val_array = geometry_instance?.value;
-		if (!Array.isArray(val_array)) return [];
+		if (!geometry_instance || typeof geometry_instance.getRelations !== "function") return [];
 		
-		let relation_string = undefined;
-		//Dynamically find variables irrespective of index offset
-		for (let i = 0; i < val_array.length; i++) {
-			if (val_array[i] && val_array[i].variables && val_array[i].variables.Relation) {
-				relation_string = val_array[i].variables.Relation;
-				break;
-			}
-		}
-		
-		if (!relation_string) return [];
+		let relation_string = geometry_instance.getRelations();
+		if (!relation_string || typeof relation_string !== "string") return [];
 		
 		let relations_list = [];
 		let relation_entries = relation_string.split(",");
@@ -127,6 +118,9 @@ config.mapmodes.relations = {
 					symbol_editor.v = [create_relation_row()];
 					template_name_input.v = "";
 				}
+				
+				//Draw Mapmode
+				main.renderer.update();
 			},
 			selected: map_settings.relations_mapmode.selected
 		});
@@ -163,6 +157,9 @@ config.mapmodes.relations = {
 					switch_template.v = get_template_options();
 					veToast(`Saved relation template: ${save_name}`);
 				}
+				
+				//Draw Mapmode
+				main.renderer.update();
 			}, { name: "Update Mapmode" })
 		}, {
 			name: "Relation Mapmode",
