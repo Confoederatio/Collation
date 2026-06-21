@@ -213,6 +213,81 @@ naissance.Geometry = class extends naissance.Entity {
 		if (this.actions_palette_window) this.actions_palette_window.close();
 		this.actions_palette_window = veWindow({
 			actions_palette: veSearchSelect({
+				add_relation: veButton(() => {
+					if (this.add_relation_window) this.add_relation_window.close();
+					this.add_relation_window = veWindow({
+						relation_mode: veSelect({
+							direct: { name: "Direct" },
+							indirect: { name: "Indirect" }
+						}, {
+							name: "Mode",
+							tooltip: "Direct relationships are with other geometries, indirect relations are detached (similar to tags).",
+							
+							onuserchange: (v) => this.ui.add_relation_mode = v,
+							selected: (this.ui.add_relation_mode) ? this.ui.add_relation_mode : "direct",
+						}),
+						relation_with: new UI_GeometryDatalist(this.ui.add_relation_with_id, {
+							name: "Add Relation with Geometry:",
+							limit: () => this.ui.add_relation_mode !== "indirect",
+							onuserchange: (v) => this.ui.add_relation_with_id = v
+						}),
+						relation_date: veDate((this.ui.add_relation_date !== undefined) ? this.ui.add_relation_date : main.date, {
+							name: "Relation Date:",
+							onuserchange: (v) => this.ui.add_relation_date = v,
+							tooltip: "The date at which this relation begins."
+						}),
+						relation_type: veText(this.ui.add_relation_type, {
+							name: "Relation Type:",
+							onuserchange: (v) => this.ui.add_relation_type = v
+						}),
+						confirm: veButton(() => {
+							let relation_date = (this.ui.add_relation_date !== undefined) ?
+								Date.getTimestamp(relation_date) : main.timestamp;
+							let relation_mode = (this.ui.add_relation_mode || "direct");
+							
+							//Internal guard clause for relation types
+							if (!this.ui.add_relation_type || this.ui.add_relation_type.length === 0) {
+								veToast(`You must specify a valid relation type.`);
+								return;
+							}
+							
+							if (relation_mode === "direct") {
+								if (!this.ui.add_relation_with_id) {
+									veToast(`You must select a valid geometry to add a relation with.`);
+									return;
+								}
+								if (this.ui.add_relation_with_id === this.id) {
+									veToast(`You cannot create a direct self-relationship.`);
+									return;
+								}
+								
+								DALS.Timeline.parseAction("add_variable", [{
+									geometry_obj: this.id,
+									add_variable: {
+										date: relation_date,
+										key: "Relation",
+										value: `add-${this.ui.add_relation_with_id}-${this.ui.add_relation_type}`
+									}
+								}]);
+							} else if (relation_mode === "indirect") {
+								DALS.Timeline.parseAction("add_variable", [{
+									geometry_obj: this.id,
+									add_variable: {
+										date: relation_date,
+										key: "Relation",
+										value: `add-indirect-${this.ui.add_relation_type}`
+									}
+								}]);
+							}
+							
+							veToast(`Added specified relation. Relations may be edited/removed in the Variables Editor.`);
+						}, { name: "Confirm" })
+					}, { 
+						name: "Add Relation", 
+						can_rename: false, 
+						width: "20rem" 
+					})
+				}, { name: "Add Relation" }),
 				debug_geometry: veButton(() => {
 					window.$geometry = this;
 					console.log(`Geometry logged as:`, window.$geometry);
@@ -577,12 +652,6 @@ naissance.Geometry = class extends naissance.Entity {
 					onuserchange: (v) => this.selected = v
 				}),
 				
-				open_actions_palette: veButton(() => {
-					this.drawActionsPalette();
-				}, {
-					name: "<icon>more_vert</icon>",
-					tootlip: "Open Actions Palette"
-				}),
 				move_to_brush: veButton(() => {
 					DALS.Timeline.parseAction("select_geometry", [{
 						type: "Brush", select_geometry_id: this.id
@@ -649,7 +718,14 @@ naissance.Geometry = class extends naissance.Entity {
 				}, {
 					name: "<icon>delete</icon>",
 					tooltip: "Delete Geometry"
-				})
+				}),
+				
+				open_actions_palette: veButton(() => {
+					this.drawActionsPalette();
+				}, {
+					name: "<icon>more_vert</icon>",
+					tootlip: "Open Actions Palette"
+				}),
 			};
 		}
 		
