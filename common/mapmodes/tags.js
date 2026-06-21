@@ -3,10 +3,9 @@ config.mapmodes.tags = {
 	icon: "label",
 	description: "Custom viewer for different tags and tag groups.",
 	
-	getSymbolEditor: () => {
-		
+	onhide: (v) => {
+		setTimeout(() => main.renderer.update());
 	},
-	
 	onshow: (v) => {
 		//Declare local instance variables
 		let config_obj = config.mapmodes.tags;
