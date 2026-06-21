@@ -706,6 +706,13 @@ naissance.Geometry = class extends naissance.Entity {
 		});
 	}
 	
+	/**
+	 * Returns the actual symbol_obj for the given Geometry.
+	 * 
+	 * @param {Object} arg0_symbol_obj
+	 * 
+	 * @returns {Object}
+	 */
 	getSymbol (arg0_symbol_obj) {
 		//Convert from parameters
 		let symbol_obj = arg0_symbol_obj;
