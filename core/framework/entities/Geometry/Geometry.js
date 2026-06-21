@@ -706,6 +706,8 @@ naissance.Geometry = class extends naissance.Entity {
 		});
 	}
 	
+	getRelations () { return naissance.Geometry.getRelations.call(this); }
+	
 	/**
 	 * Returns the actual symbol_obj for the given Geometry.
 	 * 

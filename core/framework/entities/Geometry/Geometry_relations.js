@@ -111,4 +111,34 @@
 		
 		veToast(`Altered specified relation. Relations may be edited/removed in the Variables Editor.`);
 	};
+	
+	naissance.Geometry.getRelations = function () {
+		//Declare local instance variables
+		let relation_obj = {};
+		
+		//Iterate over all .history.keyframes in order
+		Object.iterate(this.history.keyframes, (local_key, local_value) => {
+			if (local_key <= main.timestamp)
+				if (local_value?.value?.[2]?.variables) {
+					let local_relation = local_value?.value?.[2]?.variables?.Relation;
+					
+					if (local_relation) {
+						let all_local_relations = local_relation.split(",");
+						
+						for (let i = 0; i < all_local_relations.length; i++)
+							if (all_local_relations[i].startsWith("add-")) {
+								relation_obj[all_local_relations[i]] = true;
+							} else if (all_local_relations[i].startsWith("remove-")) {
+								delete relation_obj[all_local_relations[i]];
+							}
+					}
+				}
+		}, "ascending");
+		
+		//Return statement
+		let all_relation_keys = Object.keys(relation_obj);
+		if (all_relation_keys.length > 0)
+			return all_relation_keys.join(",");
+		return "";
+	};
 }
