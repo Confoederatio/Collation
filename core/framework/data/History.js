@@ -226,7 +226,47 @@ naissance.History = class extends ve.Class {
 						
 						this.addKeyframe(timestamp, ...[local_value.value[0]]);
 						veToast(`Copied geometry keyframe to present date.`);
-					}, { name: "Copy Geometry To Date" })
+					}, { name: "Copy Geometry To Date" }),
+					
+					//Edit Symbol, Edit Properties
+					edit_symbol_button: veButton(() => {
+						if (this.edit_symbol_object_window) this.edit_symbol_object_window.close();
+						this.edit_symbol_object_window = veWindow({
+							symbol_obj: veObjectEditor(local_value.value[1], {
+								onuserchange: (v) => this.edit_symbol_object = v
+							}),
+							confirm: veButton(() => {
+								if (this.edit_symbol_object)
+									if (Object.keys(this.edit_symbol_object).length > 0) {
+										this.addKeyframe(local_key, undefined, this.edit_symbol_object);
+										veToast(`Edited symbol at timestamp.`);
+									} else {
+										local_value.value[1] = undefined;
+										veToast(`Deleted symbol at timestamp.`);
+									}
+								this.getKeyframe({ refresh_localisation: true });
+							}, { name: "Confirm" })
+						}, { name: "Edit Symbol", can_rename: false, width: "20rem" })
+					}, { name: "Edit Symbol" }),
+					edit_properties_button: veButton(() => {
+						if (this.edit_properties_object_window) this.edit_properties_object_window.close();
+						this.edit_properties_object_window = veWindow({
+							symbol_obj: veObjectEditor(local_value.value[2], {
+								onuserchange: (v) => this.edit_properties_object = v
+							}),
+							confirm: veButton(() => {
+								if (this.edit_properties_object)
+									if (Object.keys(this.edit_properties_object).length > 0) {
+										this.addKeyframe(local_key, undefined, undefined, this.edit_properties_object);
+										veToast(`Edited properties at timestamp.`);
+									} else {
+										local_value.value[2] = undefined;
+										veToast(`Deleted properties at timestamp.`);
+									}
+								this.getKeyframe({ refresh_localisation: true });
+							}, { name: "Confirm" })
+						}, { name: "Edit Properties", can_rename: false, width: "20rem" });
+					}, { name: "Edit Properties" })
 				}, { id: "ui_keyframe_context_menu" })
 			});
 		}, { sort_mode: "date_descending" });
@@ -280,6 +320,7 @@ naissance.History = class extends ve.Class {
 	 * @param {Object} [arg0_options]
 	 *  @param {boolean} [arg0_options.bake_keyframes=false]
 	 *  @param {number[]} [arg0_options.guaranteed_indexes]
+	 *  @param {boolean} [arg0_options.refresh_localisation=false]
 	 */
 	getKeyframe (arg0_options) {
 		//Convert from parameters
