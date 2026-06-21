@@ -282,7 +282,7 @@ naissance.Geometry = class extends naissance.Entity {
 						}),
 						relation_with: new UI_GeometryDatalist(this.ui.add_relation_with_id, {
 							name: "Add Relation with Geometry:",
-							limit: () => this.ui.add_relation_mode !== "indirect",
+							limit: () => !["clear", "indirect", "remove_indirect"].includes(this.ui.add_relation_mode),
 							onuserchange: (v) => this.ui.add_relation_with_id = v
 						}),
 						relation_date: veDate((this.ui.add_relation_date !== undefined) ? this.ui.add_relation_date : main.date, {
@@ -292,6 +292,7 @@ naissance.Geometry = class extends naissance.Entity {
 						}),
 						relation_type: veText(this.ui.add_relation_type, {
 							name: "Relation Type:",
+							limit: () => !["clear"].includes(this.ui.add_relation_mode),
 							onuserchange: (v) => this.ui.add_relation_type = v
 						}),
 						confirm: veButton(() => {
