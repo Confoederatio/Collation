@@ -12,6 +12,11 @@ global.UI_Navbar = class {
 			edit: {
 				name: "Edit",
 				
+				toggle_dev_tools: {
+					name: "Toggle Dev Tools",
+					keybind: "ctrl+i",
+					onclick: () => Blacktraffic.task("electron:toggle-dev-tools")
+				},
 				undo: {
 					name: "Undo",
 					keybind: "ctrl+z",
