@@ -153,58 +153,66 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			for (let i = 0; i < from_layer_geometries.length; i++) {
 				let from_geometry = from_layer_geometries[i];
 				let linked_id = from_geometry?.metadata?.linked_id;
-				
+
 				if (linked_id) {
 					let to_geometry = naissance.Geometry.instances[linked_id];
+
 					if (to_geometry) {
+						//Re-bake to_geometry history to account for Step 1 and Step 2 changes
+						let current_baked_to = to_geometry.history.getKeyframe({ bake_keyframes: true });
 						let from_keys = Object.keys(from_geometry.history.keyframes).map(Number);
 						let to_keys = Object.keys(to_geometry.history.keyframes).map(Number);
 						let union_timestamps = [...new Set([...from_keys, ...to_keys])].sort((a, b) => a - b);
-						
+
 						let active_from;
 						let active_to;
-						
+
 						for (let x = 0; x < union_timestamps.length; x++) {
 							let current_timestamp = union_timestamps[x];
-							
+
+							//Update rolling states from baked data
 							if (baked_from[from_geometry.id] && baked_from[from_geometry.id][current_timestamp])
 								active_from = baked_from[from_geometry.id][current_timestamp];
-							if (baked_to[to_geometry.id] && baked_to[to_geometry.id][current_timestamp])
-								active_to = baked_to[to_geometry.id][current_timestamp];
-							
+							if (current_baked_to && current_baked_to[current_timestamp])
+								active_to = current_baked_to[current_timestamp];
+
 							if (current_timestamp < start_date || current_timestamp > end_date) continue;
-							
+
 							let from_value = active_from ? active_from.value[0] : undefined;
 							let to_value = active_to ? active_to.value[0] : undefined;
-							
-							let from_turf = (from_value) ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(from_value)) : undefined;
-							let to_turf = (to_value) ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(to_value)) : undefined;
-							
+
+							let from_turf = from_value ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(from_value)) : undefined;
+							let to_turf = to_value ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(to_value)) : undefined;
+
 							let result_json;
 							if (from_turf && to_turf) {
 								let turf_union = turf.union(turf.featureCollection([from_turf, to_turf]));
-								result_json = Geospatiale.convertTurfToMaptalks(turf_union).toJSON();
-								to_geometry.history.addKeyframe(current_timestamp, result_json);
+								let maptalks_union = Geospatiale.convertTurfToMaptalks(turf_union);
+								result_json = (maptalks_union && typeof maptalks_union.toJSON === "function") ? maptalks_union.toJSON() : null;
 							} else if (from_turf || to_turf) {
-								result_json = Geospatiale.convertTurfToMaptalks(from_turf || to_turf).toJSON();
-								to_geometry.history.addKeyframe(current_timestamp, result_json);
+								//If only one exists, it represents the new combined state
+								let existing_turf = from_turf || to_turf;
+								let maptalks_geom = Geospatiale.convertTurfToMaptalks(existing_turf);
+								result_json = (maptalks_geom && typeof maptalks_geom.toJSON === "function") ? maptalks_geom.toJSON() : null;
 							}
-							
-							//Propagate changes to active state
-							if (result_json) active_to = { value: [result_json] };
-							
-							let from_keyframe = from_geometry.history.keyframes[current_timestamp];
-							if (from_keyframe && from_keyframe.value.length > 1) {
-								let extra_values = from_keyframe.value.slice(1);
-								to_geometry.history.addKeyframe(current_timestamp, undefined, ...extra_values);
+
+							//Apply union results and update active state for the next timestamp
+							if (result_json !== undefined) {
+								to_geometry.history.addKeyframe(current_timestamp, result_json);
+								active_to = { value: [result_json] };
+
+								//Transfer non-geometric history data (metadata/attributes)
+								let source_keyframe = from_geometry.history.keyframes[current_timestamp];
+								if (source_keyframe && source_keyframe.value.length > 1) {
+									let extra_values = source_keyframe.value.slice(1);
+									to_geometry.history.addKeyframe(current_timestamp, undefined, ...extra_values);
+								}
 							}
 						}
-						
-						console.log(`3. Detected link with:`, from_geometry);
+						console.log(`3. Unioned link: ${from_geometry.id} -> ${to_geometry.id}`);
 					}
-					from_geometry.remove(true);
+					from_geometry.remove();
 				}
-				
 				console.log(`3. Unioning linked polygons`, from_layer_geometries[i].id, `(${i}/${from_layer_geometries.length})`);
 			}
 			console.log(`3. Finished unioning linked polygons.`);
