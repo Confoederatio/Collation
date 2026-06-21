@@ -706,6 +706,43 @@ naissance.Geometry = class extends naissance.Entity {
 		});
 	}
 	
+	getSymbol (arg0_symbol_obj) {
+		//Convert from parameters
+		let symbol_obj = arg0_symbol_obj;
+			if (symbol_obj === undefined) {
+				this.value = this.history.getKeyframe({
+					date: main.timestamp,
+					guaranteed_indexes: [1]
+				}).value;
+				symbol_obj = (this.value[1]) ? this.value[1] : {};
+			}
+		
+		//Declare local instance variables
+		let active_symbol_functions = main.renderer.active_symbol_functions;
+			
+		//Ensure symbol is the same as that of the linked ID if it exists
+		if (this.metadata?.linked_id) {
+			let linked_geometry = naissance.Geometry.instances[this.metadata.linked_id];
+			
+			if (linked_geometry) {
+				let linked_geometry_keyframe = linked_geometry.history.getKeyframe({
+					date: main.timestamp,
+					guaranteed_indexes: [1]
+				});
+				
+				if (linked_geometry_keyframe?.value?.[1]) symbol_obj = linked_geometry_keyframe.value[1];
+			}
+		}
+		for (let i = 0; i < active_symbol_functions.length; i++)
+			symbol_obj = {
+				...symbol_obj,
+				...active_symbol_functions[i](this)
+			};
+		
+		//Return statement
+		return symbol_obj;
+	}
+	
 	/**
 	 * Hides the present Geometry. Used by {@link naissance.Feature}, not internally used.
 	 */

@@ -27,7 +27,12 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 		let derender_geometry = false;
 		
 		//1. Set this.value from current relative keyframe
-		this.value = this.history.getKeyframe({ date: main.date }).value;
+		this.value = this.history.getKeyframe({
+			date: main.date,
+			guaranteed_indexes: [1]
+		}).value;
+		this.value[1] = this.getSymbol(this.value[1]);
+		
 		if (this.value === undefined || this.value.length === 0 || this._is_visible === false)
 			derender_geometry = true;
 		

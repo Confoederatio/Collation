@@ -78,11 +78,26 @@ naissance.Renderer = class extends ve.Class {
 	update () {
 		//Declare local instance variables
 		let rendering_order = this.getRenderingOrder();
+		this.active_symbol_functions = naissance.Mapmode.getActiveSymbolFunctions();
 		
 		//Iterate over all entities in rendering_order
 		for (let i = 0; i < rendering_order.length; i++)
 			if (rendering_order[i].draw)
 				rendering_order[i].draw();
+	}
+	
+	static getAllTags () {
+		//Declare local instance variables
+		let all_tags = [];
+		
+		//Iterate over all naissance.Geometry.instances and fetch their tags
+		Object.iterate(naissance.Geometry.instances, (local_key, local_value) => {
+			if (local_value?.metadata?.tags)
+				all_tags = [...new Set([...all_tags, ...local_value.metadata.tags])];
+		});
+		
+		//Return statement
+		return all_tags;
 	}
 	
 	static getDefaultLabelSymbol () {
