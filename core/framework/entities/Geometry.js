@@ -226,8 +226,10 @@ naissance.Geometry = class extends naissance.Entity {
 							onuserchange: (v) => this.ui.link_geometry_with_id = v
 						}),
 						confirm: veButton(() => {
+							//Internal guard clauses to prevent invalid operations
 							if (!this.ui.link_geometry_with_id) {
 								veToast(`<icon>warning</icon> You must select a valid Geometry to link to.`)
+								return;
 							}
 							
 							let linked_geometry = naissance.Geometry.instances[this.ui.link_geometry_with_id];
@@ -240,14 +242,40 @@ naissance.Geometry = class extends naissance.Entity {
 								veToast(`<icon>warning</icon> You may only link to geometries of the same type.`);
 								return;
 							}
+							if (linked_geometry?.metadata?.linked_id) {
+								veToast(`<icon>warning</icon> You cannot recursively link geometries.`);
+								return;
+							}
+							
+							let from_layer = this.getLayer();
+							let to_layer = linked_geometry.getLayer();
+							
+							if (from_layer.id === to_layer.id) {
+								veToast(`<icon>warning</icon> You cannot claim geometries are identical within the same layer. Move ${this.name} to a new layer first.`);
+								return;
+							}
 							
 							if (!this.metadata) this.metadata = {};
 							this.metadata.linked_id = this.ui.link_geometry_with_id;
 							
 							veToast(`Linked ${this.name} with ${linked_geometry.name}`);
+							this.link_geometry_window.close();
 						}, { name: "Confirm" })
 					}, { name: "Link Geometry", can_rename: false });
-				}, { name: "Link Geometry" })
+				}, { name: "Link Geometry" }),
+				unlink_geometry: veButton(() => {
+					let linked_geometry = naissance.Geometry.instances[this.metadata.linked_id];
+					
+					delete this.metadata.linked_id;
+					if (linked_geometry) {
+						veToast(`Unlinked geometry from ${linked_geometry.name}.`);
+					} else {
+						veToast(`Cleared reference to stale geometry.`);
+					}
+				}, {
+					name: "Unlink Geometry",
+					limit: () => this?.metadata?.linked_id
+				})
 			}, {
 				display: "inline",
 				placeholder: "Search for action ...",
