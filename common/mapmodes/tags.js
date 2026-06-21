@@ -78,6 +78,9 @@ config.mapmodes.tags = {
 					config_obj.template_name = "";
 					config_obj.symbol_array = [];
 				}
+				
+				//Draw Mapmode
+				main.renderer.update();
 			},
 			selected: (map_settings.tag_mapmode_selected) ? map_settings.tag_mapmode_selected : "none"
 		});
@@ -116,13 +119,16 @@ config.mapmodes.tags = {
 					
 					veToast(`Saved tag mapmode as ${config_obj.template_name}.`);
 				}
+				
+				//Draw Mapmode
+				main.renderer.update();
 			}, { name: "Update Mapmode" })
 		}, {
 			name: "Tag Mapmode",
 			width: "30rem"
 		});
 		
-		//Initial hydration
+		//Call onuserchange upon init
 		if (map_settings.tag_mapmode_selected && map_settings.tag_mapmode_selected !== "none")
 			switch_template.options.onuserchange(map_settings.tag_mapmode_selected);
 	},
