@@ -46,10 +46,6 @@ global.UI_Leftbar = class extends ve.Class {
 					hierarchy: new UI_LeftbarHierarchy().value
 				}
 			},
-			timeline: {
-				name: "Timeline",
-				components_obj: {}
-			},
 			undo_redo: {
 				name: "Undo/Redo",
 				components_obj: { undo_redo: veUndoRedo() }

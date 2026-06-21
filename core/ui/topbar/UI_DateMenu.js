@@ -70,7 +70,7 @@ global.UI_DateMenu = class extends ve.Class {
 				});
 			}, { name: "<icon>settings</icon>", tooltip: "Settings" }),
 			help: veButton(() => {
-				
+				veToast(`No help yet, sorry! We're working on it. Check on the Discord for updates.`);
 			}, { 
 				name: "<icon>question_mark</icon> Help"
 			})
