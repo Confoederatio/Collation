@@ -202,6 +202,69 @@ naissance.Geometry = class extends naissance.Entity {
 		this.draw();
 	}
 	
+	drawActionsPalette (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Declare local instance variables
+		if (!this.ui) this.ui = {};
+		
+		//Open this.actions_palette_window
+		if (this.actions_palette_window) this.actions_palette_window.close();
+		this.actions_palette_window = veWindow({
+			actions_palette: veSearchSelect({
+				debug_geometry: veButton(() => {
+					window.$geometry = this;
+					console.log(`Geometry logged as:`, window.$geometry);
+					veToast(`Geometry logged to console.`);
+				}, { name: "Debug Geometry" }),
+				link_geometry: veButton(() => {
+					if (this.link_geometry_window) this.link_geometry_window.close();
+					this.link_geometry_window = veWindow({
+						link_geometry_with: new UI_GeometryDatalist(this.ui.link_geometry_with_id, {
+							name: "Link to Geometry:",
+							onuserchange: (v) => this.ui.link_geometry_with_id = v
+						}),
+						confirm: veButton(() => {
+							if (!this.ui.link_geometry_with_id) {
+								veToast(`<icon>warning</icon> You must select a valid Geometry to link to.`)
+							}
+							
+							let linked_geometry = naissance.Geometry.instances[this.ui.link_geometry_with_id];
+							
+							if (!linked_geometry) {
+								veToast(`<icon>warning</icon> The linked geometry no longer exists.`);
+								return;
+							}
+							if (linked_geometry.class_name !== this.class_name) {
+								veToast(`<icon>warning</icon> You may only link to geometries of the same type.`);
+								return;
+							}
+							
+							if (!this.metadata) this.metadata = {};
+							this.metadata.linked_id = this.ui.link_geometry_with_id;
+							
+							veToast(`Linked ${this.name} with ${linked_geometry.name}`);
+						}, { name: "Confirm" })
+					}, { name: "Link Geometry", can_rename: false });
+				}, { name: "Link Geometry" })
+			}, {
+				display: "inline",
+				placeholder: "Search for action ...",
+				style: {
+					"> [component='ve-button']": {
+						display: "inline",
+						padding: 0
+					}
+				}
+			})
+		}, {
+			name: `Geometry Actions (${this.name})`,
+			can_rename: false,
+			width: "30rem"
+		});
+	}
+	
 	/**
 	 * Draws the variables editor for the current geometry UI.
 	 */
@@ -485,6 +548,13 @@ naissance.Geometry = class extends naissance.Entity {
 					name: "Selected",
 					onuserchange: (v) => this.selected = v
 				}),
+				
+				open_actions_palette: veButton(() => {
+					this.drawActionsPalette();
+				}, {
+					name: "<icon>more_vert</icon>",
+					tootlip: "Open Actions Palette"
+				}),
 				move_to_brush: veButton(() => {
 					DALS.Timeline.parseAction("select_geometry", [{
 						type: "Brush", select_geometry_id: this.id
@@ -523,14 +593,6 @@ naissance.Geometry = class extends naissance.Entity {
 				}, {
 					name: "<icon>new_label</icon>", tooltip: "Manage Tags"
 				}),
-				debug_geometry: veButton(() => {
-					window.$geometry = this;
-					console.log(`Geometry logged as:`, window.$geometry);
-					veToast(`Geometry logged to console.`);
-				}, {
-					name: `<icon>code</icon>`,
-					tooltip: "Debug Geometry"
-				}),
 				hide_geometry: veButton(() => {
 					DALS.Timeline.parseAction("hide_geometry", [{ geometry_obj: this.id, set_properties: { hidden: true } }]);
 					this.history.draw(this.keyframes_ui);
@@ -548,7 +610,14 @@ naissance.Geometry = class extends naissance.Entity {
 					tooltip: "Show Geometry"
 				}),
 				delete_button: veButton(() => {
-					DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
+					veConfirm(`Are you sure you want to delete ${this.name}?`, {
+						special_function: () => {
+							let geometry_name = this.name;
+							
+							DALS.Timeline.parseAction("delete_geometry", [{ geometry_obj: this.id, delete_geometry: true }]);
+							veToast(`Deleted ${geometry_name}`);
+						}
+					})
 				}, {
 					name: "<icon>delete</icon>",
 					tooltip: "Delete Geometry"
@@ -599,6 +668,9 @@ naissance.Geometry = class extends naissance.Entity {
 			information: veHTML(() => {
 				//Declare local instance variables
 				let format_string = `ID: ${this.id}`;
+				
+				if (this?.metadata?.linked_id)
+					format_string += ` | Linked ID: ${this.metadata.linked_id}`;
 				
 				if (this.class_name === "GeometryPolygon") {
 					let area_km2 = (this.geometry && this.isOpen("instance")) ?
