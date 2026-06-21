@@ -90,7 +90,7 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 				} else if (json.add_variable.date === "start") {
 					timestamp = geometry_obj.history.getFirstKeyframe().timestamp;
 				} else {
-					timestamp = Date.getTimestamp((json.add_variable.date) ?
+					timestamp = Date.getTimestamp((json.add_variable.date !== undefined) ?
 						json.add_variable.date : main.date);
 				}
 			
@@ -174,7 +174,7 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 				} else if (json.remove_variable.date === "start") {
 					timestamp = geometry_obj.history.getFirstKeyframe().timestamp;
 				} else {
-					timestamp = Date.getTimestamp((json.remove_variable.date) ?
+					timestamp = Date.getTimestamp((json.remove_variable.date !== undefined) ?
 						json.remove_variable.date : main.date);
 				}
 			
@@ -183,7 +183,7 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 			if (keyframe?.value?.[2]?.variables) {
 				delete keyframe.value[2].variables[json.remove_variable.key];
 				
-				if (Object.keys(keyframe.value[2].variables))
+				if (Object.keys(keyframe.value[2].variables).length === 0)
 					delete keyframe.value[2].variables;
 				if (
 					(keyframe.value[0] === "undefined" || !keyframe.value[0]) &&
