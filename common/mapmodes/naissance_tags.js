@@ -1,7 +1,7 @@
 config.mapmodes.tags = {
 	name: "Tags",
 	icon: "label",
-	description: "Custom viewer for different tags and tag groups.",
+	description: "Customisable mapmode for different tags and tag groups.",
 	
 	onhide: (v) => {
 		setTimeout(() => main.renderer.update());
