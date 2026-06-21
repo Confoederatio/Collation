@@ -113,6 +113,18 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				date: main.timestamp,
 				guaranteed_indexes: [1]
 			}).value;
+			if (this.metadata?.linked_id) { //Ensure symbol is the same as that of the linked ID if it exists
+				let linked_geometry = naissance.Geometry.instances[this.metadata.linked_id];
+				
+				if (linked_geometry) {
+					let linked_geometry_keyframe = linked_geometry.history.getKeyframe({
+						date: main.timestamp,
+						guaranteed_indexes: [1]
+					});
+					
+					if (linked_geometry_keyframe?.value?.[1]) this.value[1] = linked_geometry_keyframe.value[1];
+				}
+			}
 			if (this.value === undefined || this.value?.length === 0 || this._is_visible === false) return;
 			
 			//2. Check any cause for derendering
