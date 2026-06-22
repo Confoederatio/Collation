@@ -40,14 +40,25 @@ let win;
     
     //Update the title every second with the latest data
     title_update_interval = setInterval(function () {
-      let memory_usage = process.memoryUsage();
+      let is_destroyed = !win || win.isDestroyed();
+      if (is_destroyed) {
+        clearInterval(title_update_interval);
+        return;
+      }
       
+      let memory_usage = process.memoryUsage();
       let heap_used_mb = (memory_usage.heapUsed/1024/1024).toFixed(2);
       let rss_mb = (memory_usage.rss/1024/1024).toFixed(2);
       let title_string = `Naissance World Model ${naissance_version} - FPS: ${latest_fps} | RAM: RSS ${rss_mb}MB/Heap ${heap_used_mb}MB`;
       
       win.setTitle(title_string);
     }, 1000);
+    
+    //Clean up memory and intervals on close
+    win.on("closed", function () {
+      clearInterval(title_update_interval);
+      win = null;
+    });
     
     //<a href> handling
     //Intercept link clicks that would navigate the current window
