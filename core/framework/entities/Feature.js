@@ -959,8 +959,16 @@ naissance.Feature = class extends naissance.Entity {
 				tooltip: "Show Feature"
 			}),
 			delete_button: veButton(() => {
-				DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
-				super.close("instance");
+				veConfirm(`Are you sure you want to delete ${this.name}?`, {
+					special_function: () => {
+						//Declare local instance variables
+						let old_name = this.name;
+						
+						super.close("instance");
+						DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
+						veToast(`Deleted ${old_name}.`);
+					}
+				});
 			}, {
 				attributes: { class: "order-100 onhover-visible" },
 				name: "<icon>delete</icon>",
