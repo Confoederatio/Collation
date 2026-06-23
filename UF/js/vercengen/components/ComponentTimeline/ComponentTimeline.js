@@ -19,6 +19,7 @@
  *     - 
  *     - `.date_window`: {@link Array}<{@link Object}|{@link number}, {@link Object}|{@link number}> - The start_date, end_date window to display values from.
  *     - `.groups`: {@link Array}<{@link string}> - Group IDs to filter for.
+ *     - `.unique_timestamps=false`: {@link boolean} - Ensures only unique timestamps are filtered for.
  *   - `.groups`: {@link Object}
  *     - `<group_id>`: {@link Object}
  *       - `.key`: {@link string}

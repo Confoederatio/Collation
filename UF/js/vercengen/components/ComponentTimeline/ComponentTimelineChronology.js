@@ -53,10 +53,11 @@ ve.TimelineChronology = class extends ve.Component {
 		this.fireFromBinding();
 	}
 	
-	draw () {
+	draw () { //[WIP] - Finish event handlers; add handling for .filter_obj.unique_timestamps
 		//Declare local instance variables
 		let table_array = [];
 		let timeline_obj = this.options.timeline_instance;
+		let timestamps_obj = {}; //<timestamp>: { count: number, row_value: Array } - Stores both the keyframe count and row_value, updating the description localisation if .filter_obj.unique_timestamps is true
 		
 		let filter_obj = timeline_obj.options.filter;
 			if (filter_obj?.date_window) {
