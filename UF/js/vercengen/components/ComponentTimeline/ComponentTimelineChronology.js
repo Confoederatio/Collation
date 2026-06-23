@@ -24,9 +24,45 @@ ve.TimelineChronology = class extends ve.Component {
 			if (options.attributes) HTML.setAttributesObject(this.element, options.attributes);
 		this.options = options;
 		this.value = value;
+		
+		//Declare table and draw
+		this.table = new ve.Table([], {
+			...this.options.table_options
+		});
+		
+		this.from_binding_fire_silently = true;
+		this.v = value;
+		delete this.from_binding_fire_silently;
+	}
+	
+	get v () {
+		//Return statement
+		return Date.getDate(this.value);
+	}
+	
+	set v (arg0_date) {
+		//Convert from parameters
+		let date = arg0_date;
+		
+		//Declare local instance variables
+		this.timestamp = Date.getTimestamp(date);
+		this.value = Date.getDate(date);
+		
+		//Update draw
+		this.draw();
+		this.fireFromBinding();
 	}
 	
 	draw () {
+		//Declare local instance variables
+		let table_array = [];
+		let timeline_obj = this.options.timeline_instance;
 		
+		//Iterate over .options.timeline_instance.keyframes; operate over .options.filter
+		Object.iterate(timeline_obj.keyframes, (local_key, local_value) => {
+			
+		});
+		
+		//Set table .v
 	}
 };
