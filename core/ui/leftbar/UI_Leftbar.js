@@ -95,4 +95,10 @@ global.UI_Leftbar = class extends ve.Class {
 			y: ((navbar_el) ? navbar_el.offsetHeight : 0) + 8
 		});
 	}
+	
+	draw () {
+		//Draw instantiated components
+		UI_LeftbarHierarchy.draw();
+		UI_LeftbarTimeline.draw();
+	}
 };
