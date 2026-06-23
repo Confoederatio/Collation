@@ -70,71 +70,72 @@ ve.TimelineChronology = class extends ve.Component {
 		table_array.push(["Date", "Keyframe"]);
 		
 		//Iterate over .options.timeline_instance.keyframes; operate over .options.filter
-		Object.iterate(timeline_obj.keyframes, (local_key, local_value) => {
-			//Check against filter_obj
-			let display_keyframe = false;
-			let local_groups = (local_value.groups) ? local_value.groups : [];
-			let local_timestamp = parseFloat(local_key);
-			
-			//Update timestamps_obj
-			if (!timestamps_obj[local_timestamp]) timestamps_obj[local_timestamp] = {
-				count: 0, row_value: []
-			};
-				let local_timestamp_obj = timestamps_obj[local_timestamp];
-				local_timestamp_obj.count++;
-			
-			//Check for filter_obj pass
-			if (filter_obj.enabled) {
-				if (filter_obj.groups.length > 0)
-					for (let i = 0; i < filter_obj.groups.length; i++)
-						if (local_groups.includes(filter_obj.groups[i])) {
-							display_keyframe = true;
-							break;
-						}
-				if (filter_obj?.date_window)
-					if (local_timestamp < filter_obj.date_window[0] || local_timestamp > filter_obj.date_window[1])
-						display_keyframe = false;
-			} else {
-				display_keyframe = true;
-			}
-			
-			//Render keyframe if display_keyframe is true
-			if (display_keyframe) {
-				let is_unique_timestamps = (filter_obj.enabled && filter_obj?.unique_timestamps);
+		if (timeline_obj.keyframes)
+			Object.iterate(timeline_obj.keyframes, (local_key, local_value) => {
+				//Check against filter_obj
+				let display_keyframe = false;
+				let local_groups = (local_value.groups) ? local_value.groups : [];
+				let local_timestamp = parseFloat(local_key);
 				
-				if (!local_timestamp_obj.row_value)
-					local_timestamp_obj.row_value = [String.formatDate(local_timestamp), document.createElement("div")];
-				let local_keyframe_el = local_timestamp_obj.row_value[1];
+				//Update timestamps_obj
+				if (!timestamps_obj[local_timestamp]) timestamps_obj[local_timestamp] = {
+					count: 0, row_value: []
+				};
+					let local_timestamp_obj = timestamps_obj[local_timestamp];
+					local_timestamp_obj.count++;
 				
-				//.name handler; only format if timestamps are not grouped
-				if (local_value.name) {
-					let append_name = false;
-					let local_name_el = local_keyframe_el.querySelector(".keyframe-name"); 
-						if (!local_name_el) {
-							local_name_el = document.createElement("div");
-							append_name = true;
-						}
-						local_name_el.setAttribute("class", "keyframe-name");
-						
-						//Format local_value.name
-						local_name_el.innerHTML = (!is_unique_timestamps) ? 
-							local_value.name : `${String.formatNumber(local_timestamp_obj.count)} Keyframe(s) changed.`;
-						if (append_name) local_keyframe_el.appendChild(local_name_el);
-				}
-				//.description handler; only show if timestamps are not grouped
-				if (local_value.description && !is_unique_timestamps) {
-					let local_description_el = document.createElement("div");
-						local_description_el.setAttribute("class", "keyframe-description");
-						local_description_el.innerHTML = local_value.description;
-						local_keyframe_el.appendChild(local_description_el);
+				//Check for filter_obj pass
+				if (filter_obj.enabled) {
+					if (filter_obj.groups.length > 0)
+						for (let i = 0; i < filter_obj.groups.length; i++)
+							if (local_groups.includes(filter_obj.groups[i])) {
+								display_keyframe = true;
+								break;
+							}
+					if (filter_obj?.date_window)
+						if (local_timestamp < filter_obj.date_window[0] || local_timestamp > filter_obj.date_window[1])
+							display_keyframe = false;
+				} else {
+					display_keyframe = true;
 				}
 				
-				//Push to table_array
-				if (!local_timestamp_obj.row_value)
-					local_timestamp_obj.row_value = [String.formatDate(local_timestamp), local_keyframe_el];
-				table_array.push(local_timestamp_obj.row_value);
-			}
-		});
+				//Render keyframe if display_keyframe is true
+				if (display_keyframe) {
+					let is_unique_timestamps = (filter_obj.enabled && filter_obj?.unique_timestamps);
+					
+					if (!local_timestamp_obj.row_value)
+						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), document.createElement("div")];
+					let local_keyframe_el = local_timestamp_obj.row_value[1];
+					
+					//.name handler; only format if timestamps are not grouped
+					if (local_value.name) {
+						let append_name = false;
+						let local_name_el = local_keyframe_el.querySelector(".keyframe-name"); 
+							if (!local_name_el) {
+								local_name_el = document.createElement("div");
+								append_name = true;
+							}
+							local_name_el.setAttribute("class", "keyframe-name");
+							
+							//Format local_value.name
+							local_name_el.innerHTML = (!is_unique_timestamps) ? 
+								local_value.name : `${String.formatNumber(local_timestamp_obj.count)} Keyframe(s) changed.`;
+							if (append_name) local_keyframe_el.appendChild(local_name_el);
+					}
+					//.description handler; only show if timestamps are not grouped
+					if (local_value.description && !is_unique_timestamps) {
+						let local_description_el = document.createElement("div");
+							local_description_el.setAttribute("class", "keyframe-description");
+							local_description_el.innerHTML = local_value.description;
+							local_keyframe_el.appendChild(local_description_el);
+					}
+					
+					//Push to table_array
+					if (!local_timestamp_obj.row_value)
+						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), local_keyframe_el];
+					table_array.push(local_timestamp_obj.row_value);
+				}
+			});
 		
 		//Set table .v
 		this.table.v = table_array;

@@ -74,6 +74,12 @@ ve.Timeline = class extends ve.Component {
 				components_obj: { 
 					chronology_instance: this.chronology
 				}
+			},
+			timeline_map: {
+				name: "Timeline Map",
+				components_obj: {
+					
+				}
 			}
 		});
 		
