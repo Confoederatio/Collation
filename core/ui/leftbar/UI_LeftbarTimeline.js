@@ -3,4 +3,8 @@ global.UI_LeftbarTimeline = class {
 		//Declare local instance variables
 		this.value = new ve.Timeline(undefined, {});
 	}
+	
+	open () {
+		
+	}
 };
