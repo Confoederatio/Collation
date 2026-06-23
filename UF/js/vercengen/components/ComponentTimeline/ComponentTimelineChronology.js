@@ -76,6 +76,13 @@ ve.TimelineChronology = class extends ve.Component {
 			let local_groups = (local_value.groups) ? local_value.groups : [];
 			let local_timestamp = parseFloat(local_key);
 			
+			//Update timestamps_obj
+			if (!timestamps_obj[local_timestamp]) timestamps_obj[local_timestamp] = {
+				count: 0, row_value: []
+			};
+				let local_timestamp_obj = timestamps_obj[local_timestamp];
+				local_timestamp_obj.count++;
+			
 			//Check for filter_obj pass
 			if (filter_obj.enabled) {
 				if (filter_obj.groups.length > 0)
@@ -93,15 +100,29 @@ ve.TimelineChronology = class extends ve.Component {
 			
 			//Render keyframe if display_keyframe is true
 			if (display_keyframe) {
-				let local_keyframe_el = document.createElement("div");
+				let is_unique_timestamps = (filter_obj.enabled && filter_obj?.unique_timestamps);
 				
+				if (!local_timestamp_obj.row_value)
+					local_timestamp_obj.row_value = [String.formatDate(local_timestamp), document.createElement("div")];
+				let local_keyframe_el = local_timestamp_obj.row_value[1];
+				
+				//.name handler; only format if timestamps are not grouped
 				if (local_value.name) {
-					let local_name_el = document.createElement("div");
+					let append_name = false;
+					let local_name_el = local_keyframe_el.querySelector(".keyframe-name"); 
+						if (!local_name_el) {
+							local_name_el = document.createElement("div");
+							append_name = true;
+						}
 						local_name_el.setAttribute("class", "keyframe-name");
-						local_name_el.innerHTML = local_value.name;
-						local_keyframe_el.appendChild(local_name_el);
+						
+						//Format local_value.name
+						local_name_el.innerHTML = (!is_unique_timestamps) ? 
+							local_value.name : `${String.formatNumber(local_timestamp_obj.count)} Keyframe(s) changed.`;
+						if (append_name) local_keyframe_el.appendChild(local_name_el);
 				}
-				if (local_value.description) {
+				//.description handler; only show if timestamps are not grouped
+				if (local_value.description && !is_unique_timestamps) {
 					let local_description_el = document.createElement("div");
 						local_description_el.setAttribute("class", "keyframe-description");
 						local_description_el.innerHTML = local_value.description;
@@ -109,7 +130,9 @@ ve.TimelineChronology = class extends ve.Component {
 				}
 				
 				//Push to table_array
-				table_array.push([String.formatDate(local_timestamp), local_keyframe_el]);
+				if (!local_timestamp_obj.row_value)
+					local_timestamp_obj.row_value = [String.formatDate(local_timestamp), local_keyframe_el];
+				table_array.push(local_timestamp_obj.row_value);
 			}
 		});
 		
