@@ -58,11 +58,61 @@ ve.TimelineChronology = class extends ve.Component {
 		let table_array = [];
 		let timeline_obj = this.options.timeline_instance;
 		
+		let filter_obj = timeline_obj.options.filter;
+			if (filter_obj?.date_window) {
+				filter_obj.date_window[0] = Date.getTimestamp(filter_obj.date_window[0]);
+				filter_obj.date_window[1] = Date.getTimestamp(filter_obj.date_window[1]);
+				filter_obj.date_window.sort((a, b) => a - b); //Sort in ascending order
+			}
+			
+		//Push table_array header
+		table_array.push(["Date", "Keyframe"]);
+		
 		//Iterate over .options.timeline_instance.keyframes; operate over .options.filter
 		Object.iterate(timeline_obj.keyframes, (local_key, local_value) => {
+			//Check against filter_obj
+			let display_keyframe = false;
+			let local_groups = (local_value.groups) ? local_value.groups : [];
+			let local_timestamp = parseFloat(local_key);
 			
+			//Check for filter_obj pass
+			if (filter_obj.enabled) {
+				if (filter_obj.groups.length > 0)
+					for (let i = 0; i < filter_obj.groups.length; i++)
+						if (local_groups.includes(filter_obj.groups[i])) {
+							display_keyframe = true;
+							break;
+						}
+				if (filter_obj?.date_window)
+					if (local_timestamp < filter_obj.date_window[0] || local_timestamp > filter_obj.date_window[1])
+						display_keyframe = false;
+			} else {
+				display_keyframe = true;
+			}
+			
+			//Render keyframe if display_keyframe is true
+			if (display_keyframe) {
+				let local_keyframe_el = document.createElement("div");
+				
+				if (local_value.name) {
+					let local_name_el = document.createElement("div");
+						local_name_el.setAttribute("class", "keyframe-name");
+						local_name_el.innerHTML = local_value.name;
+						local_keyframe_el.appendChild(local_name_el);
+				}
+				if (local_value.description) {
+					let local_description_el = document.createElement("div");
+						local_description_el.setAttribute("class", "keyframe-description");
+						local_description_el.innerHTML = local_value.description;
+						local_keyframe_el.appendChild(local_description_el);
+				}
+				
+				//Push to table_array
+				table_array.push([String.formatDate(local_timestamp), local_keyframe_el]);
+			}
 		});
 		
 		//Set table .v
+		this.table.v = table_array;
 	}
 };

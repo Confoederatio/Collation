@@ -49,6 +49,11 @@ ve.Timeline = class extends ve.Component {
 		//Convert from parameters
 		let value = (arg0_value !== undefined) ? arg0_value : Date.getCurrentDate();
 		let options = {
+			bar_options: {},
+			chronology_options: {},
+			filter: {},
+			groups: {},
+			keyframes: {},
 			...arg1_options
 		};
 			super(options);
