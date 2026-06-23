@@ -73,6 +73,32 @@ naissance.Renderer = class extends ve.Class {
 	}
 	
 	/**
+	 * Returns a list of all unique timestamps in the current global state.
+	 * - Method of: {@link naissance.Renderer}
+	 * 
+	 * @returns {number[]}
+	 */
+	getTimestamps () {
+		//Declare local instance variables
+		let all_timestamps = [];
+		
+		//Iterate over all naissance.Feature.instances with no .parent
+		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
+			if (!local_feature.parent) 
+				all_timestamps = Array.strictUnique(all_timestamps, local_feature.getTimestamps());
+		});
+		
+		//Iterate over all naissance.Geometry.instances with no parent
+		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
+			if (!local_geometry.parent) 
+				all_timestamps = Array.strictUnique(all_timestamps, local_geometry.history.getTimestamps());
+		})
+		
+		//Return statement
+		return all_timestamps.sort((a, b) => a - b);
+	}
+	
+	/**
 	 * Draws all Features/Geometries in order by calling their draw function.
 	 */
 	update () {
