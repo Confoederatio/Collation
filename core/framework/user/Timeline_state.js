@@ -63,7 +63,7 @@
 			});
 			
 			//Force all UI_LeftbarHierarchy instances to .refresh()
-			UI_LeftbarHierarchy.refresh();
+			UI_Leftbar.refresh();
 		}
 	};
 }
@@ -131,7 +131,7 @@
 		
 		//4. Force all UI_LeftbarHierarchy instances to .refresh()
 		setTimeout(() => {
-			UI_LeftbarHierarchy.refresh();
+			UI_Leftbar.refresh();
 			main.renderer.update(); //Update renderer
 		}, 100);
 		

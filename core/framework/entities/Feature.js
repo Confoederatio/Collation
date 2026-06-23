@@ -1018,7 +1018,7 @@ naissance.Feature = class extends naissance.Entity {
 		
 		//Rerender deleted feature and remove it from the map
 		if (this.draw) this.draw();
-		UI_LeftbarHierarchy.refresh();
+		UI_Leftbar.refresh();
 	}
 	
 	setID (arg0_id) {

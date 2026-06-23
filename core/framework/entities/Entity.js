@@ -161,7 +161,7 @@ naissance.Entity = class extends ve.Class {
 			oncollapse: (v, e) => {
 				this.is_collapsed = v;
 				if (v === false)
-					UI_LeftbarHierarchy.refresh();
+					UI_Leftbar.refresh();
 			},
 			type: (!this.entities) ? "item" : "group"
 		});

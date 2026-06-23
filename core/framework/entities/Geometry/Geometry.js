@@ -195,7 +195,7 @@ naissance.Geometry = class extends naissance.Entity {
 		//Set selected, then update draw
 		this._selected = v;
 		this.draw();
-		UI_LeftbarHierarchy.refresh();
+		UI_Leftbar.refresh();
 	}
 	
 	addKeyframe (arg0_date, arg1_coords, arg2_symbol, arg3_data) {

@@ -44,7 +44,7 @@ naissance.GeometryPoint.parseAction = async function (arg0_json) {
 			
 			//Point handling; .is_search
 			if (!json.create_point.is_search) {
-				UI_LeftbarHierarchy.refresh();
+				UI_Leftbar.refresh();
 			} else {
 				UI_LeftbarHierarchy.do_not_refresh = true;
 			}

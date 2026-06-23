@@ -10,4 +10,8 @@ global.UI_LeftbarTimeline = class {
 	draw () {
 		
 	}
+	
+	static refresh () {
+		
+	}
 };

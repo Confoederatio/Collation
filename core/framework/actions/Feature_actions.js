@@ -114,7 +114,7 @@ naissance.Feature.parseAction = async function (arg0_json) {
 			//Update parent ref for all promoted geometries
 			for (let i = 0; i < feature_obj.entities.length; i++)
 				feature_obj.entities[i].parent = feature_obj;
-			UI_LeftbarHierarchy.refresh();
+			UI_Leftbar.refresh();
 		}
 		
 		//move_all_entities_to_feature
@@ -143,7 +143,7 @@ naissance.Feature.parseAction = async function (arg0_json) {
 					if (!ot_feature_obj.entities) ot_feature_obj.entities = [];
 					ot_feature_obj.entities.push(local_entity);
 				}
-				UI_LeftbarHierarchy.refresh();
+				UI_Leftbar.refresh();
 			}
 		}
 		

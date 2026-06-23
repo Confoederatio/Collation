@@ -96,9 +96,9 @@ global.UI_Leftbar = class extends ve.Class {
 		});
 	}
 	
-	draw () {
+	static refresh () {
 		//Draw instantiated components
-		UI_LeftbarHierarchy.draw();
-		UI_LeftbarTimeline.draw();
+		UI_LeftbarHierarchy.refresh();
+		UI_LeftbarTimeline.refresh();
 	}
 };
