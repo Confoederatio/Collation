@@ -34,6 +34,7 @@ ve.TimelineChronology = class extends ve.Component {
 				if (timeline_options.onkeyframerightclick)
 					timeline_options.onkeyframerightclick(v, e);
 			},
+			retain: true,
 			page_size: 50,
 			...this.options.table_options
 		});

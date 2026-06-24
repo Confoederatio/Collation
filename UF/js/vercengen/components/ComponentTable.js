@@ -18,6 +18,7 @@
  *   - `.onrowrightclick`: {@link function}(v:{@link any}, e:{@link Event})
  *   - `.page_sizes=ve.registry.settings.Table.page_sizes`: {@link number[]} - Set by default to [10, 20, 50, 100].
  *   - `.page_size=50`: {@link number}
+ *   - `.retain=false`: {@link boolean}
  *   - `.sortable=true`: {@link boolean}
  *   - `.sort_ascending=true`: {@link boolean}
  *   - `.sort_column`: {@link number} - Which column should have its sort indicator active. 0-indexed.
@@ -115,8 +116,10 @@ ve.Table = class extends ve.Component {
 			//First row is headers, remaining are data
 			[this._headers, ...this._rows] = value;
 		}
-		this.current_page = 0;
-		this.options.sort_column = null;
+		if (!this.options.retain) {
+			this.current_page = 0;
+			this.options.sort_column = null;
+		}
 		this.draw();
 	}
 	
@@ -452,7 +455,7 @@ ve.Table = class extends ve.Component {
 		if (view_obj.current_page !== undefined) this.current_page = view_obj.current_page;
     if (view_obj.hide_columns !== undefined) this.options.hide_columns = view_obj.hide_columns;
 		if (view_obj.items_per_page !== undefined) this.options.page_size = view_obj.items_per_page;
-		if (view_obj.sort_column !== undefined) {
+		if (typeof view_obj.sort_column === "number") {
 			if (view_obj.sort_ascending !== undefined) this.options.sort_ascending = view_obj.sort_ascending;
 			this.sort(view_obj.sort_column, { do_not_change_sort_order: true });
 		} else {
