@@ -28,8 +28,11 @@ ve.TimelineChronology = class extends ve.Component {
 		//Declare table and draw
 		this.table = new ve.Table([], {
 			non_sortable_columns: [0, 1],
-			onrowclick: (v, e) => {
-				console.log("this.table.onrowclick", v, e);
+			onrowrightclick: (v, e) => {
+				let timeline_options = this.options.timeline_instance.options;
+				
+				if (timeline_options.onkeyframerightclick)
+					timeline_options.onkeyframerightclick(v, e);
 			},
 			page_size: 50,
 			...this.options.table_options
@@ -112,6 +115,11 @@ ve.TimelineChronology = class extends ve.Component {
 					
 					if (local_timestamp_obj.row_value.length === 0) {
 						let keyframe_el = document.createElement("div");
+							keyframe_el.id = "keyframe";
+							keyframe_el.keyframe = {
+								key: local_key,
+								value: local_value
+							};
 						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), keyframe_el];
 					}
 					let local_keyframe_el = local_timestamp_obj.row_value[1];
