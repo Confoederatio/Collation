@@ -61,7 +61,7 @@ ve.Table = class extends ve.Component {
     options.hide_columns = (options.hide_columns) ? options.hide_columns : [];
 		options.non_sortable_columns = (options.non_sortable_columns) ? options.non_sortable_columns : [];
 		options.page_size = Math.returnSafeNumber(options.page_size, 50);
-		options.page_sizes = ve.registry.settings.Table.page_sizes;
+		options.page_sizes = (options.page_sizes) ? options.page_sizes : ve.registry.settings.Table.page_sizes;
 		options.sortable = (options.sortable !== undefined) ? options.sortable : true;
 		options.sort_ascending = (options.sort_ascending !== undefined) ? 
 			options.sort_ascending : true;
