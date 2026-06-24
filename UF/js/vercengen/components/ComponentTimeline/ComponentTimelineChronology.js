@@ -28,6 +28,9 @@ ve.TimelineChronology = class extends ve.Component {
 		//Declare table and draw
 		this.table = new ve.Table([], {
 			non_sortable_columns: [0, 1],
+			onrowclick: (v, e) => {
+				console.log("this.table.onrowclick", v, e);
+			},
 			page_size: 50,
 			...this.options.table_options
 		});

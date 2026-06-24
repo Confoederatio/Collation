@@ -13,7 +13,9 @@
  *   - `.non_sortable_columns`: {@link number} - The indices that shouldn't be sortable.
  *   - `.ondraw`: {@link function}(v:{@link ve.Table})
  *   - `.oncellclick`: {@link function}(v:{@link Array}<{@link any}>, e:{@link Event})
+ *   - `.oncellrightclick`: {@link function}(v:{@link Array}<{@link any}>, e:{@link Event})
  *   - `.onrowclick`: {@link function}(v:{@link any}, e:{@link Event})
+ *   - `.onrowrightclick`: {@link function}(v:{@link any}, e:{@link Event})
  *   - `.page_sizes=ve.registry.settings.Table.page_sizes`: {@link number[]} - Set by default to [10, 20, 50, 100].
  *   - `.page_size=50`: {@link number}
  *   - `.sortable=true`: {@link boolean}
@@ -251,9 +253,10 @@ ve.Table = class extends ve.Component {
 					
 				//oncellclick handler
 				if (this.options.oncellclick)
-					local_td_el.addEventListener("click", (e) => {
-						this.options.oncellclick(cell_data, e);
-					});
+					local_td_el.addEventListener("click", (e) => this.options.oncellclick(cell_data, e));
+				//oncellrightclick handler
+				if (this.options.oncellrightclick)
+					local_tr_el.addEventListener("contextmenu", (e) => this.options.oncellrightclick(row_data, e));
 				
 				//Push row
 				local_tr_el.appendChild(local_td_el);
@@ -261,9 +264,11 @@ ve.Table = class extends ve.Component {
 			
 			//onrowclick handler
 			if (this.options.onrowclick)
-				local_tr_el.addEventListener("click", (e) => {
-					this.options.onrowclick(row_data, e);
-				});
+				local_tr_el.addEventListener("click", (e) => this.options.onrowclick(row_data, e));
+			
+			//onrowrightclick handler
+			if (this.options.onrowrightclick)
+				local_tr_el.addEventListener("contextmenu", (e) => this.options.onrowrightclick(row_data, e));
 			
 			tbody_el.appendChild(local_tr_el);
 		});
