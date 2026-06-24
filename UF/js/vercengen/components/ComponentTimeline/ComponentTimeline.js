@@ -113,4 +113,13 @@ ve.Timeline = class extends ve.Component {
 		//Update chronology; update timeline bar
 		this.chronology.draw();
 	}
+	
+	setKeyframes (arg0_keyframes_obj) {
+		//Convert from parameters
+		let keyframes_obj = (arg0_keyframes_obj) ? arg0_keyframes_obj : {};
+		
+		//Declare local instance variables
+		this.options.keyframes = keyframes_obj;
+		this.draw();
+	}
 };

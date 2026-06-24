@@ -27,8 +27,11 @@ ve.TimelineChronology = class extends ve.Component {
 		
 		//Declare table and draw
 		this.table = new ve.Table([], {
+			non_sortable_columns: [0, 1],
+			page_size: 50,
 			...this.options.table_options
 		});
+		this.table.bind(this.element);
 		
 		this.from_binding_fire_silently = true;
 		this.v = value;
@@ -57,9 +60,10 @@ ve.TimelineChronology = class extends ve.Component {
 		//Declare local instance variables
 		let table_array = [];
 		let timeline_obj = this.options.timeline_instance;
+		let timeline_options = timeline_obj.options;
 		let timestamps_obj = {}; //<timestamp>: { count: number, row_value: Array } - Stores both the keyframe count and row_value, updating the description localisation if .filter_obj.unique_timestamps is true
 		
-		let filter_obj = timeline_obj.options.filter;
+		let filter_obj = timeline_options.filter;
 			if (filter_obj?.date_window) {
 				filter_obj.date_window[0] = Date.getTimestamp(filter_obj.date_window[0]);
 				filter_obj.date_window[1] = Date.getTimestamp(filter_obj.date_window[1]);
@@ -69,9 +73,9 @@ ve.TimelineChronology = class extends ve.Component {
 		//Push table_array header
 		table_array.push(["Date", "Keyframe"]);
 		
-		//Iterate over .options.timeline_instance.keyframes; operate over .options.filter
-		if (timeline_obj.keyframes)
-			Object.iterate(timeline_obj.keyframes, (local_key, local_value) => {
+		//Iterate over .timeline_options.keyframes; operate over .options.filter
+		if (timeline_options.keyframes)
+			Object.iterate(timeline_options.keyframes, (local_key, local_value) => {
 				//Check against filter_obj
 				let display_keyframe = false;
 				let local_groups = (local_value.groups) ? local_value.groups : [];
@@ -103,8 +107,10 @@ ve.TimelineChronology = class extends ve.Component {
 				if (display_keyframe) {
 					let is_unique_timestamps = (filter_obj.enabled && filter_obj?.unique_timestamps);
 					
-					if (!local_timestamp_obj.row_value)
-						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), document.createElement("div")];
+					if (local_timestamp_obj.row_value.length === 0) {
+						let keyframe_el = document.createElement("div");
+						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), keyframe_el];
+					}
 					let local_keyframe_el = local_timestamp_obj.row_value[1];
 					
 					//.name handler; only format if timestamps are not grouped
@@ -135,7 +141,7 @@ ve.TimelineChronology = class extends ve.Component {
 						local_timestamp_obj.row_value = [String.formatDate(local_timestamp), local_keyframe_el];
 					table_array.push(local_timestamp_obj.row_value);
 				}
-			});
+			}, { sort_mode: "date_ascending" });
 		
 		//Set table .v
 		this.table.v = table_array;
