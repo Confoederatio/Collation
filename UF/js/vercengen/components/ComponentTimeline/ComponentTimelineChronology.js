@@ -36,6 +36,7 @@ ve.TimelineChronology = class extends ve.Component {
 			},
 			retain: true,
 			page_size: 50,
+			page_sizes: [10, 20, 30, 40, 50],
 			...this.options.table_options
 		});
 		this.table.bind(this.element);
