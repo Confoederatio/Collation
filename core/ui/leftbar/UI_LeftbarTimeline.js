@@ -76,6 +76,21 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 				
 			}
 		});
+		if (!UI_LeftbarTimeline.onkeydown) {
+			UI_LeftbarTimeline.onkeydown = true;
+			
+			//Left/Right Arrow key handling for Timeline
+			document.addEventListener("keydown", (e) => {
+				let amount = 1;
+				let key = e.key;
+				
+				if (HTML.shift_pressed) amount = 5;
+				if (HTML.ctrl_pressed) amount = 10;
+				
+				if (key === "ArrowLeft") UI_LeftbarTimeline.jumpToPreviousKeyframe(amount);
+				if (key === "ArrowRight") UI_LeftbarTimeline.jumpToNextKeyframe(amount);
+			});
+		}
 		
 		this.refresh();
 		
@@ -99,6 +114,13 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 		this.value.setKeyframes(keyframes_obj);
 	}
 	
+	static cache () {
+		//Declare local instance variables
+		UI_LeftbarTimeline._cache = {
+			timestamps: main.renderer.getTimestamps()
+		};
+	}
+	
 	static jumpToNextKeyframe (arg0_jump_amount) {
 		//Convert from parameters
 		let jump_amount = Math.returnSafeNumber(arg0_jump_amount, 1);
@@ -110,7 +132,8 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 		if (jump_amount === 0) return; //Internal guard clause if jump_amount is 0
 		
 		//Declare local instance variables
-		let all_timestamps = main.renderer.getTimestamps();
+		UI_LeftbarTimeline.cache();
+		let all_timestamps = UI_LeftbarTimeline._cache.timestamps;
 		let current_jump_count = 0;
 		
 		//Iterate over all_timestamps and try to jump as close to jump_amount as possible
@@ -138,7 +161,8 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 		if (jump_amount === 0) return; //Internal guard clause if jump_amount is 0
 		
 		//Declare local instance variables
-		let all_timestamps = main.renderer.getTimestamps();
+		UI_LeftbarTimeline.cache();
+		let all_timestamps = UI_LeftbarTimeline._cache.timestamps;
 		let current_jump_count = 0;
 		
 		//Iterate over all_timestamps and try to jump as close to jump_amount as possible
@@ -161,6 +185,7 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 		
 		if (!this.logic_loop) this.logic_loop = setInterval(() => {
 			if (this.refresh_frame) {
+				UI_LeftbarTimeline.cache();
 				for (let i = 0; i < this.instances.length; i++)
 					this.instances[i].refresh();
 				delete this.refresh_frame;
