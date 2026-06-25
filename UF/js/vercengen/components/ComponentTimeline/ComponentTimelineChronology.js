@@ -28,11 +28,18 @@ ve.TimelineChronology = class extends ve.Component {
 		//Declare table and draw
 		this.table = new ve.Table([], {
 			non_sortable_columns: [0, 1],
-			onrowrightclick: (v, e) => {
+			onrowclick: (v, e) => {
 				let timeline_options = this.options.timeline_instance.options;
 				
-				if (timeline_options.onkeyframerightclick)
-					timeline_options.onkeyframerightclick(v, e);
+				if (timeline_options.onkeyframeclick)
+					timeline_options.onkeyframeclick(v, e);
+			},
+			onrowrightclick: (v, e) => {
+				let timeline_options = this.options.timeline_instance.options;
+				e.right_click = true;
+				
+				if (timeline_options.onkeyframeclick)
+					timeline_options.onkeyframeclick(v, e);
 			},
 			retain: true,
 			page_size: 30,
@@ -118,6 +125,10 @@ ve.TimelineChronology = class extends ve.Component {
 					if (local_timestamp_obj.row_value.length === 0) {
 						let keyframe_el = document.createElement("div");
 							keyframe_el.id = "keyframe";
+							
+							//Set keyframe_el attributes
+							if (local_value.is_current)
+								keyframe_el.setAttribute("data-is-current", String(local_value.is_current));
 							keyframe_el.keyframe = {
 								key: local_key,
 								value: local_value

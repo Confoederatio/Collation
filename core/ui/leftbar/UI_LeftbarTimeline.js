@@ -1,4 +1,4 @@
-global.UI_LeftbarTimeline = class {
+global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow modes for scrolling through keyframes
 	static instances = [];
 	static refresh_frame = false;
 	
@@ -6,64 +6,74 @@ global.UI_LeftbarTimeline = class {
 		//Declare local instance variables
 		this.ui = {};
 		this.value = new ve.Timeline(undefined, {
-			onkeyframerightclick: (v, e) => {
+			onkeyframeclick: (v, e) => {
 				//Declare local instance variables
 				let keyframe_obj = v[1].keyframe;
 				let timestamp = Date.getTimestamp(keyframe_obj.key);
 				
-				if (this.keyframe_window) this.keyframe_window.close();
-				this.keyframe_window = veWindow({
-					move_keyframe_to: veButton(() => {
-						if (this.move_keyframe_to_window) this.move_keyframe_to_window.close();
-						this.move_keyframe_to_window = veWindow({
-							end_date: veDate((this.ui.move_keyframe_to_date !== undefined) ? this.ui.move_keyframe_to_date : timestamp, {
-								onuserchange: (v) => this.ui.move_keyframe_to_date = v
-							}),
-							confirm: veButton(() => {
-								//Internal guard clause for this.ui.move_keyframe_to_date
-								if (this.ui.move_keyframe_to_date === undefined) {
-									veToast("The date to move the keyframe to cannot be the same as the initial date.");
-									return;
-								}
-								
-								//Declare local instance variables
-								let to_timestamp = Date.getTimestamp(this.ui.move_keyframe_to_date);
-								
-								//Move global keyframe
-								DALS.Timeline.parseAction("move_global_keyframe", [{
-									type: "Renderer",
-									move_keyframe: {
-										from_timestamp: timestamp,
-										to_timestamp: to_timestamp
+				//Jump to keyframe for sure
+				DALS.Timeline.parseAction("load_date", [
+					{ set_date: Date.convertTimestampToDate(timestamp) },
+					{ refresh_date: true }
+				]);
+				
+				//Context menu handling
+				if (e.right_click) {
+					if (this.keyframe_window) this.keyframe_window.close();
+					this.keyframe_window = veWindow({
+						move_keyframe_to: veButton(() => {
+							if (this.move_keyframe_to_window) this.move_keyframe_to_window.close();
+							this.move_keyframe_to_window = veWindow({
+								end_date: veDate((this.ui.move_keyframe_to_date !== undefined) ? this.ui.move_keyframe_to_date : timestamp, {
+									onuserchange: (v) => this.ui.move_keyframe_to_date = v
+								}),
+								confirm: veButton(() => {
+									//Internal guard clause for this.ui.move_keyframe_to_date
+									if (this.ui.move_keyframe_to_date === undefined) {
+										veToast("The date to move the keyframe to cannot be the same as the initial date.");
+										return;
 									}
-								}]);
-								UI_Leftbar.refresh();
-								
-								let date_string = String.formatDate(Date.convertTimestampToDate(timestamp));
-								let ot_date_string = String.formatDate(Date.convertTimestampToDate(to_timestamp));
-								
-								veToast(`Moved global keyframe from ${date_string} to ${ot_date_string}.`);
-								
-								if (this.move_keyframe_to_window) this.move_keyframe_to_window.close();
-								if (this.keyframe_window) this.keyframe_window.close();
-							}, { name: "Confirm" })
-						}, {
-							name: "Move Keyframe To",
-							can_rename: false,
-							width: "15rem"
-						})
-					}, { name: "Move Keyframe To" }),
-					jump_to_date: veButton(() => {
-						DALS.Timeline.parseAction("load_date", [
-							{ set_date: Date.convertTimestampToDate(timestamp) },
-							{ refresh_date: true }
-						]);
-					}, { name: "Jump to Date" })
-				}, {
-					name: v[0],
-					can_rename: false,
-					width: "15rem"
-				});
+									
+									//Declare local instance variables
+									let to_timestamp = Date.getTimestamp(this.ui.move_keyframe_to_date);
+									
+									//Move global keyframe
+									DALS.Timeline.parseAction("move_global_keyframe", [{
+										type: "Renderer",
+										move_keyframe: {
+											from_timestamp: timestamp,
+											to_timestamp: to_timestamp
+										}
+									}]);
+									UI_Leftbar.refresh();
+									
+									let date_string = String.formatDate(Date.convertTimestampToDate(timestamp));
+									let ot_date_string = String.formatDate(Date.convertTimestampToDate(to_timestamp));
+									
+									veToast(`Moved global keyframe from ${date_string} to ${ot_date_string}.`);
+									
+									if (this.move_keyframe_to_window) this.move_keyframe_to_window.close();
+									if (this.keyframe_window) this.keyframe_window.close();
+								}, { name: "Confirm" })
+							}, {
+								name: "Move Keyframe To",
+								can_rename: false,
+								width: "15rem"
+							})
+						}, { name: "Move Keyframe To" }),
+						jump_to_date: veButton(() => {
+							DALS.Timeline.parseAction("load_date", [
+								{ set_date: Date.convertTimestampToDate(timestamp) },
+								{ refresh_date: true }
+							]);
+						}, { name: "Jump to Date" })
+					}, {
+						name: v[0],
+						can_rename: false,
+						width: "15rem"
+					});
+				}
+				
 			}
 		});
 		
@@ -82,10 +92,67 @@ global.UI_LeftbarTimeline = class {
 		//Iterate over all_timestamps and push to keyframes_obj
 		for (let i = 0; i < all_timestamps.length; i++)
 			keyframes_obj[all_timestamps[i]] = {
-				name: "Global keyframe"
+				name: "Global keyframe",
+				is_current: (all_timestamps[i] === main.timestamp)
 			};
 		
 		this.value.setKeyframes(keyframes_obj);
+	}
+	
+	static jumpToNextKeyframe (arg0_jump_amount) {
+		//Convert from parameters
+		let jump_amount = Math.returnSafeNumber(arg0_jump_amount, 1);
+		
+		if (jump_amount <= 0) { //Internal guard clause if jump_amount is negative
+			UI_LeftbarTimeline.jumpToPreviousKeyframe(jump_amount*-1);
+			return;
+		}
+		if (jump_amount === 0) return; //Internal guard clause if jump_amount is 0
+		
+		//Declare local instance variables
+		let all_timestamps = main.renderer.getTimestamps();
+		let current_jump_count = 0;
+		
+		//Iterate over all_timestamps and try to jump as close to jump_amount as possible
+		for (let i = 0; i < all_timestamps.length; i++) {
+			if (all_timestamps[i] > main.timestamp)
+				current_jump_count++;
+			if (current_jump_count >= jump_amount || i === all_timestamps.length - 1) {
+				DALS.Timeline.parseAction("load_date", [
+					{ set_date: Date.convertTimestampToDate(all_timestamps[i]) },
+					{ refresh_date: true }
+				]);
+				break;
+			}
+		}
+	}
+	
+	static jumpToPreviousKeyframe (arg0_jump_amount) {
+		//Convert from parameters
+		let jump_amount = Math.returnSafeNumber(arg0_jump_amount, 1);
+		
+		if (jump_amount <= 0) { //Internal guard clause if jump_amount is negative
+			UI_LeftbarTimeline.jumpToNextKeyframe(jump_amount*-1);
+			return;
+		}
+		if (jump_amount === 0) return; //Internal guard clause if jump_amount is 0
+		
+		//Declare local instance variables
+		let all_timestamps = main.renderer.getTimestamps();
+		let current_jump_count = 0;
+		
+		//Iterate over all_timestamps and try to jump as close to jump_amount as possible
+		for (let i = all_timestamps.length - 1; i >= 0; i--) {
+			if (all_timestamps[i] < main.timestamp)
+				current_jump_count++;
+			if (current_jump_count >= jump_amount || i === 0) {
+				DALS.Timeline.parseAction("load_date", [
+					{ set_date: Date.convertTimestampToDate(all_timestamps[i]) },
+					{ refresh_date: true }
+				]);
+				break;
+			}
+		}
 	}
 	
 	static refresh () {

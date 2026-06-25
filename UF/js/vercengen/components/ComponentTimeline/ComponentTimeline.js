@@ -32,9 +32,9 @@
  *       - `.name`: {@link string}
  *       - 
  *       - `.description`: {@link string}
+ *   - `.onkeyframeclick`: {@link function}(v:{@link Object}, e:{@link ve.Timeline})
  *   - `.onkeyframedelete`: {@link function}(v:{@link Object}, e:{@link ve.Timeline})
  *   - `.onkeyframemove`: {@link function}(v:{@link Object}, e:{@link ve.Timeline})
- *   - `.onkeyframerightclick`: {@link function}(v:{@link Object}, e:{@link ve.Timeline})
  *   - `.multiselect=true`: {@link boolean}
  *   
  * ##### Instance:
