@@ -81,6 +81,9 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 			
 			//Left/Right Arrow key handling for Timeline
 			document.addEventListener("keydown", (e) => {
+				let all_focus_els = document.querySelectorAll(":focus");
+				if (all_focus_els.length > 0) return; //Internal guard clause for text inputs
+				
 				let amount = 1;
 				let key = e.key;
 				
