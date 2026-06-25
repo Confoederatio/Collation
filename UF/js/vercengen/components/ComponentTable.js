@@ -32,6 +32,8 @@
  * - <span color=00ffff>{@link ve.Table.convertToTable|convertToTable}</span>() | {@link ve.Table}
  * - <span color=00ffff>{@link ve.Table.draw|draw}</span>()
  * - <span color=00ffff>{@link ve.Table.drawPages|drawPages}</span>()
+ * - <span color=00ffff>{@link ve.Table.getPageFromIndex|getPageFromIndex}</span>(arg0_index:{@link number})
+ * - <span color=00ffff>{@link ve.Table.jumpToIndex|jumpToIndex}</span>(arg0_index:{@link number})
  * - <span color=00ffff>{@link ve.Table.sort|sort}<span>(arg0_index:{@link number})
  * 
  * @augments ve.Component
@@ -120,7 +122,7 @@ ve.Table = class extends ve.Component {
 			this.current_page = 0;
 			this.options.sort_column = null;
 		}
-		this.draw();
+		if (!this.do_not_draw) this.draw();
 	}
 	
 	/**
@@ -374,6 +376,19 @@ ve.Table = class extends ve.Component {
 	}
 	
 	/**
+	 * Returns the page a given row index is on.
+	 * - Method of: {@link ve.Table}
+	 * 
+	 * @param {number} arg0_row_index
+	 * 
+	 * @returns {number}
+	 */
+	getPageFromIndex (arg0_row_index) {
+		//Return statement
+		return Math.floor((Math.returnSafeNumber(arg0_row_index) - 1)/this.options.page_size);
+	}
+	
+	/**
 	 * Returns the current view state of the component.
 	 * - Method of: {@link ve.Table}
 	 * 
@@ -391,6 +406,21 @@ ve.Table = class extends ve.Component {
 			sort_ascending: this.options.sort_ascending,
 			sort_column: this.options.sort_column
 		};
+	}
+	
+	/**
+	 * Navigates to the page containing the specified row index and draws it.
+	 * - Method of: {@link ve.Table}
+	 * 
+	 * @param {number} arg0_index
+	 */
+	jumpToIndex (arg0_index) {
+		//Convert from parameters
+		let target_page = this.getPageFromIndex(arg0_index);
+		
+		//Declare local instance variables; refresh displkay
+		this.current_page = target_page;
+		this.draw();
 	}
 
   /**

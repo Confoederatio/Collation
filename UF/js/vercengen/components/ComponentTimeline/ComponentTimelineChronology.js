@@ -127,8 +127,10 @@ ve.TimelineChronology = class extends ve.Component {
 							keyframe_el.id = "keyframe";
 							
 							//Set keyframe_el attributes
-							if (local_value.is_current)
+							if (local_value.is_current) {
 								keyframe_el.setAttribute("data-is-current", String(local_value.is_current));
+								this.current_index = table_array.length;
+							}
 							keyframe_el.keyframe = {
 								key: local_key,
 								value: local_value
@@ -168,6 +170,10 @@ ve.TimelineChronology = class extends ve.Component {
 			}, { sort_mode: "date_ascending" });
 		
 		//Set table .v
+		this.table.do_not_draw = true;
 		this.table.v = table_array;
+		delete this.table.do_not_draw;
+		if (this.current_index !== undefined)
+			this.table.jumpToIndex(this.current_index);
 	}
 };
