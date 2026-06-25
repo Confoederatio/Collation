@@ -105,14 +105,23 @@ global.UI_LeftbarTimeline = class { //[WIP] - Add Shift/Ctrl + Left/Right Arrow 
 		
 		//Declare local instance variables
 		let all_timestamps = main.renderer.getTimestamps();
+		let has_timestamp = (all_timestamps.includes(main.timestamp));
 		let keyframes_obj = {};
 		
 		//Iterate over all_timestamps and push to keyframes_obj
-		for (let i = 0; i < all_timestamps.length; i++)
+		for (let i = 0; i < all_timestamps.length; i++) {
+			if (!has_timestamp && all_timestamps[i] > main.timestamp) {
+				keyframes_obj[main.timestamp] = {
+					name: "No keyframe",
+					is_current: true
+				};
+				has_timestamp = true;
+			}
 			keyframes_obj[all_timestamps[i]] = {
 				name: "Global keyframe",
 				is_current: (all_timestamps[i] === main.timestamp)
 			};
+		}
 		
 		this.value.setKeyframes(keyframes_obj);
 	}
