@@ -78,7 +78,7 @@ ve.Timeline = class extends ve.Component {
 			timeline_map: {
 				name: "Timeline Map",
 				components_obj: {
-					
+					label: veHTML("Timeline maps remain to be implemented in future versions of Vercengen.")
 				}
 			}
 		});
