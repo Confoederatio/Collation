@@ -19,26 +19,19 @@ global.UI_Navbar = class {
 					onclick: () => {
 						if (this.save_snapshot_window) this.save_snapshot_window.close();
 						this.save_snapshot_window = veWindow({
+							save_symbols: veCheckbox((this.ui.save_snapshot_symbols !== undefined) ? this.ui.save_snapshot_symbols : true, {
+								name: "Save Symbols",
+								onuserchange: (v) => this.ui.save_snapshot_symbols = v
+							}),
 							file_path: veFile(this.ui.save_snapshot_file_path, {
 								onuserchange: (v) => this.ui.save_snapshot_file_path = v,
-								save_function: () => {
-									//Declare local instance variables
-									let file_path = (this.ui.save_snapshot_file_path || "autosave.json");
-									let geojson_obj = { type: "FeatureCollection", features: [] };
-									let geometries = main.layers.entity_layer.getGeometries();
-									
-									//Save snapshot
-									geometries.forEach((v) => geojson_obj.features.push(v.toGeoJSON()));
-									veToast(`Saved GeoJSON snapshot to ${file_path}.`);
-									
-									//Return statement
-									return JSON.stringify(geojson_obj);
-								}
+								save_function: () => naissance.Renderer.getGeoJSON({
+									do_not_save_symbols: (this.ui.save_snapshot_symbols === false)
+								})
 							})
 						}, {
 							name: "Save Snapshot as GeoJSON",
 							can_rename: false,
-							height: "5rem",
 							width: "20rem",
 							x: "50dvw - 10rem",
 							y: "50dvh - 2.5rem"
