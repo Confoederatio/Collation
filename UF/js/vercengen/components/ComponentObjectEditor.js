@@ -393,6 +393,7 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 					style: { order: 3 }
 				});
 			} else {
+				console.log(`Triggered:`, parent_is_array);
 				components_obj.input = new ve.HTML(`<span style="opacity:0.5">${String(current_data)}</span>`, {
 					style: { order: 3 }
 				});
@@ -437,7 +438,7 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		
 		//Return statement
 		return new ve.HierarchyDatatype(components_obj, {
-			name: string_key,
+			name: (!parent_is_array) ? string_key : current_data,
 			type: is_group ? "group" : "item",
 			is_collapsed: is_collapsed,
 			
@@ -500,15 +501,15 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		//2. Add to destination
 		if (Array.isArray(dest_container)) {
 			dest_container.splice(new_index, 0, val_to_move);
+			console.log(dest_container, this.value);
 		} else {
 			//Rebuild object to ensure the new key is inserted at the correct visual order
 			let keys = Object.keys(dest_container);
 			let final_key = key_to_move;
 			
 			//Ensure no key collision in the new object
-			if (dest_container.hasOwnProperty(final_key)) {
+			if (dest_container.hasOwnProperty(final_key))
 				final_key = (typeof final_key === "number") ? keys.length : final_key + "_copy";
-			}
 			
 			keys.splice(new_index, 0, final_key);
 			let temp_obj = {};
