@@ -43,6 +43,11 @@ global.UI_Navbar = class {
 					keybind: "ctrl+i",
 					onclick: () => Blacktraffic.task("electron:toggle-dev-tools")
 				},
+				toggle_ui: {
+					name: "Toggle UI",
+					keybind: "ctrl+u",
+					onclick: () => naissance.Renderer.toggleUI()
+				},
 				undo: {
 					name: "Undo",
 					keybind: "ctrl+z",

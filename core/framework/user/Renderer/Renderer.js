@@ -6,6 +6,10 @@ naissance.Renderer = class extends ve.Class {
 		this.handleEvents();
 	}
 	
+	/**
+	 * Handles Render events, particularly for zoom-related visibility.
+	 * - Method of: {@link naissance.Renderer}
+	 */
 	handleEvents () {
 		map.on("zoomend", () => {
 			//Call this.update() in the correct order
@@ -15,6 +19,7 @@ naissance.Renderer = class extends ve.Class {
 	
 	/**
 	 * Returns the ordered z-indexes of all Geometries within each Feature based on {@link UI_LeftbarHierarchy}.
+	 * - Method of: {@link naissance.Renderer}
 	 */
 	getRenderingOrder (arg0_entity_obj) {
 		//Convert from parameters
@@ -100,6 +105,7 @@ naissance.Renderer = class extends ve.Class {
 	
 	/**
 	 * Draws all Features/Geometries in order by calling their draw function.
+	 * - Method of: {@link naissance.Renderer}
 	 */
 	update () {
 		//Declare local instance variables
