@@ -44,7 +44,7 @@ config.mapmodes.stadester = {
 									}
 								}));
 								
-								let local_label = new maptalks.Label(`${String.truncate((local_city.name) ? local_city.name : "Unknown City", 40)} (${String.formatNumber(local_population)})`, [
+								let local_label = new maptalks.Label(city_label, [
 									Math.returnSafeNumber(local_city.coords[1]),
 									Math.returnSafeNumber(local_city.coords[0]),
 									0
