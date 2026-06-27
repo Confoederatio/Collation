@@ -167,7 +167,7 @@ naissance.Mapmode = class extends ve.Class { //[WIP] - Finish class body
 				
 				if (new_geometries !== undefined) {
 					local_mapmode.geometries = new_geometries;
-				} else {
+				} else if (new_geometries) {
 					console.warn(`naissance.Mapmode: ${local_mapmode.id}.special_function does not return a valid geometries array.`);
 				}
 				

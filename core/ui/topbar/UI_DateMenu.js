@@ -18,7 +18,6 @@ global.UI_DateMenu = class extends ve.Class {
 			onuserchange: (v) => {
 				if (this.is_playing) return;
 				DALS.Timeline.parseAction("load_date",  [{ set_date: v }, { refresh_date: true }]);
-				naissance.Mapmode.draw();
 			},
 			x: 0, y: 0
 		});

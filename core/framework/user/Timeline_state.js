@@ -48,6 +48,7 @@
 							local_value.update();
 						});
 						naissance.Mapmode.draw();
+						UI_Leftbar.refresh();
 					}
 				}
 			}
