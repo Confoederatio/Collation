@@ -47,6 +47,7 @@
 							local_value.draw();
 							local_value.update();
 						});
+						naissance.Mapmode.draw();
 					}
 				}
 			}
