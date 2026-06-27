@@ -326,6 +326,11 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		});
 		let new_index = siblings.indexOf(moved_node);
 		
+		if (Array.isArray(source_container) && Array.isArray(dest_container) && JSON.stringify(source_container) === JSON.stringify(dest_container)) {
+			this._moveArrayItem(source_container, key_to_move, new_index); 
+			return;
+		}
+		
 		//1. Remove from source first
 		if (Array.isArray(source_container)) {
 			source_container.splice(key_to_move, 1);
@@ -378,8 +383,13 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		arr[new_index] = item;
 		
 		//Refresh view and fire to binding
-		this.refresh();
-		this.fireToBinding();
+		setTimeout(() => {
+			this.refresh();
+			this.fireToBinding();
+		});
+		
+		//Return statement
+		return arr;
 	}
 	
 	_openAddModal (arg0_target_obj) {
