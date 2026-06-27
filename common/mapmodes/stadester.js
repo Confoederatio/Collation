@@ -10,7 +10,6 @@ config.mapmodes.stadester = {
 		let config_obj = config.mapmodes.stadester;
 		if (!config_obj.stadester_obj) config_obj.stadester_obj = JSON.parse(fs.readFileSync(`${h6}/stadester/stadester_1.0.json`));
 		
-		console.log(config_obj.last_year, main.date.year);
 		if (config_obj.last_year === undefined || config_obj.last_year !== main.date.year) {
 			config_obj.last_year = main.date.year;
 			Object.iterate(config_obj.stadester_obj, (local_key, local_city) => {
