@@ -271,28 +271,38 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 	/**
 	 * Generates HTML recursively for the current component.
 	 * - Private method of: {@link ve.ObjectEditor}
-	 * 
+	 *
 	 * @param arg0_current_data
 	 * @param arg1_current_key
 	 * @param arg2_depth
 	 * @param arg3_parent_object
+	 * @param arg4_parent_path
 	 * @returns {*|ve.Component.HierarchyDatatype}
-	 * 
+	 *
 	 * @private
 	 */
-	_generateRecursive (arg0_current_data, arg1_current_key, arg2_depth, arg3_parent_object) { //[WIP] - Refactor later
+	_generateRecursive (arg0_current_data, arg1_current_key, arg2_depth, arg3_parent_object, arg4_parent_path) {
 		//Convert from parameters
 		let current_data = arg0_current_data;
 		let current_key = arg1_current_key;
 		let depth = arg2_depth;
 		let parent_object = arg3_parent_object;
+		let parent_path = (arg4_parent_path) ? arg4_parent_path : "root";
 		
 		//Declare local instance variables
+		let string_key = String(current_key);
+		let path = `${parent_path}.${string_key}`;
 		let components_obj = {};
 		let type = this._getType(current_data);
 		
 		let is_group = (type === "object" || type === "array");
 		let parent_is_array = Array.isArray(parent_object);
+		
+		//Determine collapse state
+		let is_collapsed = (depth >= this.options.auto_collapse_depth);
+		if (this._expansion_cache && this._expansion_cache[path] !== undefined) {
+			is_collapsed = this._expansion_cache[path];
+		}
 		
 		//1. Icon (Order 0)
 		if (!this.options.do_not_display_icons) {
@@ -315,16 +325,12 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 				padding: 0
 			};
 			
-			//Changed to ve.Button to allow clicking to change type
 			if (!this.options.do_not_allow_type_change) {
 				components_obj.icon = new ve.Button((e) => {
 					this._openChangeTypeModal(parent_object, current_key);
 				}, {
 					name: `<icon>${icon_name}</icon>`,
-					
-					attributes: {
-						"data-is-type": true
-					},
+					attributes: { "data-is-type": true },
 					style: icon_style,
 					tooltip: loc("ve.registry.localisation.ObjectEditor_tooltip_change_type", type)
 				});
@@ -333,7 +339,7 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 					attributes: { "data-is-type": true },
 					style: icon_style,
 					tooltip: loc("ve.registry.localisation.ObjectEditor_tooltip_type", type)
-				})
+				});
 			}
 		}
 		
@@ -346,26 +352,20 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 					onuserchange: (new_index) => {
 						this._moveArrayItem(parent_object, current_key, new_index);
 					},
-					style: {
-						width: "3rem"
-					}
+					style: { width: "3rem" }
 				});
 			} else {
 				components_obj.key_input = new ve.Text(current_key, {
 					onuserchange: (new_key) => {
 						this._renameObjectKey(parent_object, current_key, new_key);
 					},
-					style: {
-						maxWidth: "6rem"
-					}
+					style: { maxWidth: "6rem" }
 				});
 			}
 		} else {
 			components_obj.key_name = new ve.HTML(current_key, {
-				style: {
-					maxWidth: "4rem"
-				}
-			})
+				style: { maxWidth: "4rem" }
+			});
 		}
 		
 		//3. Separator (Order 2)
@@ -393,13 +393,11 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 					style: { order: 3 }
 				});
 			} else {
-				//Null or other types
 				components_obj.input = new ve.HTML(`<span style="opacity:0.5">${String(current_data)}</span>`, {
 					style: { order: 3 }
 				});
 			}
 		} else {
-			//Group Add Button
 			components_obj.add_child_btn = new ve.Button((e) => {
 				this._openAddModal(current_data);
 			}, {
@@ -411,7 +409,6 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		}
 		
 		//5. Delete Button (Order 4)
-		//This gets marginLeft: auto to push it to the far right edge of the container
 		components_obj.delete_btn = new ve.Button((e) => {
 			veConfirm(loc("ve.registry.localisation.ObjectEditor_confirm_delete", current_key), {
 				special_function: () => {
@@ -428,37 +425,30 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 			name: "<icon>delete</icon>",
 			limit: () => (!this.options.do_not_allow_deletion),
 			tooltip: loc("ve.registry.localisation.ObjectEditor_tooltip_delete"),
-			style: {
-				order: 4,
-				color: "var(--color-error)"
-			}
+			style: { order: 4, color: "var(--color-error)" }
 		});
 		
 		//Handle children
 		if (is_group)
 			Object.keys(current_data).forEach((key) => {
-				let safe_key = key;
-				if (Array.isArray(current_data)) safe_key = parseInt(key);
-				components_obj[`child_${key}`] = this._generateRecursive(current_data[key], safe_key, depth + 1, current_data);
+				let safe_key = (Array.isArray(current_data)) ? parseInt(key) : key;
+				components_obj[`child_${key}`] = this._generateRecursive(current_data[key], safe_key, depth + 1, current_data, path);
 			});
 		
 		//Return statement
 		return new ve.HierarchyDatatype(components_obj, {
-			name: (typeof current_key === "string") ? current_key : current_key.toString(),
+			name: string_key,
 			type: is_group ? "group" : "item",
-			is_collapsed: (depth >= this.options.auto_collapse_depth),
+			is_collapsed: is_collapsed,
 			
-			// Metadata for reordering
+			// Metadata
 			data_container: parent_object,
 			data_key: current_key,
 			data_value: current_data,
+			data_path: path,
 			
 			style: {
-				".nst-content": {
-					display: "flex",
-					alignItems: "center",
-					gap: "0px" // Removing gap to rely on element margins
-				},
+				".nst-content": { display: "flex", alignItems: "center", gap: "0px" },
 				'input': { maxWidth: "8rem" },
 				width: "20rem"
 			}
@@ -471,41 +461,63 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		let e = arg1_e;
 		
 		let stop_data = e.on_stop_data;
-		if (!stop_data) return; //Internal guard clause if no event date
+		if (!stop_data) return;
 		
 		//Declare local instance variables
-		let moved_instance = stop_data.movedNode.instance;
+		let moved_node = stop_data.movedNode;
+		let moved_instance = moved_node.instance;
 		let original_parent_instance = stop_data.originalParentItem?.instance;
 		let new_parent_instance = stop_data.newParentItem?.instance;
+		
 		let source_container = (original_parent_instance) ?
 			original_parent_instance.options.data_value : this.value;
-		
 		let dest_container = (new_parent_instance) ?
 			new_parent_instance.options.data_value : this.value;
+		
 		let key_to_move = moved_instance.options.data_key;
 		let val_to_move = source_container[key_to_move];
 		
-		let parent_ol = stop_data.newParentItem ?
+		//Internal guard clause to prevent resetting to undefined if data is missing
+		if (val_to_move === undefined) return;
+		
+		//Calculate new index based on DOM siblings
+		let parent_ol = (stop_data.newParentItem) ?
 			stop_data.newParentItem.querySelector("ol") :
 			this.element.querySelector("ol.ve-hierarchy");
 		
-		let siblings = Array.from(parent_ol.children).filter(el =>
-			el.getAttribute("component") === "ve-hierarchy-datatype" && !el.classList.contains("actions-bar")
-		);
-		let new_index = siblings.indexOf(stop_data.movedNode);
+		let siblings = Array.from(parent_ol.children).filter((el) => {
+			return el.getAttribute("component") === "ve-hierarchy-datatype" && !el.classList.contains("actions-bar");
+		});
+		let new_index = siblings.indexOf(moved_node);
 		
-		//Add
-		if (Array.isArray(dest_container)) {
-			dest_container.splice(new_index, 0, val_to_move);
-		} else {
-			dest_container[key_to_move] = val_to_move;
-		}
-		
-		//Remove
+		//1. Remove from source first
 		if (Array.isArray(source_container)) {
 			source_container.splice(key_to_move, 1);
 		} else {
 			delete source_container[key_to_move];
+		}
+		
+		//2. Add to destination
+		if (Array.isArray(dest_container)) {
+			dest_container.splice(new_index, 0, val_to_move);
+		} else {
+			//Rebuild object to ensure the new key is inserted at the correct visual order
+			let keys = Object.keys(dest_container);
+			let final_key = key_to_move;
+			
+			//Ensure no key collision in the new object
+			if (dest_container.hasOwnProperty(final_key)) {
+				final_key = (typeof final_key === "number") ? keys.length : final_key + "_copy";
+			}
+			
+			keys.splice(new_index, 0, final_key);
+			let temp_obj = {};
+			keys.forEach((k) => {
+				temp_obj[k] = (k === final_key) ? val_to_move : dest_container[k];
+			});
+			
+			Object.keys(dest_container).forEach(k => delete dest_container[k]);
+			Object.assign(dest_container, temp_obj);
 		}
 		
 		//Refresh and fire to binding
@@ -521,8 +533,22 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 	 * @memberof ve.Component.ve.ObjectEditor
 	 */
 	refresh () {
-		//Declare local instance varioables
+		//Capture current expansion state from existing hierarchy
+		this._expansion_cache = {};
+		if (this.hierarchy && this.hierarchy.element) {
+			let all_items = this.hierarchy.element.querySelectorAll('[component="ve-hierarchy-datatype"]');
+			all_items.forEach((item_el) => {
+				let item_instance = item_el.instance;
+				if (item_instance && item_instance.options.data_path) {
+					// Use .is_collapsed property from ve.HierarchyDatatype instance
+					this._expansion_cache[item_instance.options.data_path] = item_instance.is_collapsed;
+				}
+			});
+		}
+		
+		//Reset container
 		this.element.innerHTML = "";
+		
 		let actions_bar = new ve.HierarchyDatatype({
 			add_root_btn: new ve.Button(() => {
 				if (this.value === null) this.value = {};
@@ -538,29 +564,27 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		}, {
 			disabled: true,
 			attributes: { class: "actions-bar" },
-			style: {
-				marginTop: `calc(var(--padding))`,
-				width: "20rem"
-			}
+			style: { marginTop: `calc(var(--padding))`, width: "20rem" }
 		});
-		let hierarchy_obj = (!this.options.do_not_allow_insertion) ?
-			{ actions_bar: actions_bar } : {};
 		
-		//Assign objects recursively when drawing UI
-		if (this.value && typeof this.value === "object")
+		let hierarchy_obj = (!this.options.do_not_allow_insertion) ? { actions_bar: actions_bar } : {};
+		
+		//Draw UI recursively
+		if (this.value && typeof this.value === "object") {
 			Object.keys(this.value).forEach((key) => {
-				let safe_key = key;
-				if (Array.isArray(this.value)) safe_key = parseInt(key);
-				hierarchy_obj[`root_${key}`] = this._generateRecursive(this.value[key], safe_key, 0, this.value);
+				let safe_key = (Array.isArray(this.value)) ? parseInt(key) : key;
+				hierarchy_obj[`root_${key}`] = this._generateRecursive(this.value[key], safe_key, 0, this.value, "root");
 			});
+		}
 		
 		this.hierarchy = new ve.Hierarchy(hierarchy_obj, {
 			disable_searchbar: false,
 			searchbar_style: { marginBottom: "0" },
 			onuserchange: (v, e) => this._handleReorder(v, e)
 		});
-			this.hierarchy.element.style.height = "100%";
-			this.hierarchy.element.style.overflowY = "auto";
+		
+		this.hierarchy.element.style.height = "100%";
+		this.hierarchy.element.style.overflowY = "auto";
 		
 		if (this.owner) this.hierarchy.setOwner(this.owner);
 		this.element.appendChild(this.hierarchy.element);
