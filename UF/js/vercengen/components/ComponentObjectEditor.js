@@ -93,181 +93,6 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		this.fireFromBinding();
 	}
 	
-	_getType (arg0_value) {
-		//Convert from parameters
-		let value = arg0_value;
-		
-		//Return statement
-		if (Array.isArray(value)) return "array";
-		if (value === null) return "null";
-		return typeof value;
-	}
-	
-	_moveArrayItem (arg0_array, arg1_old_index, arg2_new_index) {
-		//Convert from parameters
-		let arr = arg0_array;
-		let old_index = arg1_old_index;
-		let new_index = arg2_new_index;
-		
-		//new_index; old_index handling
-		if (new_index >= arr.length) new_index = arr.length - 1;
-		if (new_index < 0) new_index = 0;
-		if (old_index === new_index) return; //Internal guard clause if it is being moved into the same item
-		
-		let item = arr.splice(old_index, 1)[0];
-		arr.splice(new_index, 0, item);
-		
-		//Refresh view and fire to binding
-		this.refresh();
-		this.fireToBinding();
-	}
-	
-	_openAddModal (arg0_target_obj) {
-		//Convert from parameters
-		let target_obj = arg0_target_obj;
-		
-		//Declare local instance variables
-		let is_array = Array.isArray(target_obj);
-		
-		let components_obj = {
-			info: new ve.HTML((is_array) ? loc("ve.registry.localisation.ObjectEditor_add_array_info") : loc("ve.registry.localisation.ObjectEditor_add_object_info")),
-			type_select: new ve.Select({
-				string: { name: loc("ve.registry.localisation.ObjectEditor_type_string"), selected: true },
-				number: { name: loc("ve.registry.localisation.ObjectEditor_type_number") },
-				boolean: { name: loc("ve.registry.localisation.ObjectEditor_type_boolean") },
-				object: { name: loc("ve.registry.localisation.ObjectEditor_type_object") },
-				array: { name: loc("ve.registry.localisation.ObjectEditor_type_array") },
-				null: { name: loc("ve.registry.localisation.ObjectEditor_type_null") }
-			}, {
-				style: { width: "100%", marginBottom: "var(--cell-padding)" }
-			}),
-			confirm_button: new ve.Button(() => {
-				let selected_type = this.modal_window.components_obj.type_select.v;
-				let new_key = (is_array) ? target_obj.length : this.modal_window.components_obj.key_name.v;
-				
-				if (!is_array && !new_key) {
-					new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_enter_property_name"));
-					return;
-				}
-				if (!is_array && target_obj.hasOwnProperty(new_key)) {
-					new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_property_exists", new_key));
-					return;
-				}
-				
-				let new_value = null;
-				switch (selected_type) {
-					case "string": new_value = ""; break;
-					case "number": new_value = 0; break;
-					case "boolean": new_value = false; break;
-					case "object": new_value = {}; break;
-					case "array": new_value = []; break;
-					case "null": new_value = null; break;
-				}
-				
-				if (is_array) target_obj.push(new_value);
-				else target_obj[new_key] = new_value;
-				
-				this.modal_window.close();
-				this.refresh();
-				this.fireToBinding();
-				
-			}, { name: loc("ve.registry.localisation.ObjectEditor_button_add_item"), style: { width: "100%" } })
-		};
-		if (!is_array)
-			components_obj.key_name = new ve.Text("", {
-				placeholder: loc("ve.registry.localisation.ObjectEditor_placeholder_property_name"),
-				style: { marginBottom: "var(--cell-padding)" }
-			});
-		
-		//Open modal_window if possible
-		if (this.modal_window) this.modal_window.close();
-		this.modal_window = new ve.Window(components_obj, {
-			name: (is_array) ? loc("ve.registry.localisation.ObjectEditor_window_add_array_element") : loc("ve.registry.localisation.ObjectEditor_window_add_variable"),
-			can_rename: false
-		});
-	}
-	
-	_openChangeTypeModal (arg0_target_object, arg1_key) {
-		//Convert from parameters
-		let target_obj = arg0_target_object;
-		let key = arg1_key;
-		
-		//Declare local instance variables
-		let current_val = target_obj[key];
-		let current_type = this._getType(current_val);
-		
-		let components_obj = {
-			info: new ve.HTML(loc("ve.registry.localisation.ObjectEditor_change_type_info", key)),
-			type_select: new ve.Select({
-				string: { name: loc("ve.registry.localisation.ObjectEditor_type_string"), selected: current_type === "string" },
-				number: { name: loc("ve.registry.localisation.ObjectEditor_type_number"), selected: current_type === "number" },
-				boolean: { name: loc("ve.registry.localisation.ObjectEditor_type_boolean"), selected: current_type === "boolean" },
-				object: { name: loc("ve.registry.localisation.ObjectEditor_type_object"), selected: current_type === "object" },
-				array: { name: loc("ve.registry.localisation.ObjectEditor_type_array"), selected: current_type === "array" },
-				null: { name: loc("ve.registry.localisation.ObjectEditor_type_null"), selected: current_type === "null" }
-			}, {
-				style: { width: "100%", marginBottom: "var(--cell-padding)" }
-			}),
-			confirm_button: new ve.Button(() => {
-				let selected_type = this.change_type_window.components_obj.type_select.v;
-				
-				// Don't do anything if type didn't change
-				if (selected_type === current_type) {
-					this.change_type_window.close();
-					return;
-				}
-				
-				let new_value = null;
-				switch (selected_type) {
-					case "string": new_value = ""; break;
-					case "number": new_value = 0; break;
-					case "boolean": new_value = false; break;
-					case "object": new_value = {}; break;
-					case "array": new_value = []; break;
-					case "null": new_value = null; break;
-				}
-				
-				target_obj[key] = new_value;
-				
-				this.change_type_window.close();
-				this.refresh();
-				this.fireToBinding();
-				
-			}, {
-				name: loc("ve.registry.localisation.ObjectEditor_button_change_type"),
-				style: { width: "100%" }
-			})
-		};
-		
-		//Open change_type_window if possible
-		if (this.change_type_window) this.change_type_window.close();
-		this.change_type_window = new ve.Window(components_obj, {
-			name: loc("ve.registry.localisation.ObjectEditor_window_change_type"),
-			can_rename: false,
-			width: "300px",
-			height: "auto"
-		});
-	}
-	
-	_renameObjectKey(obj, old_key, new_key) {
-		if (old_key === new_key) return;
-		if (obj.hasOwnProperty(new_key)) {
-			new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_key_exists", new_key));
-			this.refresh();
-			return;
-		}
-		const keys = Object.keys(obj);
-		const new_obj = {};
-		keys.forEach(key => {
-			if (key === old_key) new_obj[new_key] = obj[old_key];
-			else new_obj[key] = obj[key];
-		});
-		Object.keys(obj).forEach(k => delete obj[k]);
-		Object.assign(obj, new_obj);
-		this.refresh();
-		this.fireToBinding();
-	}
-	
 	/**
 	 * Generates HTML recursively for the current component.
 	 * - Private method of: {@link ve.ObjectEditor}
@@ -456,6 +281,16 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		});
 	}
 	
+	_getType (arg0_value) {
+		//Convert from parameters
+		let value = arg0_value;
+		
+		//Return statement
+		if (Array.isArray(value)) return "array";
+		if (value === null) return "null";
+		return typeof value;
+	}
+	
 	_handleReorder (arg0_v, arg1_e) {
 		//Convert from parameters
 		let v = arg0_v;
@@ -501,7 +336,6 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		//2. Add to destination
 		if (Array.isArray(dest_container)) {
 			dest_container.splice(new_index, 0, val_to_move);
-			console.log(dest_container, this.value);
 		} else {
 			//Rebuild object to ensure the new key is inserted at the correct visual order
 			let keys = Object.keys(dest_container);
@@ -522,6 +356,174 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later dat
 		}
 		
 		//Refresh and fire to binding
+		this.refresh();
+		this.fireToBinding();
+	}
+	
+	_moveArrayItem (arg0_array, arg1_old_index, arg2_new_index) {
+		//Convert from parameters
+		let arr = arg0_array;
+		let old_index = arg1_old_index;
+		let new_index = arg2_new_index;
+		
+		//new_index; old_index handling
+		if (new_index >= arr.length) new_index = arr.length - 1;
+		if (new_index < 0) new_index = 0;
+		if (old_index === new_index) return; //Internal guard clause if it is being moved into the same item
+		
+		let item = structuredClone(arr[old_index]);
+		let ot_item = structuredClone(arr[new_index]);
+		
+		arr[old_index] = ot_item;
+		arr[new_index] = item;
+		
+		//Refresh view and fire to binding
+		this.refresh();
+		this.fireToBinding();
+	}
+	
+	_openAddModal (arg0_target_obj) {
+		//Convert from parameters
+		let target_obj = arg0_target_obj;
+		
+		//Declare local instance variables
+		let is_array = Array.isArray(target_obj);
+		
+		let components_obj = {
+			info: new ve.HTML((is_array) ? loc("ve.registry.localisation.ObjectEditor_add_array_info") : loc("ve.registry.localisation.ObjectEditor_add_object_info")),
+			type_select: new ve.Select({
+				string: { name: loc("ve.registry.localisation.ObjectEditor_type_string"), selected: true },
+				number: { name: loc("ve.registry.localisation.ObjectEditor_type_number") },
+				boolean: { name: loc("ve.registry.localisation.ObjectEditor_type_boolean") },
+				object: { name: loc("ve.registry.localisation.ObjectEditor_type_object") },
+				array: { name: loc("ve.registry.localisation.ObjectEditor_type_array") },
+				null: { name: loc("ve.registry.localisation.ObjectEditor_type_null") }
+			}, {
+				style: { width: "100%", marginBottom: "var(--cell-padding)" }
+			}),
+			confirm_button: new ve.Button(() => {
+				let selected_type = this.modal_window.components_obj.type_select.v;
+				let new_key = (is_array) ? target_obj.length : this.modal_window.components_obj.key_name.v;
+				
+				if (!is_array && !new_key) {
+					new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_enter_property_name"));
+					return;
+				}
+				if (!is_array && target_obj.hasOwnProperty(new_key)) {
+					new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_property_exists", new_key));
+					return;
+				}
+				
+				let new_value = null;
+				switch (selected_type) {
+					case "string": new_value = ""; break;
+					case "number": new_value = 0; break;
+					case "boolean": new_value = false; break;
+					case "object": new_value = {}; break;
+					case "array": new_value = []; break;
+					case "null": new_value = null; break;
+				}
+				
+				if (is_array) target_obj.push(new_value);
+				else target_obj[new_key] = new_value;
+				
+				this.modal_window.close();
+				this.refresh();
+				this.fireToBinding();
+				
+			}, { name: loc("ve.registry.localisation.ObjectEditor_button_add_item"), style: { width: "100%" } })
+		};
+		if (!is_array)
+			components_obj.key_name = new ve.Text("", {
+				placeholder: loc("ve.registry.localisation.ObjectEditor_placeholder_property_name"),
+				style: { marginBottom: "var(--cell-padding)" }
+			});
+		
+		//Open modal_window if possible
+		if (this.modal_window) this.modal_window.close();
+		this.modal_window = new ve.Window(components_obj, {
+			name: (is_array) ? loc("ve.registry.localisation.ObjectEditor_window_add_array_element") : loc("ve.registry.localisation.ObjectEditor_window_add_variable"),
+			can_rename: false
+		});
+	}
+	
+	_openChangeTypeModal (arg0_target_object, arg1_key) {
+		//Convert from parameters
+		let target_obj = arg0_target_object;
+		let key = arg1_key;
+		
+		//Declare local instance variables
+		let current_val = target_obj[key];
+		let current_type = this._getType(current_val);
+		
+		let components_obj = {
+			info: new ve.HTML(loc("ve.registry.localisation.ObjectEditor_change_type_info", key)),
+			type_select: new ve.Select({
+				string: { name: loc("ve.registry.localisation.ObjectEditor_type_string"), selected: current_type === "string" },
+				number: { name: loc("ve.registry.localisation.ObjectEditor_type_number"), selected: current_type === "number" },
+				boolean: { name: loc("ve.registry.localisation.ObjectEditor_type_boolean"), selected: current_type === "boolean" },
+				object: { name: loc("ve.registry.localisation.ObjectEditor_type_object"), selected: current_type === "object" },
+				array: { name: loc("ve.registry.localisation.ObjectEditor_type_array"), selected: current_type === "array" },
+				null: { name: loc("ve.registry.localisation.ObjectEditor_type_null"), selected: current_type === "null" }
+			}, {
+				style: { width: "100%", marginBottom: "var(--cell-padding)" }
+			}),
+			confirm_button: new ve.Button(() => {
+				let selected_type = this.change_type_window.components_obj.type_select.v;
+				
+				// Don't do anything if type didn't change
+				if (selected_type === current_type) {
+					this.change_type_window.close();
+					return;
+				}
+				
+				let new_value = null;
+				switch (selected_type) {
+					case "string": new_value = ""; break;
+					case "number": new_value = 0; break;
+					case "boolean": new_value = false; break;
+					case "object": new_value = {}; break;
+					case "array": new_value = []; break;
+					case "null": new_value = null; break;
+				}
+				
+				target_obj[key] = new_value;
+				
+				this.change_type_window.close();
+				this.refresh();
+				this.fireToBinding();
+				
+			}, {
+				name: loc("ve.registry.localisation.ObjectEditor_button_change_type"),
+				style: { width: "100%" }
+			})
+		};
+		
+		//Open change_type_window if possible
+		if (this.change_type_window) this.change_type_window.close();
+		this.change_type_window = new ve.Window(components_obj, {
+			name: loc("ve.registry.localisation.ObjectEditor_window_change_type"),
+			can_rename: false,
+			width: "300px",
+			height: "auto"
+		});
+	}
+	
+	_renameObjectKey (obj, old_key, new_key) {
+		if (old_key === new_key) return;
+		if (obj.hasOwnProperty(new_key)) {
+			new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_key_exists", new_key));
+			this.refresh();
+			return;
+		}
+		const keys = Object.keys(obj);
+		const new_obj = {};
+		keys.forEach(key => {
+			if (key === old_key) new_obj[new_key] = obj[old_key];
+			else new_obj[key] = obj[key];
+		});
+		Object.keys(obj).forEach(k => delete obj[k]);
+		Object.assign(obj, new_obj);
 		this.refresh();
 		this.fireToBinding();
 	}
