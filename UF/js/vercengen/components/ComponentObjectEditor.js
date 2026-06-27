@@ -97,12 +97,16 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 	 * Generates HTML recursively for the current component.
 	 * - Private method of: {@link ve.ObjectEditor}
 	 *
-	 * @param arg0_current_data
-	 * @param arg1_current_key
-	 * @param arg2_depth
-	 * @param arg3_parent_object
-	 * @param arg4_parent_path
-	 * @returns {*|ve.Component.HierarchyDatatype}
+	 * @alias _generateRecursive
+	 * @memberof ve.Component.ve.ObjectEditor
+	 *
+	 * @param {any} arg0_current_data
+	 * @param {string} arg1_current_key
+	 * @param {number} arg2_depth
+	 * @param {any[]|Object} arg3_parent_object
+	 * @param {string} arg4_parent_path
+	 * 
+	 * @returns {ve.HierarchyDatatype}
 	 *
 	 * @private
 	 */
@@ -281,6 +285,18 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		});
 	}
 	
+	/**
+	 * Returns the type of a JSON-valid primitive.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 * 
+	 * @alias _getType
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {any} arg0_value
+	 * 
+	 * @returns {string}
+	 * @private
+	 */
 	_getType (arg0_value) {
 		//Convert from parameters
 		let value = arg0_value;
@@ -291,6 +307,18 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		return typeof value;
 	}
 	
+	/**
+	 * Handles the reordering of an element within the {@link ve.Hierarchy} of an ObjectEditor.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 *
+	 * @alias _handleReorder
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {Object} arg0_v
+	 * @param {Object} arg1_e
+	 * 
+	 * @private
+	 */
 	_handleReorder (arg0_v, arg1_e) {
 		//Convert from parameters
 		let v = arg0_v;
@@ -365,6 +393,20 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		this.fireToBinding();
 	}
 	
+	/**
+	 * Moves an array item inside an array within ObjectEditor.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 *
+	 * @alias _moveArrayItem
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {any[]} arg0_array
+	 * @param {number} arg1_old_index
+	 * @param {number} arg2_new_index
+	 * 
+	 * @returns {any[]}
+	 * @private
+	 */
 	_moveArrayItem (arg0_array, arg1_old_index, arg2_new_index) {
 		//Convert from parameters
 		let arr = arg0_array;
@@ -392,6 +434,17 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		return arr;
 	}
 	
+	/**
+	 * Opens a modal for adding a new variable type to the Object.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 *
+	 * @alias _openAddModal
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {Object} arg0_target_obj
+	 * 
+	 * @private
+	 */
 	_openAddModal (arg0_target_obj) {
 		//Convert from parameters
 		let target_obj = arg0_target_obj;
@@ -457,6 +510,18 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		});
 	}
 	
+	/**
+	 * Opens a modal to change an existing key type in the Object.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 *
+	 * @alias _openChangeTypeModal
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {Object} arg0_target_object
+	 * @param {string} arg1_key
+	 * 
+	 * @private
+	 */
 	_openChangeTypeModal (arg0_target_object, arg1_key) {
 		//Convert from parameters
 		let target_obj = arg0_target_object;
@@ -519,7 +584,25 @@ ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rewo
 		});
 	}
 	
-	_renameObjectKey (obj, old_key, new_key) {
+	/**
+	 * Renames an Object key.
+	 * - Private method of: {@link ve.ObjectEditor}
+	 *
+	 * @alias _renameObjectKey
+	 * @memberof ve.Component.ve.ObjectEditor
+	 * 
+	 * @param {Object} arg0_obj
+	 * @param {string} arg1_old_key
+	 * @param {string} arg2_new_key
+	 * 
+	 * @private
+	 */
+	_renameObjectKey (arg0_obj, arg1_old_key, arg2_new_key) {
+		//Convert from parameters
+		let obj = arg0_obj;
+		let old_key = arg1_old_key;
+		let new_key = arg2_new_key;
+		
 		if (old_key === new_key) return;
 		if (obj.hasOwnProperty(new_key)) {
 			new ve.Toast(loc("ve.registry.localisation.ObjectEditor_toast_key_exists", new_key));
