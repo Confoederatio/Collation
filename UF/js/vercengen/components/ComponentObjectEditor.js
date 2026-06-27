@@ -27,7 +27,7 @@
  * @memberof ve.Component
  * @type {ve.ObjectEditor}
  */
-ve.ObjectEditor = class extends ve.Component { //[WIP] - Refactor at a later date. Fix documentation.
+ve.ObjectEditor = class extends ve.Component { //[WIP] - Fix documentation; rework Array behaviour
 	constructor (arg0_value, arg1_options) {
 		//Convert from parameters
 		let value = (arg0_value) ? arg0_value : {};
