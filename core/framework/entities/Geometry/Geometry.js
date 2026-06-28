@@ -320,6 +320,37 @@ naissance.Geometry = class extends naissance.Entity {
 						width: "20rem"
 					})
 				}, { name: "Manage Relations" }),
+				merge_geometry: veButton(() => {
+					if (this.merge_geometry_window) this.merge_geometry_window.close();
+					this.merge_geometry_window = veWindow({
+						merge_geometry_with: new UI_GeometryDatalist(this.ui.merge_geometry_id, {
+							name: "Merge Geometry",
+							filter_types: [this.class_name],
+							onuserchange: (v) => this.ui.merge_geometry_id = v
+						}),
+						confirm: veButton(() => {
+							if (!this.ui.merge_geometry_id) {
+								veToast(`<icon>warning</icon> You must select a valid Geometry to merge this Geometry with.`)
+								return;
+							}
+							
+							let ot_geometry = naissance.Geometry.instances[this.ui.merge_geometry_id];
+							if (!ot_geometry) {
+								veToast(`<icon>warning</icon> This geometry no longer exists.`);
+								return;
+							}
+							
+							DALS.Timeline.parseAction("merge_geometry", [{
+								geometry_obj: this.id,
+								merge_geometry: ot_geometry.id
+							}]);
+							veToast(`Successfully merged ${this.name} and ${ot_geometry.name}.`);
+						})
+					}, {
+						name: "Merge Geometry",
+						can_rename: false
+					});
+				}, { name: "Merge Geometry" }),
 				unlink_geometry: veButton(() => {
 					let linked_geometry = naissance.Geometry.instances[this.metadata.linked_id];
 					
