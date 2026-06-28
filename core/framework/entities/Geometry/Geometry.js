@@ -344,6 +344,7 @@ naissance.Geometry = class extends naissance.Entity {
 								geometry_obj: this.id,
 								merge_geometry: ot_geometry.id
 							}]);
+							this.merge_geometry_window.close();
 							veToast(`Successfully merged ${this.name} and ${ot_geometry.name}.`);
 						})
 					}, {
