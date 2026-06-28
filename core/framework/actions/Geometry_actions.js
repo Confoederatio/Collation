@@ -139,6 +139,15 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 		if (json.delete_geometry === true)
 			geometry_obj.remove();
 		
+		//geometry_operation
+		if (json.geometry_operation) {
+			let maptalks_geometry = naissance.Geometry.operate.call(geometry_obj, 
+				json.geometry_operation.type, 
+				(json.geometry_operation.feature_id) ? json.geometry_operation.feature_id : json.geometry_operation.geometry_id);
+			maptalks_geometry = (maptalks_geometry === null) ? null : maptalks_geometry.toJSON();
+			geometry_obj.history.addKeyframe(main.date, maptalks_geometry);
+		}
+		
 		//merge_geometry
 		if (json.merge_geometry) {
 			let ot_geometry = naissance.Geometry.instances[json.merge_geometry];

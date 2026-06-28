@@ -925,6 +925,29 @@ naissance.Feature = class extends naissance.Entity {
 		return all_timestamps.sort((a, b) => a - b);
 	}
 	
+	getTurfGeometry () {
+		//Declare local instance variables
+		let all_geometries = this.getAllGeometries();
+		let turf_geometry;
+		
+		//Iterate over all_geometries to fetch turf_geometry
+		for (let i = 0; i < all_geometries.length; i++)
+			if (all_geometries[i] instanceof naissance.GeometryPolygon)
+				if (all_geometries[i].geometry) {
+					let local_geometry = all_geometries[i].geometry;
+					let local_turf_geometry = Geospatiale.convertMaptalksToTurf(local_geometry);
+					
+					if (!turf_geometry) {
+						turf_geometry = local_turf_geometry;
+					} else {
+						turf_geometry = turf.union(turf.featureCollection([turf_geometry, local_turf_geometry]));
+					}
+				}
+		
+		//Return statement
+		return turf_geometry;
+	}
+	
 	hide () {
 		//Declare local instance variables
 		this._is_visible = false;

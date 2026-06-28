@@ -126,6 +126,14 @@ naissance.Feature.parseAction = async function (arg0_json) {
 			UI_Leftbar.refresh();
 		}
 		
+		//geometry_operation
+		if (json.geometry_operation) {
+			naissance.Feature.operate.call(feature_obj, 
+				json.geometry_operation.type, 
+				(json.feature_operation.feature_id) ? json.feature_operation.feature_id : json.feature_operation.geometry_id);
+			UI_Leftbar.refresh();
+		}
+		
 		//move_all_entities_to_feature
 		if (json.move_all_entities_to_feature !== undefined) {
 			let ot_feature_obj = naissance.Feature.instances[json.move_all_entities_to_feature];
