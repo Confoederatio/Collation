@@ -35,13 +35,20 @@ global.UI_Wiki = class extends ve.Class {
 		super.open("instance", {
 			anchor: "top_right",
 			do_not_wrap: true,
-			mode: "static_window",
 			name: "Wiki",
 			height: () => this.getDimensions().height,
 			width: "26rem",
 			x: 8,
-			y: () => this.getDimensions().y
+			y: () => this.getDimensions().y,
+			
+			onuserchange: (v, e) => {
+				if (v.close) try {
+					let help_button_el = main.interfaces.date_ui.time_controls.help.element;
+					help_button_el.removeAttribute("naissance-wiki-open");
+				} catch (e) {}
+			}
 		});
+		
 		if (!this.wiki.v.startsWith(UI_Wiki.naissance_folder))
 			setTimeout(() => {
 				this.wiki.element.loadURL(UI_Wiki.naissance_url);
