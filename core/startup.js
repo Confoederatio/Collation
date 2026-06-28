@@ -3,6 +3,7 @@ const {ipcRenderer} = require("electron");
 global.child_process = require("child_process");
 global.cubic_spline = require("cubic-spline");
 global.electron = require("electron");
+global.electron_remote = require("@electron/remote");
 global.exec = require("child_process").exec;
 global.fs = require("fs");
 global.JSDOM = require("jsdom").JSDOM;

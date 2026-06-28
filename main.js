@@ -3,6 +3,7 @@ let { app, BrowserWindow, dialog, ipcMain, session, shell } = require("electron"
 let fs = require("fs");
 let path = require("path");
 let readline = require("readline");
+let remote_main = require("@electron/remote/main");
 let { performance } = require("perf_hooks");
 
 //Metadata - Title
@@ -94,6 +95,9 @@ let win;
     } catch (e) {
       console.warn(e);
     }
+    
+    //Return statement
+    return win;
   }
 }
 
@@ -105,8 +109,11 @@ let win;
   
   //Launch app when ready
   app.whenReady().then(() => {
+    remote_main.initialize();
+    
     //Create the window and instantiate it
-    createWindow();
+    let win = createWindow();
+    remote_main.enable(win.webContents);
     
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

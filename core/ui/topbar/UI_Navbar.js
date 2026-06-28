@@ -8,7 +8,14 @@ global.UI_Navbar = class {
 				name: "Project",
 				
 				open_project_folder: {
-					name: "Open Project Folder"
+					name: "Open Project Folder",
+					onclick: () => {
+						let electron_shell = global.electron.shell;
+						let remote_module = global.electron_remote;
+						let base_path = remote_module.app.getAppPath();
+						
+						electron_shell.openPath(base_path);
+					}
 				}
 			},
 			edit: {
