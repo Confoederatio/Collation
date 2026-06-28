@@ -178,7 +178,18 @@ naissance.Feature.parseAction = async function (arg0_json) {
 		
 		//set_zoom
 		if (json.set_zoom !== undefined) {
+			let all_geometries = feature_obj.getAllGeometries();
+			let all_geometry_ids = [];
 			
+			for (let i = 0; i < all_geometries.length; i++)
+				if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+			
+			naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
+				command: "set_zoom",
+				key: "set_zoom",
+				name: "Set F.Zoom",
+				value: json.set_zoom,
+			});
 		}
 		
 		//simplify_all_polygons

@@ -986,8 +986,7 @@ naissance.Geometry = class extends naissance.Entity {
 			old_date = JSON.parse(JSON.stringify(main.date));
 			UI_DateMenu.setDate(options.date);
 		}
-		console.log(options.key, dals_value_array);
-		DALS.Timeline.parseAction(options.key, dals_value_array);
+		DALS.Timeline.parseAction(options.key, dals_value_array, true);
 		if (options.date)
 			UI_DateMenu.setDate(old_date);
 	};

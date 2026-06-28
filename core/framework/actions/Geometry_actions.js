@@ -338,5 +338,27 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 		//set_tags
 		if (json.set_tags)
 			geometry_obj.metadata.tags = Array.toArray(json.set_tags);
+		
+		//set_zoom
+		if (json.set_zoom) {
+			let zoom_date = (json.set_zoom.is_start_keyframe) ? 
+				geometry_obj.history.getFirstKeyframe().timestamp : main.date;
+			let zoom_props = {};
+			
+			if (json.set_zoom.max_zoom !== undefined)
+				(json.set_zoom.max_zoom === "delete") ? naissance.Geometry.parseAction({
+					geometry_obj: geometry_obj,
+					remove_property: { date: zoom_date, key: "max_zoom" },
+				}) : (zoom_props.max_zoom = json.set_zoom.max_zoom);
+			
+			if (json.set_zoom.min_zoom !== undefined)
+				(json.set_zoom.min_zoom === "delete") ? naissance.Geometry.parseAction({
+						geometry_obj: geometry_obj,
+						remove_property: { date: zoom_date, key: "min_zoom" },
+					}) : (zoom_props.min_zoom = json.set_zoom.min_zoom);
+			
+			if (Object.keys(zoom_props).length > 0)
+				geometry_obj.addKeyframe(zoom_date, undefined, undefined, zoom_props);
+		}
 	}
 };
