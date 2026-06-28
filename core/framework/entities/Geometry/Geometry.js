@@ -430,6 +430,46 @@ naissance.Geometry = class extends naissance.Entity {
 						can_rename: false
 					});
 				}, { name: "Merge Geometry" }),
+				set_zoom_visibility: veButton(() => {
+					if (this.set_zoom_window) this.set_zoom_window.close();
+					this.set_zoom_window = veWindow({
+						information: veHTML(`To remove the zoom attribute, type -1 as the value instead.`),
+						
+						min_zoom: veNumber(this.ui.set_zoom_min, {
+							name: "Minimum Zoom Level",
+							onuserchange: (v) => this.ui.set_zoom_min = v
+						}),
+						max_zoom: veNumber(this.ui.set_zoom_max, {
+							name: "Maximum Zoom Level",
+							onuserchange: (v) => this.ui.set_zoom_max = v
+						}),
+						is_start_keyframe: veToggle(this.ui.set_zoom_is_start, {
+							name: "Modify Zoom at Starting Keyframe",
+							onuserchange: (v) => this.ui.set_zoom_is_start = v
+						}),
+						
+						confirm: veButton(() => {
+							let current_min = (this.ui.set_zoom_min !== undefined) ? this.ui.set_zoom_min : -1;
+							let current_max = (this.ui.set_zoom_max !== undefined) ? this.ui.set_zoom_max : -1;
+							
+							DALS.Timeline.parseAction("set_zoom", [{
+								geometry_obj: this.id,
+								set_zoom: {
+									is_start_keyframe: (this.ui.set_zoom_is_start),
+									max_zoom: (current_max === -1) ? "delete" : current_max,
+									min_zoom: (current_min === -1) ? "delete" : current_min
+								}
+							}]);
+							
+							veToast(`Successfully updated zoom visibility for ${this.name}.`);
+							this.set_zoom_window.close();
+						}, { name: "Confirm" })
+					}, {
+						name: `Set Zoom (${this.name})`,
+						can_rename: false,
+						width: "20rem"
+					});
+				}, { name: "Set Zoom Visibility" }),
 				unlink_geometry: veButton(() => {
 					let linked_geometry = naissance.Geometry.instances[this.metadata.linked_id];
 					

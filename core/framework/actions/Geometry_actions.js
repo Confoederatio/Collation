@@ -227,12 +227,12 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 		//remove_property
 		if (json.remove_property) {
 			if (json.remove_property.date) {
-				let keyframe_obj = geometry_obj.history[Date.getTimestamp(json.remove_property.date)];
+				let keyframe_obj = geometry_obj.history.keyframes[Date.getTimestamp(json.remove_property.date)];
 					
 				if (keyframe_obj)
 					delete keyframe_obj.value?.[2]?.[json.remove_property.key];
 			} else {
-				Object.iterate(geometry_obj.history, (local_key, local_value) => {
+				Object.iterate(geometry_obj.history.keyframes, (local_key, local_value) => {
 					delete local_value.value?.[2]?.[json.remove_property.key];
 				});
 			}
@@ -351,13 +351,13 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 			if (json.set_zoom.max_zoom !== undefined)
 				(json.set_zoom.max_zoom === "delete") ? naissance.Geometry.parseAction({
 					geometry_obj: geometry_obj,
-					remove_property: { date: zoom_date, key: "max_zoom" },
+					remove_property: { key: "max_zoom" },
 				}) : (zoom_props.max_zoom = json.set_zoom.max_zoom);
 			
 			if (json.set_zoom.min_zoom !== undefined)
 				(json.set_zoom.min_zoom === "delete") ? naissance.Geometry.parseAction({
 						geometry_obj: geometry_obj,
-						remove_property: { date: zoom_date, key: "min_zoom" },
+						remove_property: { key: "min_zoom" },
 					}) : (zoom_props.min_zoom = json.set_zoom.min_zoom);
 			
 			if (Object.keys(zoom_props).length > 0)
