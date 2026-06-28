@@ -31,15 +31,19 @@ global.UI_Wiki = class extends ve.Class {
 	}
 	
 	open () {
+		let dimensions_obj = this.getDimensions();
+		
 		//Open window and navigate back to home
 		super.open("instance", {
 			anchor: "top_right",
+			can_rename: false,
 			do_not_wrap: true,
+			mode: "window",
 			name: "Wiki",
-			height: () => this.getDimensions().height,
+			height: dimensions_obj.height,
 			width: "26rem",
 			x: 8,
-			y: () => this.getDimensions().y,
+			y: dimensions_obj.y,
 			
 			onuserchange: (v, e) => {
 				if (v.close) try {
