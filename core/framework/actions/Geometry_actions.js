@@ -10,6 +10,12 @@ if (!global.naissance) global.naissance = {};
  * - #### Extraneous Commands:
  * - `.clean_keyframes`: {@link Array}<{@link string}> - Arguments: ["symbol"]. Whether to clean keyframes, including the default `main.brush.getBrushSymbol()` (if symbol is enabled), as well as any duplicates.
  * - `.delete_geometry`: {@link boolean}
+ * - `.geometry_operation`: {@link Object}
+ *   - `.type`: {@link string} - Either 'difference'/'intersect'/'union'/'xor'.
+ *   -
+ *   - `.feature_id`: {@link string}
+ *   - `.geometry_id`: {@link string}
+ * - `.merge_geometry`: {@link string} - Merges a geometry with the target geometry ID.
  * - `.move_keyframe`: {@link number}
  *   - `.date`: {@link Object} - The date of the keyframe to move.
  *   - `.ot_date`: {@link Object} - The date to move the keyframe to.
@@ -27,6 +33,10 @@ if (!global.naissance) global.naissance = {};
  * - `.set_symbol`: {@link Object}
  *   - `._set_label_symbol`: {@link Object} - Private alias for `.set_label_symbol`.
  *   - `<symbol_key>`: {@link any}
+ * - `.set_zoom`: {@link Object}
+ *   - `.is_start_keyframe=false`: {@link boolean}
+ *   - `.max_zoom`: {@link number}|{@link string} - 'delete' if a number.
+ *   - `.min_zoom`: {@link number}|{@link string} - 'delete' if a number.
  *   
  * - Variables:
  * - `.add_column`: {@link Object}
@@ -128,6 +138,58 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 		//delete_geometry
 		if (json.delete_geometry === true)
 			geometry_obj.remove();
+		
+		//merge_geometry
+		if (json.merge_geometry) {
+			let ot_geometry = naissance.Geometry.instances[json.merge_geometry];
+			
+			if (ot_geometry && geometry_obj.class_name === ot_geometry.class_name) {
+				let from_keys = Object.keys(ot_geometry.history.keyframes).map(Number);
+				let to_keys = Object.keys(geometry_obj.history.keyframes).map(Number);
+				let union_timestamps = [...new Set([...from_keys, ...to_keys])]
+					.sort((a, b) => a - b);
+				
+				//Iterate over all union_timestamps
+				for (let i = 0; i < union_timestamps.length; i++) {
+					//Apply union operations for geometry
+					let from_value = ot_geometry.history.keyframes[union_timestamps[i]]?.value;
+					let to_value = geometry_obj.history.keyframes[union_timestamps[i]]?.value;
+					
+					if (from_value?.[0] && to_value?.[0])
+						if (geometry_obj.class_name === "GeometryPolygon") {
+							DALS.Timeline.parseAction("add_to_polygon", [{
+								type: "GeometryPolygon",
+								add_to_polygon: {
+									geometry: from_value[0],
+									date: union_timestamps[i]
+								}
+							}], true);
+						} else if (geometry_obj.class_name === "GeometryLine") {
+							DALS.Timeline.parseAction("add_to_line", [{
+								type: "GeometryLine",
+								add_to_line: {
+									geometry: from_value[0],
+									date: union_timestamps[i]
+								}
+							}], true);
+						} else if (geometry_obj.class_name === "GeometryPoint") {
+							DALS.Timeline.parseAction("add_to_point", [{
+								type: "GeometryPoint",
+								add_to_point: {
+									geometry: from_value[0],
+									date: union_timestamps[i]
+								}
+							}], true);
+						}
+					
+					//Transfer non-geometric history data (metadata/attributes)
+					if (from_value?.length > 1) {
+						let extra_values = from_value.slice(1);
+						geometry_obj.history.addKeyframe(union_timestamps[i], undefined, ...extra_values);
+					}
+				}
+			}
+		}
 		
 		//move_keyframe
 		if (json.move_keyframe) {

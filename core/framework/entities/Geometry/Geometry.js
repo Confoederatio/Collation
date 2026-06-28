@@ -505,6 +505,18 @@ naissance.Geometry = class extends naissance.Entity {
 	}
 	
 	/**
+	 * Returns the currently displayed geometries of a Naissance Geometry.
+	 *
+	 * @returns {maptalks.Geometry[]|undefined}
+	 */
+	getGeometries () {
+		//Return statement
+		if (!this.geometry) return;
+		if (this.geometry instanceof maptalks.MultiGeometry) return this.geometry.getGeometries();
+		return [this.geometry];
+	}
+	
+	/**
 	 * Returns all keyframes that change the current geometry. Returns either the timestamp/date. Dates by default.
 	 * 
 	 * @param {Object} [arg0_options]
@@ -535,9 +547,6 @@ naissance.Geometry = class extends naissance.Entity {
 		}
 		return unique_timestamps;
 	}
-	
-	
-	//console.time(`1. Differencing ${all_timestamps[i]} (${i}/${all_timestamps.length})`);
 	
 	/**
 	 * Returns the Maptalks geometry at the specific date.
@@ -758,11 +767,12 @@ naissance.Geometry = class extends naissance.Entity {
 				if (linked_geometry_keyframe?.value?.[1]) symbol_obj = linked_geometry_keyframe.value[1];
 			}
 		}
-		for (let i = 0; i < active_symbol_functions.length; i++)
-			symbol_obj = {
-				...symbol_obj,
-				...active_symbol_functions[i](this)
-			};
+		if (active_symbol_functions)
+			for (let i = 0; i < active_symbol_functions.length; i++)
+				symbol_obj = {
+					...symbol_obj,
+					...active_symbol_functions[i](this)
+				};
 		
 		//Return statement
 		return symbol_obj;

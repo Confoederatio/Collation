@@ -19,9 +19,18 @@ if (!global.naissance) global.naissance = {};
  * - `.clean_geometry_tags`: {@link boolean}
  * - `.delete_feature`: {@link boolean}
  * - `.flatten_all_geometries`: {@link boolean}
+ * - `.geometry_operation`: {@link Object}
+ *   - `.type`: {@link string} - Either 'difference'/'intersect'/'union'/'xor'.
+ *   - 
+ *   - `.feature_id`: {@link string}
+ *   - `.geometry_id`: {@link string}
  * - `.move_all_entities_to_feature`: {@link string}
  * - `.set_name`: {@link string}
  * - `.set_visibility`: {@link boolean}
+ * - `.set_zoom`: {@link Object}
+ *   - `.is_start_keyframe=false`: {@link boolean}
+ *   - `.max_zoom`: {@link number}|{@link string} - 'delete' if a number.
+ *   - `.min_zoom`: {@link number}|{@link string} - 'delete' if a number.
  * - `.simplify_all_polygons`: {@link number}
  *
  * @param {Object|string} arg0_json
@@ -158,6 +167,11 @@ naissance.Feature.parseAction = async function (arg0_json) {
 			} else if (json.set_visibility === false) {
 				feature_obj.hide();
 			}
+		
+		//set_zoom
+		if (json.set_zoom !== undefined) {
+			
+		}
 		
 		//simplify_all_polygons
 		if (json.simplify_all_polygons !== undefined) {
