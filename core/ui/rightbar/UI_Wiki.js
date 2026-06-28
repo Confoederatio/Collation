@@ -1,6 +1,6 @@
 global.UI_Wiki = class extends ve.Class {
 	static naissance_folder = "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/";
-	static naissance_url = "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/Naissance";
+	static naissance_url = `${this.naissance_folder}/Naissance`;
 	
 	constructor () {
 		super();
@@ -8,7 +8,9 @@ global.UI_Wiki = class extends ve.Class {
 		let navbar_el = document.querySelector(".ve.navbar");
 		let navbar_height = ((navbar_el) ? navbar_el.offsetHeight : 0);
 		
-		this.wiki = new ve.Wiki(UI_Wiki.naissance_url);
+		this.wiki = new ve.Wiki(UI_Wiki.naissance_url, {
+			css_file_paths: ["./core/ui/rightbar/ui_wiki.css"]
+		});
 	}
 	
 	close () { super.close("instance"); }

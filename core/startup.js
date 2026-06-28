@@ -192,6 +192,7 @@ global.l4p = "./livemap/4.view/politics/";
 			"core",
 			"core/framework/brush",
 			"core/framework/actions",
+			"!core/ui/rightbar/ui_wiki.css",
 			"histmap",
 			"livemap",
 		],
