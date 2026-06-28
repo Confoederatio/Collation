@@ -12,7 +12,7 @@ global.UI_Navbar = class {
 					onclick: () => {
 						let electron_shell = global.electron.shell;
 						let remote_module = global.electron_remote;
-						let base_path = remote_module.app.getAppPath();
+						let base_path = `${remote_module.app.getAppPath()}/saves`;
 						
 						electron_shell.openPath(base_path);
 					}
