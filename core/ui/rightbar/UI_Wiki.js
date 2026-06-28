@@ -33,6 +33,9 @@ global.UI_Wiki = class extends ve.Class {
 	open () {
 		let dimensions_obj = this.getDimensions();
 		
+		//Close Tutorial window if open
+		if (main.interfaces.tutorial_window) main.interfaces.tutorial_window.close();
+		
 		//Open window and navigate back to home
 		super.open("instance", {
 			anchor: "top_right",

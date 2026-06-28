@@ -64,7 +64,18 @@ global.UI_Navbar = class {
 				onclick: () => new UI_Settings()
 			},
 			tutorial: {
-				name: "Tutorial"
+				name: "Tutorial",
+				onclick: () => {
+					if (main.interfaces.tutorial_window) main.interfaces.tutorial_window.close();
+					main.interfaces.tutorial_window = veWindow(`Click the 'Help' button in the top right to open the <b>Wiki</b>.<br><br>The Wiki contains the most up-to-date information on how to use <b>Naissance</b>, which is the map editor on your screen.`, {
+						name: "Tutorial",
+						can_rename: false,
+						width: "20rem",
+						height: "10rem",
+						x: "50dvw - 10rem",
+						y: "50dvh - 5rem"
+					});
+				}
 			}
 		});
 	}
