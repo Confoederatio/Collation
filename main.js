@@ -22,7 +22,8 @@ let win;
         contextIsolation: false,
         enableRemoteModule: false,
         nodeIntegration: true,
-        webSecurity: false
+        webSecurity: false,
+        webviewTag: true
       },
       
       icon: path.join(process.cwd(), `gfx/logo.png`)
@@ -98,6 +99,7 @@ let win;
 
 //App handling
 {
+  app.commandLine.appendSwitch("disable-site-isolation-trials");
   app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
   app.commandLine.appendSwitch('js-flags', '--max-old-space-size=32128 --expose-gc');
   
@@ -111,6 +113,18 @@ let win;
     });
     app.on("ready", () => {
       Menu.setApplicationMenu(null);
+    });
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      if (details.responseHeaders['Access-Control-Allow-Origin']) {
+        // Force the header to be a single value (*) to satisfy Chromium
+        details.responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+      }
+      
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+        }
+      });
     });
   });
   

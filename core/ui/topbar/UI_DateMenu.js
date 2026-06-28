@@ -68,8 +68,16 @@ global.UI_DateMenu = class extends ve.Class {
 					y: this.instance_window.element.offsetHeight + navbar_height + 16
 				});
 			}, { name: "<icon>settings</icon>", tooltip: "Settings" }),
-			help: veButton(() => {
-				veToast(`No help yet, sorry! We're working on it. Check on the Discord for updates.`);
+			help: veButton((v, e) => {
+				let wiki_ui = main.interfaces.wiki_ui;
+				
+				if (!wiki_ui.isOpen("instance")) {
+					wiki_ui.open();
+					e.element.setAttribute("naissance-wiki-open", "true");
+				} else {
+					wiki_ui.close();
+					e.element.removeAttribute("naissance-wiki-open");
+				}
 			}, { 
 				name: "<icon>question_mark</icon> Help"
 			})
@@ -80,6 +88,9 @@ global.UI_DateMenu = class extends ve.Class {
 				justifyContent: "end",
 				"[component='ve-button']": {
 					marginRight: "var(--cell-padding)"
+				},
+				"[naissance-wiki-open='true'] button": {
+					backgroundColor: "var(--accent-primary-colour)",
 				}
 			},
 			x: 1, y: 0
