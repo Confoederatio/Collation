@@ -226,6 +226,84 @@ naissance.Geometry = class extends naissance.Entity {
 					console.log(`Geometry logged as:`, window.$geometry);
 					veToast(`Geometry logged to console.`);
 				}, { name: "Debug Geometry" }),
+				geometry_operation: veButton(() => {
+					let operation_names = {
+						difference: { name: "Difference" },
+						intersect: { name: "Intersect" },
+						union: { name: "Union" },
+						xor: { name: "XOR" }
+					};
+					let operation_target = () => (this.ui.geometry_operation_target || "geometry");
+					let operation_type = () => (this.ui.geometry_operation_type || "union");
+					
+					if (this.geometry_operation_window) this.geometry_operation_window.close();
+					
+					this.geometry_operation_window = veWindow({
+						geometry_operation_target: veSelect({
+							feature: { name: "Feature" },
+							geometry: { name: "Geometry" }
+						}, {
+							name: "Merge With Entity Type",
+							selected: operation_target(),
+							onuserchange: (v) => this.ui.geometry_operation_target = v
+						}),
+						geometry_operation_geometry: new UI_GeometryDatalist(this.ui.geometry_operation_geometry, {
+							name: "Geometry",
+							filter_types: ["GeometryPolygon"],
+							limit: () => {
+								let target = operation_target();
+								if (target === "geometry") return true;
+								return false;
+							},
+							onuserchange: (v) => this.ui.geometry_operation_geometry = v
+						}),
+						geometry_operation_feature: new UI_FeatureDatalist(this.ui.geometry_operation_feature, {
+							name: "Feature",
+							filter_types: ["FeatureGroup", "FeatureLayer"],
+							limit: () => {
+								let target = operation_target();
+								if (target === "feature") return true;
+								return false;
+							},
+							onuserchange: (v) => this.ui.geometry_operation_feature = v
+						}),
+						operation_type: veSelect(operation_names, {
+							name: "Operation Type",
+							selected: operation_type(),
+							onuserchange: (v) => this.ui.geometry_operation_type = v
+						}),
+						confirm: veButton(() => {
+							//Declare local instance variables
+							let geometry_operation_type = operation_type();
+							let target = operation_target();
+							let target_geometry_id = (target === "geometry") ? this.ui.geometry_operation_geometry : undefined;
+							let target_feature_id = (target === "feature") ? this.ui.geometry_operation_feature : undefined;
+							
+							//Run feature operation
+							DALS.Timeline.parseAction("geometry_operation", {
+								geometry_obj: this.id,
+								geometry_operation: {
+									type: geometry_operation_type,
+									feature_id: target_feature_id,
+									geometry_id: target_geometry_id,
+								}
+							});
+							
+							let ot_name;
+							if (target_geometry_id) ot_name = naissance.Geometry.instances[target_geometry_id]?.name;
+							if (target_feature_id) ot_name = naissance.Feature.instances[target_feature_id]?.name;
+							
+							veToast(`Performed ${operation_names[geometry_operation_type].name} on ${this.name} using ${ot_name}.`);
+						}, { name: "Confirm" })
+					}, {
+						name:`Feature Operation (${this.name})`,
+						can_rename: false,
+						width: "20rem"
+					});
+				}, {
+					name: "Geometry Operation",
+					limit: () => this.class_name === "GeometryPolygon"
+				}),
 				link_geometry: veButton(() => {
 					if (this.link_geometry_window) this.link_geometry_window.close();
 					this.link_geometry_window = veWindow({

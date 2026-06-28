@@ -18,12 +18,12 @@ if (!global.naissance) global.naissance = {};
  * - `.clean_keyframes`: {@link Array}<{@link string}> - Cleans geometry keyframes for default symbols, redundant names. Options: ["symbol"]
  * - `.clean_geometry_tags`: {@link boolean}
  * - `.delete_feature`: {@link boolean}
- * - `.flatten_all_geometries`: {@link boolean}
- * - `.geometry_operation`: {@link Object}
+ * - `.feature_operation`: {@link Object}
  *   - `.type`: {@link string} - Either 'difference'/'intersect'/'union'/'xor'.
- *   - 
+ *   -
  *   - `.feature_id`: {@link string}
  *   - `.geometry_id`: {@link string}
+ * - `.flatten_all_geometries`: {@link boolean}
  * - `.move_all_entities_to_feature`: {@link string}
  * - `.set_name`: {@link string}
  * - `.set_visibility`: {@link boolean}
@@ -116,6 +116,14 @@ naissance.Feature.parseAction = async function (arg0_json) {
 			return;
 		}
 		
+		//feature_operation
+		if (json.feature_operation) {
+			naissance.Feature.operate.call(feature_obj,
+				json.feature_operation.type,
+				(json.feature_operation.feature_id) ? json.feature_operation.feature_id : json.feature_operation.geometry_id);
+			UI_Leftbar.refresh();
+		}
+		
 		//flatten_all_geometries
 		if (json.flatten_all_geometries) {
 			feature_obj.entities = feature_obj.getAllGeometries();
@@ -123,14 +131,6 @@ naissance.Feature.parseAction = async function (arg0_json) {
 			//Update parent ref for all promoted geometries
 			for (let i = 0; i < feature_obj.entities.length; i++)
 				feature_obj.entities[i].parent = feature_obj;
-			UI_Leftbar.refresh();
-		}
-		
-		//geometry_operation
-		if (json.geometry_operation) {
-			naissance.Feature.operate.call(feature_obj, 
-				json.geometry_operation.type, 
-				(json.feature_operation.feature_id) ? json.feature_operation.feature_id : json.feature_operation.geometry_id);
 			UI_Leftbar.refresh();
 		}
 		
