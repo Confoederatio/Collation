@@ -161,13 +161,14 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 				//Iterate over all union_timestamps
 				for (let i = 0; i < union_timestamps.length; i++) {
 					//Apply union operations for geometry
-					let from_value = ot_geometry.history.keyframes[union_timestamps[i]]?.value;
-					let to_value = geometry_obj.history.keyframes[union_timestamps[i]]?.value;
+					let from_value = ot_geometry.history.getKeyframe({ date: union_timestamps[i] }).value;
+					let to_value = geometry_obj.history.getKeyframe({ date: union_timestamps[i] }).value;
 					
 					if (from_value?.[0] && to_value?.[0])
 						if (geometry_obj.class_name === "GeometryPolygon") {
 							DALS.Timeline.parseAction("add_to_polygon", [{
 								type: "GeometryPolygon",
+								geometry_obj: geometry_obj.id,
 								add_to_polygon: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
@@ -176,6 +177,7 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 						} else if (geometry_obj.class_name === "GeometryLine") {
 							DALS.Timeline.parseAction("add_to_line", [{
 								type: "GeometryLine",
+								geometry_obj: geometry_obj.id,
 								add_to_line: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
@@ -184,6 +186,7 @@ naissance.Geometry.parseAction = async function (arg0_json) { //[WIP] - Add vari
 						} else if (geometry_obj.class_name === "GeometryPoint") {
 							DALS.Timeline.parseAction("add_to_point", [{
 								type: "GeometryPoint",
+								geometry_obj: geometry_obj.id,
 								add_to_point: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
