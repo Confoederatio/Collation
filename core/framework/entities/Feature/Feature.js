@@ -537,26 +537,32 @@ naissance.Feature = class extends naissance.Entity {
 							information: veHTML(`Feature properties map start/end dates and symbol properties into Naissance. Leaving a field blank means that it will not be passed when importing the file.`),
 							
 							id_key: veText(this.ui.import_id_key, { name: "ID Key", onuserchange: (v) => this.ui.import_id_key = v }),
-							lineColor_key: veText(this.ui.import_lineColor_key, { name: "Line Color Key", onuserchange: (v) => this.ui.import_lineColor_key = v }),
-							lineOpacity_key: veText(this.ui.import_lineOpacity_key, { name: "Line Opacity Key", onuserchange: (v) => this.ui.import_lineOpacity_key = v }),
-							lineWidth_key: veText(this.ui.import_lineWidth_key, { name: "Line Width Key", onuserchange: (v) => this.ui.import_lineWidth_key = v }),
-							name_key: veText(this.ui.import_name_key, { name: "Name Key", onuserchange: (v) => this.ui.import_name_key = v }),
-							polygonFill_key: veText(this.ui.import_polygonFill_key, { name: "Polygon Fill Key", onuserchange: (v) => this.ui.import_polygonFill_key = v }),
-							polygonOpacity_key: veText(this.ui.import_polygonOpacity_key, { name: "Polygon Opacity Key", onuserchange: (v) => this.ui.import_polygonOpacity_key = v }),
+							symbol_properties: veInterface({
+								lineColor_key: veText(this.ui.import_lineColor_key, { name: "Line Color Key", onuserchange: (v) => this.ui.import_lineColor_key = v }),
+								lineOpacity_key: veText(this.ui.import_lineOpacity_key, { name: "Line Opacity Key", onuserchange: (v) => this.ui.import_lineOpacity_key = v }),
+								lineWidth_key: veText(this.ui.import_lineWidth_key, { name: "Line Width Key", onuserchange: (v) => this.ui.import_lineWidth_key = v }),
+								name_key: veText(this.ui.import_name_key, { name: "Name Key", onuserchange: (v) => this.ui.import_name_key = v }),
+								polygonFill_key: veText(this.ui.import_polygonFill_key, { name: "Polygon Fill Key", onuserchange: (v) => this.ui.import_polygonFill_key = v }),
+								polygonOpacity_key: veText(this.ui.import_polygonOpacity_key, { name: "Polygon Opacity Key", onuserchange: (v) => this.ui.import_polygonOpacity_key = v }),
+							}, { name: "Symbol" }),
 							
-							end_year_key: veText(this.ui.import_end_year_key, { name: "End Year Key", onuserchange: (v) => this.ui.import_end_year_key = v }),
-							end_month_key: veText(this.ui.import_end_month_key, { name: "End Month Key", onuserchange: (v) => this.ui.import_end_month_key = v }),
-							end_day_key: veText(this.ui.import_end_day_key, { name: "End Day Key", onuserchange: (v) => this.ui.import_end_day_key = v }),
-							end_hour_key: veText(this.ui.import_end_hour_key, { name: "End Hour Key", onuserchange: (v) => this.ui.import_end_hour_key = v }),
-							end_minute_key: veText(this.ui.import_end_minute_key, { name: "End Minute Key", onuserchange: (v) => this.ui.import_end_minute_key = v }),
+							start_date: veInterface({
+								start_year_key: veText(this.ui.import_start_year_key, { name: "Start Year Key", onuserchange: (v) => this.ui.import_start_year_key = v }),
+								start_month_key: veText(this.ui.import_start_month_key, { name: "Start Month Key", onuserchange: (v) => this.ui.import_start_month_key = v }),
+								start_day_key: veText(this.ui.import_start_day_key, { name: "Start Day Key", onuserchange: (v) => this.ui.import_start_day_key = v }),
+								start_hour_key: veText(this.ui.import_start_hour_key, { name: "Start Hour Key", onuserchange: (v) => this.ui.import_start_hour_key = v }),
+								start_minute_key: veText(this.ui.import_start_minute_key, { name: "Start Minute Key", onuserchange: (v) => this.ui.import_start_minute_key = v }),
+							}, { name: "Start Date" }),
 							
-							start_year_key: veText(this.ui.import_start_year_key, { name: "Start Year Key", onuserchange: (v) => this.ui.import_start_year_key = v }),
-							start_month_key: veText(this.ui.import_start_month_key, { name: "Start Month Key", onuserchange: (v) => this.ui.import_start_month_key = v }),
-							start_day_key: veText(this.ui.import_start_day_key, { name: "Start Day Key", onuserchange: (v) => this.ui.import_start_day_key = v }),
-							start_hour_key: veText(this.ui.import_start_hour_key, { name: "Start Hour Key", onuserchange: (v) => this.ui.import_start_hour_key = v }),
-							start_minute_key: veText(this.ui.import_start_minute_key, { name: "Start Minute Key", onuserchange: (v) => this.ui.import_start_minute_key = v })
+							end_date: veInterface({
+								end_year_key: veText(this.ui.import_end_year_key, { name: "End Year Key", onuserchange: (v) => this.ui.import_end_year_key = v }),
+								end_month_key: veText(this.ui.import_end_month_key, { name: "End Month Key", onuserchange: (v) => this.ui.import_end_month_key = v }),
+								end_day_key: veText(this.ui.import_end_day_key, { name: "End Day Key", onuserchange: (v) => this.ui.import_end_day_key = v }),
+								end_hour_key: veText(this.ui.import_end_hour_key, { name: "End Hour Key", onuserchange: (v) => this.ui.import_end_hour_key = v }),
+								end_minute_key: veText(this.ui.import_end_minute_key, { name: "End Minute Key", onuserchange: (v) => this.ui.import_end_minute_key = v })
+							}, { name: "End Date" })
 						}, { 
-							name: "Feature Properties",
+							name: "Special Properties",
 							limit: () => this.ui.import_file_type !== "naissance"
 						}),
 						confirm: veButton(() => {

@@ -291,8 +291,8 @@ naissance.Geometry = class extends naissance.Entity {
 							//Buffer handling
 							let buffer_distance = Math.returnSafeNumber(this.ui.geometry_operation_buffer_distance, 0);
 							if (geometry_operation_type === "buffer") {
-								if (buffer_distance <= 0) {
-									veToast(`<icon>warning</icon> Buffer distance must be a positive number.`);
+								if (buffer_distance === 0) {
+									veToast(`<icon>warning</icon> Buffer distance must not be 0.`);
 									return;
 								}
 								
@@ -306,8 +306,7 @@ naissance.Geometry = class extends naissance.Entity {
 									type: geometry_operation_type,
 									feature_id: target_feature_id,
 									geometry_id: target_geometry_id,
-									
-									...options
+									options: options
 								}
 							});
 							
