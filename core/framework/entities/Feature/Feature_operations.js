@@ -60,7 +60,7 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		let is_singular = ["LineString", "Point", "Polygon"].includes(local_feature_type);
 		let local_maptalks_type = maptalks_type_map[local_feature_type];
 		let local_naissance_type = naissance_type_map[local_feature_type];
-		let local_properties = (local_feature.properties) ? local_feature.properties : {};
+		let local_properties = (local_feature.properties) ? JSON.parse(JSON.stringify(local_feature.properties)) : {};
 
 		if (!local_maptalks_type || !local_naissance_type) continue; //Internal guard clause for non-geometries
 
@@ -74,7 +74,7 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		if (options.polygonFill_key) local_symbol.polygonFill = Object.getValue(local_properties, options.polygonFill_key);
 		if (options.polygonOpacity_key) local_symbol.polygonOpacity = Object.getValue(local_properties, options.polygonOpacity_key);
 
-		//Construct date object with sensible defaults (Year 1, Month 1, Day 1)
+		//Construct date objects
 		let local_start_date = {
 			year: (options.start_year_key) ? (Object.getValue(local_properties, options.start_year_key) || 1) : main.date.year,
 			month: (options.start_month_key) ? (Object.getValue(local_properties, options.start_month_key) || 1) : main.date.month,
@@ -91,35 +91,30 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		};
 
 		let geometry_obj;
-		let local_id;
-		
-		if (options.id_key) {
-			local_id = Object.getValue(local_properties, options.id_key);
-			let existing_geometry = naissance.Geometry.instances[local_id];
+		let local_id = (options.id_key) ? Object.getValue(local_properties, options.id_key) : undefined;
 
-			if (existing_geometry) geometry_obj = existing_geometry;
-		}
+		//Merge logic: Look for existing global instance
+		if (local_id !== undefined) geometry_obj = naissance.Geometry.instances[local_id];
 
 		if (!geometry_obj) {
 			geometry_obj = new naissance[local_naissance_type]({ is_import: true });
 			geometry_obj.parent = this;
-			this.entities.push(geometry_obj);
+			if (local_id !== undefined) geometry_obj.setID(local_id);
 		}
 
-		//Create maptalks geometry and add keyframe
-		let local_maptalks_geometry = new maptalks[local_maptalks_type](local_coords);
-		
-		//Set ID; name
-		if (local_id !== undefined)
-			geometry_obj.setID(local_id);
+		//Ensure the entity is linked to this feature, even if it already existed globally
+		if (!this.entities.includes(geometry_obj)) this.entities.push(geometry_obj);
+
+		//Set name and properties
 		if (options.name_key) {
 			let local_name = Object.getValue(local_properties, options.name_key);
 			if (local_name) local_properties.name = local_name;
 		}
-		
-		//Add keyframe
+
+		//Create maptalks geometry and add keyframe
+		let local_maptalks_geometry = new maptalks[local_maptalks_type](local_coords);
 		geometry_obj.history.addKeyframe(local_start_date, local_maptalks_geometry.toJSON(), local_symbol, local_properties);
-		
+
 		//Add end date keyframe if applicable
 		let has_end_date = (local_end_date.year !== 0);
 		if (has_end_date) geometry_obj.history.addKeyframe(local_end_date, null);
