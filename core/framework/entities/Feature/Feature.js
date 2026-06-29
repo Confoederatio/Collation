@@ -613,7 +613,6 @@ naissance.Feature = class extends naissance.Entity {
 									options: local_options
 								}
 							}]);
-							main.renderer.update();
 							
 							veToast(`Import request for ${import_file_type} file sent to ${this.name}.`);
 						}, { name: "Confirm" })
