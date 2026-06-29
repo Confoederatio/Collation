@@ -507,6 +507,52 @@ naissance.Feature = class extends naissance.Entity {
 				}, {
 					name: "Flatten All Geometries"
 				}),
+				import_file: veButton(() => {
+					let import_file_type = (this.ui.import_file_type || "geojson");
+					if (!this.ui.import_file_options) this.ui.import_file_options = {};
+					
+					if (this.import_file_window) this.import_file_window.close();
+					this.import_file_window = veWindow({
+						file_type: veSelect({
+							csv: { name: "CSV (.csv)" },
+							geojson: { name: "GeoJSON (.geojson)" },
+							gpx: { name: "GPX (.gpx)" },
+							kml: { name: "KML (.kml)" },
+							kmz: { name: "KMZ (.kmz)" },
+							naissance: { name: "Naissance (.naissance)" },
+							osm: { name: "OSM (.osm)" },
+							polyline: { name: "Polyline (.polyline)" },
+							shp: { name: "Shapefile (.shp)" },
+							topojson: { name: "TopoJSON (.topojson)" }
+						}, {
+							name: "File Type",
+							onuserchange: (v) => this.ui.import_file_type = v,
+							selected: import_file_type
+						}),
+						file_path: veFile(this.ui.import_file_path, {
+							name: "Select File",
+							onuserchange: (v) => this.ui.import_file_path = v
+						}),
+						feature_properties: veInterface({
+							information: veHTML(`Feature properties map start/end dates and symbol properties into Naissance. Leaving a field blank means that it will not be passed when importing the file.`),
+							
+							
+						}, { 
+							name: "Feature Properties",
+							limit: () => this.ui.import_file_type !== "naissance"
+						}),
+						confirm: veButton(() => {
+							
+						}, { name: "Confirm" })
+					}, {
+						name: `Import File (${this.name})`,
+						can_rename: false,
+						width: "20rem"
+					})
+				}, {
+					name: "Import File",
+					limit: () => ["FeatureGroup", "FeatureLayer"].includes(this.class_name)
+				}),
 				merge_layers: veButton(() => {
 					if (this.merge_layers_window) this.merge_layers_window.close();
 					this.merge_layers_window = veWindow({

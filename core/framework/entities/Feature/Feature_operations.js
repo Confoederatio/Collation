@@ -2,7 +2,7 @@
  * Imports a file into the given Feature if possible.
  * 
  * @param {string} arg0_file_path
- * @param {string} [arg1_type] - Either 'csv'/'geojson'/'gpx'/'kml'/'kmz'/'naissance'/'osm'/'polyline'/'shp'/'topojson'/'wkt'
+ * @param {string} [arg1_type] - Either 'csv'/'geojson'/'gpx'/'kml'/'kmz'/'naissance'/'osm'/'polyline'/'shp'/'topojson'/'wkt'.
  * @param {Object} [arg2_options] - Key map once converted into GeoJSON.
  */
 naissance.Feature.importFile = function (arg0_file_path, arg1_type, arg2_options) {
