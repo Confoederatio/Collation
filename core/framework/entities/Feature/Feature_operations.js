@@ -1,38 +1,106 @@
-naissance.Feature.importFile = function (arg0_file_path, arg1_type) {
-	
+naissance.Feature.importFile = function (arg0_file_path, arg1_type, arg2_options) {
+	//Convert from parameters
 };
 
 /**
  * Imports a GeoJSON object into the current Feature.
- * 
+ *
  * @param {Object|string} arg0_geojson_obj
  * @param {Object} [arg1_options]
  *  @param {string} [arg1_options.id_key] - The ID key to look for in .properties.
  *  @param {string} [arg1_options.lineColor_key]
  *  @param {string} [arg1_options.lineOpacity_key]
  *  @param {string} [arg1_options.lineWidth_key]
+ *  @param {string} [arg1_options.name_key] - The name key to look for in .properties.
  *  @param {string} [arg1_options.polygonFill_key]
  *  @param {string} [arg1_options.polygonOpacity_key]
+ *
+ *  @param {string} [arg1_options.year_key]
+ *  @param {string} [arg1_options.month_key]
+ *  @param {string} [arg1_options.day_key]
+ *  @param {string} [arg1_options.hour_key]
+ *  @param {string} [arg1_options.minute_key]
  */
 naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 	//Convert from parameters
-	let geojson_obj = (typeof arg0_geojson_obj === "string") ? 
-		JSON.parse(arg0_geojson_obj) : arg0_geojson_obj;
+	let geojson_obj = (typeof arg0_geojson_obj === "string") ? JSON.parse(arg0_geojson_obj) : arg0_geojson_obj;
 	let options = (arg1_options) ? arg1_options : {};
-	
+
 	//Declare local instance variables
-	let type_map = {
-		"Point": "GeometryPoint",
-		"LineString": "GeometryLine",
-		"Polygon": "GeometryPolygon",
-		
-		"MultiPoint": "GeometryPoint",
-		"MultiLineString": "GeometryLine",
-		
+	let maptalks_type_map = {
+		"LineString": "MultiLineString",
+		"Point": "MultiPoint",
+		"Polygon": "MultiPolygon",
+
+		"MultiPoint": "MultiPoint",
+		"MultiPolygon": "MultiPolygon",
+		"MultiLineString": "MultiLineString",
 	};
-	
+	let naissance_type_map = {
+		"LineString": "GeometryLine",
+		"Point": "GeometryPoint",
+		"Polygon": "GeometryPolygon",
+
+		"MultiPoint": "GeometryPoint",
+		"MultiPolygon": "GeometryPolygon",
+		"MultiLineString": "GeometryLine",
+	};
+
 	//Iterate over all geojson_obj entries
-}
+	for (let i = 0; i < geojson_obj.features.length; i++) {
+		let local_feature = geojson_obj.features[i];
+		let local_feature_type = local_feature.geometry.type;
+
+		let is_singular = ["LineString", "Point", "Polygon"].includes(local_feature_type);
+		let local_maptalks_type = maptalks_type_map[local_feature_type];
+		let local_naissance_type = naissance_type_map[local_feature_type];
+		let local_properties = (local_feature.properties) ? local_feature.properties : {};
+
+		if (!local_maptalks_type || !local_naissance_type) continue; //Internal guard clause for non-geometries
+
+		let local_coords = (is_singular) ? [local_feature.geometry.coordinates] : local_feature.geometry.coordinates;
+
+		//Construct symbol
+		let local_symbol = {};
+		if (options.lineColor_key) local_symbol.lineColor = Object.getValue(local_properties, options.lineColor_key);
+		if (options.lineOpacity_key) local_symbol.lineOpacity = Object.getValue(local_properties, options.lineOpacity_key);
+		if (options.lineWidth_key) local_symbol.lineWidth = Object.getValue(local_properties, options.lineWidth_key);
+		if (options.polygonFill_key) local_symbol.polygonFill = Object.getValue(local_properties, options.polygonFill_key);
+		if (options.polygonOpacity_key) local_symbol.polygonOpacity = Object.getValue(local_properties, options.polygonOpacity_key);
+
+		//Construct date object with sensible defaults (Year 1, Month 1, Day 1)
+		let local_date = {
+			year: (options.year_key) ? (Object.getValue(local_properties, options.year_key) || 1) : main.date.year,
+			month: (options.month_key) ? (Object.getValue(local_properties, options.month_key) || 1) : main.date.month,
+			day: (options.day_key) ? (Object.getValue(local_properties, options.day_key) || 1) : main.date.day,
+			hour: (options.hour_key) ? (Object.getValue(local_properties, options.hour_key) || 0) : main.date.hour,
+			minute: (options.minute_key) ? (Object.getValue(local_properties, options.minute_key) || 0) : main.date.minute
+		};
+
+		let geometry_obj;
+		if (options.id_key) {
+			let local_id = Object.getValue(local_properties, options.id_key);
+			let existing_geometry = naissance.Geometry.instances[local_id];
+
+			if (existing_geometry) geometry_obj = existing_geometry;
+		}
+
+		if (!geometry_obj) {
+			geometry_obj = new naissance[local_naissance_type]({ is_import: true });
+			geometry_obj.parent = this;
+		}
+
+		//Create maptalks geometry and add keyframe
+		let local_maptalks_geometry = new maptalks[local_maptalks_type](local_coords);
+		if (options.name_key) {
+			let local_name = Object.getValue(local_properties, options.name_key);
+			if (local_name) local_properties.name = local_name;
+		}
+		
+		//Add keyframe
+		geometry_obj.addKeyframe(local_date, local_maptalks_geometry.toJSON(), local_symbol, local_properties);
+	}
+};
 
 naissance.Feature.operate = function (arg0_type, arg1_entity_id) {
 	//Convert from parameters
