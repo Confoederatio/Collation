@@ -31,6 +31,7 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 					this.value[2].label_geometries : [];
 				let label_name = (this.value[2].label_name) ?
 					this.value[2].label_name : this.value[2].name;
+				if (!label_name) return;
 				
 				//1. .label_coordinates
 				if (label_geometries.length === 0) {

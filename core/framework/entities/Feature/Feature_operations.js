@@ -1,5 +1,16 @@
+/**
+ * 
+ * @param {string} arg0_file_path
+ * @param {string} [arg1_type] - Either 'csv'/'geojson'/'gpx'/'kml'/'kmz'/'osm'/'polyline'/'shp'/'topojson'/'wkt'
+ * @param arg2_options
+ */
 naissance.Feature.importFile = function (arg0_file_path, arg1_type, arg2_options) {
 	//Convert from parameters
+	let file_path = path.resolve(arg0_file_path);
+	let type = arg1_type;
+	let options = (arg2_options) ? arg2_options : {};
+	
+	//Declare local instance variables
 };
 
 /**
@@ -55,9 +66,12 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 	//Iterate over all geojson_obj entries
 	for (let i = 0; i < geojson_obj.features.length; i++) {
 		let local_feature = geojson_obj.features[i];
+		if (!local_feature.geometry?.type) continue; //Internal guard clause if type is not defined
+		
 		let local_feature_type = local_feature.geometry.type;
 
-		let is_singular = ["LineString", "Point", "Polygon"].includes(local_feature_type);
+		let is_singular = ["LineString", "Point"].includes(local_feature_type);
+		
 		let local_maptalks_type = maptalks_type_map[local_feature_type];
 		let local_naissance_type = naissance_type_map[local_feature_type];
 		let local_properties = (local_feature.properties) ? JSON.parse(JSON.stringify(local_feature.properties)) : {};
@@ -67,12 +81,12 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		let local_coords = (is_singular) ? [local_feature.geometry.coordinates] : local_feature.geometry.coordinates;
 
 		//Construct symbol
-		let local_symbol = {};
-		if (options.lineColor_key) local_symbol.lineColor = Object.getValue(local_properties, options.lineColor_key);
-		if (options.lineOpacity_key) local_symbol.lineOpacity = Object.getValue(local_properties, options.lineOpacity_key);
-		if (options.lineWidth_key) local_symbol.lineWidth = Object.getValue(local_properties, options.lineWidth_key);
-		if (options.polygonFill_key) local_symbol.polygonFill = Object.getValue(local_properties, options.polygonFill_key);
-		if (options.polygonOpacity_key) local_symbol.polygonOpacity = Object.getValue(local_properties, options.polygonOpacity_key);
+		let local_symbol = (local_properties?.maptalks_symbol) ? local_properties.maptalks_symbol : {};
+			if (options.lineColor_key) local_symbol.lineColor = Object.getValue(local_properties, options.lineColor_key);
+			if (options.lineOpacity_key) local_symbol.lineOpacity = Object.getValue(local_properties, options.lineOpacity_key);
+			if (options.lineWidth_key) local_symbol.lineWidth = Object.getValue(local_properties, options.lineWidth_key);
+			if (options.polygonFill_key) local_symbol.polygonFill = Object.getValue(local_properties, options.polygonFill_key);
+			if (options.polygonOpacity_key) local_symbol.polygonOpacity = Object.getValue(local_properties, options.polygonOpacity_key);
 
 		//Construct date objects
 		let local_start_date = {
@@ -118,6 +132,14 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		//Add end date keyframe if applicable
 		let has_end_date = (local_end_date.year !== 0);
 		if (has_end_date) geometry_obj.history.addKeyframe(local_end_date, null);
+		
+		console.log(`naissance.Feature.importGeoJSON: Finished importing Feature ${i}/${geojson_obj.features.length}`, local_feature);
+		
+		if (local_feature_type === "Polygon") {
+			//DEBUG CLAUSE. This doesn't work, and we don't know why
+			window.$fatal_geometry = geometry_obj;
+			setTimeout(() => console.log(local_feature, geometry_obj), 1000);
+		}
 	}
 };
 

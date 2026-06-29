@@ -177,4 +177,43 @@ Geospatiale.maptalks_GeoKMZ = class {
 			geometries[i].maptalks_obj.remove(this.layer);
 		delete this.geometries_obj[input_file_path];
 	}
+	
+	static toGeoJSON (arg0_file_path, arg1_options) {
+		//Convert from parameters
+		let file_path = arg0_file_path;
+		let options = (arg1_options) ? arg1_options : {};
+	
+		//Return statement
+		return new Promise((resolve, reject) => {
+			//Internal guard clause
+			if (!fs.existsSync(file_path)) return reject(`File not found: ${file_path}`);
+	
+			//Instantiate the GeoKMZ handler to process the file using internal Leaflet-to-Maptalks logic
+			new Geospatiale.maptalks_GeoKMZ(file_path, {
+				onload: function (kmz_instance) {
+					let feature_collection = {
+						type: "FeatureCollection",
+						features: [],
+					};
+					let layer_geometries = kmz_instance.layer.getGeometries();
+	
+					//Iterate over processed maptalks geometries and convert back to GeoJSON
+					for (let i = 0; i < Math.min(layer_geometries.length, Infinity); i++) {
+						let local_feature = layer_geometries[i].toGeoJSON();
+	
+						//Ensure properties exist and store symbol data
+						if (!local_feature.properties) local_feature.properties = {};
+						local_feature.properties.maptalks_symbol =
+							layer_geometries[i].getSymbol();
+	
+						feature_collection.features.push(local_feature);
+					}
+	
+					resolve(feature_collection);
+				},
+				do_not_display_popups: true,
+				...options,
+			});
+		});
+	}
 };
