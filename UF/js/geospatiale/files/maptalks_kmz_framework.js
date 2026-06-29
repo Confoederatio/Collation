@@ -178,6 +178,15 @@ Geospatiale.maptalks_GeoKMZ = class {
 		delete this.geometries_obj[input_file_path];
 	}
 	
+	/**
+	 * Converts a KMZ file to valid GeoJSON.
+	 * - Static method of: {@link Geospatiale.maptalks_GeoKMZ}
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_options]
+	 * 
+	 * @returns {Promise<Object>}
+	 */
 	static toGeoJSON (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = arg0_file_path;
@@ -190,21 +199,30 @@ Geospatiale.maptalks_GeoKMZ = class {
 	
 			//Instantiate the GeoKMZ handler to process the file using internal Leaflet-to-Maptalks logic
 			new Geospatiale.maptalks_GeoKMZ(file_path, {
-				onload: function (kmz_instance) {
+				onload: function (kmz_instance, arg1_geometries) {
 					let feature_collection = {
 						type: "FeatureCollection",
 						features: [],
 					};
-					let layer_geometries = kmz_instance.layer.getGeometries();
+					let geometries = arg1_geometries;
 	
 					//Iterate over processed maptalks geometries and convert back to GeoJSON
-					for (let i = 0; i < Math.min(layer_geometries.length, Infinity); i++) {
-						let local_feature = layer_geometries[i].toGeoJSON();
+					for (let i = 0; i < geometries.length; i++) {
+						let local_item = geometries[i];
+						let local_geometry = local_item.maptalks_obj;
+						let local_feature = local_geometry.toGeoJSON();
 	
 						//Ensure properties exist and store symbol data
 						if (!local_feature.properties) local_feature.properties = {};
-						local_feature.properties.maptalks_symbol =
-							layer_geometries[i].getSymbol();
+						
+						//Assign popup_title to name if it exists in the processed properties
+						if (local_item.properties) {
+							if (local_item.properties.popup_title) local_feature.properties.name = local_item.properties.popup_title;
+							delete local_item.properties.popup_title;
+							local_item.properties = { ...local_item.properties, ...local_feature.properties };
+						}
+						
+						local_feature.properties.maptalks_symbol = local_geometry.getSymbol();
 	
 						feature_collection.features.push(local_feature);
 					}

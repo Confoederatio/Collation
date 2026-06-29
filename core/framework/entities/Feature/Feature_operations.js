@@ -1,16 +1,101 @@
 /**
+ * Imports a file into the given Feature if possible.
  * 
  * @param {string} arg0_file_path
- * @param {string} [arg1_type] - Either 'csv'/'geojson'/'gpx'/'kml'/'kmz'/'osm'/'polyline'/'shp'/'topojson'/'wkt'
- * @param arg2_options
+ * @param {string} [arg1_type] - Either 'csv'/'geojson'/'gpx'/'kml'/'kmz'/'naissance'/'osm'/'polyline'/'shp'/'topojson'/'wkt'
+ * @param {Object} [arg2_options] - Key map once converted into GeoJSON.
  */
 naissance.Feature.importFile = function (arg0_file_path, arg1_type, arg2_options) {
 	//Convert from parameters
 	let file_path = path.resolve(arg0_file_path);
-	let type = arg1_type;
+	let type = (arg1_type) ? arg1_type : "geojson";
 	let options = (arg2_options) ? arg2_options : {};
 	
-	//Declare local instance variables
+	if (!fs.existsSync(file_path)) {
+		console.error(`File ${file_path} does not exist.`);
+		return;
+	}
+	
+	//Handle .naissance files
+	if (type === "csv") {
+		maptalks.Formats.csv(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "geojson") {
+		naissance.Feature.importGeoJSON.call(this, fs.readFileSync(file_path, "utf8"), options);
+	} else if (type === "gpx") {
+		maptalks.Formats.gpx(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "kml") {
+		maptalks.Formats.kml(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "kmz") {
+		Geospatiale.maptalks_GeoKMZ.toGeoJSON(file_path).then((geojson) => 
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "naissance") {
+		let json = JSON.parse(fs.readFileSync(file_path, "utf8"));
+		
+		//Iterate over JSON to load in each class
+		Object.iterate(json, (local_key, local_value) => {
+			if (local_value.class_name) {
+				//1. Handle naissance.Geometry classes
+				if (local_value.type === "geometry") {
+					let geometry_obj = new naissance[local_value.class_name]({ is_import: true });
+					
+					//ID/History/Metadata deserialisation
+					if (local_value.id) {
+						let has_id = naissance.Geometry.instances[local_value.id];
+						
+						if (!has_id) {
+							geometry_obj.setID(local_value.id);
+						} else {
+							local_value.metadata.linked_id = local_value.id;
+						}
+					}
+					geometry_obj.history.fromJSON(local_value.history);
+					if (local_value.metadata) geometry_obj.metadata = local_value.metadata;
+					
+					geometry_obj.parent = this;
+					this.entities.push(geometry_obj);
+				}
+				//2. Handle naissance.Feature classes
+				else if (local_value.type === "feature") {
+					let feature_obj = new naissance[local_value.class_name](undefined, {
+						metadata: local_value.metadata
+					});
+					
+					if (local_value.value) feature_obj.json = local_value.value;
+				}
+				
+				//3. Features must be rendered separately
+				Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
+					if (local_feature.json) {
+						local_feature.fromJSON(local_feature.json);
+						try {
+							//if (local_feature.draw) local_feature.draw();
+						} catch (e) { console.warn(e); }
+						
+						local_feature.parent = this;
+						this.entities.push(local_feature);
+					}
+				});
+			}
+		});
+	} else if (type === "osm") {
+		maptalks.Formats.osm(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "polyline") {
+		maptalks.Formats.polyline(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "shp") {
+		shp(fs.readFileSync(file_path)).then((geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "topojson") {
+		maptalks.Formats.topojson(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	} else if (type === "wkt") {
+		maptalks.Formats.wkt(file_path, (err, geojson) =>
+			naissance.Feature.importGeoJSON.call(this, geojson, options));
+	}
 };
 
 /**
@@ -132,14 +217,6 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		//Add end date keyframe if applicable
 		let has_end_date = (local_end_date.year !== 0);
 		if (has_end_date) geometry_obj.history.addKeyframe(local_end_date, null);
-		
-		console.log(`naissance.Feature.importGeoJSON: Finished importing Feature ${i}/${geojson_obj.features.length}`, local_feature);
-		
-		if (local_feature_type === "Polygon") {
-			//DEBUG CLAUSE. This doesn't work, and we don't know why
-			window.$fatal_geometry = geometry_obj;
-			setTimeout(() => console.log(local_feature, geometry_obj), 1000);
-		}
 	}
 };
 
