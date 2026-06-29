@@ -14,12 +14,18 @@ naissance.Feature.importFile = function (arg0_file_path, arg1_type, arg2_options
  *  @param {string} [arg1_options.name_key] - The name key to look for in .properties.
  *  @param {string} [arg1_options.polygonFill_key]
  *  @param {string} [arg1_options.polygonOpacity_key]
+ *  
+ *  @param {string} [arg1_options.end_year_key]
+ *  @param {string} [arg1_options.end_month_key]
+ *  @param {string} [arg1_options.end_day_key]
+ *  @param {string} [arg1_options.end_hour_key]
+ *  @param {string} [arg1_options.end_minute_key]
  *
- *  @param {string} [arg1_options.year_key]
- *  @param {string} [arg1_options.month_key]
- *  @param {string} [arg1_options.day_key]
- *  @param {string} [arg1_options.hour_key]
- *  @param {string} [arg1_options.minute_key]
+ *  @param {string} [arg1_options.start_year_key]
+ *  @param {string} [arg1_options.start_month_key]
+ *  @param {string} [arg1_options.start_day_key]
+ *  @param {string} [arg1_options.start_hour_key]
+ *  @param {string} [arg1_options.start_minute_key]
  */
 naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 	//Convert from parameters
@@ -69,17 +75,26 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		if (options.polygonOpacity_key) local_symbol.polygonOpacity = Object.getValue(local_properties, options.polygonOpacity_key);
 
 		//Construct date object with sensible defaults (Year 1, Month 1, Day 1)
-		let local_date = {
-			year: (options.year_key) ? (Object.getValue(local_properties, options.year_key) || 1) : main.date.year,
-			month: (options.month_key) ? (Object.getValue(local_properties, options.month_key) || 1) : main.date.month,
-			day: (options.day_key) ? (Object.getValue(local_properties, options.day_key) || 1) : main.date.day,
-			hour: (options.hour_key) ? (Object.getValue(local_properties, options.hour_key) || 0) : main.date.hour,
-			minute: (options.minute_key) ? (Object.getValue(local_properties, options.minute_key) || 0) : main.date.minute
+		let local_start_date = {
+			year: (options.start_year_key) ? (Object.getValue(local_properties, options.start_year_key) || 1) : main.date.year,
+			month: (options.start_month_key) ? (Object.getValue(local_properties, options.start_month_key) || 1) : main.date.month,
+			day: (options.start_day_key) ? (Object.getValue(local_properties, options.start_day_key) || 1) : main.date.day,
+			hour: (options.start_hour_key) ? (Object.getValue(local_properties, options.start_hour_key) || 0) : main.date.hour,
+			minute: (options.start_minute_key) ? (Object.getValue(local_properties, options.start_minute_key) || 0) : main.date.minute
+		};
+		let local_end_date = {
+			year: (options.end_year_key) ? (Object.getValue(local_properties, options.end_year_key) || 1) : 0,
+			month: (options.end_month_key) ? (Object.getValue(local_properties, options.end_month_key) || 1) : 1,
+			day: (options.end_day_key) ? (Object.getValue(local_properties, options.end_day_key) || 1) : 1,
+			hour: (options.end_hour_key) ? (Object.getValue(local_properties, options.end_hour_key) || 0) : 0,
+			minute: (options.end_minute_key) ? (Object.getValue(local_properties, options.end_minute_key) || 0) : 0
 		};
 
 		let geometry_obj;
+		let local_id;
+		
 		if (options.id_key) {
-			let local_id = Object.getValue(local_properties, options.id_key);
+			local_id = Object.getValue(local_properties, options.id_key);
 			let existing_geometry = naissance.Geometry.instances[local_id];
 
 			if (existing_geometry) geometry_obj = existing_geometry;
@@ -88,17 +103,26 @@ naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
 		if (!geometry_obj) {
 			geometry_obj = new naissance[local_naissance_type]({ is_import: true });
 			geometry_obj.parent = this;
+			this.entities.push(geometry_obj);
 		}
 
 		//Create maptalks geometry and add keyframe
 		let local_maptalks_geometry = new maptalks[local_maptalks_type](local_coords);
+		
+		//Set ID; name
+		if (local_id !== undefined)
+			geometry_obj.setID(local_id);
 		if (options.name_key) {
 			let local_name = Object.getValue(local_properties, options.name_key);
 			if (local_name) local_properties.name = local_name;
 		}
 		
 		//Add keyframe
-		geometry_obj.addKeyframe(local_date, local_maptalks_geometry.toJSON(), local_symbol, local_properties);
+		geometry_obj.history.addKeyframe(local_start_date, local_maptalks_geometry.toJSON(), local_symbol, local_properties);
+		
+		//Add end date keyframe if applicable
+		let has_end_date = (local_end_date.year !== 0);
+		if (has_end_date) geometry_obj.history.addKeyframe(local_end_date, null);
 	}
 };
 
@@ -142,7 +166,7 @@ naissance.Feature.operate = function (arg0_type, arg1_entity_id) {
 					let geometry_obj = new naissance[ot_geometries[i].class_name]({ is_import: true });
 					geometry_obj.addKeyframe(main.date, ot_geometries[i].geometry.toJSON());
 					geometry_obj.parent = this;
-					geometry_obj.entities.push(ot_geometries[i]);
+					this.entities.push(ot_geometries[i]);
 				}
 			}
 		} else {
