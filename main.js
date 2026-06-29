@@ -8,7 +8,7 @@ let { performance } = require("perf_hooks");
 
 //Metadata - Title
 let latest_fps = 0;
-let naissance_version = "1.9 California";
+let naissance_version = "1.91 Leyte";
 let title_update_interval;
 let win;
 
