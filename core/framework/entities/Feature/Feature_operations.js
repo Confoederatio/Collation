@@ -1,3 +1,39 @@
+naissance.Feature.importFile = function (arg0_file_path, arg1_type) {
+	
+};
+
+/**
+ * Imports a GeoJSON object into the current Feature.
+ * 
+ * @param {Object|string} arg0_geojson_obj
+ * @param {Object} [arg1_options]
+ *  @param {string} [arg1_options.id_key] - The ID key to look for in .properties.
+ *  @param {string} [arg1_options.lineColor_key]
+ *  @param {string} [arg1_options.lineOpacity_key]
+ *  @param {string} [arg1_options.lineWidth_key]
+ *  @param {string} [arg1_options.polygonFill_key]
+ *  @param {string} [arg1_options.polygonOpacity_key]
+ */
+naissance.Feature.importGeoJSON = function (arg0_geojson_obj, arg1_options) {
+	//Convert from parameters
+	let geojson_obj = (typeof arg0_geojson_obj === "string") ? 
+		JSON.parse(arg0_geojson_obj) : arg0_geojson_obj;
+	let options = (arg1_options) ? arg1_options : {};
+	
+	//Declare local instance variables
+	let type_map = {
+		"Point": "GeometryPoint",
+		"LineString": "GeometryLine",
+		"Polygon": "GeometryPolygon",
+		
+		"MultiPoint": "GeometryPoint",
+		"MultiLineString": "GeometryLine",
+		
+	};
+	
+	//Iterate over all geojson_obj entries
+}
+
 naissance.Feature.operate = function (arg0_type, arg1_entity_id) {
 	//Convert from parameters
 	let type = (arg0_type) ? arg0_type : "union";

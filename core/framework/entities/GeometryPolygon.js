@@ -38,7 +38,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 	_drawLabels () {
 		if (this.value[2]) { //[WIP] - Refactor labelling logic at a later date
 			//Declare local instance variables
-			let brush_symbol = main.brush.getBrushSymbol();
 			let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
 			let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
 			

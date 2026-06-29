@@ -973,9 +973,9 @@ naissance.Geometry = class extends naissance.Entity {
 						this.geometry.getLength()/1000 : 0;
 					return `${format_string} | Length: ${String.formatNumber(length_km)}km`;
 				} else if (this.class_name === "GeometryPoint") {
-					let coordinates = (this.geometry && this.isOpen("instance")) ?
-						this.geometry.getCoordinates().toJSON() : { x: 0, y: 0 }
-					return `${format_string} | X: ${String.formatNumber(coordinates.x, 4)}, Y: ${String.formatNumber(coordinates.y, 4)}`;
+					let coords = this.geometry.getCoordinates();
+					
+					return `${format_string} | ${String.truncate(String.formatMaptalksCoords(coords), 40)} (${String.formatNumber(coords.length)} total)`;
 				}
 					
 			}),
