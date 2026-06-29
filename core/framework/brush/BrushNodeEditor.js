@@ -14,6 +14,11 @@ naissance.BrushNodeEditor = class extends ve.Class {
 		this._mousemove_listener = (e) => { this.onmousemove(e); };
 	}
 	
+	addNode (coord) {
+		this.coords.push(coord);
+		this.draw();
+	}
+	
 	disable () {
 		this.enabled = false;
 		this.coords = [];
@@ -26,9 +31,35 @@ naissance.BrushNodeEditor = class extends ve.Class {
 		map.off("mousemove", this._mousemove_listener);
 	}
 	
+	draw (temp_coord) {
+		if (this.geometry) this.geometry.remove();
+		
+		let draw_coords = [...this.coords];
+		if (temp_coord) draw_coords.push(temp_coord);
+		
+		if (draw_coords.length < 2) return;
+		
+		let fill_color = (this.type === "remove") ? "rgba(240, 60, 60, 0.5)" : "rgba(255, 255, 255, 0.5)";
+		let stroke_color = (this.type === "remove") ? "rgba(240, 60, 60, 1)" : "rgba(255, 255, 255, 1)";
+		
+		let current_mode = "Polygon";
+		if (this.mode === "LineString" || this.mode === "FreeHandLineString")
+			current_mode = "LineString";
+		this.geometry = new maptalks[current_mode](draw_coords, {
+			symbol: {
+				polygonFill: fill_color,
+				lineColor: stroke_color,
+				lineWidth: 2
+			}
+		});
+		
+		this.geometry.addTo(main.layers.cursor_layer);
+	}
+	
 	enable () {
 		this.disable();
 		this.enabled = true;
+		this.type = "add";
 		
 		map.on("click", this._click_listener);
 		map.on("dblclick", this._dblclick_listener);
@@ -36,7 +67,10 @@ naissance.BrushNodeEditor = class extends ve.Class {
 	}
 	
 	onclick (e) {
-		this.type = HTML.ctrl_pressed ? "remove" : "add";
+		if (HTML.ctrl_pressed && ["FreeHandLineString", "LineString"].includes(this.mode))
+			return; //Remove isn;t valid for GeometryLine
+		
+		this.type = (HTML.ctrl_pressed) ? "remove" : "add";
 		this.addNode(e.coordinate);
 	}
 	
@@ -66,36 +100,6 @@ naissance.BrushNodeEditor = class extends ve.Class {
 		
 		this.disable();
 		this.enable();
-	}
-	
-	addNode (coord) {
-		this.coords.push(coord);
-		this.draw();
-	}
-	
-	draw (temp_coord) {
-		if (this.geometry) this.geometry.remove();
-		
-		let draw_coords = [...this.coords];
-		if (temp_coord) draw_coords.push(temp_coord);
-		
-		if (draw_coords.length < 2) return;
-		
-		let fill_color = (this.type === "remove") ? "rgba(240, 60, 60, 0.5)" : "rgba(255, 255, 255, 0.5)";
-		let stroke_color = (this.type === "remove") ? "rgba(240, 60, 60, 1)" : "rgba(255, 255, 255, 1)";
-		
-		let current_mode = "Polygon";
-		if (this.mode === "LineString" || this.mode === "FreeHandLineString")
-			current_mode = "LineString";
-		this.geometry = new maptalks[current_mode](draw_coords, {
-			symbol: {
-				polygonFill: fill_color,
-				lineColor: stroke_color,
-				lineWidth: 2
-			}
-		});
-		
-		this.geometry.addTo(main.layers.cursor_layer);
 	}
 	
 	update () {
