@@ -11,7 +11,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any[]"
 		}],
 		output_type: "any",
-		special_function: (arg0_function_key, arg1_arguments_array) => {
+		special_function: function (arg0_function_key, arg1_arguments_array) {
 			//Convert from parameters
 			let function_key = arg0_function_key;
 			let arguments_array = arg1_arguments_array;
@@ -19,9 +19,10 @@ ve.NodeEditor.Forse.functions = {
 			//Return statement
 			return {
 				display_value: loc("ve.registry.localisation.Forse_display_run_global", function_key),
-				run: () => {
+				run: function () {
 					try {
-						return Object.getValue(global, function_key)(...arguments_array);
+						console.log(this, arguments_array);
+						return Object.getValue(global, function_key).call(this, ...arguments_array);
 					} catch (e) { console.error(e); }
 				}
 			};
@@ -253,7 +254,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "script"
 		}],
 		output_type: "any",
-		special_function: (arg0_script) => {
+		special_function: function (arg0_script) {
 			//Convert from parameters
 			let script = arg0_script;
 			
@@ -264,14 +265,16 @@ ve.NodeEditor.Forse.functions = {
 			try {
 				if (fs.existsSync(script)) {
 					let script_value = fs.readFileSync(script, "utf8");
-					return_value = eval(script_value);
+					let script_function = new Function(script_value);
+					
+					return_value = script_function.call(this);
 				}
 			} catch (e) { console.error(e); }
 			
 			//Return statement
 			return {
 				display_value: loc("ve.registry.localisation.Forse_display_run_script", path.basename(script)),
-				run: () => return_value,
+				run: function () { return return_value; },
 				value: return_value
 			};
 		}
