@@ -21,7 +21,6 @@ ve.NodeEditor.Forse.functions = {
 				display_value: loc("ve.registry.localisation.Forse_display_run_global", function_key),
 				run: function () {
 					try {
-						console.log(this, arguments_array);
 						return Object.getValue(global, function_key).call(this, ...arguments_array);
 					} catch (e) { console.error(e); }
 				}
@@ -39,7 +38,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any[]"
 		}],
 		output_type: "any",
-		special_function: (arg0_function_key, arg1_arguments_array) => {
+		special_function: function (arg0_function_key, arg1_arguments_array) {
 			//Convert from parameters
 			let function_key = arg0_function_key;
 			let arguments_array = arg1_arguments_array;
@@ -53,7 +52,7 @@ ve.NodeEditor.Forse.functions = {
 			//Return statement
 			return {
 				display_value: loc("ve.registry.localisation.Forse_display_run_global", function_key),
-				run: () => return_value,
+				run: function () { return return_value; },
 				value: return_value
 			};
 		}
@@ -74,7 +73,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any[]"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable, arg1_method_key, arg2_arguments_array) => {
+		special_function: function (arg0_variable, arg1_method_key, arg2_arguments_array) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			let method_key = arg1_method_key;
@@ -83,7 +82,7 @@ ve.NodeEditor.Forse.functions = {
 			//Return statement
 			return {
 				display_value: loc("ve.registry.localisation.Forse_display_run_class_method", method_key),
-				run: () => {
+				run: function () {
 					try {
 						return variable[method_key](...arguments_array);
 					} catch (e) { console.error(e); }
@@ -105,7 +104,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any[]"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable, arg1_method_key, arg2_arguments_array) => {
+		special_function: function (arg0_variable, arg1_method_key, arg2_arguments_array) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			let method_key = arg1_method_key;
@@ -120,7 +119,7 @@ ve.NodeEditor.Forse.functions = {
 			//Return statement
 			return {
 				display_value: loc("ve.registry.localisation.Forse_display_run_class_method", method_key),
-				run: () => return_value,
+				run: function () { return return_value; },
 				value: return_value
 			};
 		}
@@ -136,7 +135,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "string"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable, arg1_field_key) => {
+		special_function: function (arg0_variable, arg1_field_key) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			let field_key = arg1_field_key;
@@ -162,7 +161,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable, arg1_field_key, arg2_value) => {
+		special_function: function (arg0_variable, arg1_field_key, arg2_value) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			let field_key = arg1_field_key;
@@ -188,7 +187,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable) => {
+		special_function: function (arg0_variable) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			
@@ -210,7 +209,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable) => {
+		special_function: function (arg0_variable) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			
@@ -232,7 +231,7 @@ ve.NodeEditor.Forse.functions = {
 			type: "any"
 		}],
 		output_type: "any",
-		special_function: (arg0_variable) => {
+		special_function: function (arg0_variable) {
 			//Convert from parameters
 			let variable = arg0_variable;
 			
@@ -265,9 +264,7 @@ ve.NodeEditor.Forse.functions = {
 			try {
 				if (fs.existsSync(script)) {
 					let script_value = fs.readFileSync(script, "utf8");
-					let script_function = new Function(script_value);
-					
-					return_value = script_function.call(this);
+					return_value = eval(script_value);
 				}
 			} catch (e) { console.error(e); }
 			
