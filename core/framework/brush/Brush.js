@@ -541,10 +541,11 @@ naissance.Brush = class extends ve.Class {
 		
 		//Iterate over naissance.Geometry.instances and check for .selected
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
-			json_obj.value.push({
-				geometry_obj: local_geometry.id,
-				set_properties: properties_obj
-			});
+			if (local_geometry.selected)
+				json_obj.value.push({
+					geometry_obj: local_geometry.id,
+					set_properties: properties_obj
+				});
 		});
 		DALS.Timeline.parseAction("set_selected_properties", json_obj);
 	}
