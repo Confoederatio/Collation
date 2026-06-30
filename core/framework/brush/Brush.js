@@ -548,6 +548,6 @@ naissance.Brush = class extends ve.Class {
 				set_properties: properties_obj
 			});
 		});
-		DALS.Timeline.parseAction(json_obj);
+		DALS.Timeline.parseAction("set_selected_properties", json_obj);
 	}
 };
