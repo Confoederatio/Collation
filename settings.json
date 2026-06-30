@@ -37,6 +37,7 @@
   "default_label_symbol": {
     "textFaceName": "Barlow",
     "textHaloRadius": 2,
-    "textHaloFill": "#191919"
+    "textHaloFill": "#191919",
+    "hide_label": false
   }
 }
