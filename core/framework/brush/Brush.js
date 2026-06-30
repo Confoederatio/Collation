@@ -542,9 +542,7 @@ naissance.Brush = class extends ve.Class {
 		//Iterate over naissance.Geometry.instances and check for .selected
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
 			json_obj.value.push({
-				type: "Geometry",
-				
-				geometry_id: local_geometry.id,
+				geometry_obj: local_geometry.id,
 				set_properties: properties_obj
 			});
 		});
