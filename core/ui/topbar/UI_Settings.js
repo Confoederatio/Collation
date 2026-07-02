@@ -118,6 +118,14 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 										UI_Settings.refresh();
 										UI_Settings.saveSettings();
 									}
+								}),
+								use_fallback_wiki: veToggle(main.settings.use_fallback_wiki, {
+									name: "Use Fallback Wiki",
+									onuserchange: (v) => {
+										main.settings.use_fallback_wiki = v;
+										UI_Settings.saveSettings();
+									},
+									tooltip: "Fallback mirror through docs.confoederatio.org instead of confoederatiodocs.info."
 								})
 							}
 						},

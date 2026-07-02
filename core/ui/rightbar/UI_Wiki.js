@@ -1,6 +1,7 @@
 global.UI_Wiki = class extends ve.Class {
-	static naissance_folder = "https://docs.confoederatio.org/en/";
-	static naissance_url = `${this.naissance_folder}/Naissance`;
+	//[WIP] - Turn into website registry instead of a toggle
+	static fallback_naissance_folder = "https://docs.confoederatio.org/en/";
+	static naissance_folder = "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/";
 	
 	constructor () {
 		super();
@@ -36,6 +37,11 @@ global.UI_Wiki = class extends ve.Class {
 		//Close Tutorial window if open
 		if (main.interfaces.tutorial_window) main.interfaces.tutorial_window.close();
 		
+		//Declare local instance variables
+		let naissance_folder = (!main.settings.use_fallback_wiki) ?
+			UI_Wiki.naissance_folder : UI_Wiki.fallback_naissance_folder;
+		let naissance_url = `${naissance_folder}/Naissance`;
+		
 		//Open window and navigate back to home
 		super.open("instance", {
 			anchor: "top_right",
@@ -56,9 +62,9 @@ global.UI_Wiki = class extends ve.Class {
 			}
 		});
 		
-		if (!this.wiki.v.startsWith(UI_Wiki.naissance_folder))
+		if (!this.wiki.v.startsWith(naissance_folder))
 			setTimeout(() => {
-				this.wiki.element.loadURL(UI_Wiki.naissance_url);
+				this.wiki.element.loadURL(naissance_url);
 			}, 100);
 	}
 };
