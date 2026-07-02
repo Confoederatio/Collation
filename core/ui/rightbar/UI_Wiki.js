@@ -1,7 +1,9 @@
 global.UI_Wiki = class extends ve.Class {
 	//[WIP] - Turn into website registry instead of a toggle
-	static fallback_naissance_folder = "https://docs.confoederatio.org/en/";
-	static naissance_folder = "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/";
+	static wiki_urls = {
+		obsidian: "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/",
+		wikijs: "https://docs.confoederatio.org/en/"
+	};
 	
 	constructor () {
 		super();
@@ -38,8 +40,7 @@ global.UI_Wiki = class extends ve.Class {
 		if (main.interfaces.tutorial_window) main.interfaces.tutorial_window.close();
 		
 		//Declare local instance variables
-		let naissance_folder = (!main.settings.use_fallback_wiki) ?
-			UI_Wiki.naissance_folder : UI_Wiki.fallback_naissance_folder;
+		let naissance_folder = UI_Wiki.wiki_urls[(main.settings.wiki_service || "obsidian")];
 		let naissance_url = `${naissance_folder}/Naissance`;
 		
 		//Open window and navigate back to home

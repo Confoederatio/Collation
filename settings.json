@@ -40,5 +40,6 @@
     "textHaloFill": "#191919",
     "hide_label": false
   },
-  "use_fallback_wiki": false
+  "use_fallback_wiki": false,
+  "wiki_service": "obsidian"
 }

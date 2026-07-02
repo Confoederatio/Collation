@@ -119,13 +119,17 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 										UI_Settings.saveSettings();
 									}
 								}),
-								use_fallback_wiki: veToggle(main.settings.use_fallback_wiki, {
-									name: "Use Fallback Wiki",
+								wiki_service: veSelect({
+									obsidian: { name: "Obsidian Publish" },
+									wikijs: { name: "Wiki.js" }
+								}, {
+									name: "Wiki Service",
+									selected: (main.settings.wiki_service || "obsidian"),
+									tooltip: "Changes the Confoederatio wiki service used by default.",
 									onuserchange: (v) => {
-										main.settings.use_fallback_wiki = v;
+										main.settings.wiki_service = v;
 										UI_Settings.saveSettings();
 									},
-									tooltip: "Fallback mirror through docs.confoederatio.org instead of confoederatiodocs.info."
 								})
 							}
 						},
