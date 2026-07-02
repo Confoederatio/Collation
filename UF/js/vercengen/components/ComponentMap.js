@@ -150,6 +150,9 @@ ve.Map = class extends ve.Component {
 		}
 	}
 	
+	/**
+	 * Handles default events for the given map.
+	 */
 	handleEvents () {
 		this.map.on("click", (e) => {
 			this.map.mouse_click_coords = e.coordinate.toJSON();
@@ -195,6 +198,9 @@ ve.Map = class extends ve.Component {
 		if (this.options.onmapload) this.options.onmapload(this);
 	}
 	
+	/**
+	 * Refreshes the current map.
+	 */
 	refresh () {
 		//Declare local instance variables
 		let json = this.map.toJSON();
