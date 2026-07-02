@@ -16,6 +16,9 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		 * @type {Array<naissance.Feature|naissance.Geometry>}
 		 */
 		this.entities = (arg0_entities) ? arg0_entities : [];
+		this.metadata = {
+			show_layer_features: true
+		};
 		this.options = (arg1_options) ? arg1_options : {};
 		this.window = new UI_FeatureLayerWindow(this);
 		

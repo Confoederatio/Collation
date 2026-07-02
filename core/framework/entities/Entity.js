@@ -123,6 +123,10 @@ naissance.Entity = class extends ve.Class {
 				}
 		}
 		
+		//Check if this is a group
+		let is_group = Boolean(this.entities);
+			if (!show_features && !show_geometries) is_group = false;
+		
 		//Return statement
 		this.hierarchy_datatype = new ve.HierarchyDatatype({
 			icon: new ve.HTML(`${(symbol_obj.icon) ? `<icon style="${icon_style}">${symbol_obj.icon}</icon>` : ""}`, {
@@ -163,7 +167,7 @@ naissance.Entity = class extends ve.Class {
 				if (v === false)
 					UI_Leftbar.refresh();
 			},
-			type: (!this.entities) ? "item" : "group"
+			type: (!is_group) ? "item" : "group"
 		});
 		delete this._current_keyframe;
 		return this.hierarchy_datatype;

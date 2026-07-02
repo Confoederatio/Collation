@@ -72,7 +72,13 @@ global.UI_LeftbarHierarchy = class {
 			if (!local_instance) return;
 			
 			if (local_instance instanceof naissance.Feature && local_instance.entities !== undefined) {
-				DALS.Timeline.parseAction("select_feature", [{ type: "Brush", select_feature_id: local_instance.id }]);
+				let already_selected = (main.brush.selected_feature?.id === local_instance.id);
+				
+				if (!already_selected) {
+					DALS.Timeline.parseAction("select_feature", [{ type: "Brush", select_feature_id: local_instance.id }]);
+				} else {
+					DALS.Timeline.parseAction("deselect_feature", [{ type: "Brush", select_feature_id: false }]);
+				}
 			} else {
 				let already_selected = (main.brush.selected_geometry?.id === local_instance.id);
 				
