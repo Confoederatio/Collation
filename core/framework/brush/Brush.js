@@ -385,7 +385,7 @@ naissance.Brush = class extends ve.Class {
 			
 			for (let i = 0; i < all_geometries.length; i++)
 				if (all_geometries[i].containsPoint(e.coordinate)) {
-					if (this._selected_geometry.getLayer()?._type === "provinces") {
+					if (this._selected_geometry.getLayer()?.type === "provinces") {
 						veToast(`<icon>warning</icon> You cannot use the fill tool on Polygons that are currently in a Province Layer!`);
 						break;
 					}
@@ -430,7 +430,7 @@ naissance.Brush = class extends ve.Class {
 			if (this._selected_geometry instanceof naissance.GeometryPolygon && (HTML.left_click || HTML.right_click)) {
 				//Internal guard clause if in provinces layer
 				let layer_obj = this._selected_geometry.getLayer();
-					if (layer_obj?._type === "provinces") return;
+					if (layer_obj?.type === "provinces") return;
 				let processed_geometry = (HTML.left_click) ?
 					this.getAddPolygon(this.cursor) : this.getRemovePolygon(this.cursor);
 				

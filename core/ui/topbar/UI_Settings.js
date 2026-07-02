@@ -165,23 +165,6 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 										UI_Settings.saveSettings();
 									}
 								}),
-								province_layer_symbol: veInterface({
-									province_layer_opacity: veRange(Math.returnSafeNumber(main.settings.province_layer_opacity, 0.5), {
-										name: "Layer Opacity",
-										
-										onuserchange: (v) => {
-											main.settings.province_layer_opacity = v;
-											UI_Settings.saveSettings();
-											naissance.FeatureLayer.fetchProvincesLayer();
-										}
-									}),
-									refresh_province_layer: veButton(() => {
-										naissance.FeatureLayer.fetchProvincesLayer();
-									}, { name: "Refresh Province Layer" })
-								}, {
-									attributes: { class: "ve-disable-nesting" },
-									name: "Province Layer Symbol"
-								}),
 							}
 						}
 					}, {
