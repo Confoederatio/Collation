@@ -199,7 +199,7 @@ ve.Map = class extends ve.Component {
 	}
 	
 	/**
-	 * Refreshes the current map.
+	 * Refreshes the current map display, but does not reattach event listeners.
 	 */
 	refresh () {
 		//Declare local instance variables
