@@ -136,7 +136,7 @@ naissance.FeatureLayer = class extends naissance.Feature {
 		
 		//Draw HierarchyDatatype if possible; switch type at bottom
 		this.drawHierarchyDatatype();
-		this.type = (json.type) ? json.type : "default";
+		this.type = (json._type) ? json._type : "default";
 	}
 	
 	/**
@@ -225,7 +225,7 @@ naissance.FeatureLayer = class extends naissance.Feature {
 			is_collapsed: this.is_collapsed,
 			metadata: this.metadata,
 			options: this.options,
-			type: this._type,
+			_type: this.type
 		});
 	}
 };

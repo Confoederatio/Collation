@@ -46,7 +46,7 @@ ve.Map = class extends ve.Component {
 			this.element.setAttribute("component", "ve-map");
 		this.element.id = this.id;
 		this.element.instance = this;
-		HTML.setAttributesObject(this.element, options.attributes);
+			HTML.setAttributesObject(this.element, options.attributes);
 		
 		this.options = options;
 		this.map = undefined;
@@ -150,6 +150,15 @@ ve.Map = class extends ve.Component {
 		}
 	}
 	
+	handleEvents () {
+		this.map.on("click", (e) => {
+			this.map.mouse_click_coords = e.coordinate.toJSON();
+		});
+		this.map.on("mousemove", (e) => {
+			this.map.mouse_hover_coords = e.coordinate.toJSON();
+		});
+	}
+	
 	/**
 	 * Ensures that the Maptalks instance is initialised safely.
 	 * 
@@ -182,13 +191,18 @@ ve.Map = class extends ve.Component {
 		
 		//Initialise map instantly if container is visible
 		this.map = new maptalks.Map(this.element, value);
-			this.map.on("click", (e) => {
-				this.map.mouse_click_coords = e.coordinate.toJSON();
-			});
-			this.map.on("mousemove", (e) => {
-				this.map.mouse_hover_coords = e.coordinate.toJSON();
-			});
+			this.handleEvents();
 		if (this.options.onmapload) this.options.onmapload(this);
+	}
+	
+	refresh () {
+		//Declare local instance variables
+		let json = this.map.toJSON();
+		
+		//Remove map, then reload JSON
+		this.map.remove();
+		this.map = maptalks.Map.fromJSON(this.element, json);
+		this.handleEvents();
 	}
 }
 

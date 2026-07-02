@@ -1,9 +1,9 @@
 {
   "autoload_file": [
-    "D:\\Project 1509 - SVEA\\saves\\atlas.naissance"
+    "D:\\Project 1509 - SVEA\\saves\\EU4.naissance"
   ],
   "disable_autoload": true,
-  "autoloading_mode": "disable_autoload",
+  "autoloading_mode": "default",
   "sort_settings_alphabetically": false,
   "font_registry": [
     "Arial",
@@ -38,6 +38,6 @@
     "textFaceName": "Barlow",
     "textHaloRadius": 2,
     "textHaloFill": "#191919",
-    "hide_label": false
+    "hide_label": true
   }
 }

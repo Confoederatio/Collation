@@ -548,6 +548,16 @@ naissance.Feature = class extends naissance.Entity {
 								tooltip: "Will not create separate groups for different files during import.",
 								onuserchange: (v) => this.ui.import_file_flatten_when_importing = v
 							}),
+							latitude_formula: veText(this.ui.import_file_lat_formula, {
+								name: "Latitude Formula",
+								tooltip: "<kbd>lat, y</kbd>: (float) refers to the Latitude of the coordinate.",
+								onuserchange: (v) => this.ui.import_file_lat_formula = v
+							}),
+							longitude_formula: veText(this.ui.import_file_lng_formula, {
+								name: "Longitude Formula",
+								tooltip: "<kbd>lng, x</kbd>: (float) refers to the Latitude of the coordinate.",
+								onuserchange: (v) => this.ui.import_file_lng_formula = v
+							})
 						}, { name: "Behaviour" }),
 						feature_properties: veInterface({
 							information: veHTML(`Feature properties map start/end dates and symbol properties into Naissance. Leaving a field blank means that it will not be passed when importing the file.`),
@@ -595,6 +605,9 @@ naissance.Feature = class extends naissance.Entity {
 							}
 							
 							let local_options = {
+								lat_formula: this.ui.import_file_lat_formula,
+								lng_formula: this.ui.import_file_lng_formula,
+								
 								id_key: this.ui.import_id_key,
 								lineColor_key: this.ui.import_lineColor_key,
 								lineOpacity_key: this.ui.import_lineOpacity_key,
