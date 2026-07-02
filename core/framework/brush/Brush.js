@@ -391,7 +391,7 @@ naissance.Brush = class extends ve.Class {
 	
 	handleEvents () {
 		//Map event handlers
-		map.on("click", (e) => {
+		map_component.on("click", (e) => {
 			if (main.brush.mode === "fill_tool") {
 				if (!(this._selected_geometry && this._selected_geometry instanceof naissance.GeometryPolygon)) return;
 				if (this._selected_geometry.getLayer()?.type === "provinces") {
@@ -431,13 +431,13 @@ naissance.Brush = class extends ve.Class {
 			}
 		});
 		
-		map.on("mousedown", (e) => {
+		map_component.on("mousedown", (e) => {
 			setTimeout(() =>{
 				if (this.disabled) return;
 				if (HTML.left_click || HTML.right_click) map.config("draggable", false);
 			});			
 		});
-		map.on("mouseup", (e) => {
+		map_component.on("mouseup", (e) => {
 			map.config("draggable", true);
 			if (HTML.middle_click)
 				if (main.brush._selected_geometry instanceof naissance.GeometryLine)
@@ -445,12 +445,12 @@ naissance.Brush = class extends ve.Class {
 		});
 		
 		//Context menu handler
-		map.on("contextmenu", (e) => {
+		map_component.on("contextmenu", (e) => {
       if (!this.disabled) main.interfaces.ui_map_context_menu = new UI_MapContextMenu();
 		});
 		
 		//Cursor handler
-		map.on("mousemove", (e) => {
+		map_component.on("mousemove", (e) => {
 			this.cursor.setCoordinates(e.coordinate);
 			if (this.disabled || ["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode)) return;
 			

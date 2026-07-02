@@ -61,9 +61,9 @@ naissance.BrushNodeEditor = class extends ve.Class {
 		this.enabled = true;
 		this.type = "add";
 		
-		map.on("click", this._click_listener);
-		map.on("dblclick", this._dblclick_listener);
-		map.on("mousemove", this._mousemove_listener);
+		map_component.on("click", this._click_listener);
+		map_component.on("dblclick", this._dblclick_listener);
+		map_component.on("mousemove", this._mousemove_listener);
 	}
 	
 	onclick (e) {
