@@ -1,5 +1,5 @@
 global.UI_Wiki = class extends ve.Class {
-	static naissance_folder = "https://confoederatiodocs.info/CRD+(Confoederatio%2C+Research+Division)/Documentation/Software/Naissance/";
+	static naissance_folder = "https://docs.confoederatio.org/en/";
 	static naissance_url = `${this.naissance_folder}/Naissance`;
 	
 	constructor () {
