@@ -390,7 +390,7 @@ naissance.Brush = class extends ve.Class {
 						break;
 					}
 					
-					//Buffer so that provinces aren't irregular
+					//Add/Remove geometry based on fill tool
 					if (!HTML.ctrl_pressed) {
 						DALS.Timeline.parseAction("add_to_polygon", [{
 							geometry_obj: this._selected_geometry.id,

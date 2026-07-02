@@ -59,6 +59,16 @@ naissance.Feature = class extends naissance.Entity {
 			this._parent = undefined;
 	}
 	
+	addEntity (arg0_entity, arg1_do_not_refresh) {
+		//Convert from parameters
+		let entity = arg0_entity;
+		let do_not_refresh = arg1_do_not_refresh;
+		
+		//Declare local instance variables
+		entity.moveToFeature(this);
+		if (!do_not_refresh) this.drawHierarchyDatatype();
+	}
+	
 	drawActionsPalette (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};

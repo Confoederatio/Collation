@@ -190,16 +190,7 @@ naissance.Entity = class extends ve.Class {
 		
 		//If the target feature does not already have the entity, push it there
 		if (feature_obj?.entities) {
-			//Declare local instance variables
-			let has_entity = false;
-			
-			for (let i = 0; i < feature_obj.entities.length; i++)
-				if (feature_obj.entities[i].id === this.id) {
-					has_entity = true;
-					break;
-				}
-			
-			if (!has_entity) {
+			if (!feature_obj.hasEntity(this)) {
 				//Reassign to target Feature
 				feature_obj.entities.push(this);
 				this.parent = feature_obj;

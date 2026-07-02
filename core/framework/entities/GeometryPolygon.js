@@ -134,6 +134,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			
 			//3. Draw this.geometry, this.label_geometries, this.selected_geometry onto map
 			try {
+				//Check if the geometry is in a provinces layer
 				if (this.value[0]) {
 					this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
 					if (this.geometry) this.geometry.setSymbol({
