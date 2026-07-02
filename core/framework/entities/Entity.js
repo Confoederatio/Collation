@@ -168,4 +168,40 @@ naissance.Entity = class extends ve.Class {
 		delete this._current_keyframe;
 		return this.hierarchy_datatype;
 	}
+	
+	moveToFeature (arg0_feature_obj) {
+		//Convert from parameters
+		let feature_obj = (arg0_feature_obj instanceof naissance.Feature) ?
+			arg0_feature_obj : naissance.Feature.instances[arg0_feature_obj];
+		
+		if (feature_obj?.id === this.id) return; //Features can't contain themselves
+		
+		//Splice out of other features
+		Object.iterate(naissance.Feature.instances, (local_key, local_feature) => {
+			if (local_feature.entities)
+				for (let i = local_feature.entities.length - 1; i >= 0; i--)
+					if (local_feature.entities[i].id === this.id)
+						local_feature.entities.splice(i, 1);
+		});
+		
+		//If the target feature does not already have the entity, push it there
+		if (feature_obj?.entities) {
+			//Declare local instance variables
+			let has_entity = false;
+			
+			for (let i = 0; i < feature_obj.entities.length; i++)
+				if (feature_obj.entities[i].id === this.id) {
+					has_entity = true;
+					break;
+				}
+			
+			if (!has_entity) {
+				//Reassign to target Feature
+				feature_obj.entities.push(this);
+				this.parent = feature_obj;
+			}
+		} else if (!feature_obj) {
+			delete this.parent;
+		}
+	}
 };
