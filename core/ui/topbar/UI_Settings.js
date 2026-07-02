@@ -190,7 +190,19 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 				}
 			},
 			keymap: {
-				name: "Keymap"
+				name: "Keymap",
+				components_obj: {
+					brush: veInterface({
+						brush_node_editor_disable_sticky_keys: veToggle(main.settings.brush_node_editor_disable_sticky_keys, {
+							name: "Disable Sticky Keys (Node Editor)",
+							tooltip: "If toggled, <kbd>Ctrl</kbd> can toggle between add/remove upon each click.",
+							onuserchange: (v) => {
+								main.settings.brush_node_editor_disable_sticky_keys = v;
+								UI_Settings.saveSettings();
+							}
+						})
+					}, { name: "Brush" })
+				}
 			}
 		};
 		

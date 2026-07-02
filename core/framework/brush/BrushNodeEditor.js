@@ -68,9 +68,13 @@ naissance.BrushNodeEditor = class extends ve.Class {
 	
 	onclick (e) {
 		if (HTML.ctrl_pressed && ["FreeHandLineString", "LineString"].includes(this.mode))
-			return; //Remove isn;t valid for GeometryLine
+			return; //Remove isn't valid for GeometryLine
 		
-		this.type = (HTML.ctrl_pressed) ? "remove" : "add";
+		if (this.coords.length === 0) {
+			this.disable();
+			this.enable(); //We need to make sure that the NodeEditor is active in this state
+			this.type = (HTML.ctrl_pressed) ? "remove" : "add";
+		}
 		this.addNode(e.coordinate);
 	}
 	

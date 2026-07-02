@@ -408,7 +408,6 @@ naissance.Brush = class extends ve.Class {
 			setTimeout(() =>{
 				if (this.disabled) return;
 				if (HTML.left_click || HTML.right_click) map.config("draggable", false);
-				if (HTML.middle_click) this.node_editor.disable(); //[WIP] - This needs to be changed to allow for panning whilst still having this.node_editor active
 			});			
 		});
 		map.on("mouseup", (e) => {
