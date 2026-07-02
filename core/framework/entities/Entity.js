@@ -173,22 +173,6 @@ naissance.Entity = class extends ve.Class {
 		return this.hierarchy_datatype;
 	}
 	
-	/**
-	 * Fetches the layer that the current {@link naissance.Entity} is appended to, if anything. Used for masking.
-	 *
-	 * @returns {naissance.FeatureLayer}
-	 */
-	getLayer () {
-		if (!this.parent) return; //Internal guard clause if we have reached the top
-		
-		//Recursively traverse upwards until we hit a FeatureLayer
-		if (this.parent?.class_name === "FeatureLayer") {
-			return this.parent;
-		} else {
-			return this.parent.getLayer();
-		}
-	}
-	
 	moveToFeature (arg0_feature_obj) {
 		//Convert from parameters
 		let feature_obj = (arg0_feature_obj instanceof naissance.Feature) ?

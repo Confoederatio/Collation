@@ -116,8 +116,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		//1. Set this.value from current relative keyframe
 		if (this.history._hasTimestampAfter(main.timestamp)) {
-			//Declare local instance variables
-			let layer = this.getLayer();
 			this.value = this.history.getKeyframe({ 
 				date: main.timestamp,
 				guaranteed_indexes: [1]
@@ -136,28 +134,15 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			
 			//3. Draw this.geometry, this.label_geometries, this.selected_geometry onto map
 			try {
+				//Check if the geometry is in a provinces layer
 				if (this.value[0]) {
 					this.geometry = maptalks.Geometry.fromJSON(this.value[0]);
+					if (this.geometry) this.geometry.setSymbol({
+						...naissance.Renderer.getDefaultSymbol({ exclude: ["point"] }),
+						...this.value?.[1],
+					});
 					main.layers.entity_layer.addGeometry(this.geometry);
-					
-					//Normal rendering
-					if (!(layer && layer.type === "provinces")) {
-						this.geometry.setSymbol({
-							...naissance.Renderer.getDefaultSymbol({ exclude: ["point"] }),
-							...this.value?.[1],
-						});
-						this._drawLabels();
-					}
-					//Provinces rendering
-					else {
-						this.geometry.setSymbol({
-							lineColor: "#000000",
-							lineDasharray: [5, 5, 5], 
-							lineWidth: 1,
-							polygonFill: Colour.generateHexFromString(String(this.id)),
-							polygonOpacity: 0.5
-						});
-					}
+					this._drawLabels();
 				}
 			} catch (e) { console.error(e); }
 			
