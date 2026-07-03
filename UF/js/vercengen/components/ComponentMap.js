@@ -260,7 +260,7 @@ ve.Map = class extends ve.Component {
 		for (let i = 0; i < all_layers.length; i++)
 			this.map.addLayer(all_layers[i]);
 	}
-}
+};
 
 //Functional binding
 
