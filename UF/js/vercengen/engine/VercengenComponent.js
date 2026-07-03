@@ -116,6 +116,7 @@
  * - {@link ve.Component.ve.Toggle|veToggle}(arg0_value:{@link boolean}, arg1_options:{@link Object}) | {@link boolean}
  * - {@link ve.Component.ve.UndoRedo|veUndoRedo}(arg0_value:{@link string}, arg1_options:{@link Object}) | {@link string} - The {@link DALS.Timeline} ID that the UndoRedo component is currently navigating.
  * - {@link ve.Component.ve.URL|veURL}(arg0_value:{@link string}, arg1_options:{@link Object}) | {@link string}
+ * - {@link ve.Component.ve.Wiki|veWiki}(arg0_value:{@link string}, arg1_options:{@link Object}) | {@link string}
  * 
  * @class
  * @memberof ve
