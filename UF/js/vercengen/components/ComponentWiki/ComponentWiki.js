@@ -2,6 +2,7 @@
  * Refer to <span color = "yellow">{@link ve.Component}</span> for methods or fields inherited from this Component's parent such as `.options.attributes` or `.element`.
  * 
  * Creates a wiki/<webview> element that can be used for wiki embeds in applications.
+ * - Functional binding: <span color=00ffff>veWiki</span>().
  *  
  * ##### Constructor:
  * - `arg0_value` :{@link string} - The URL string of the wiki to target.
@@ -10,6 +11,12 @@
  *   - 
  *   - `.css_file_paths`: {@link Array}<{@link string}> - The file path to inject as CSS for the target page.
  *   - `.js_file_paths`: {@link Array}<{@link string}> - The file path to inject as JS for the target page.
+ *   
+ * ##### Instance:
+ * - `.v`: {@link string}
+ * 
+ * ##### Methods:
+ * - <span color=00ffff>{@link ve.Wiki.applyScripts|applyScripts}</span>()
  * 
  * @augments ve.Component
  * @memberof ve.Component
