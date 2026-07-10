@@ -28,8 +28,40 @@
 		if (json === undefined) json = [];
 		if (!Array.isArray(json)) json = [json];
 		
+		//Declare local instance variables
+		let scope_map = naissance.Action.scope_map;
+		
 		//Iterate over multi-value packet (MVP) and filter it down to superclass single-value packets (SVPs)
 		for (let i = 0; i < json.length; i++) {
+			//New handling (Actions Palette)
+			if (json[i].feature_obj || json[i].geometry_obj || json[i].type) {
+				let feature_obj = naissance.Feature.instances[json[i].feature_obj];
+				let geometry_obj = naissance.Geometry.instances[json[i].geometry_obj]; 
+				let naissance_obj;
+				
+				if (feature_obj) naissance_obj = feature_obj;
+				if (geometry_obj) naissance_obj = geometry_obj;
+				
+				//Iterate over all scopes and handle their actions
+				let scopes = naissance.Action.getScopes((naissance_obj || json[i].type));
+				
+				for (let x = 0; x < scopes.length; x++) {
+					let local_scope_map = scope_map[scopes[x]];
+					if (!local_scope_map) continue;
+					
+					//Iterate over all_scope_keys
+					let all_scope_keys = Object.keys(local_scope_map);
+					
+					for (let y = 0; y < all_scope_keys.length; y++) {
+						let local_action = local_scope_map[all_scope_keys[y]];
+						
+						if (json[i][local_action.key] !== undefined && typeof local_action.special_function === "function")
+							await local_action.special_function(json[i]);
+					}
+				}
+			}
+			
+			//Old handling (Legacy)
 			if (json[i].feature_obj) {
 				await naissance.Feature.parseAction(json[i]);
 			} else if (json[i].geometry_obj) {
