@@ -1,5 +1,5 @@
 //Import modules
-const {ipcRenderer} = require("electron");
+const { ipcRenderer } = require("electron");
 global.child_process = require("child_process");
 global.cubic_spline = require("cubic-spline");
 global.electron = require("electron");
