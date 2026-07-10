@@ -62,28 +62,30 @@
 			}
 			
 			//Old handling (Legacy)
-			if (json[i].feature_obj) {
-				await naissance.Feature.parseAction(json[i]);
-			} else if (json[i].geometry_obj) {
-				await naissance.Geometry.parseAction(json[i]);
-			} else {
-				if (json[i].type) {
-					await naissance[json[i].type].parseAction(json[i]);
+			try {
+				if (json[i].feature_obj) {
+					await naissance.Feature.parseAction(json[i]);
+				} else if (json[i].geometry_obj) {
+					await naissance.Geometry.parseAction(json[i]);
 				} else {
-					if (json[i].load_save)
-						DALS.Timeline.loadState(json[i].load_save);
-					if (json[i].set_date) {
-						UI_DateMenu.setDate(json[i].set_date);
-					} else if (json[i].refresh_date === true) {
-						Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>{
-							local_value.draw();
-							local_value.update();
-						});
-						naissance.Mapmode.draw();
-						UI_Leftbar.refresh();
+					if (json[i].type) {
+						await naissance[json[i].type].parseAction(json[i]);
+					} else {
+						if (json[i].load_save)
+							DALS.Timeline.loadState(json[i].load_save);
+						if (json[i].set_date) {
+							UI_DateMenu.setDate(json[i].set_date);
+						} else if (json[i].refresh_date === true) {
+							Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>{
+								local_value.draw();
+								local_value.update();
+							});
+							naissance.Mapmode.draw();
+							UI_Leftbar.refresh();
+						}
 					}
 				}
-			}
+			} catch (e) { console.warn(e); }
 		}
 		
 		//Save action to current timeline if needed
