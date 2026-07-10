@@ -74,15 +74,19 @@ naissance.Action = class {
 					let action_name = (local_action.name || local_action.key);
 					
 					components_obj[local_action.key] = veButton(() => {
+						let local_components_obj = local_action.draw_function.call(naissance_obj);
 						let local_name = (naissance_obj.name || naissance_obj.class_name);
 						
-						if (naissance_obj[`${local_key}_window`]) naissance_obj[`${local_key}_window`].close();
-						naissance_obj[`${local_key}_window`] = veWindow(local_action.draw_function.call(naissance_obj), {
-							name: `${action_name}${(local_name) ? ` (${local_name})` : ""}`,
-							can_rename: false,
-							width: "20rem",
-							...local_action.window_options
-						});
+						//Only initialise the window if local_components_obj doesn't return undefined
+						if (local_components_obj !== undefined) {
+							if (naissance_obj[`${local_key}_window`]) naissance_obj[`${local_key}_window`].close();
+							naissance_obj[`${local_key}_window`] = veWindow(local_components_obj, {
+								name: `${action_name}${(local_name) ? ` (${local_name})` : ""}`,
+								can_rename: false,
+								width: "20rem",
+								...local_action.window_options
+							});
+						}
 					}, { name: action_name });
 				}
 			});
