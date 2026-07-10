@@ -48,27 +48,19 @@ naissance.Action = class {
 	}
 	
 	/**
-	 * Returns the Actions Palette for a given Naissance Entity.
+	 * Returns the Actions Palette for a given Naissance Object.
 	 * 
 	 * @param {Object} arg0_naissance_obj
 	 * 
 	 * @returns {ve.Interface}
 	 */
 	static drawActionsPalette (arg0_naissance_obj) {
-		//Declare local instance variables
+		//Convert from parameters
 		let naissance_obj = arg0_naissance_obj;
 		
 		//Declare local instance variables
 		let components_obj = {};
-		let scopes = [];
-		
-		if (naissance_obj.class_name) {
-			if (naissance_obj.class_name.startsWith("Feature"))
-				scopes.push("Entity", "Feature");
-			if (naissance_obj.class_name.startsWith("Geometry"))
-				scopes.push("Entity", "Geometry");
-			scopes.push(naissance_obj.class_name);
-		}
+		let scopes = naissance.Action.getScopes(naissance_obj);
 		
 		//Iterate over all scopes and the .scope_map[scopes[i]] that applies to it
 		for (let i = 0; i < scopes.length; i++) {
@@ -120,6 +112,33 @@ naissance.Action = class {
 			style: { padding: 0 },
 			width: 99
 		});
+	}
+	
+	/**
+	 * Returns all applicable scopes for a given Naissance Object.
+	 * 
+	 * @param {Object} arg0_naissance_obj
+	 * 
+	 * @returns {string[]}
+	 */
+	static getScopes (arg0_naissance_obj) {
+		//Convert from parameters
+		let naissance_obj = arg0_naissance_obj;
+		
+		//Declare local instance variables
+		let scopes = [];
+		
+		//Parse scopes
+		if (naissance_obj.class_name) {
+			if (naissance_obj.class_name.startsWith("Feature"))
+				scopes.push("Entity", "Feature");
+			if (naissance_obj.class_name.startsWith("Geometry"))
+				scopes.push("Entity", "Geometry");
+			scopes.push(naissance_obj.class_name);
+		}
+		
+		//Return statement
+		return scopes;
 	}
 	
 	/**
