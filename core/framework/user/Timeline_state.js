@@ -56,7 +56,10 @@
 						let local_action = local_scope_map[all_scope_keys[y]];
 						
 						if (json[i][local_action.key] !== undefined && typeof local_action.special_function === "function")
-							await local_action.special_function(json[i]);
+							await local_action.special_function({
+								naissance_obj,
+								...json[i]
+							});
 					}
 				}
 			}

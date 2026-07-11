@@ -114,20 +114,6 @@ naissance.Feature.parseAction = async function (arg0_json) {
 				delete all_geometries[i].metadata.tags;
 		}
 		
-		//delete_feature
-		if (json.delete_feature === true) {
-			feature_obj.remove();
-			return;
-		}
-		
-		//feature_operation
-		if (json.feature_operation) {
-			naissance.Feature.operate.call(feature_obj,
-				json.feature_operation.type,
-				(json.feature_operation.feature_id) ? json.feature_operation.feature_id : json.feature_operation.geometry_id);
-			UI_Leftbar.refresh();
-		}
-		
 		//flatten_all_geometries
 		if (json.flatten_all_geometries) {
 			feature_obj.entities = feature_obj.getAllGeometries();
@@ -137,13 +123,6 @@ naissance.Feature.parseAction = async function (arg0_json) {
 				feature_obj.entities[i].parent = feature_obj;
 			UI_Leftbar.refresh();
 		}
-		
-		//import_file
-		if (json.import_file)
-			if (feature_obj.entities) {
-				naissance.Feature.importFile.call(feature_obj, json.import_file.file_path, json.import_file.type, json.import_file.options);
-				UI_Leftbar.refresh();
-			}
 		
 		//move_all_entities_to_feature
 		if (json.move_all_entities_to_feature !== undefined) {
@@ -159,18 +138,6 @@ naissance.Feature.parseAction = async function (arg0_json) {
 				UI_Leftbar.refresh();
 			}
 		}
-		
-		//set_name
-		if (typeof json.set_name === "string")
-			feature_obj._name = json.set_name;
-		
-		//set_visibility
-		if (json.set_visibility !== undefined)
-			if (json.set_visibility === true) {
-				feature_obj.show();
-			} else if (json.set_visibility === false) {
-				feature_obj.hide();
-			}
 		
 		//set_zoom
 		if (json.set_zoom !== undefined) {
