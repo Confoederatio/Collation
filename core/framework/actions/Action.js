@@ -111,8 +111,8 @@ naissance.Action = class {
 		}
 		
 		//Return statement
-		return veInterface({
-			name: "Actions",
+		return veInterface(processed_components_obj, {
+			name: "Actions (New)",
 			style: { padding: 0 },
 			width: 99
 		});
@@ -176,7 +176,7 @@ naissance.Action = class {
 					
 					//Check to make sure it isn't already in existence
 					if (!has_duplicate) {
-						let new_options = {};
+						let new_options = { ...local_action_obj };
 						
 						//.name handling
 						new_options.name = `(Feature) ${(local_action_obj.name || local_action_key)}`;
@@ -196,12 +196,18 @@ naissance.Action = class {
 							new_options.special_function = async (json) => {
 								let feature_obj = naissance.Feature.instances[json.feature_obj];
 								
-								if (feature_obj?.entities)
-									for (let i = 0; i < feature_obj.entities.length; i++)
+								//Iterate over all_geometries if .entities is defined
+								if (feature_obj?.entities) {
+									let all_geometries = feature_obj.getAllGeometries();
+									
+									for (let i = 0; i < all_geometries.length; i++)
 										await special_function({
-											geometry_obj: feature_obj.entities[i].id,
-											...json
+											...json,
+											
+											feature_obj: undefined,
+											naissance_obj: all_geometries[i],
 										});
+								}
 							};
 						
 						//2. Declare geometry action at feature level

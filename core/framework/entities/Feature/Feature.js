@@ -1085,7 +1085,8 @@ naissance.Feature = class extends naissance.Entity {
 						padding: 0
 					}
 				}
-			})
+			}),
+			new_actions_palette: naissance.Action.drawActionsPalette(this)
 		}, {
 			name: "Actions",
 			style: { padding: 0 },

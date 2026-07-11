@@ -442,6 +442,42 @@ config.actions.geometry = {
 		name: "Set Zoom",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				information: veHTML(`To remove the zoom attribute, type -1 as the value instead.`),
+				
+				min_zoom: veNumber(this.ui.set_zoom_min, {
+					name: "Minimum Zoom Level",
+					onuserchange: (v) => this.ui.set_zoom_min = v
+				}),
+				max_zoom: veNumber(this.ui.set_zoom_max, {
+					name: "Maximum Zoom Level",
+					onuserchange: (v) => this.ui.set_zoom_max = v
+				}),
+				is_start_keyframe: veToggle(this.ui.set_zoom_is_start, {
+					name: "Modify Zoom at Starting Keyframe",
+					onuserchange: (v) => this.ui.set_zoom_is_start = v
+				}),
+				
+				confirm: veButton(() => {
+					let current_min = (this.ui.set_zoom_min !== undefined) ? this.ui.set_zoom_min : -1;
+					let current_max = (this.ui.set_zoom_max !== undefined) ? this.ui.set_zoom_max : -1;
+					
+					DALS.Timeline.parseAction("set_zoom", [{
+						feature_obj: this.id,
+						set_zoom: {
+							is_start_keyframe: (this.ui.set_zoom_is_start),
+							max_zoom: (current_max === -1) ? "delete" : current_max,
+							min_zoom: (current_min === -1) ? "delete" : current_min
+						}
+					}]);
+					
+					veToast(`Successfully updated zoom visibility for ${this.name}.`);
+					this.set_zoom_window.close();
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -453,19 +489,19 @@ config.actions.geometry = {
 				let zoom_props = {};
 				
 				if (json.set_zoom.max_zoom !== undefined)
-					(json.set_zoom.max_zoom === "delete") ? naissance.Geometry.parseAction({
-						geometry_obj: geometry_obj,
+					(json.set_zoom.max_zoom === "delete") ? DALS.Timeline.parseAction("set_max_zoom", {
+						geometry_obj: geometry_obj.id,
 						remove_property: { key: "max_zoom" },
 					}) : (zoom_props.max_zoom = json.set_zoom.max_zoom);
 				
 				if (json.set_zoom.min_zoom !== undefined)
-					(json.set_zoom.min_zoom === "delete") ? naissance.Geometry.parseAction({
-						geometry_obj: geometry_obj,
+					(json.set_zoom.min_zoom === "delete") ? DALS.Timeline.parseAction("set_min_zoom", {
+						geometry_obj: geometry_obj.id,
 						remove_property: { key: "min_zoom" },
 					}) : (zoom_props.min_zoom = json.set_zoom.min_zoom);
 				
 				if (Object.keys(zoom_props).length > 0)
-					geometry_obj.addKeyframe(zoom_date, undefined, undefined, zoom_props);
+					geometry_obj.history.addKeyframe(zoom_date, undefined, undefined, zoom_props);
 			}
 		}
 	}
