@@ -49,11 +49,6 @@ naissance.Feature.parseAction = async function (arg0_json) {
 	
 	//Parse commands for feature_obj
 	if (feature_obj) {
-		//Specialised Feature handler
-		if (feature_obj.class_name)
-			if (["FeatureSketchMap", "FeatureTileLayer"].includes(feature_obj.class_name))
-				await naissance[feature_obj.class_name].parseAction(json);
-		
 		//add_column
 		if (json.add_column !== undefined) {
 			let all_geometries = feature_obj.getAllGeometries();
