@@ -155,9 +155,10 @@ naissance.Action = class {
 		Object.iterate(config.actions, (local_category_key, local_category_obj) => {
 			Object.iterate(local_category_obj, (local_action_key, local_action_obj) => {
 				let is_geometry_action = false;
+				let scope_array;
 				
 				if (!local_action_obj.do_not_bind_to_feature) {
-					let scope_array = Array.toArray(local_action_obj.scope);
+					scope_array = Array.toArray(local_action_obj.scope);
 					
 					//Iterate over scope_array and check for any starting Geometry keys
 					for (let i = 0; i < scope_array.length; i++)
@@ -192,7 +193,7 @@ naissance.Action = class {
 						//.special_function handling
 						let special_function = local_action_obj.special_function;
 						
-						if (typeof special_function === "function")
+						if (typeof special_function === "function") //[WIP] - This needs to ensure proper scoping based on .class_name
 							new_options.special_function = async (json) => {
 								let feature_obj = naissance.Feature.instances[json.feature_obj];
 								
@@ -200,13 +201,30 @@ naissance.Action = class {
 								if (feature_obj?.entities) {
 									let all_geometries = feature_obj.getAllGeometries();
 									
-									for (let i = 0; i < all_geometries.length; i++)
-										await special_function({
-											...json,
+									for (let i = 0; i < all_geometries.length; i++) {
+										//Iterate over scope_array and see if the current geometry passes_check
+										let passes_check = false;
+										
+										for (let x = 0; x < scope_array.length; x++) {
+											if (scope_array[x] === "Geometry") {
+												passes_check = true;
+											} else if (scope_array[x].startsWith("Geometry")) {
+												if (all_geometries[i]?.class_name === scope_array[x])
+													passes_check = true;
+											}
 											
-											feature_obj: undefined,
-											naissance_obj: all_geometries[i],
-										});
+											if (passes_check) break;
+										}
+										
+										//If so, execute an actionn for this Geometry
+										if (passes_check)
+											await special_function({
+												...json,
+												
+												feature_obj: undefined,
+												naissance_obj: all_geometries[i],
+											});
+									}
 								}
 							};
 						

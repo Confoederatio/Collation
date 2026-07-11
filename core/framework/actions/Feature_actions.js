@@ -133,38 +133,5 @@ naissance.Feature.parseAction = async function (arg0_json) {
 				UI_Leftbar.refresh();
 			}
 		}
-		
-		//set_zoom
-		if (json.set_zoom !== undefined) {
-			let all_geometries = feature_obj.getAllGeometries();
-			let all_geometry_ids = [];
-			
-			for (let i = 0; i < all_geometries.length; i++)
-				if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
-			
-			naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
-				command: "set_zoom",
-				key: "set_zoom",
-				name: "Set F.Zoom",
-				value: json.set_zoom,
-			});
-		}
-		
-		//simplify_all_polygons
-		if (json.simplify_all_polygons !== undefined) {
-			let all_geometries = feature_obj.getAllGeometries();
-			let all_geometry_ids = [];
-			
-			//Iterate over all_geometries and append IDs for parsing
-			for (let i = 0; i < all_geometries.length; i++)
-				if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
-			naissance.Geometry.parseActionForGeometries(all_geometry_ids, {
-				command: "simplify_polygon_for_all_keyframes",
-				key: "simplify_polygon_for_all_keyframes",
-				name: "Simplify F.Keyframes",
-				type: "GeometryPolygon",
-				value: json.simplify_all_polygons
-			});
-		}
 	}
 };
