@@ -51,7 +51,7 @@ naissance.Feature.parseAction = async function (arg0_json) {
 	if (feature_obj) {
 		//Specialised Feature handler
 		if (feature_obj.class_name)
-			if (["FeatureGroup", "FeatureLayer", "FeatureSketchMap", "FeatureTileLayer"].includes(feature_obj.class_name))
+			if (["FeatureSketchMap", "FeatureTileLayer"].includes(feature_obj.class_name))
 				await naissance[feature_obj.class_name].parseAction(json);
 		
 		//add_column

@@ -1,10 +1,4 @@
 /**
- * Parses a JSON action for a target FeatureLayer.
- * - Static method of: {@link naissance.FeatureLayer}
- *
- * arg0_json: {@link Object}|{@link string}
- * - .feature_obj: {@link Object}|{@link string} - Identifier. The {@link naissance.Feature} ID to target changes for.
- * <br>
  * - #### Extraneous Commands:
  *   - .create_layer: {@link Object}
  *     - .do_not_refresh=false: {@link boolean}
@@ -18,31 +12,33 @@
  *   - .set_layer_option: {@link Object}
  *     - .key: {@link string} - The key to change for the selected layer.
  *     - .value: {@link any} - What to change the value of the key to.
+ * 
+ * @type {Object}
  */
-naissance.FeatureLayer.parseAction = async function (arg0_json) {
-	//Convert from parameters
-	let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
-	
-	//Declare local instance variables
-	let layer_obj = (typeof json.feature_obj === "string") ?
-		naissance.Feature.instances[json.feature_obj] : json.feature_obj;
-	
-	//Parse extraneous commands
-	//create_layer
-	if (json.create_layer)
-		if (json.create_layer.id) {
-			let new_layer = new naissance.FeatureLayer();
-			new_layer.setID(json.create_layer.id);
-			
-			if (!json.create_layer.do_not_refresh)
-				UI_Leftbar.refresh();
+config.actions.feature_layer = {
+	create_layer: {
+		name: "Create Layer",
+		scope: ["FeatureLayer"],
+		
+		special_function: async function (json) {
+			if (json.create_layer.id) {
+				let new_layer = new naissance.FeatureLayer();
+				new_layer.setID(json.create_layer.id);
+				
+				if (!json.create_layer.do_not_refresh)
+					UI_Leftbar.refresh();
+			}
 		}
+	},
 	
-	//Parse commands for layer_obj
-	if (layer_obj) {
-		//merge_layer
-		if (json.merge_layer) {
+	merge_layer: {
+		name: "Merge Layer",
+		scope: ["FeatureLayer"],
+		
+		special_function: async function (json) {
 			//Declare local instance variables
+			let layer_obj = json.naissance_obj;
+			
 			let from_layer_geometries = layer_obj.getAllGeometries();
 			let from_layer_json = layer_obj.toJSON();
 			let from_layer_timestamps = layer_obj.getTimestamps();
@@ -53,7 +49,7 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			let from_timestamp_set = new Set(from_layer_timestamps);
 			let to_timestamp_set = new Set(to_layer_timestamps);
 			let all_timestamps = [...new Set([...from_layer_timestamps, ...to_layer_timestamps])]
-				.sort((a, b) => a - b);
+			.sort((a, b) => a - b);
 			
 			let end_date = (json.merge_layer.end_date) ?
 				Date.getTimestamp(json.merge_layer.end_date) : all_timestamps[all_timestamps.length - 1];
@@ -153,37 +149,37 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 			for (let i = 0; i < from_layer_geometries.length; i++) {
 				let from_geometry = from_layer_geometries[i];
 				let linked_id = from_geometry?.metadata?.linked_id;
-
+				
 				if (linked_id) {
 					let to_geometry = naissance.Geometry.instances[linked_id];
-
+					
 					if (to_geometry) {
 						//Re-bake to_geometry history to account for Step 1 and Step 2 changes
 						let current_baked_to = to_geometry.history.getKeyframe({ bake_keyframes: true });
 						let from_keys = Object.keys(from_geometry.history.keyframes).map(Number);
 						let to_keys = Object.keys(to_geometry.history.keyframes).map(Number);
 						let union_timestamps = [...new Set([...from_keys, ...to_keys])].sort((a, b) => a - b);
-
+						
 						let active_from;
 						let active_to;
-
+						
 						for (let x = 0; x < union_timestamps.length; x++) {
 							let current_timestamp = union_timestamps[x];
-
+							
 							//Update rolling states from baked data
 							if (baked_from[from_geometry.id] && baked_from[from_geometry.id][current_timestamp])
 								active_from = baked_from[from_geometry.id][current_timestamp];
 							if (current_baked_to && current_baked_to[current_timestamp])
 								active_to = current_baked_to[current_timestamp];
-
+							
 							if (current_timestamp < start_date || current_timestamp > end_date) continue;
-
+							
 							let from_value = active_from ? active_from.value[0] : undefined;
 							let to_value = active_to ? active_to.value[0] : undefined;
-
+							
 							let from_turf = from_value ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(from_value)) : undefined;
 							let to_turf = to_value ? Geospatiale.convertMaptalksToTurf(maptalks.Geometry.fromJSON(to_value)) : undefined;
-
+							
 							let result_json;
 							if (from_turf && to_turf) {
 								let turf_union = turf.union(turf.featureCollection([from_turf, to_turf]));
@@ -195,12 +191,12 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 								let maptalks_geom = Geospatiale.convertTurfToMaptalks(existing_turf);
 								result_json = (maptalks_geom && typeof maptalks_geom.toJSON === "function") ? maptalks_geom.toJSON() : null;
 							}
-
+							
 							//Apply union results and update active state for the next timestamp
 							if (result_json !== undefined) {
 								to_geometry.history.addKeyframe(current_timestamp, result_json);
 								active_to = { value: [result_json] };
-
+								
 								//Transfer non-geometric history data (metadata/attributes)
 								let source_keyframe = from_geometry.history.keyframes[current_timestamp];
 								if (source_keyframe && source_keyframe.value.length > 1) {
@@ -264,9 +260,16 @@ naissance.FeatureLayer.parseAction = async function (arg0_json) {
 				layer_obj.fromJSON(from_layer_json);
 			}
 		}
+	},
+	set_layer_option: {
+		name: "Set Layer Option",
+		scope: ["FeatureLayer"],
 		
-		//set_layer_option
-		if (json.set_layer_option)
+		special_function: async function (json) {
+			//Declare local instance variables
+			let layer_obj = json.naissance_obj;
+			
 			layer_obj[json.set_layer_option.key] = json.set_layer_option.value;
+		}
 	}
 };
