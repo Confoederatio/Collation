@@ -1,5 +1,5 @@
 /**
- * #### Extraneous Commands:
+ * - #### Internal Commands:
  * - `.clean_keyframes`: {@link Array}<{@link string}> - Arguments: ["symbol"]. Whether to clean keyframes, including the default `main.brush.getBrushSymbol()` (if symbol is enabled), as well as any duplicates.
  * - `.delete_geometry`: {@link boolean}
  * - `.geometry_operation`: {@link Object}

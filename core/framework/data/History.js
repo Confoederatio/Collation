@@ -13,6 +13,67 @@ naissance.History = class extends ve.Class {
 		};
 	}
 	
+	_executeFunctionInDateRange (arg0_date_range, arg1_function) {
+		//Convert from parameters
+		let date_range = arg0_date_range;
+		let special_function = arg1_function;
+		
+		//Declare local instance variables
+		date_range =  [Date.getTimestamp(date_range[0]), Date.getTimestamp(date_range[1])];
+		let keyframes = this._getUniqueKeyframes({ indexes: [0], return_timestamps: true });
+		
+		//Keyframes are look-forwards; create the keyframe at start_date; then for .value[0] changes until end_date
+		if (!keyframes.includes(date_range[0]))
+			keyframes.unshift(date_range[0]);
+		
+		//Iterate over all polygon_keyframes and apply the changes at the given date
+		for (let i = 0; i < keyframes.length; i++)
+			if (keyframes[i] >= date_range[0] && keyframes[i] <= date_range[1])
+				special_function(keyframes[i]);
+	}
+	
+	/**
+	 * Returns all unique keyframes in the current history object.
+	 * 
+	 * @param {Object} [arg0_options]
+	 *  @param {number[]} [arg0_options.indexes]
+	 *  @param {boolean} [arg0_options.return_timestamps=false]
+	 * 
+	 * @private
+	 */
+	_getUniqueKeyframes (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Declare local instance variables
+		let unique_timestamps = [];
+		
+		Object.iterate(this.keyframes, (local_key, local_keyframe) => {
+			let has_value;
+			
+			//Iterate over all options.indexes
+			for (let i = 0; i < options.indexes.length; i++)
+				if (local_keyframe.value[options.indexes[i]] !== undefined) {
+					has_value = true;
+					break;
+				}
+			
+			if (has_value) unique_timestamps.push(Date.convertTimestampToInt(local_key));
+		});
+		
+		if (!options.return_timestamps) {
+			let unique_dates = [];
+			
+			//Return statement
+			for (let i = 0; i < unique_timestamps.length; i++)
+				unique_dates.push(Date.convertTimestampToDate(unique_timestamps[i]));
+			return unique_dates;
+		}
+		
+		//Return statement
+		return unique_timestamps;
+	}
+	
 	_hasTimestampAfter (arg0_timestamp) {
 		//Convert from parameters
 		let timestamp = Date.getTimestamp(arg0_timestamp);

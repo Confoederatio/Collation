@@ -688,38 +688,6 @@ naissance.Geometry = class extends naissance.Entity {
 	}
 	
 	/**
-	 * Returns all keyframes that change the current geometry. Returns either the timestamp/date. Dates by default.
-	 * 
-	 * @param {Object} [arg0_options]
-	 *  @param {boolean} [arg0_options.return_timestamps=false]
-	 * 
-	 * @returns {Object[]|number[]}
-	 */
-	getGeometryKeyframes (arg0_options) {
-		//Convert from parameters
-		let options = (arg0_options) ? arg0_options : {};
-		
-		//Declare local instance variables
-		let unique_timestamps = [];
-		
-		//Iterate over all .history.keyframes
-		Object.iterate(this.history.keyframes, (local_key, local_value) => {
-			if (local_value.value[0] !== undefined)
-				unique_timestamps.push(Date.convertTimestampToInt(local_key));
-		});
-		
-		if (!options.return_timestamps) {
-			let unique_dates = [];
-			
-			//Return statement
-			for (let i = 0; i < unique_timestamps.length; i++)
-				unique_dates.push(Date.convertTimestampToDate(unique_timestamps[i]));
-			return unique_dates;
-		}
-		return unique_timestamps;
-	}
-	
-	/**
 	 * Returns the Maptalks geometry at the specific date.
 	 * 
 	 * @param {Object|number} [arg0_date]

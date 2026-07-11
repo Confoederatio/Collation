@@ -69,7 +69,7 @@
 				if (json[i].feature_obj) {
 					await naissance.Feature.parseAction(json[i]);
 				} else if (json[i].geometry_obj) {
-					await naissance.Geometry.parseAction(json[i]);
+					//await naissance.Geometry.parseAction(json[i]);
 				} else {
 					if (json[i].type) {
 						await naissance[json[i].type].parseAction(json[i]);
