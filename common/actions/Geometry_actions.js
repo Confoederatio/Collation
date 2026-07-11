@@ -1,5 +1,8 @@
 /**
  * - #### Internal Commands:
+ * - `.add_description`: {@link Object}
+ *   - `.options`: {@link Object}
+ *   - `.value`: {@link string}
  * - `.clean_keyframes`: {@link Array}<{@link string}> - Arguments: ["symbol"]. Whether to clean keyframes, including the default `main.brush.getBrushSymbol()` (if symbol is enabled), as well as any duplicates.
  * - `.delete_geometry`: {@link boolean}
  * - `.geometry_operation`: {@link Object}
@@ -69,6 +72,24 @@ config.actions.geometry = {
 						variables: { [json.add_column.key]: json.add_column.values[i][1] }
 					});
 			}
+		}
+	},
+	add_description: {
+		name: "Add Description",
+		scope: ["Geometry"],
+		
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			if (!geometry_obj.metadata) geometry_obj.metadata = {};
+			if (!geometry_obj.metadata.description) geometry_obj.metadata.description = "";
+			let description = geometry_obj.metadata.description;
+			
+			geometry_obj.metadata.description = String.editAddToString(description, json.add_description.value, json.add_description.options);
+			
+			if (geometry_obj.variables_ui) geometry_obj.variables_ui.remove();
+			geometry_obj.drawVariablesEditor();
 		}
 	},
 	add_variable: {
