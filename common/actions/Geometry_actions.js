@@ -135,6 +135,14 @@ config.actions.geometry = {
 			if (json.delete_geometry === true) json.naissance_obj.remove();
 		}
 	},
+	delete_tags: {
+		name: "Delete Tags",
+		scope: ["Geometry"],
+		
+		special_function: async function (json) {
+			try { delete json.naissance_obj.metadata.tags; } catch (e) {}
+		}
+	},
 	geometry_operation: {
 		name: "Geometry Operation",
 		scope: ["Geometry"],

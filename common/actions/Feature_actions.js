@@ -54,6 +54,22 @@ config.actions.feature = {
 			}
 		}
 	},
+	flatten_geometries: {
+		name: "Flatten Geometries",
+		scope: ["FeatureGroup", "FeatureLayer"],
+		
+		special_function: async function (json) {
+			//Declare local instance variables
+			let feature_obj = json.naissance_obj;
+			
+			//Iterate over all_geometries and flatten them as needed
+			let all_geometries = feature_obj.getAllGeometries();
+			
+			for (let i = 0; i < all_geometries.length; i++)
+				all_geometries[i].parent = feature_obj;
+			UI_Leftbar.refresh();
+		}
+	},
 	import_file: {
 		name: "Import File",
 		scope: ["Feature"],

@@ -206,7 +206,7 @@ naissance.Action = class {
 										let passes_check = false;
 										
 										for (let x = 0; x < scope_array.length; x++) {
-											if (scope_array[x] === "Geometry") {
+											if (["Entity", "Geometry"].includes(scope_array[x])) {
 												passes_check = true;
 											} else if (scope_array[x].startsWith("Geometry")) {
 												if (all_geometries[i]?.class_name === scope_array[x])
@@ -216,7 +216,7 @@ naissance.Action = class {
 											if (passes_check) break;
 										}
 										
-										//If so, execute an actionn for this Geometry
+										//If so, execute an action for this Geometry
 										if (passes_check)
 											await special_function({
 												...json,
