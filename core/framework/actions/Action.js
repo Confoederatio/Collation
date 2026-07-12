@@ -123,6 +123,50 @@ naissance.Action = class {
 	}
 	
 	/**
+	 * Opens the Actions Palette Window for a given Naissance object.
+	 * 
+	 * @param {Object} arg0_naissance_obj
+	 * @param {Object} [arg1_options]
+	 *  @param {string} [arg1_options.name]
+	 *  @param {Object} [arg1_options.palette_options]
+	 */
+	static openActionsPalette (arg0_naissance_obj, arg1_options) {
+		//Convert from parameters
+		let naissance_obj = arg0_naissance_obj;
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Initialise options
+		if (!options.palette_options) options.palette_options = {};
+		
+		//Declare local instance variables
+		let window_name = options.name;
+		
+		//Ensure naissance_obj.actions_palette_window is free
+		if (naissance_obj.actions_palette_window) naissance_obj.actions_palette_window.close();
+		
+		//Get window name
+		if (!window_name)
+			if (naissance_obj instanceof naissance.Entity) {
+				window_name = `${naissance_obj.class_name} Actions (${naissance_obj.name})`;
+			} else {
+				window_name = `${naissance_obj.constructor.name} Actions`;
+			}
+		
+		//Create new window
+		naissance_obj.actions_palette_window = veWindow({
+			actions_palette: naissance.Action.drawActionsPalette(naissance_obj, { 
+				open: true, 
+				...options.palette_options
+			})
+		}, {
+			name: window_name,
+			can_rename: false,
+			width: "30rem",
+			...options
+		});
+	}
+	
+	/**
 	 * Returns all applicable scopes for a given Naissance Object.
 	 * 
 	 * @param {Object} arg0_naissance_obj

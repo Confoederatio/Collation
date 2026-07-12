@@ -282,7 +282,7 @@ naissance.Feature = class extends naissance.Entity {
 				tooltip: "Delete",
 			}),
 			open_button: veButton(() => {
-				this.openActionsPalette();
+				naissance.Action.openActionsPalette(this);
 			}, { 
 				name: "<icon>more_vert</icon>",
 				tooltip: "Open Actions Palette"
