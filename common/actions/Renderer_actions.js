@@ -28,6 +28,7 @@ config.actions.renderer = {
 		
 		special_function: async function (json) {
 			map.setSpatialReference(json.set_map_spatial_reference);
+			console.log(`Set spatial reference:`, json.set_map_spatial_reference);
 			
 			//Refresh naissance.FeatureTileLayers this.draw() call
 			Object.iterate(naissance.Feature.instances, (local_key, local_feature) =>

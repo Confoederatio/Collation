@@ -73,12 +73,12 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 		
 		//Fire action
 		if (proj4js_string.length > 0)
-			DALS.Timeline.parseAction("set_map_projection", [{ type: "Renderer", set_map_spatial_reference: {
+			DALS.Timeline.parseAction("set_map_spatial_reference", [{ type: "Renderer", set_map_spatial_reference: {
 				projection: {
 					code: "proj4-custom",
 					project: (c) => {
 						let pc;
-						try { proj4js_transform.forward(c.toArray()); } catch (e) {}
+						try { pc = proj4js_transform.forward(c.toArray()); } catch (e) {}
 						
 						//If projection returns invalid or NaN, return neutral coords
 						if (!pc || isNaN(pc[0]) || isNaN(pc[1]))
@@ -91,15 +91,15 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 					unproject: (pc) => {
 						if (!Array.isArray(Array.toArray(pc)))
 							return new maptalks.Coordinate([0, 0]);
-						let result;
-							try { proj4js_transform.inverse(pc.toArray()); } catch (e) {}
+						let c;
+							try { c = proj4js_transform.inverse(pc.toArray()); } catch (e) {}
 						
-						if (!result || isNaN(result[0]) || isNaN(result[1]))
-							result = (window.last_coord) ? window.last_coord : [0, 0];
+						if (!c || isNaN(c[0]) || isNaN(c[1]))
+							c = (window.last_coord) ? window.last_coord : [0, 0];
 						
 						//Return statement
-						window.last_coord = result;
-						return new maptalks.Coordinate(result);
+						window.last_coord = c;
+						return new maptalks.Coordinate(c);
 					},
 					measure: "EPSG:4326"
 				},
