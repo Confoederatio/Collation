@@ -56,16 +56,22 @@
 		//Handle Polygon cleaning
 		if (geojson_feature.type === "Polygon") {
 			let valid_rings = [];
+			
+			//Iterate over all geojson_feature.coordinates (rings)
 			for (let i = 0; i < geojson_feature.coordinates.length; i++) {
-				let local_ring = geojson_feature.coordinates[i];
 				let clean_ring = [];
+				let local_ring = geojson_feature.coordinates[i];
 				
-				// Deduplicate points to calculate true topological length
+				//Deduplicate points to calculate true topological length
 				if (local_ring) {
+					//Iterate over all coords in local_ring
 					for (let x = 0; x < local_ring.length; x++) {
 						let point_a = local_ring[x];
 						let point_b = clean_ring[clean_ring.length - 1];
-						let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+						
+						let is_duplicate = (point_b) ? 
+							point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+						
 						if (!is_duplicate) clean_ring.push(point_a);
 					}
 				}
@@ -73,32 +79,41 @@
 				if (clean_ring.length >= 4) {
 					valid_rings.push(local_ring);
 				} else {
+					//Return statement
 					if (i === 0) return null;
 				}
 			}
 			geojson_feature.coordinates = valid_rings;
-			return geojson_feature.coordinates.length > 0 ? geojson_feature : null;
+			
+			//Return statement
+			return (geojson_feature.coordinates.length > 0) ? geojson_feature : null;
 		}
 		//Handle MultiPolygon cleaning
 		else if (geojson_feature.type === "MultiPolygon") {
 			let valid_polygons = [];
+			
+			//Iterate over all geojson_feature.coordinates (rings)
 			for (let i = 0; i < geojson_feature.coordinates.length; i++) {
+				let is_poly_valid = true;
 				let local_polygon = geojson_feature.coordinates[i];
 				let valid_rings = [];
-				let is_poly_valid = true;
 				
+				//Iterate over all rings in local_polygon
 				for (let x = 0; x < local_polygon.length; x++) {
 					let local_ring = local_polygon[x];
 					let clean_ring = [];
 					
-					if (local_ring) {
+					if (local_ring)
+						//Iterate over all coords in local_ring
 						for (let y = 0; y < local_ring.length; y++) {
 							let point_a = local_ring[y];
 							let point_b = clean_ring[clean_ring.length - 1];
-							let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+							
+							let is_duplicate = (point_b) ? 
+								(point_a[0] === point_b[0] && point_a[1] === point_b[1]) : false;
+							
 							if (!is_duplicate) clean_ring.push(point_a);
 						}
-					}
 					
 					if (clean_ring.length >= 4) {
 						valid_rings.push(local_ring);
@@ -115,7 +130,9 @@
 				}
 			}
 			geojson_feature.coordinates = valid_polygons;
-			return geojson_feature.coordinates.length > 0 ? geojson_feature : null;
+			
+			//Return statement
+			return (geojson_feature.coordinates.length > 0) ? geojson_feature : null;
 		}
 		//Recursive check for GeometryCollections
 		else if (geojson_feature.type === "GeometryCollection") {
@@ -125,9 +142,12 @@
 				if (cleaned_sub_geom) valid_geometries.push(cleaned_sub_geom);
 			}
 			geojson_feature.geometries = valid_geometries;
-			return geojson_feature.geometries.length > 0 ? geojson_feature : null;
+			
+			//Return statement
+			return (geojson_feature.geometries.length) > 0 ? geojson_feature : null;
 		}
 		
+		//Return statement
 		return geojson_feature;
 	};
 	
