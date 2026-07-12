@@ -89,13 +89,13 @@ config.actions.geometry = {
 					}
 					
 					//Add data to field
-					DALS.Timeline.parseAction(`add_column_${this.ui.add_variables_key}`, [{
+					DALS.Timeline.parseAction(`add_column_${this.ui.add_variables_key}`, {
 						[this.getDALSKey()]: this.id,
 						add_column: {
 							key: this.ui.add_variables_key,
 							values: values
 						}
-					}]);
+					});
 					
 					if (this instanceof naissance.Feature) {
 						let all_geometries = this.getAllGeometries();
@@ -183,7 +183,7 @@ config.actions.geometry = {
 						return;
 					}
 					
-					DALS.Timeline.parseAction("add_description", [{
+					DALS.Timeline.parseAction("add_description", {
 						[this.getDALSKey()]: this.id,
 						add_description: {
 							value: this.ui.add_descriptions_value,
@@ -195,7 +195,7 @@ config.actions.geometry = {
 								search: this.ui.add_descriptions_search
 							}
 						}
-					}]);
+					});
 					
 					//Feature/Geometry handling
 					if (this instanceof naissance.Feature) {
@@ -255,10 +255,10 @@ config.actions.geometry = {
 					}
 					
 					//Add properties
-					DALS.Timeline.parseAction("add_properties", [{
+					DALS.Timeline.parseAction("add_properties", {
 						[this.getDALSKey()]: this.id,
 						add_properties: this.ui.add_property_values
-					}]);
+					});
 					
 					if (this instanceof naissance.Feature) {
 						let all_geometries = this.getAllGeometries();
@@ -311,14 +311,14 @@ config.actions.geometry = {
 						return;
 					}
 					
-					DALS.Timeline.parseAction("add_tag", [{
+					DALS.Timeline.parseAction("add_tag", {
 						[this.getDALSKey()]: this.id,
 						add_tag: {
 							key: this.ui.add_tag_key,
 							mode: tag_mode,
 							position: (tag_mode === "insert") ? this.ui.add_tag_insert_at_position : undefined
 						}
-					}])
+					});
 					
 					if (this instanceof naissance.Feature) {
 						let all_geometries = this.getAllGeometries();
@@ -400,14 +400,14 @@ config.actions.geometry = {
 					} else {
 						actual_date = (this.ui.add_variable_keyframe) ? this.ui.add_variable_keyframe : "start";
 					}
-					DALS.Timeline.parseAction(`add_variable_${this.ui.add_variable_key}`, [{
+					DALS.Timeline.parseAction(`add_variable_${this.ui.add_variable_key}`, {
 						[this.getDALSKey()]: this.id,
 						add_variable: {
 							date: actual_date,
 							key: this.ui.add_variable_key,
 							value: (this.ui.add_variable_value !== undefined) ? this.ui.add_variable_value : ""
 						}
-					}]);
+					});
 				}, { name: "Confirm" })
 			};
 		},
@@ -449,10 +449,10 @@ config.actions.geometry = {
 					let all_flags = [];
 					if (this.ui.clean_symbols) all_flags.push("symbol");
 					
-					DALS.Timeline.parseAction("clean_keyframes", [{
+					DALS.Timeline.parseAction("clean_keyframes", {
 						[this.getDALSKey()]: this.id,
 						clean_keyframes: all_flags
-					}]);
+					});
 					
 					veToast(`Cleaned keyframes.`);
 				}, { name: "Confirm" })
@@ -503,10 +503,10 @@ config.actions.geometry = {
 		draw_function: function () {
 			veConfirm(`Are you sure you want to clear all descriptions for ${this.name}?`, {
 				special_function: () => {
-					DALS.Timeline.parseAction("delete_description", [{
+					DALS.Timeline.parseAction("delete_description", {
 						[this.getDALSKey()]: this.id,
 						delete_description: true
-					}])
+					})
 					
 					if (this instanceof naissance.Feature) {
 						let all_geometries = this.getAllGeometries();
@@ -537,10 +537,10 @@ config.actions.geometry = {
 			return {
 				label: veHTML(`Are you sure you want to delete ${current_name}?`),
 				confirm: veButton(() => {
-					DALS.Timeline.parseAction("delete_geometry", [{
+					DALS.Timeline.parseAction("delete_geometry", {
 						[this.getDALSKey()]: this.id,
 						delete_geometry: true
-					}]);
+					});
 					
 					//Delete all geometries in scope
 					if (this instanceof naissance.Feature) {
@@ -564,10 +564,10 @@ config.actions.geometry = {
 			return {
 				label: veHTML(`Removes all tags from ${this.name}.`),
 				confirm: veButton(() => {
-					DALS.Timeline.parseAction("delete_tags", [{
+					DALS.Timeline.parseAction("delete_tags", {
 						[this.getDALSKey()]: this.id,
 						delete_tags: true
-					}]);
+					});
 					
 					//Delete all tags in scope
 					if (this instanceof naissance.Feature) {
@@ -716,32 +716,32 @@ config.actions.geometry = {
 					
 					if (from_value?.[0] && to_value?.[0])
 						if (geometry_obj.class_name === "GeometryPolygon") {
-							DALS.Timeline.parseAction("add_to_polygon", [{
+							DALS.Timeline.parseAction("add_to_polygon", {
 								type: "GeometryPolygon",
 								geometry_obj: geometry_obj.id,
 								add_to_polygon: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
 								}
-							}], true);
+							}, true);
 						} else if (geometry_obj.class_name === "GeometryLine") {
-							DALS.Timeline.parseAction("add_to_line", [{
+							DALS.Timeline.parseAction("add_to_line", {
 								type: "GeometryLine",
 								geometry_obj: geometry_obj.id,
 								add_to_line: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
 								}
-							}], true);
+							}, true);
 						} else if (geometry_obj.class_name === "GeometryPoint") {
-							DALS.Timeline.parseAction("add_to_point", [{
+							DALS.Timeline.parseAction("add_to_point", {
 								type: "GeometryPoint",
 								geometry_obj: geometry_obj.id,
 								add_to_point: {
 									geometry: from_value[0],
 									date: union_timestamps[i]
 								}
-							}], true);
+							}, true);
 						}
 					
 					//Transfer non-geometric history data (metadata/attributes)
@@ -787,10 +787,10 @@ config.actions.geometry = {
 						let ot_feature = naissance.Feature.instances[this.ui.to_feature_id];
 						
 						//Parse action
-						DALS.Timeline.parseAction(`move_to_feature`, [{
+						DALS.Timeline.parseAction(`move_to_feature`, {
 							[this.getDALSKey()]: this.id,
 							move_to_feature: this.ui.to_feature_id
-						}]);
+						});
 						
 						if (this instanceof naissance.Feature) {
 							veToast(`Moved all geometries from ${this.name} to ${ot_feature.name}.`);
@@ -912,10 +912,10 @@ config.actions.geometry = {
 						return;
 					}
 					
-					DALS.Timeline.parseAction("remove_tag", [{
+					DALS.Timeline.parseAction("remove_tag", {
 						[this.getDALSKey()]: this.id,
 						remove_tag: this.ui.remove_tag_key
-					}]);
+					});
 					
 					if (this instanceof naissance.Feature) {
 						let all_geometries = this.getAllGeometries();
@@ -1306,14 +1306,14 @@ config.actions.geometry = {
 					let current_min = (this.ui.set_zoom_min !== undefined) ? this.ui.set_zoom_min : -1;
 					let current_max = (this.ui.set_zoom_max !== undefined) ? this.ui.set_zoom_max : -1;
 					
-					DALS.Timeline.parseAction("set_zoom", [{
+					DALS.Timeline.parseAction("set_zoom",{
 						[this.getDALSKey()]: this.id,
 						set_zoom: {
 							is_start_keyframe: (this.ui.set_zoom_is_start),
 							max_zoom: (current_max === -1) ? "delete" : current_max,
 							min_zoom: (current_min === -1) ? "delete" : current_min
 						}
-					}]);
+					});
 					
 					veToast(`Successfully updated zoom visibility for ${this.name}.`);
 					this.set_zoom_window.close();
