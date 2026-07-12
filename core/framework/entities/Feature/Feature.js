@@ -251,6 +251,7 @@ naissance.Feature = class extends naissance.Entity {
 		//Declare local instance variables
 		let class_obj = naissance[this.class_name];
 		
+		//Initialise this.quick_actions; this._interface
 		if (!this.quick_actions) {
 			let actions_palette_obj = (!class_obj?.options?.disable_actions_palette) ? {
 				open_button: veButton(() => {
