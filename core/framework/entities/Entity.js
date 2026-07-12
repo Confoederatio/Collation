@@ -200,6 +200,22 @@ naissance.Entity = class extends ve.Class {
 		}
 	}
 	
+	/**
+	 * Returns the name of the entity type.
+	 * 
+	 * @returns {string}
+	 */
+	getTypeName () {
+		//Return statement
+		if (this.class_name) {
+			let class_obj = naissance[this.class_name];
+			if (class_obj.hierarchy_symbol && class_obj.hierarchy_symbol.name)
+				return class_obj.hierarchy_symbol.name;
+			return this.class_name;
+		}
+		return this.constructor.name;
+	}
+	
 	moveToFeature (arg0_feature_obj) {
 		//Convert from parameters
 		let feature_obj = (arg0_feature_obj instanceof naissance.Feature) ?

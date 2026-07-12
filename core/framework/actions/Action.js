@@ -147,7 +147,7 @@ naissance.Action = class {
 		//Get window name
 		if (!window_name)
 			if (naissance_obj instanceof naissance.Entity) {
-				window_name = `${naissance_obj.class_name} Actions (${naissance_obj.name})`;
+				window_name = `${naissance_obj.getTypeName()} Actions (${naissance_obj.name})`;
 			} else {
 				window_name = `${naissance_obj.constructor.name} Actions`;
 			}
