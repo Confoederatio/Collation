@@ -516,9 +516,12 @@ config.actions.geometry = {
 		scope: ["Geometry"],
 		
 		draw_function: function () {
+			//Declare local instance variables
+			let current_name = this.name;
+			
 			//Return statement
 			return {
-				label: veHTML(`Are you sure you want to delete ${this.name}?`),
+				label: veHTML(`Are you sure you want to delete ${current_name}?`),
 				confirm: veButton(() => {
 					DALS.Timeline.parseAction("delete_geometry", [{
 						[this.getDALSKey()]: this.id,
@@ -527,9 +530,9 @@ config.actions.geometry = {
 					
 					//Delete all geometries in scope
 					if (this instanceof naissance.Feature) {
-						veToast(`Deleted all geometries in ${this.name}.`);
+						veToast(`Deleted all geometries in ${current_name}.`);
 					} else {
-						veToast(`Deleted ${this.name}.`);
+						veToast(`Deleted ${current_name}.`);
 					}
 				})
 			};

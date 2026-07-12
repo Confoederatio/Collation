@@ -513,7 +513,8 @@ naissance.Geometry = class extends naissance.Entity {
 						padding: 0
 					}
 				}
-			})
+			}),
+			new_actions_palette: naissance.Action.drawActionsPalette(this)
 		}, {
 			name: `Geometry Actions (${this.name})`,
 			can_rename: false,

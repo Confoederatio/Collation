@@ -69,7 +69,7 @@ naissance.Feature = class extends naissance.Entity {
 		if (!do_not_refresh) this.drawHierarchyDatatype();
 	}
 	
-	drawActionsPalette (arg0_options) {
+	drawActionsPalette (arg0_options) { //[WIP] - Method should now be deprecated
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
 		

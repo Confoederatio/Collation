@@ -10,34 +10,114 @@
 	
 	/**
 	 * Converts a {@link maptalks.Geometry} into a {@link turf.Geometry}.
-	 * 
+	 *
 	 * @param {maptalks.Geometry} arg0_geometry
-	 * 
-	 * @returns {turf.Geometry|null}
+	 *
+	 * @returns {turf.Feature|null}
 	 */
+	//[QUARANTINE]
 	Geospatiale.convertMaptalksToTurf = function (arg0_geometry) {
-		//Convert from parameters
 		let geometry = arg0_geometry;
 		
-		//Internal guard clause if the geometry is already a Turf geometry
 		if (Geospatiale.getCoordsType(geometry) === "turf_geometry") return geometry;
 		if (geometry === null) return null;
 		
-		//Return statement
 		try {
+			//console.time(`convertMaptalksToTurf`);
 			if (typeof geometry === "object" && typeof geometry.toJSON !== "function") {
 				let temp_geometry = maptalks.GeoJSON.toGeometry(geometry);
-				if (temp_geometry === null)
-					temp_geometry = maptalks.Geometry.fromJSON(geometry);
-				geometry = temp_geometry;
+				geometry = temp_geometry === null ? maptalks.Geometry.fromJSON(geometry) : temp_geometry;
 			}
-			let geojson = geometry.toGeoJSON();
 			
-			//Return statement
-			return turf.feature(geojson.geometry);
+			let geojson = geometry.toGeoJSON();
+			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
+			
+			let clean_geometry_data = function (arg1_data) {
+				if (!arg1_data) return null;
+				
+				// Handle Polygon Cleaning
+				if (arg1_data.type === "Polygon") {
+					let valid_rings = [];
+					for (let i = 0; i < arg1_data.coordinates.length; i++) {
+						let local_ring = arg1_data.coordinates[i];
+						let clean_ring = [];
+						
+						// Deduplicate points to calculate true topological length
+						if (local_ring) {
+							for (let x = 0; x < local_ring.length; x++) {
+								let point_a = local_ring[x];
+								let point_b = clean_ring[clean_ring.length - 1];
+								let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+								if (!is_duplicate) clean_ring.push(point_a);
+							}
+						}
+						
+						if (clean_ring.length >= 4) {
+							valid_rings.push(local_ring);
+						} else {
+							if (i === 0) return null;
+						}
+					}
+					arg1_data.coordinates = valid_rings;
+					return arg1_data.coordinates.length > 0 ? arg1_data : null;
+				}
+				// Handle MultiPolygon Cleaning
+				else if (arg1_data.type === "MultiPolygon") {
+					let valid_polygons = [];
+					for (let i = 0; i < arg1_data.coordinates.length; i++) {
+						let local_polygon = arg1_data.coordinates[i];
+						let valid_rings = [];
+						let is_poly_valid = true;
+						
+						for (let x = 0; x < local_polygon.length; x++) {
+							let local_ring = local_polygon[x];
+							let clean_ring = [];
+							
+							if (local_ring) {
+								for (let y = 0; y < local_ring.length; y++) {
+									let point_a = local_ring[y];
+									let point_b = clean_ring[clean_ring.length - 1];
+									let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+									if (!is_duplicate) clean_ring.push(point_a);
+								}
+							}
+							
+							if (clean_ring.length >= 4) {
+								valid_rings.push(local_ring);
+							} else {
+								if (x === 0) {
+									is_poly_valid = false;
+									break;
+								}
+							}
+						}
+						
+						if (is_poly_valid && valid_rings.length > 0) {
+							valid_polygons.push(valid_rings);
+						}
+					}
+					arg1_data.coordinates = valid_polygons;
+					return arg1_data.coordinates.length > 0 ? arg1_data : null;
+				}
+				// Recursive check for GeometryCollections
+				else if (arg1_data.type === "GeometryCollection") {
+					let valid_geometries = [];
+					for (let i = 0; i < arg1_data.geometries.length; i++) {
+						let cleaned_sub_geom = clean_geometry_data(arg1_data.geometries[i]);
+						if (cleaned_sub_geom) valid_geometries.push(cleaned_sub_geom);
+					}
+					arg1_data.geometries = valid_geometries;
+					return arg1_data.geometries.length > 0 ? arg1_data : null;
+				}
+				
+				return arg1_data;
+			};
+			
+			let final_geometry = clean_geometry_data(geometry_data);
+			//console.timeEnd(`convertMaptalksToTurf`);
+			return final_geometry ? turf.feature(final_geometry) : null;
 		} catch (e) {
-			if (typeof geometry === "object") return geometry;
-			return null;
+			return typeof geometry === "object" ? geometry : null;
 		}
 	};
 	
