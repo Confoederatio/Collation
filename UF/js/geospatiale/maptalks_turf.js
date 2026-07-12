@@ -9,45 +9,10 @@
 		global.Geospatiale = {};
 	
 	/**
-	 * Converts a {@link maptalks.Geometry} into a {@link turf.Geometry}.
-	 *
-	 * @param {maptalks.Geometry} arg0_geometry
-	 *
-	 * @returns {Object|turf.Feature|null}
-	 */
-	Geospatiale.convertMaptalksToTurf = function (arg0_geometry) {
-		//Convert from parameters
-		let geometry = arg0_geometry;
-		
-		//Internal guard clauses
-		if (Geospatiale.getCoordsType(geometry) === "turf_geometry") return geometry;
-		if (geometry === null) return null;
-		
-		try {
-			if (typeof geometry === "object" && typeof geometry.toJSON !== "function") {
-				let temp_geometry = maptalks.GeoJSON.toGeometry(geometry);
-				geometry = temp_geometry === null ? maptalks.Geometry.fromJSON(geometry) : temp_geometry;
-			}
-			
-			let geojson = geometry.toGeoJSON();
-			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
-			
-			//Post-process geometry
-			let final_geometry = Geospatiale.cleanRings(geometry_data);
-			
-			//Return statement
-			return (final_geometry) ? turf.feature(final_geometry) : null;
-		} catch (e) {
-			//Return statement
-			return (typeof geometry === "object") ? geometry : null;
-		}
-	};
-	
-	/**
 	 * Cleans rings within a GeoJSON FeatureCollection/MultiPolygon/Polygon to ensure Turf.js validity.
-	 * 
+	 *
 	 * @param {Object} arg0_geojson_feature
-	 * 
+	 *
 	 * @returns {Object|null}
 	 */
 	Geospatiale.cleanRings = function (arg0_geojson_feature) {
@@ -72,7 +37,7 @@
 						let point_a = local_ring[x];
 						let point_b = clean_ring[clean_ring.length - 1];
 						
-						let is_duplicate = (point_b) ? 
+						let is_duplicate = (point_b) ?
 							point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
 						
 						if (!is_duplicate) clean_ring.push(point_a);
@@ -112,7 +77,7 @@
 							let point_a = local_ring[y];
 							let point_b = clean_ring[clean_ring.length - 1];
 							
-							let is_duplicate = (point_b) ? 
+							let is_duplicate = (point_b) ?
 								(point_a[0] === point_b[0] && point_a[1] === point_b[1]) : false;
 							
 							if (!is_duplicate) clean_ring.push(point_a);
@@ -154,6 +119,41 @@
 		
 		//Return statement
 		return geojson_feature;
+	};
+	
+	/**
+	 * Converts a {@link maptalks.Geometry} into a {@link turf.Geometry}.
+	 *
+	 * @param {maptalks.Geometry} arg0_geometry
+	 *
+	 * @returns {Object|turf.Feature|null}
+	 */
+	Geospatiale.convertMaptalksToTurf = function (arg0_geometry) {
+		//Convert from parameters
+		let geometry = arg0_geometry;
+		
+		//Internal guard clauses
+		if (Geospatiale.getCoordsType(geometry) === "turf_geometry") return geometry;
+		if (geometry === null) return null;
+		
+		try {
+			if (typeof geometry === "object" && typeof geometry.toJSON !== "function") {
+				let temp_geometry = maptalks.GeoJSON.toGeometry(geometry);
+				geometry = temp_geometry === null ? maptalks.Geometry.fromJSON(geometry) : temp_geometry;
+			}
+			
+			let geojson = geometry.toGeoJSON();
+			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
+			
+			//Post-process geometry
+			let final_geometry = Geospatiale.cleanRings(geometry_data);
+			
+			//Return statement
+			return (final_geometry) ? turf.feature(final_geometry) : null;
+		} catch (e) {
+			//Return statement
+			return (typeof geometry === "object") ? geometry : null;
+		}
 	};
 	
 	/**
