@@ -1,8 +1,6 @@
-if (!global.naissance) global.naissance = {};
-naissance.HistoryKeyframe = class extends ve.Class {
+global.HistoryKeyframe = class {
 	constructor (arg0_date, ...argn_arguments) {
 		//Convert from parameters
-		super();
 		let date = arg0_date;
 		
 		//Declare local instance variables
@@ -15,7 +13,7 @@ naissance.HistoryKeyframe = class extends ve.Class {
 	
 	/**
 	 * Adds the constructor/data structure of another object as an {@link Array}<{@link Object}>. Concatenates any objects passed to the function.
-	 * 
+	 *
 	 * @param {...any} argn_arguments
 	 */
 	addData (...argn_arguments) {
@@ -43,7 +41,7 @@ naissance.HistoryKeyframe = class extends ve.Class {
 	
 	/**
 	 * Overrides the present value, replacing it with the constructor/data structure of another object as an {@link Array}<{@link Object}>.
-	 * 
+	 *
 	 * @param {...any} argn_arguments
 	 */
 	setData (...argn_arguments) {

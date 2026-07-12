@@ -82,7 +82,7 @@ config.actions.geometry_polygon = {
 			
 			//Date range handling
 			if (json.add_to_polygon.date_range) {
-				polygon_obj.history._executeFunctionInDateRange(json.add_to_polygon.date_range, (local_keyframe) => {
+				polygon_obj.history.callFunctionInDateRange(json.add_to_polygon.date_range, (local_keyframe) => {
 					DALS.Timeline.parseAction("add_to_polygon", [{
 						geometry_obj: polygon_obj.id,
 						add_to_polygon: {
@@ -242,7 +242,7 @@ config.actions.geometry_polygon = {
 				
 				//Difference with existing geometry, if return value is null replace geometry
 				if (json.remove_from_polygon.date_range) {
-					polygon_obj.history._executeFunctionInDateRange(json.remove_from_polygon.date_range, (local_keyframe) => {
+					polygon_obj.history.callFunctionInDateRange(json.remove_from_polygon.date_range, (local_keyframe) => {
 						DALS.Timeline.parseAction("remove_from_polygon", [{
 							geometry_obj: polygon_obj.id,
 							remove_from_polygon: {
@@ -307,7 +307,7 @@ config.actions.geometry_polygon = {
 					let date = (json.simplify_polygon.date) ? json.simplify_polygon.date : main.date;
 					
 					if (json.simplify_polygon.date_range) {
-						polygon_obj.history._executeFunctionInDateRange(json.simplify_polygon.date_range, (local_keyframe) => {
+						polygon_obj.history.callFunctionInDateRange(json.simplify_polygon.date_range, (local_keyframe) => {
 							let local_simplify_options = json.simplify_polygon;
 							delete local_simplify_options.date_range;
 							

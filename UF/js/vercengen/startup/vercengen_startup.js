@@ -485,6 +485,10 @@ global.path = require("path");
 			
 			"UF/js/vercengen/features",
 			
+			//Vercengen-dependent imports
+			//History
+			"UF/js/date/History.js",
+			
 			...((options.is_browser) ? [] : [
 				"!UF/libraries",
 				"!UF/js/ontology",

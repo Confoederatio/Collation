@@ -75,8 +75,9 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	constructor () {
 		super();
-		this.history = new naissance.History({}, {
+		this.history = new History({}, {
 			_id: () => this.id,
+			draw_keyframe_function: naissance.History.draw_keyframe_function,
 			localisation_function: naissance.Geometry.history_localisation_function
 		});
 		this.id = Class.generateRandomID(naissance.Geometry);
@@ -712,7 +713,7 @@ naissance.Geometry = class extends naissance.Entity {
 		delete naissance.Geometry.instances[this.id];
 		
 		//Rerender deleted geometry and remove it from the map
-		this.history = new naissance.History();
+		this.history = new History();
 		if (!do_not_refresh)
 			this.draw();
 	}

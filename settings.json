@@ -25,7 +25,7 @@
   "hide_labels_under_km2": 100,
   "default_polygon_symbol": {
     "polygonFill": "#1bbc9b",
-    "polygonOpacity": 0.7
+    "polygonOpacity": 0.5
   },
   "default_point_symbol": {
     "markerDx": 0,
