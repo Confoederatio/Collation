@@ -280,6 +280,12 @@ naissance.Feature = class extends naissance.Entity {
 				attributes: { class: "order-100 onhover-visible" },
 				name: "<icon>delete</icon>",
 				tooltip: "Delete",
+			}),
+			open_button: veButton(() => {
+				this.openActionsPalette();
+			}, { 
+				name: "<icon>more_vert</icon>",
+				tooltip: "Open Actions Palette"
 			})
 		}, {
 			name: "<b>Quick Actions:</b>",

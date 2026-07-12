@@ -141,10 +141,10 @@ naissance.Action = class {
 		//Parse scopes
 		if (naissance_obj.class_name) {
 			if (naissance_obj.class_name.startsWith("Feature"))
-				scopes.push("Entity", "Feature");
+				Array.uniquePush(scopes, "Entity", "Feature");
 			if (naissance_obj.class_name.startsWith("Geometry"))
-				scopes.push("Entity", "Geometry");
-			scopes.push(naissance_obj.class_name);
+				Array.uniquePush(scopes, "Entity", "Geometry");
+			Array.uniquePush(scopes, naissance_obj.class_name);
 		}
 		
 		//Return statement
