@@ -210,24 +210,6 @@ naissance.Geometry = class extends naissance.Entity {
 		this.draw();
 	}
 	
-	drawActionsPalette (arg0_options) {
-		//Convert from parameters
-		let options = (arg0_options) ? arg0_options : {};
-		
-		//Declare local instance variables
-		if (!this.ui) this.ui = {};
-		
-		//Open this.actions_palette_window
-		if (this.actions_palette_window) this.actions_palette_window.close();
-		this.actions_palette_window = veWindow({
-			new_actions_palette: naissance.Action.drawActionsPalette(this)
-		}, {
-			name: `Geometry Actions (${this.name})`,
-			can_rename: false,
-			width: "30rem"
-		});
-	}
-	
 	/**
 	 * Draws the variables editor for the current geometry UI.
 	 */
@@ -534,7 +516,7 @@ naissance.Geometry = class extends naissance.Entity {
 				}),
 				
 				open_actions_palette: veButton(() => {
-					this.drawActionsPalette();
+					this.openActionsPalette();
 				}, {
 					name: "<icon>more_vert</icon>",
 					tootlip: "Open Actions Palette"
@@ -661,6 +643,26 @@ naissance.Geometry = class extends naissance.Entity {
 		
 		//Call super.open for naissance.Entity
 		super.open(type, options);
+	}
+	
+	openActionsPalette (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Declare local instance variables
+		if (!this.ui) this.ui = {};
+		
+		//Open this.actions_palette_window
+		if (this.actions_palette_window) this.actions_palette_window.close();
+		this.actions_palette_window = veWindow({
+			new_actions_palette: naissance.Action.drawActionsPalette(this, {
+				open: true
+			})
+		}, {
+			name: `Geometry Actions (${this.name})`,
+			can_rename: false,
+			width: "30rem"
+		});
 	}
 	
 	/**

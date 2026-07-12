@@ -51,12 +51,14 @@ naissance.Action = class {
 	 * Returns the Actions Palette for a given Naissance Object.
 	 * 
 	 * @param {Object} arg0_naissance_obj
+	 * @param {Object} [arg1_options]
 	 * 
 	 * @returns {ve.Interface}
 	 */
-	static drawActionsPalette (arg0_naissance_obj) {
+	static drawActionsPalette (arg0_naissance_obj, arg1_options) {
 		//Convert from parameters
 		let naissance_obj = arg0_naissance_obj;
+		let options = (arg1_options) ? arg1_options : {};
 		
 		//Declare local instance variables
 		let components_obj = {};
@@ -114,7 +116,9 @@ naissance.Action = class {
 		return veInterface(processed_components_obj, {
 			name: "Actions",
 			style: { padding: 0 },
-			width: 99
+			width: 99,
+			
+			...options
 		});
 	}
 	
