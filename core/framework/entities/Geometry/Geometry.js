@@ -841,22 +841,6 @@ naissance.Geometry = class extends naissance.Entity {
 			UI_DateMenu.setDate(old_date);
 	};
 	
-	static setProperties (arg0_geometry_ids, arg1_properties_obj, arg2_options) {
-		//Convert from parameters
-		let geometry_ids = Array.toArray(arg0_geometry_ids);
-		let properties_obj = (arg1_properties_obj) ? arg1_properties_obj : {};
-		let options = (arg2_options) ? arg2_options : {};
-		
-		//Parse action for geometries
-		naissance.Geometry.parseActionForGeometries(geometry_ids, {
-			command: "set_properties",
-			key: "set_geometry_properties",
-			name: "Set Geometry Properties",
-			value: properties_obj,
-			...options
-		});
-	}
-	
 	static setSymbols (arg0_geometry_ids, arg1_symbol_obj, arg2_options) {
 		//Convert from parameters
 		let geometry_ids = Array.toArray(arg0_geometry_ids);
