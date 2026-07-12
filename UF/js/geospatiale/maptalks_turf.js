@@ -137,6 +137,8 @@
 		//Recursive check for GeometryCollections
 		else if (geojson_feature.type === "GeometryCollection") {
 			let valid_geometries = [];
+			
+			//Iterate over all geojson_feature.geometries and recursively process them
 			for (let i = 0; i < geojson_feature.geometries.length; i++) {
 				let cleaned_sub_geom = Geospatiale.cleanRings(geojson_feature.geometries[i]);
 				if (cleaned_sub_geom) valid_geometries.push(cleaned_sub_geom);
