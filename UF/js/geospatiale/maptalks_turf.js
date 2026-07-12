@@ -13,11 +13,13 @@
 	 *
 	 * @param {maptalks.Geometry} arg0_geometry
 	 *
-	 * @returns {turf.Feature|null}
+	 * @returns {Object|turf.Feature|null}
 	 */
 	Geospatiale.convertMaptalksToTurf = function (arg0_geometry) {
+		//Convert from parameters
 		let geometry = arg0_geometry;
 		
+		//Internal guard clauses
 		if (Geospatiale.getCoordsType(geometry) === "turf_geometry") return geometry;
 		if (geometry === null) return null;
 		
@@ -30,13 +32,14 @@
 			let geojson = geometry.toGeoJSON();
 			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
 			
-			//Post-process Geometry
+			//Post-process geometry
 			let final_geometry = Geospatiale.cleanRings(geometry_data);
 			
 			//Return statement
 			return (final_geometry) ? turf.feature(final_geometry) : null;
 		} catch (e) {
-			return typeof geometry === "object" ? geometry : null;
+			//Return statement
+			return (typeof geometry === "object") ? geometry : null;
 		}
 	};
 	
