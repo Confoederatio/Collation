@@ -181,6 +181,7 @@ naissance.Action = class {
 		if (!options.palette_options) options.palette_options = {};
 		
 		//Declare local instance variables
+		if (!naissance_obj.ui) naissance_obj.ui = {};
 		let window_name = options.name;
 		
 		//Ensure naissance_obj.actions_palette_window is free

@@ -930,8 +930,8 @@ config.actions.geometry = {
 			//Return statement
 			return {
 				to_feature: new UI_FeatureDatalist(this.ui.to_feature_id, {
-					name: `To ${options.name}`,
-					filter_types: options.move_to_filters,
+					name: `Move To Feature`,
+					filter_types: ["FeatureGroup", "FeatureLayer"],
 					onuserchange: (v) => {
 						console.log(v);
 						this.ui.to_feature_id = v;
