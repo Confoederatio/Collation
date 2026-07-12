@@ -226,6 +226,42 @@ config.actions.geometry_polygon = {
 		name: "Simplify Polygon for All Keyframes",
 		scope: ["GeometryPolygon"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				simplify_threshold: veRange(Math.returnSafeNumber(this.ui.simplify_threshold, 0.01), {
+					name: `Simplify Threshold`,
+					onuserchange: (v) => this.ui.simplify_threshold = v
+				}),
+				truncate_coordinates: veNumber(Math.returnSafeNumber(this.ui.truncate_threshold, -1), {
+					name: "Truncate Coordinates",
+					onuserchange: (v) => this.ui.truncate_threshold = v
+				}),
+				confirm: veButton(() => {
+					//Declare local instance variables
+					let simplify_threshold = Math.returnSafeNumber(this.ui.simplify_threshold, 0.01);
+					
+					try {
+						DALS.Timeline.parseAction(`simplify_polygon_for_all_keyframes`, [{
+							[this.getDALSKey()]: this.id,
+							simplify_polygon_for_all_keyframes: {
+								tolerance: simplify_threshold,
+								truncate: this.ui.truncate_threshold
+							}
+						}]);
+						
+						//Declare formatting strings
+						let simplify_string = String.formatNumber(simplify_threshold, 2);
+						
+						if (this instanceof naissance.Feature) {
+							veToast(`Simplified all geometries by ${simplify_string}.`);
+						} else {
+							veToast(`Simplified all keyframes in polygon by ${simplify_string}.`);
+						}
+					} catch (e) { console.error(e); }
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let polygon_obj = json.naissance_obj;

@@ -654,6 +654,50 @@ config.actions.geometry = {
 			geometry_obj.history.draw(geometry_obj.keyframes_ui);
 		}
 	},
+	move_to_feature: {
+		name: "Move To Feature",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				to_feature: new UI_FeatureDatalist(this.ui.to_feature_id, {
+					name: `To ${options.name}`,
+					filter_types: options.move_to_filters,
+					onuserchange: (v) => {
+						console.log(v);
+						this.ui.to_feature_id = v;
+					}
+				}),
+				confirm: veButton(() => {
+					try {
+						//Declare local instance variables
+						let ot_feature = naissance.Feature.instances[this.ui.to_feature_id];
+						
+						//Parse action
+						DALS.Timeline.parseAction(`move_to_feature`, [{
+							[this.getDALSKey()]: this.id,
+							move_to_feature: this.ui.to_feature_id
+						}]);
+						
+						if (this instanceof naissance.Feature) {
+							veToast(`Moved all geometries from ${this.name} to ${ot_feature.name}.`);
+						} else {
+							veToast(`Moved geometry to from ${this.name} to ${ot_feature.name}.`);
+						}
+					} catch (e) { console.error(e); }
+				}, { name: "Confirm" })
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let feature_obj = naissance.Feature.instances[json.move_to_feature];
+			let geometry_obj = json.naissance_obj;
+			
+			//Attempt to move to feature
+			geometry_obj.moveToFeature(feature_obj);
+		}
+	},
 	remove_column: {
 		name: "Remove Columns",
 		scope: ["Geometry"],
@@ -686,6 +730,41 @@ config.actions.geometry = {
 		name: "Remove Property",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				property_key: veText(this.ui.remove_property_key, {
+					name: "Property Key",
+					onuserchange: (v) => this.ui.remove_property_key = v
+				}),
+				property_date: veDate(main.date, {
+					name: "Date (Optional)",
+					onuserchange: (v) => this.ui.remove_property_date = v
+				}),
+				confirm: veButton(() => {
+					if (!this.ui.remove_property_key) {
+						veToast(`<icon>warning</icon> You must provide a valid property key.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("remove_property", {
+						[this.getDALSKey()]: this.id,
+						remove_property: {
+							date: this.ui.remove_property_date,
+							key: this.ui.remove_property_key
+						}
+					});
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Removed property ${this.ui.remove_property_key} from ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Removed property ${this.ui.remove_property_key} from ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -704,10 +783,106 @@ config.actions.geometry = {
 			geometry_obj.history.cleanKeyframes(); //Clean keyframes just in-case
 		}
 	},
+	remove_tag: {
+		name: "Remove Tag",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				tag_key: veText(this.ui.remove_tag_key, {
+					name: "Tag Key",
+					onuserchange: (v) => this.ui.remove_tag_key = v
+				}),
+				confirm: veButton(() => {
+					if (!this.ui.remove_tag_key) {
+						veToast(`<icon>warning</icon> You must specify a valid tag key to remove.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("remove_tag", [{
+						[this.getDALSKey()]: this.id,
+						remove_tag: this.ui.remove_tag_key
+					}]);
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						veToast(`Removed tag ${this.ui.remove_tag_key} from ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Removed tag ${this.ui.remove_tag_key} from ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			//Check that tags exist prior to removal
+			if (geometry_obj.metadata?.tags) {
+				let tags = geometry_obj.metadata.tags;
+				
+				for (let i = tags.length - 1; i >= 0; i--)
+					if (tags[i] === json.remove_tag) tags.splice(i, 1);
+			}
+		}
+	},
 	remove_variable: {
 		name: "Remove Variable",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				variable_key: veText(this.ui.remove_variable_key, {
+					name: "Variable Key",
+					onuserchange: (v) => this.ui.remove_variable_key = v
+				}),
+				keyframe: veSelect({
+					end: { name: "End Date" },
+					manual: { name: "Manual Date" },
+					start: { name: "Start Date" },
+				}, {
+					name: "Keyframe",
+					selected: (this.ui.remove_variable_keyframe) ? this.ui.remove_variable_keyframe : "start",
+					onuserchange: (v) => this.ui.remove_variable_keyframe = v
+				}),
+				date: veDate(main.date, {
+					name: "Date",
+					limit: () => this.ui.remove_variable_keyframe === "manual",
+					onuserchange: (v) => this.ui.remove_variable_date = v
+				}),
+				confirm: veButton(() => {
+					if (!this.ui.remove_variable_key) {
+						veToast(`<icon>warning</icon> You must provide a valid variable key.`);
+						return;
+					}
+					
+					let actual_date = (this.ui.remove_variable_keyframe === "manual") ?
+						((this.ui.remove_variable_date) ? this.ui.remove_variable_date : main.date) :
+						((this.ui.remove_variable_keyframe) ? this.ui.remove_variable_keyframe : "start");
+					
+					for (let i = 0; i < all_geometries.length; i++)
+						if (all_geometries[i].id) all_geometry_ids.push(all_geometries[i].id);
+					
+					DALS.Timeline.parseAction("remove_variable", {
+						[this.getDALSKey()]: this.id,
+						remove_variable: {
+							date: actual_date,
+							key: this.ui.remove_variable_key
+						}
+					});
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Removed variable ${this.ui.remove_variable_key} from ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Removed variable ${this.ui.remove_variable_key} from ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -737,6 +912,131 @@ config.actions.geometry = {
 				)
 					geometry_obj.removeKeyframe(timestamp);
 			}
+		}
+	},
+	replace_description: {
+		name: "Replace Description",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				find: veInterface({
+					find_value: veWordProcessor(this.ui.replace_descriptions_find_value, {
+						onuserchange: (v) => this.ui.replace_descriptions_find_value = v
+					}),
+				}, { name: "Find", open: true }),
+				replace: veInterface({
+					replace_value: veWordProcessor(this.ui.replace_descriptions_replace_value, {
+						onuserchange: (v) => this.ui.replace_descriptions_replace_value = v
+					}),
+				}, { name: "Replace", open: true }),
+				information: veHTML("If no replace value is provided, the found value(s) will automatically be removed."),
+				
+				match_filtering: veInterface({
+					case_sensitive: veToggle(this.ui.replace_descriptions_case_sensitive, {
+						name: "Case Sensitive",
+						onuserchange: (v) => this.ui.replace_descriptions_case_sensitive = v
+					}),
+					remove_all: veToggle(this.ui.replace_descriptions_remove_all, {
+						name: "Remove All",
+						onuserchange: (v) => this.ui.replace_descriptions_remove_all = v
+					}),
+					remove_order: veSelect({
+						first: { name: "First-to-last" },
+						last: { name: "Last-to-first" }
+					}, {
+						name: "Remove Order",
+						onuserchange: (v) => this.ui.replace_descriptions_remove_order = v,
+						selected: (this.ui.replace_descriptions_remove_order) ?
+							this.ui.replace_descriptions_remove_order : "first"
+					}),
+					search: veSelect({
+						substring: { name: "Substring" },
+						whole_line: { name: "Whole Line" }
+					}, {
+						name: "Search",
+						onuserchange: (v) => this.ui.replace_descriptions_search = v,
+						selected: (this.ui.replace_descriptions_search) ?
+							this.ui.replace_descriptions_search : "substring"
+					})
+				}, { name: "Match Filtering", x: 0, y: 2 }),
+				confirm: veButton(() => {
+					if (!(this.ui.replace_descriptions_find_value?.length > 0)) {
+						veToast(`<icon>warning</icon> You must provide a valid value to find.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("replace_description", {
+						[this.getDALSKey()]: this.id,
+						replace_description: {
+							find_value: this.ui.replace_descriptions_find_value,
+							replace_value: this.ui.replace_descriptions_replace_value,
+							options: {
+								case_sensitive: this.ui.replace_descriptions_case_sensitive,
+								remove_all: this.ui.replace_descriptions_remove_all,
+								remove_order: this.ui.replace_descriptions_remove_order,
+								search: this.ui.replace_descriptions_search
+							}
+						}
+					});
+					
+					//Declare local instance variables
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Replaced descriptions for ${all_geometries.length} geometries in ${this.name}.`);
+					} else {
+						veToast(`Replaced description for ${this.name}.`);
+					}
+				})
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			//Edit description
+			if (geometry_obj?.metadata?.description) {
+				geometry_obj.metadata.description = String.editReplaceInString(
+					geometry_obj.metadata.description,
+					json.replace_description.find_value,
+					json.replace_description.replace_value,
+					json.replace_description.options
+				);
+				if (geometry_obj.metadata.description?.length === 0)
+					delete geometry_obj.metadata.description;
+				
+				if (geometry_obj.variables_ui) geometry_obj.variables_ui.remove(); //Free previous variables_ui
+				geometry_obj.drawVariablesEditor();
+			}
+		}
+	},
+	select_geometry: {
+		name: "Select Geometry",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Select geometries in scope
+			DALS.Timeline.parseAction("select_geometry", {
+				[this.getDALSKey()]: this.id,
+				select_geometry: true
+			});
+			
+			if (this instanceof naissance.Feature) {
+				veToast(`Selected all geometries in ${this.name}.`);
+			} else {
+				veToast(`Selected ${this.name}.`);
+			}
+			
+			//Return statement
+			return undefined;
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			geometry_obj.selected = true;
 		}
 	},
 	set_geometry: {
