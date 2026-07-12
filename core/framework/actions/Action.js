@@ -198,6 +198,10 @@ naissance.Action = class {
 		naissance_obj.actions_palette_window = veWindow({
 			actions_palette: naissance.Action.drawActionsPalette(naissance_obj, { 
 				open: true, 
+				style: {
+					maxHeight: "30rem",
+					overflowY: "auto"
+				},
 				...options.palette_options
 			})
 		}, {
