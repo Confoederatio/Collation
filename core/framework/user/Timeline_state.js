@@ -83,7 +83,7 @@
 			new DALS.Action({
 				options: {
 					key: key,
-					name: key
+					name: String.formalise(key)
 				},
 				value: json
 			});
