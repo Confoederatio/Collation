@@ -63,6 +63,7 @@ naissance.Action = class {
 		//Declare local instance variables
 		let components_obj = {};
 		let scopes = naissance.Action.getScopes(naissance_obj);
+		let sorted_array = [];
 		
 		//Iterate over all scopes and the .scope_map[scopes[i]] that applies to it
 		for (let i = 0; i < scopes.length; i++) {
@@ -70,28 +71,39 @@ naissance.Action = class {
 			
 			if (!local_map) continue;
 			
-			//Iterate over local_map and structure buttons with .draw_function bound to them; assuming they have one
+			//Alphabetise names in actions palette
 			Object.iterate(local_map, (local_key, local_action) => {
-				if (typeof local_action.draw_function === "function") {
-					let action_name = (local_action.name || local_action.key);
-					
-					components_obj[local_action.key] = veButton(() => {
-						let local_components_obj = local_action.draw_function.call(naissance_obj, local_action);
-						let local_name = (naissance_obj.name || naissance_obj.class_name);
-						
-						//Only initialise the window if local_components_obj doesn't return undefined
-						if (local_components_obj !== undefined) {
-							if (naissance_obj[`${local_key}_window`]) naissance_obj[`${local_key}_window`].close();
-							naissance_obj[`${local_key}_window`] = veWindow(local_components_obj, {
-								name: `${action_name}${(local_name) ? ` (${local_name})` : ""}`,
-								can_rename: false,
-								width: "20rem",
-								...local_action.window_options
-							});
-						}
-					}, { name: action_name });
-				}
+				if (typeof local_action.draw_function === "function") sorted_array.push({
+					key: local_key,
+					name: (local_action.name || local_action.key),
+					scope_key: scopes[i]
+				});
 			});
+		}
+		sorted_array.sort((a, b) => a.name.localeCompare(b.name));
+		
+		//Iterate over all sorted_array and structure buttons with .draw_function bound to them; assuming they have one
+		for (let i = 0; i < sorted_array.length; i++) {
+			let local_map = naissance.Action.scope_map[sorted_array[i].scope_key];
+			
+			let local_action = local_map[sorted_array[i].key];
+			
+			let action_name = local_action.name;
+			components_obj[local_action.key] = veButton(() => {
+				let local_components_obj = local_action.draw_function.call(naissance_obj, local_action);
+				let local_name = (naissance_obj.name || naissance_obj.class_name);
+				
+				//Only initialise the window if local_components_obj doesn't return undefined
+				if (local_components_obj !== undefined) {
+					if (naissance_obj[`${local_key}_window`]) naissance_obj[`${local_key}_window`].close();
+					naissance_obj[`${local_key}_window`] = veWindow(local_components_obj, {
+						name: `${action_name}${(local_name) ? ` (${local_name})` : ""}`,
+						can_rename: false,
+						width: "20rem",
+						...local_action.window_options
+					});
+				}
+			}, { name: action_name });
 		}
 		
 		//Show either veHTML/veSearchSelect depending on relevance
@@ -123,7 +135,7 @@ naissance.Action = class {
 	}
 	
 	/**
-	 * Opens the Actions Palette Window for a given Naissance object.
+	 * Opens the Action Palette Window for a given Naissance object.
 	 * 
 	 * @param {Object} arg0_naissance_obj
 	 * @param {Object} [arg1_options]
@@ -228,7 +240,8 @@ naissance.Action = class {
 						let new_options = { ...local_action_obj };
 						
 						//.name handling
-						new_options.name = `(Feature) ${(local_action_obj.name || local_action_key)}`;
+						new_options.name = (local_action_obj.feature_name) ?
+							local_action_obj.feature_name : `(Feature) ${(local_action_obj.name || local_action_key)}`;
 						
 						//[WIP] - .node_options handling
 						if (local_action_obj.node_options) {

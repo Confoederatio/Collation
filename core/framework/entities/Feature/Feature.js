@@ -248,54 +248,63 @@ naissance.Feature = class extends naissance.Entity {
 		let type = arg0_type;
 		let options = (arg1_options) ? arg1_options : {};
 		
-		if (!this.quick_actions) this.quick_actions = veRawInterface({
-			hide_visibility: veButton(() => {
-				DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
+		//Declare local instance variables
+		let class_obj = naissance[this.class_name];
+		
+		if (!this.quick_actions) {
+			let actions_palette_obj = (!class_obj?.options?.disable_actions_palette) ? {
+				open_button: veButton(() => {
+					naissance.Action.openActionsPalette(this);
+				}, {
+					name: "<icon>more_vert</icon>",
+					tooltip: "Open Actions Palette"
+				})
+			} : {};
+			
+			this.quick_actions = veRawInterface({
+				hide_visibility: veButton(() => {
+					DALS.Timeline.parseAction("hide_feature", [{ feature_obj: this.id, set_visibility: false }]);
+				}, {
+					attributes: { class: "order-99 onhover-visible" },
+					name: `<icon>visibility</icon>`,
+					limit: () => this._is_visible,
+					tooltip: "Hide Feature"
+				}),
+				show_visibility: veButton(() => {
+					DALS.Timeline.parseAction("show_feature", [{ feature_obj: this.id, set_visibility: true }]);
+				}, {
+					attributes: { class: "order-99 onhover-visible" },
+					name: "<icon>visibility_off</icon>",
+					limit: () =>  !this._is_visible,
+					tooltip: "Show Feature"
+				}),
+				delete_button: veButton(() => {
+					veConfirm(`Are you sure you want to delete ${this.name}?`, {
+						special_function: () => {
+							//Declare local instance variables
+							let old_name = this.name;
+							
+							super.close("instance");
+							DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
+							veToast(`Deleted ${old_name}.`);
+						}
+					});
+				}, {
+					attributes: { class: "order-100 onhover-visible" },
+					name: "<icon>delete</icon>",
+					tooltip: "Delete",
+				}),
+				...actions_palette_obj
 			}, {
-				attributes: { class: "order-99 onhover-visible" },
-				name: `<icon>visibility</icon>`,
-				limit: () => this._is_visible,
-				tooltip: "Hide Feature"
-			}),
-			show_visibility: veButton(() => {
-				DALS.Timeline.parseAction("show_feature", [{ feature_obj: this.id, set_visibility: true }]);
-			}, {
-				attributes: { class: "order-99 onhover-visible" },
-				name: "<icon>visibility_off</icon>",
-				limit: () =>  !this._is_visible,
-				tooltip: "Show Feature"
-			}),
-			delete_button: veButton(() => {
-				veConfirm(`Are you sure you want to delete ${this.name}?`, {
-					special_function: () => {
-						//Declare local instance variables
-						let old_name = this.name;
-						
-						super.close("instance");
-						DALS.Timeline.parseAction("delete_feature", [{ feature_obj: this.id, delete_feature: true }]);
-						veToast(`Deleted ${old_name}.`);
-					}
-				});
-			}, {
-				attributes: { class: "order-100 onhover-visible" },
-				name: "<icon>delete</icon>",
-				tooltip: "Delete",
-			}),
-			open_button: veButton(() => {
-				naissance.Action.openActionsPalette(this);
-			}, { 
-				name: "<icon>more_vert</icon>",
-				tooltip: "Open Actions Palette"
-			})
-		}, {
-			name: "<b>Quick Actions:</b>",
-			style: {
-				alignItems: "center",
-				display: "flex",
-				"[component='ve-button']": { marginLeft: "var(--padding)" },
-			},
-			width: 99
-		});
+				name: "<b>Quick Actions:</b>",
+				style: {
+					alignItems: "center",
+					display: "flex",
+					"[component='ve-button']": { marginLeft: "var(--padding)" },
+				},
+				width: 99
+			});
+		}
 		if (!this._interface) this._interface = veInterface({
 			quick_actions: this.quick_actions,
 			

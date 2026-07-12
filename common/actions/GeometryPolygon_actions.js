@@ -112,6 +112,7 @@ config.actions.geometry_polygon = {
 	},
 	geometry_operation: {
 		name: "Geometry Operation",
+		feature_name: "Operate on Geometries",
 		scope: ["GeometryPolygon"],
 		
 		draw_function: function () {
@@ -286,6 +287,7 @@ config.actions.geometry_polygon = {
 	},
 	simplify_polygon: {
 		name: "Simplify Polygon",
+		feature_name: "Simplify All Polygons",
 		scope: ["GeometryPolygon"],
 		
 		special_function: async function (json) {
@@ -339,6 +341,7 @@ config.actions.geometry_polygon = {
 	},
 	simplify_polygon_for_all_keyframes: {
 		name: "Simplify Polygon for All Keyframes",
+		feature_name: "Simplify All Polygon Keyframes",
 		scope: ["GeometryPolygon"],
 		
 		draw_function: function () {

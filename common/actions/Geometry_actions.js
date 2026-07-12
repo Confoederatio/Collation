@@ -53,6 +53,7 @@
 config.actions.geometry = {
 	add_column: {
 		name: "Add Column",
+		feature_name: "Add Columns",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -128,6 +129,7 @@ config.actions.geometry = {
 	},
 	add_description: {
 		name: "Add Description",
+		feature_name: "Add Descriptions",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -224,6 +226,7 @@ config.actions.geometry = {
 	},
 	add_properties: {
 		name: "Add Properties",
+		feature_name: "Add Properties",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -279,6 +282,7 @@ config.actions.geometry = {
 	},
 	add_tag: {
 		name: "Add Tag",
+		feature_name: "Add Tags",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -354,6 +358,7 @@ config.actions.geometry = {
 	},
 	add_variable: {
 		name: "Add Variable",
+		feature_name: "Add Variables",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -435,6 +440,7 @@ config.actions.geometry = {
 	},
 	clean_keyframes: {
 		name: "Clean Keyframes",
+		feature_name: "Clean Keyframes",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -498,6 +504,7 @@ config.actions.geometry = {
 	},
 	delete_description: {
 		name: "Delete Description",
+		feature_name: "Delete Descriptions",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -527,6 +534,7 @@ config.actions.geometry = {
 	},
 	delete_geometry: {
 		name: "Delete Geometry",
+		feature_name: "Delete Geometries",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -557,6 +565,7 @@ config.actions.geometry = {
 	},
 	delete_tags: {
 		name: "Delete Tags",
+		feature_name: "Delete Tags",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -584,6 +593,7 @@ config.actions.geometry = {
 	},
 	link_geometry: {
 		name: "Link Geometry",
+		feature_name: "Link Geometries",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -644,6 +654,7 @@ config.actions.geometry = {
 	},
 	manage_relations: {
 		name: "Manage Relations",
+		feature_name: "Manage Geometry Relations",
 		scope: ["Geometry"],
 		do_not_bind_to_feature: true,
 		
@@ -695,6 +706,7 @@ config.actions.geometry = {
 	},
 	merge_geometry: {
 		name: "Merge Geometry",
+		feature_name: "Merge Geometries",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -755,6 +767,7 @@ config.actions.geometry = {
 	},
 	move_keyframe: {
 		name: "Move Keyframe",
+		feature_name: "Move Geometry Keyframes",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -768,6 +781,7 @@ config.actions.geometry = {
 	},
 	move_to_feature: {
 		name: "Move To Feature",
+		feature_name: "Move Geometries to Feature",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -812,6 +826,7 @@ config.actions.geometry = {
 	},
 	remove_column: {
 		name: "Remove Columns",
+		feature_name: "Remove Columns",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -827,6 +842,7 @@ config.actions.geometry = {
 	},
 	remove_keyframe: {
 		name: "Remove Keyframe",
+		feature_name: "Remove Keyframes",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -840,6 +856,7 @@ config.actions.geometry = {
 	},
 	remove_property: {
 		name: "Remove Property",
+		feature_name: "Remove Properties",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -897,6 +914,7 @@ config.actions.geometry = {
 	},
 	remove_tag: {
 		name: "Remove Tag",
+		feature_name: "Remove Tags",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -941,6 +959,7 @@ config.actions.geometry = {
 	},
 	remove_variable: {
 		name: "Remove Variable",
+		feature_name: "Remove Variables",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -1028,6 +1047,7 @@ config.actions.geometry = {
 	},
 	replace_description: {
 		name: "Replace Description",
+		feature_name: "Replace Descriptions",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -1126,6 +1146,7 @@ config.actions.geometry = {
 	},
 	select_geometry: {
 		name: "Select Geometry",
+		feature_name: "Select Geometries",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -1153,6 +1174,7 @@ config.actions.geometry = {
 	},
 	set_geometry: {
 		name: "Set Geometry",
+		feature_name: "Set Geometries",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1169,6 +1191,7 @@ config.actions.geometry = {
 	},
 	set_history: {
 		name: "Set History",
+		feature_name: "Set Histories",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1177,6 +1200,7 @@ config.actions.geometry = {
 	},
 	set_label_symbol: {
 		name: "Set Label Symbol",
+		feature_name: "Set Label Symbols",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1198,6 +1222,7 @@ config.actions.geometry = {
 	},
 	set_name: {
 		name: "Set Name",
+		feature_name: "Set Names",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1234,6 +1259,7 @@ config.actions.geometry = {
 	},
 	set_properties: {
 		name: "Set Properties",
+		feature_name: "Set Properties",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1270,6 +1296,7 @@ config.actions.geometry = {
 	},
 	set_tags: {
 		name: "Set Tags",
+		feature_name: "Set Tags",
 		scope: ["Geometry"],
 		
 		special_function: async function (json) {
@@ -1282,6 +1309,7 @@ config.actions.geometry = {
 	},
 	set_zoom: {
 		name: "Set Zoom Visibility",
+		feature_name: "Set Zoom Visibility",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
@@ -1349,6 +1377,7 @@ config.actions.geometry = {
 	},
 	unlink_geometry: {
 		name: "Unlink Geometry",
+		feature_name: "Unlink Geometries",
 		scope: ["Geometry"],
 		
 		draw_function: function () {
