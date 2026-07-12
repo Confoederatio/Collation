@@ -277,8 +277,18 @@ config.actions.geometry = {
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
+			let json_packet = [];
+			let values = json.add_properties;
 			
-			naissance.Geometry.setProperties(geometry_obj.id, json.add_property);
+			//Iterate over all values and populate json_packet
+			for (let i = 0; i < values.length; i++)
+				json_packet.push({
+					geometry_obj: geometry_obj.id,
+					set_properties: { date: values[i].date, value: values[i].value }
+				});
+			
+			//Call set_properties
+			DALS.Timeline.parseAction("set_properties", json_packet, true);
 		}
 	},
 	add_tag: {
