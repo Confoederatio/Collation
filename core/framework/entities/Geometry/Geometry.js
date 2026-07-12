@@ -535,7 +535,48 @@ naissance.Geometry = class extends naissance.Entity {
 		});
 	}
 	
-	getRelations () { return naissance.Geometry.getRelations.call(this); }
+	getRelations () {
+		//Return statement
+		return naissance.Geometry.getRelations.call(this); 
+	}
+	
+	/**
+	 * Fetches all timestamps within a date range/selection.
+	 * 
+	 * @param {Object[]|number[]|string} [arg0_date_type="current_date"] - Either a date range (Array), or 'all_keyframes'/'current_date'/'end_keyframe'/'start_keyframe'
+	 * 
+	 * @returns {number[]|string[]}
+	 */
+	getTimestamps (arg0_date_type) {
+		//Convert from parameters
+		let date_type = (arg0_date_type || "current_date");
+		
+		//Declare local instance variables
+		let all_timestamps = this.history.getTimestamps().map(Number);
+		let timestamps = [];
+		
+		//Fetch timestamps to edit based on date_type
+		if (date_type === "all_keyframes") {
+			timestamps = all_timestamps;
+		} else if (date_type === "current_date") {
+			timestamps.push(main.timestamp);
+		} else if (date_type === "end_keyframe") {
+			timestamps.push(all_timestamps[all_timestamps.length - 1]);
+		} else if (date_type === "start_keyframe") {
+			timestamps.push(all_timestamps[0]);
+		} else if (Array.isArray(date_type)) {
+			let end_timestamp = Date.getTimestamp(date_type[1]);
+			let start_timestamp = Date.getTimestamp(date_type[0]);
+			
+			//Iterate over all .history.keyframes between start_timestamp and end_timestamp and push them
+			for (let i = 0; i < all_timestamps.length; i++)
+				if (all_timestamps[i] >= start_timestamp && all_timestamps[i] <= end_timestamp) 
+					timestamps.push(all_timestamps[i]);
+		}
+		
+		//Return sorted timestamps
+		return timestamps;
+	}
 	
 	/**
 	 * Returns the actual symbol_obj for the given Geometry.

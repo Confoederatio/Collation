@@ -592,6 +592,147 @@ config.actions.geometry = {
 			try { delete json.naissance_obj.metadata.tags; } catch (e) {}
 		}
 	},
+	edit_symbol_or_property: {
+		name: "Edit Symbol/Property",
+		feature_name: "Edit Symbols/Properties",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Declare local instance variables
+			let date_type = () => (this.ui.edit_symbol_property_date_type || "current_date");
+			let mode = () => (this.ui.edit_symbol_property_mode || "property_to_symbol");
+			
+			let end_date = this.ui.edit_symbol_property_end_date;
+			let start_date = this.ui.edit_symbol_property_start_date;
+			let timestamps = (this.history) ? this.history.getTimestamps() : this.getTimestamps();
+			
+			//Return statement
+			return {
+				date_type: veSelect({
+					all_keyframes: { name: "All Keyframes" },
+					current_date: { name: "Current Date" },
+					date_range: { name: "Date Range" },
+					end_keyframe: { name: "End Keyframe" },
+					start_keyframe: { name: "Start Keyframe" }
+				}, {
+					name: "Date Type",
+					selected: date_type(),
+					onuserchange: (v) => this.ui.edit_symbol_property_date_type = v
+				}),
+				date_range: veInterface({
+					start_date: veDate((start_date !== undefined) ? start_date : timestamps[0], {
+						name: "Start Date",
+						onuserchange: (v) => this.ui.edit_symbol_property_start_date = v
+					}),
+					end_date: veDate((end_date !== undefined) ? end_date : timestamps[timestamps.length - 1], {
+						name: "End Date",
+						onuserchange: (v) => this.ui.edit_symbol_property_end_date = v
+					})
+				}, { 
+					limit: () => this.ui.edit_symbol_property_date_type === "date_range",
+					name: "Date Range",
+					open: true,
+				}),
+				mode: veSelect({
+					property_to_property: { name: "Property to Property" },
+					property_to_symbol: { name: "Property to Symbol" },
+					symbol_to_property: { name: "Symbol to Property" },
+					symbol_to_symbol: { name: "Symbol to Symbol" }
+				}, {
+					name: "Mode",
+					selected: mode(),
+					onuserchange: (v) => this.ui.edit_symbol_property_mode = v
+				}),
+				do_not_delete: veToggle(this.ui.edit_symbol_property_do_not_delete, {
+					name: "Do Not Delete",
+					tooltip: "Whether to delete the original key being copied from.",
+					onuserchange: (v) => this.ui.edit_symbol_property_do_not_delete = v
+				}),
+				from_key: veText(this.ui.edit_symbol_property_from_key, {
+					name: "From Key",
+					onuserchange: (v) => this.ui.edit_symbol_property_from_key = v
+				}),
+				to_key: veText(this.ui.edit_symbol_property_to_key, {
+					name: "To Key",
+					onuserchange: (v) => this.ui.edit_symbol_property_to_key = v
+				}),
+				confirm: veButton(() => {
+					if (!this.ui.edit_symbol_property_from_key) {
+						veToast(`<icon>warning</icon> You must specify a key to copy from.`);
+						return;
+					}
+					if (!this.ui.edit_symbol_property_to_key) {
+						veToast(`<icon>warning</icon> You must specify a key to copy to.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("edit_symbol_or_property", {
+						[this.getDALSKey()]: this.id,
+						edit_symbol_or_property: {
+							date_type: date_type(),
+							do_not_delete: this.ui.edit_symbol_property_do_not_delete,
+							mode: mode(),
+							from_key: this.ui.edit_symbol_property_from_key,
+							to_key: this.ui.edit_symbol_property_to_key,
+						}
+					});
+					
+					if (this instanceof naissance.Feature) {
+						veToast(`Edited properties for all geometries in ${this.name}.`);
+					} else {
+						veToast(`Edited properties for ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
+		/**
+		 * @param {Object} json
+		 *  @param {Object[]|number[]|string} [json.edit_symbol_or_property.date_type="current_date"] - Either a date range (Array), or 'all_keyframes'/'current_date'/'end_keyframe'/'start_keyframe'
+		 *  @param {boolean} [json.edit_symbol_or_property.do_not_delete=false]
+		 *  @param {string} [json.edit_symbol_or_property.mode="property_to_symbol"] - Either 'property_to_property'/'property_to_symbol'/'symbol_to_property'/'symbol_to_symbol'
+		 *
+		 *  @param {string} json.edit_symbol_or_property.from_key
+		 *  @param {string} json.edit_symbol_or_property.to_key
+		 *  
+		 * @returns {Promise<void>}
+		 */
+		special_function: async function (json) {
+			//Declare local instance variables
+			let action_json = json.edit_symbol_or_property;
+			let date_type = (action_json.date_type || "current_date");
+			let geometry_obj = json.naissance_obj;
+			let mode = (action_json.mode || "property_to_symbol");
+			let timestamps = geometry_obj.getTimestamps(date_type);
+			
+			let from_index;
+			let to_index;
+			
+			//Iterate over timestamps and act on .mode
+			for (let i = 0; i < timestamps.length; i++) {
+				let local_keyframe = geometry_obj.history.keyframes[timestamps[i]];
+				let local_value = local_keyframe.value;
+				
+				if (mode === "property_to_property") {
+					from_index = 2; to_index = 2;
+				} else if (mode === "property_to_symbol") {
+					from_index = 2; to_index = 1;
+				} else if (mode === "symbol_to_property") {
+					from_index = 1; to_index = 2;
+				} else if (mode === "symbol_to_symbol") {
+					from_index = 1; to_index = 1;
+				}
+				
+				if (local_value[from_index]) {
+					let from_value = Object.getValue(local_value[from_index], action_json.from_key);
+					
+					if (!local_value[to_index]) local_value[to_index] = {};
+					Object.setValue(local_value[to_index], action_json.to_key, from_value);
+					Object.deleteValue(local_value[from_index], action_json.from_key);
+					console.log(from_value, local_value[to_index], action_json.to_key);
+				}
+			}
+		}
+	},
 	link_geometry: {
 		name: "Link Geometry",
 		feature_name: "Link Geometries",
