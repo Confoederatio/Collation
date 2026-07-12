@@ -32,6 +32,7 @@
 			let geojson = geometry.toGeoJSON();
 			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
 			
+			//Post-process Geometry
 			let clean_geometry_data = function (arg1_data) {
 				if (!arg1_data) return null;
 				
@@ -114,7 +115,7 @@
 			};
 			
 			let final_geometry = clean_geometry_data(geometry_data);
-			//console.timeEnd(`convertMaptalksToTurf`);
+			
 			return final_geometry ? turf.feature(final_geometry) : null;
 		} catch (e) {
 			return typeof geometry === "object" ? geometry : null;
