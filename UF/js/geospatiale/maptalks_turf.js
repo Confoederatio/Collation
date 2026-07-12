@@ -15,7 +15,6 @@
 	 *
 	 * @returns {turf.Feature|null}
 	 */
-	//[QUARANTINE]
 	Geospatiale.convertMaptalksToTurf = function (arg0_geometry) {
 		let geometry = arg0_geometry;
 		
@@ -23,7 +22,6 @@
 		if (geometry === null) return null;
 		
 		try {
-			//console.time(`convertMaptalksToTurf`);
 			if (typeof geometry === "object" && typeof geometry.toJSON !== "function") {
 				let temp_geometry = maptalks.GeoJSON.toGeometry(geometry);
 				geometry = temp_geometry === null ? maptalks.Geometry.fromJSON(geometry) : temp_geometry;
@@ -33,93 +31,104 @@
 			let geometry_data = geojson.geometry ? geojson.geometry : geojson;
 			
 			//Post-process Geometry
-			let clean_geometry_data = function (arg1_data) {
-				if (!arg1_data) return null;
-				
-				// Handle Polygon Cleaning
-				if (arg1_data.type === "Polygon") {
-					let valid_rings = [];
-					for (let i = 0; i < arg1_data.coordinates.length; i++) {
-						let local_ring = arg1_data.coordinates[i];
-						let clean_ring = [];
-						
-						// Deduplicate points to calculate true topological length
-						if (local_ring) {
-							for (let x = 0; x < local_ring.length; x++) {
-								let point_a = local_ring[x];
-								let point_b = clean_ring[clean_ring.length - 1];
-								let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
-								if (!is_duplicate) clean_ring.push(point_a);
-							}
-						}
-						
-						if (clean_ring.length >= 4) {
-							valid_rings.push(local_ring);
-						} else {
-							if (i === 0) return null;
-						}
-					}
-					arg1_data.coordinates = valid_rings;
-					return arg1_data.coordinates.length > 0 ? arg1_data : null;
-				}
-				// Handle MultiPolygon Cleaning
-				else if (arg1_data.type === "MultiPolygon") {
-					let valid_polygons = [];
-					for (let i = 0; i < arg1_data.coordinates.length; i++) {
-						let local_polygon = arg1_data.coordinates[i];
-						let valid_rings = [];
-						let is_poly_valid = true;
-						
-						for (let x = 0; x < local_polygon.length; x++) {
-							let local_ring = local_polygon[x];
-							let clean_ring = [];
-							
-							if (local_ring) {
-								for (let y = 0; y < local_ring.length; y++) {
-									let point_a = local_ring[y];
-									let point_b = clean_ring[clean_ring.length - 1];
-									let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
-									if (!is_duplicate) clean_ring.push(point_a);
-								}
-							}
-							
-							if (clean_ring.length >= 4) {
-								valid_rings.push(local_ring);
-							} else {
-								if (x === 0) {
-									is_poly_valid = false;
-									break;
-								}
-							}
-						}
-						
-						if (is_poly_valid && valid_rings.length > 0) {
-							valid_polygons.push(valid_rings);
-						}
-					}
-					arg1_data.coordinates = valid_polygons;
-					return arg1_data.coordinates.length > 0 ? arg1_data : null;
-				}
-				// Recursive check for GeometryCollections
-				else if (arg1_data.type === "GeometryCollection") {
-					let valid_geometries = [];
-					for (let i = 0; i < arg1_data.geometries.length; i++) {
-						let cleaned_sub_geom = clean_geometry_data(arg1_data.geometries[i]);
-						if (cleaned_sub_geom) valid_geometries.push(cleaned_sub_geom);
-					}
-					arg1_data.geometries = valid_geometries;
-					return arg1_data.geometries.length > 0 ? arg1_data : null;
-				}
-				
-				return arg1_data;
-			};
+			let final_geometry = Geospatiale.cleanRings(geometry_data);
 			
-			let final_geometry = clean_geometry_data(geometry_data);
-			
-			return final_geometry ? turf.feature(final_geometry) : null;
+			//Return statement
+			return (final_geometry) ? turf.feature(final_geometry) : null;
 		} catch (e) {
 			return typeof geometry === "object" ? geometry : null;
 		}
+	};
+	
+	/**
+	 * Cleans rings within a GeoJSON FeatureCollection/MultiPolygon/Polygon to ensure Turf.js validity.
+	 * 
+	 * @param {Object} arg0_geojson_feature
+	 * 
+	 * @returns {Object|null}
+	 */
+	Geospatiale.cleanRings = function (arg0_geojson_feature) {
+		//Convert from parameters
+		let geojson_feature = arg0_geojson_feature;
+		
+		if (!geojson_feature) return null; //Internal guard clause if geojson_feature isn't defined
+		
+		//Handle Polygon cleaning
+		if (geojson_feature.type === "Polygon") {
+			let valid_rings = [];
+			for (let i = 0; i < geojson_feature.coordinates.length; i++) {
+				let local_ring = geojson_feature.coordinates[i];
+				let clean_ring = [];
+				
+				// Deduplicate points to calculate true topological length
+				if (local_ring) {
+					for (let x = 0; x < local_ring.length; x++) {
+						let point_a = local_ring[x];
+						let point_b = clean_ring[clean_ring.length - 1];
+						let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+						if (!is_duplicate) clean_ring.push(point_a);
+					}
+				}
+				
+				if (clean_ring.length >= 4) {
+					valid_rings.push(local_ring);
+				} else {
+					if (i === 0) return null;
+				}
+			}
+			geojson_feature.coordinates = valid_rings;
+			return geojson_feature.coordinates.length > 0 ? geojson_feature : null;
+		}
+		//Handle MultiPolygon cleaning
+		else if (geojson_feature.type === "MultiPolygon") {
+			let valid_polygons = [];
+			for (let i = 0; i < geojson_feature.coordinates.length; i++) {
+				let local_polygon = geojson_feature.coordinates[i];
+				let valid_rings = [];
+				let is_poly_valid = true;
+				
+				for (let x = 0; x < local_polygon.length; x++) {
+					let local_ring = local_polygon[x];
+					let clean_ring = [];
+					
+					if (local_ring) {
+						for (let y = 0; y < local_ring.length; y++) {
+							let point_a = local_ring[y];
+							let point_b = clean_ring[clean_ring.length - 1];
+							let is_duplicate = point_b ? point_a[0] === point_b[0] && point_a[1] === point_b[1] : false;
+							if (!is_duplicate) clean_ring.push(point_a);
+						}
+					}
+					
+					if (clean_ring.length >= 4) {
+						valid_rings.push(local_ring);
+					} else {
+						if (x === 0) {
+							is_poly_valid = false;
+							break;
+						}
+					}
+				}
+				
+				if (is_poly_valid && valid_rings.length > 0) {
+					valid_polygons.push(valid_rings);
+				}
+			}
+			geojson_feature.coordinates = valid_polygons;
+			return geojson_feature.coordinates.length > 0 ? geojson_feature : null;
+		}
+		//Recursive check for GeometryCollections
+		else if (geojson_feature.type === "GeometryCollection") {
+			let valid_geometries = [];
+			for (let i = 0; i < geojson_feature.geometries.length; i++) {
+				let cleaned_sub_geom = Geospatiale.cleanRings(geojson_feature.geometries[i]);
+				if (cleaned_sub_geom) valid_geometries.push(cleaned_sub_geom);
+			}
+			geojson_feature.geometries = valid_geometries;
+			return geojson_feature.geometries.length > 0 ? geojson_feature : null;
+		}
+		
+		return geojson_feature;
 	};
 	
 	/**
