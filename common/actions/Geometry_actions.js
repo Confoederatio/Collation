@@ -482,6 +482,18 @@ config.actions.geometry = {
 			geometry_obj.history.getKeyframe(); //Refresh localisation
 		}
 	},
+	debug_geometry: {
+		name: "Debug Geometry",
+		scope: ["Geometry"],
+		do_not_bind_to_feature: true,
+		
+		draw_function: function () {
+			window.$geometry = this;
+			console.log(`Geometry logged as:`, window.$geometry);
+			veToast(`Geometry logged to console.`);
+			return undefined;
+		}
+	},
 	delete_description: {
 		name: "Delete Description",
 		scope: ["Geometry"],
@@ -572,6 +584,105 @@ config.actions.geometry = {
 		name: "Geometry Operation",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Declare local instance variables
+			let operation_names = {
+				buffer: { name: "Buffer" },
+				difference: { name: "Difference" },
+				intersect: { name: "Intersect" },
+				union: { name: "Union" },
+				xor: { name: "XOR" }
+			};
+			let operation_target = () => (this.ui.geometry_operation_target || "geometry");
+			let operation_type = () => (this.ui.geometry_operation_type || "union");
+			
+			//Return statement
+			return {
+				geometry_operation_target: veSelect({
+					feature: { name: "Feature" },
+					geometry: { name: "Geometry" }
+				}, {
+					name: "Merge With Entity Type",
+					selected: operation_target(),
+					onuserchange: (v) => this.ui.geometry_operation_target = v
+				}),
+				geometry_operation_geometry: new UI_GeometryDatalist(this.ui.geometry_operation_geometry, {
+					name: "Geometry",
+					filter_types: ["GeometryPolygon"],
+					limit: () => {
+						let target = operation_target();
+						if (target === "geometry") return true;
+						return false;
+					},
+					onuserchange: (v) => this.ui.geometry_operation_geometry = v
+				}),
+				geometry_operation_feature: new UI_FeatureDatalist(this.ui.geometry_operation_feature, {
+					name: "Feature",
+					filter_types: ["FeatureGroup", "FeatureLayer"],
+					limit: () => {
+						let target = operation_target();
+						if (target === "feature") return true;
+						return false;
+					},
+					onuserchange: (v) => this.ui.geometry_operation_feature = v
+				}),
+				operation_type: veSelect(operation_names, {
+					name: "Operation Type",
+					selected: operation_type(),
+					onuserchange: (v) => this.ui.geometry_operation_type = v
+				}),
+				
+				buffer_distance: veNumber(this.ui.geometry_operation_buffer_distance, {
+					name: "Buffer Distance",
+					limit: () => operation_type() === "buffer",
+					onuserchange: (v) => this.ui.geometry_operation_buffer_distance = v
+				}),
+				
+				confirm: veButton(() => {
+					//Declare local instance variables
+					let geometry_operation_type = operation_type();
+					let options = {};
+					let target = operation_target();
+					let target_geometry_id = (target === "geometry") ? this.ui.geometry_operation_geometry : undefined;
+					let target_feature_id = (target === "feature") ? this.ui.geometry_operation_feature : undefined;
+					
+					//Buffer handling
+					let buffer_distance = Math.returnSafeNumber(this.ui.geometry_operation_buffer_distance, 0);
+					if (geometry_operation_type === "buffer") {
+						if (buffer_distance === 0) {
+							veToast(`<icon>warning</icon> Buffer distance must not be 0.`);
+							return;
+						}
+						
+						options.distance = buffer_distance;
+					}
+					
+					//Run feature operation
+					DALS.Timeline.parseAction("geometry_operation", {
+						[this.getDALSKey()]: this.id,
+						geometry_operation: {
+							type: geometry_operation_type,
+							feature_id: target_feature_id,
+							geometry_id: target_geometry_id,
+							options: options
+						}
+					});
+					
+					let operation_name = operation_names[geometry_operation_type].name;
+					let ot_name;
+					if (target_geometry_id) ot_name = naissance.Geometry.instances[target_geometry_id]?.name;
+					if (target_feature_id) ot_name = naissance.Feature.instances[target_feature_id]?.name;
+					
+					if (this instanceof naissance.Geometry) {
+						veToast(`Performed ${operation_name} on ${this.name} using ${ot_name}.`);
+					} else {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Performed ${operation_name} on ${String.formatNumber(all_geometries.length)} geometries using ${ot_name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -582,6 +693,117 @@ config.actions.geometry = {
 				json.geometry_operation.options);
 			maptalks_geometry = (maptalks_geometry === null) ? null : maptalks_geometry.toJSON();
 			geometry_obj.history.addKeyframe(main.date, maptalks_geometry);
+		}
+	},
+	link_geometry: {
+		name: "Link Geometry",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				link_geometry_with: new UI_GeometryDatalist(this.ui.link_geometry_with_id, {
+					name: "Link to Geometry:",
+					onuserchange: (v) => this.ui.link_geometry_with_id = v
+				}),
+				confirm: veButton(() => {
+					//Internal guard clauses to prevent invalid operations
+					if (!this.ui.link_geometry_with_id) {
+						veToast(`<icon>warning</icon> You must select a valid Geometry to link to.`)
+						return;
+					}
+					
+					let linked_geometry = naissance.Geometry.instances[this.ui.link_geometry_with_id];
+					
+					if (!linked_geometry) {
+						veToast(`<icon>warning</icon> The linked geometry no longer exists.`);
+						return;
+					}
+					if (linked_geometry.class_name !== this.class_name) {
+						veToast(`<icon>warning</icon> You may only link to geometries of the same type.`);
+						return;
+					}
+					if (linked_geometry?.metadata?.linked_id) {
+						veToast(`<icon>warning</icon> You cannot recursively link geometries.`);
+						return;
+					}
+					
+					let from_layer = this.getLayer();
+					let to_layer = linked_geometry.getLayer();
+					
+					if (from_layer.id === to_layer.id) {
+						veToast(`<icon>warning</icon> You cannot claim geometries are identical within the same layer. Move ${this.name} to a new layer first.`);
+						return;
+					}
+					
+					if (!this.metadata) this.metadata = {};
+					this.metadata.linked_id = this.ui.link_geometry_with_id;
+					
+					if (this instanceof naissance.Geometry) {
+						veToast(`Linked ${this.name} with ${linked_geometry.name}`);
+					} else {
+						veToast(`Linked all Geometries in ${this.name} with ${linked_geometry.name}`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			if (!geometry_obj.metadata) geometry_obj.metadata = {};
+			geometry_obj.metadata.linked_id = json.link_geometry;
+		}
+	},
+	manage_relations: {
+		name: "Manage Relations",
+		scope: ["Geometry"],
+		do_not_bind_to_feature: true,
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				add_remove: veSelect({
+					add: { name: "Start" },
+					remove: { name: "End" }
+				}, {
+					name: "Start/End Relationship",
+					onuserchange: (v) => this.ui.add_relation_modifier = v,
+					selected: (this.ui.add_relation_with_id) ? this.ui.add_relation_with_id : "add"
+				}),
+				relation_mode: veSelect({
+					clear: { name: "Clear" },
+					direct: { name: "Direct" },
+					indirect: { name: "Indirect" },
+					remove_direct: { name: "Remove Direct" },
+					remove_indirect: { name: "Remove Indirect" },
+					replace: { name: "Replace" }
+				}, {
+					name: "Mode",
+					tooltip: "Direct relationships are with other geometries, indirect relations are detached (similar to tags).",
+					
+					onuserchange: (v) => this.ui.add_relation_mode = v,
+					selected: (this.ui.add_relation_mode) ? this.ui.add_relation_mode : "direct",
+				}),
+				relation_with: new UI_GeometryDatalist(this.ui.add_relation_with_id, {
+					name: "Add Relation with Geometry:",
+					limit: () => !["clear", "indirect", "remove_indirect"].includes(this.ui.add_relation_mode),
+					onuserchange: (v) => this.ui.add_relation_with_id = v
+				}),
+				relation_date: veDate((this.ui.add_relation_date !== undefined) ? this.ui.add_relation_date : main.date, {
+					name: "Relation Date:",
+					onuserchange: (v) => this.ui.add_relation_date = v,
+					tooltip: "The date at which this relation begins."
+				}),
+				relation_name: veText(this.ui.add_relation_type, {
+					name: "Relation Name:",
+					limit: () => !["clear"].includes(this.ui.add_relation_mode),
+					onuserchange: (v) => this.ui.add_relation_type = v
+				}),
+				confirm: veButton(() => {
+					naissance.Geometry.Action_manageRelations.call(this);
+				}, { name: "Confirm" })
+			};
 		}
 	},
 	merge_geometry: {
@@ -1236,6 +1458,33 @@ config.actions.geometry = {
 				if (Object.keys(zoom_props).length > 0)
 					geometry_obj.history.addKeyframe(zoom_date, undefined, undefined, zoom_props);
 			}
+		}
+	},
+	unlink_geometry: {
+		name: "Unlink Geometry",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			DALS.Timeline.parseAction("unlink_geometry", {
+				[this.getDALSKey()]: this.id,
+				unlink_geometry: true
+			});
+			
+			if (this instanceof naissance.Feature) {
+				veToast(`Unlinked all geometries in ${this.name}.`);
+			} else {
+				veToast(`Unlinked ${this.name}.`);
+			}
+			
+			//Return statement
+			return undefined;
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			//Unlink geometry
+			if (json.unlink_geometry)	delete geometry_obj.metadata.linked_id;
 		}
 	}
 };

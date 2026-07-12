@@ -112,7 +112,7 @@ naissance.Action = class {
 		
 		//Return statement
 		return veInterface(processed_components_obj, {
-			name: "Actions (New)",
+			name: "Actions",
 			style: { padding: 0 },
 			width: 99
 		});
