@@ -62,6 +62,7 @@ naissance.Action = class {
 		
 		//Declare local instance variables
 		let components_obj = {};
+		let filter_obj = {};
 		let scopes = naissance.Action.getScopes(naissance_obj);
 		let sorted_array = [];
 		
@@ -84,27 +85,55 @@ naissance.Action = class {
 		
 		//Iterate over all sorted_array and structure buttons with .draw_function bound to them; assuming they have one
 		for (let i = 0; i < sorted_array.length; i++) {
+			let local_filters = {};
 			let local_map = naissance.Action.scope_map[sorted_array[i].scope_key];
 			
 			let local_action = local_map[sorted_array[i].key];
 			
 			let action_name = local_action.name;
+			
+			//Filter handling
+			if (Array.isArray(local_action.scope))
+				for (let x = 0; x < local_action.scope.length; x++) {
+					let filter_key = String.snakecase(local_action.scope[x]);
+					
+					filter_obj[`data-${filter_key}`] = local_action.scope[x];
+					local_filters[`data-${filter_key}`] = "true";
+				}
+				
+			if (local_action.filters)
+				for (let i = 0; i < local_action.filters.length; i++) {
+					let filter_key = String.snakecase(local_action.filters[i]);
+					
+					//Set attributes
+					filter_obj[`data-${filter_key}`] = local_action.filters[i];
+					local_filters[`data-${filter_key}`] = "true";
+				}
+			
+			//Component handling
 			components_obj[local_action.key] = veButton(() => {
 				let local_components_obj = local_action.draw_function.call(naissance_obj, local_action);
 				let local_name = (naissance_obj.name || naissance_obj.class_name);
 				
 				//Only initialise the window if local_components_obj doesn't return undefined
 				if (local_components_obj !== undefined) {
-					if (naissance_obj[`${local_key}_window`]) naissance_obj[`${local_key}_window`].close();
-					naissance_obj[`${local_key}_window`] = veWindow(local_components_obj, {
+					if (naissance_obj[`${local_action.key}_window`]) naissance_obj[`${local_action.key}_window`].close();
+					naissance_obj[`${local_action.key}_window`] = veWindow(local_components_obj, {
 						name: `${action_name}${(local_name) ? ` (${local_name})` : ""}`,
 						can_rename: false,
 						width: "20rem",
 						...local_action.window_options
 					});
 				}
-			}, { name: action_name });
+			}, {
+				attributes: {
+					...local_filters
+				},
+				name: action_name 
+			});
 		}
+		
+		console.log(filter_obj);
 		
 		//Show either veHTML/veSearchSelect depending on relevance
 		let processed_components_obj = {};
@@ -112,6 +141,7 @@ naissance.Action = class {
 		if (Object.keys(components_obj).length > 0) {
 			processed_components_obj.actions_palette = veSearchSelect(components_obj, {
 				display: "inline",
+				filter_names: filter_obj,
 				placeholder: "Search for action ...",
 				style: {
 					"> [component='ve-button']": {

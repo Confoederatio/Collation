@@ -54,6 +54,7 @@ config.actions.geometry = {
 	add_column: {
 		name: "Add Column",
 		feature_name: "Add Columns",
+		filters: ["Variables"],
 		scope: ["Geometry"],
 		
 		draw_function: function () {
