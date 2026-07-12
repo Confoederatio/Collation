@@ -683,7 +683,12 @@ naissance.Geometry = class extends naissance.Entity {
 		
 		
 		//Call super.open for naissance.Entity
-		super.open(type, options);
+		super.open(type, {
+			onuserchange: (v) => {
+				if (v.name) this.name = v;
+			},
+			...options
+		});
 	}
 	
 	/**

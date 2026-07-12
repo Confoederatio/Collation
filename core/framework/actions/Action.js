@@ -133,8 +133,6 @@ naissance.Action = class {
 			});
 		}
 		
-		console.log(filter_obj);
-		
 		//Show either veHTML/veSearchSelect depending on relevance
 		let processed_components_obj = {};
 		
