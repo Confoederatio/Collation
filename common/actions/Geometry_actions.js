@@ -55,6 +55,58 @@ config.actions.geometry = {
 		name: "Add Column",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				field_name: veText(this.ui.add_variables_key, {
+					name: "Variable Key",
+					onuserchange: (v) => this.ui.add_variables_key = v
+				}),
+				edit_values: veList(veRawInterface({
+					date: veDate(),
+					value: veText()
+				}), {
+					name: "Edit Values",
+					onuserchange: (v) => {
+						//Declare local instance variables
+						let values = [];
+						
+						//Iterate over all v entries
+						for (let i = 0; i < v.length; i++)
+							values.push([Date.getTimestamp(v[i].date.v), v[i].value.v]);
+						
+						this.ui.add_variables_values = values;
+					}
+				}),
+				
+				confirm: veButton(() => {
+					//Declare local instance variables
+					let values = (this.ui.add_variables_values) ? this.ui.add_variables_values : [];
+					
+					if (!this.ui.add_variables_key) {
+						veToast(`<icon>warning</icon> You must set a valid field name.`);
+						return;
+					}
+					
+					//Add data to field
+					DALS.Timeline.parseAction(`add_column_${this.ui.add_variables_key}`, [{
+						[this.getDALSKey()]: this.id,
+						add_column: {
+							key: this.ui.add_variables_key,
+							values: values
+						}
+					}]);
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Added ${this.ui.add_variables_key} as a variable column to ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Added ${this.ui.add_variables_key} as a variable column for ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -78,6 +130,84 @@ config.actions.geometry = {
 		name: "Add Description",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Declare local instance variables
+			if (!this.ui) this.ui = {};
+			if (this.ui.add_descriptions_avoid_duplicates === undefined) this.ui.add_descriptions_avoid_duplicates = true;
+			if (this.ui.add_descriptions_insert_at === undefined) this.ui.add_descriptions_insert_at = "append";
+			if (this.ui.add_descriptions_insert_newline === undefined) this.ui.add_descriptions_insert_newline = true;
+			if (this.ui.add_descriptions_search === undefined) this.ui.add_descriptions_search = "substring";
+			
+			//Return statement
+			return {
+				value: veWordProcessor(this.ui.add_descriptions_value, {
+					onuserchange: (v) => this.ui.add_descriptions_value = v,
+					width: 99,
+					x: 0, y: 0
+				}),
+				duplicate_filtering: veInterface({
+					avoid_duplicates: veToggle(this.ui.add_descriptions_avoid_duplicates, {
+						name: "Avoid Duplicates",
+						onuserchange: (v) => this.ui.add_descriptions_avoid_duplicates = v
+					}),
+					case_sensitive: veToggle(this.ui.add_descriptions_case_sensitive, {
+						name: "Case Sensitive",
+						onuserchange: (v) => this.ui.add_descriptions_case_sensitive = v
+					}),
+					search: veSelect({
+						substring: { name: "Substring" },
+						whole_line: { name: "Whole Line" }
+					}, {
+						name: "Search",
+						selected: this.ui.add_descriptions_search,
+						onuserchange: (v) => this.ui.add_descriptions_search = v
+					})
+				}, { name: "Duplicate Filtering", x: 0, y: 1 }),
+				insert_options: veInterface({
+					insert_at: veSelect({
+						append: { name: "Append" },
+						prepend: { name: "Prepend" }
+					}, {
+						name: "Insert At",
+						onuserchange: (v) => this.ui.add_descriptions_insert_at = v,
+						selected: this.ui.add_descriptions_insert_at
+					}),
+					insert_newline: veToggle(this.ui.add_descriptions_insert_newline, {
+						name: "Insert Newline",
+						onuserchange: (v) => this.ui.add_descriptions_insert_newline = v
+					}),
+				}, { name: "Insert Options", x: 1, y: 1 }),
+				confirm: veButton(() => {
+					if (!(this.ui.add_descriptions_value?.length > 0)) {
+						veToast(`<icon>warning</icon> You must provide a valid description to append/prepend.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("add_description", [{
+						[this.getDALSKey()]: this.id,
+						add_description: {
+							value: this.ui.add_descriptions_value,
+							options: {
+								avoid_duplicates: this.ui.add_descriptions_avoid_duplicates,
+								case_sensitive: this.ui.add_descriptions_case_sensitive,
+								insert_at: this.ui.add_descriptions_insert_at,
+								insert_newline: this.ui.add_descriptions_insert_newline,
+								search: this.ui.add_descriptions_search
+							}
+						}
+					}]);
+					
+					//Feature/Geometry handling
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Added descriptions for ${all_geometries.length} geometries in ${this.name}.`);
+					} else {
+						veToast(`Added description to ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -92,10 +222,193 @@ config.actions.geometry = {
 			geometry_obj.drawVariablesEditor();
 		}
 	},
+	add_properties: {
+		name: "Add Properties",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				edit_values: veList(veRawInterface({
+					date: veDate(),
+					value: veObjectEditor()
+				}), {
+					name: "Edit Values",
+					onuserchange: (v) => {
+						//Declare local instance variables
+						let values = [];
+						
+						//Iterate over all v entries
+						for (let i = 0; i < v.length; i++)
+							values.push({
+								date: Date.getTimestamp(v[i].date.v),
+								value: v[i].value.v
+							});
+						
+						this.ui.add_property_values = values;
+					}
+				}),
+				confirm: veButton(() => {
+					if (!(this.ui.add_property_values?.length > 0)) {
+						veToast(`<icon>warning</icon> Adding a property requires a valid field and value.`);
+						return;
+					}
+					
+					//Add properties
+					DALS.Timeline.parseAction("add_properties", [{
+						[this.getDALSKey()]: this.id,
+						add_properties: this.ui.add_property_values
+					}]);
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Successfully altered ${String.formatNumber(this.ui.add_property_values.length)} properties for ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Successfully altered ${String.formatNumber(this.ui.add_property_values.length)} properties for ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			naissance.Geometry.setProperties(geometry_obj.id, json.add_property);
+		}
+	},
+	add_tag: {
+		name: "Add Tag",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			//Return statement
+			return {
+				tag_key: veText(this.ui.add_tag_key, {
+					name: "Tag Key",
+					onuserchange: (v) => this.ui.add_tag_key = v
+				}),
+				tag_mode: veSelect({
+					append: { name: "Append" },
+					insert: { name: "Insert" },
+					prepend: { name: "Prepend" }
+				}, {
+					name: "Tag Mode",
+					onuserchange: (v) => this.ui.add_tag_mode = v,
+					selected: (this.ui.add_tag_mode) ? this.ui.add_tag_mode : "append"
+				}),
+				insert_at_position: veNumber(this.ui.add_tag_insert_at_position, {
+					name: "Insert at Position",
+					limit: () => (this.ui.add_tag_mode === "insert"),
+					min: 0,
+					onuserchange: (v) => this.ui.add_tag_insert_at_position = v,
+				}),
+				confirm: veButton(() => {
+					if (!(this.ui?.add_tag_key?.length > 0)) {
+						veToast(`<icon>warning</icon> You must specify a valid tag key to add.`);
+						return;
+					}
+					
+					DALS.Timeline.parseAction("add_tag", [{
+						[this.getDALSKey()]: this.id,
+						add_tag: {
+							key: this.ui.add_tag_key,
+							mode: this.ui.add_tag_mode,
+							position: (this.ui.add_tag_mode === "insert") ? this.ui.add_tag_insert_at_position : undefined
+						}
+					}])
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						
+						veToast(`Added ${this.ui.add_tag_key} to ${String.formatNumber(all_geometries.length)} geometries.`);
+					} else {
+						veToast(`Added ${this.ui.add_tag_key} to ${this.name}.`);
+					}
+				}, { name: "Confirm" })
+			};
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			let tag_mode = json.add_tag.mode;
+			let tag_key = json.add_tag.key;
+			let tag_position = json.add_tag.position;
+			
+			//Ensure .metadata.tags exists for geometry_obj
+			if (!geometry_obj.metadata) geometry_obj.metadata = {};
+			if (!geometry_obj.metadata.tags) geometry_obj.metadata.tags = [];
+			
+			//Insert tag
+			if (tag_mode === "append") {
+				geometry_obj.metadata.tags.push(tag_key);
+			} else if (tag_mode === "insert") {
+				geometry_obj.metadata.tags.splice(
+					Math.returnSafeNumber(tag_position), 0, tag_key);
+			} else if (tag_mode === "prepend") {
+				geometry_obj.metadata.tags.unshift(tag_key);
+			}
+		}
+	},
 	add_variable: {
 		name: "Add Variable",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				variable_key: veText(this.ui.add_variable_key, {
+					name: "Variable Key",
+					onuserchange: (v) => this.ui.add_variable_key = v
+				}),
+				value: veText(this.ui.add_variable_value, {
+					name: "Value",
+					onuserchange: (v) => {
+						if (!isNaN(parseFloat(v))) {
+							this.ui.add_variable_value = parseFloat(v);
+						} else {
+							this.ui.add_variable_value = v;
+						}
+					}
+				}),
+				keyframe: veSelect({
+					end: { name: "End Date" },
+					manual: { name: "Manual Date" },
+					start: { name: "Start Date" },
+				}, {
+					name: "Keyframe",
+					selected: (this.ui.add_variable_keyframe) ? this.ui.add_variable_keyframe : "start",
+					onuserchange: (v) => this.ui.add_variable_keyframe = v
+				}),
+				date: veDate(main.date, {
+					name: "Date",
+					limit: () => this.ui.add_variable_keyframe === "manual",
+					onuserchange: (v) => this.ui.add_variable_date = v
+				}),
+				
+				confirm: veButton(() => {
+					if (!this.ui.add_variable_key) {
+						veToast(`<icon>warning</icon> You must provide a valid variable key.`);
+						return;
+					}
+					
+					let actual_date;
+					if (this.ui.add_variable_keyframe === "manual") {
+						actual_date = (this.ui.add_variable_date) ? this.ui.add_variable_date : main.date;
+					} else {
+						actual_date = (this.ui.add_variable_keyframe) ? this.ui.add_variable_keyframe : "start";
+					}
+					DALS.Timeline.parseAction(`add_variable_${this.ui.add_variable_key}`, [{
+						[this.getDALSKey()]: this.id,
+						add_variable: {
+							date: actual_date,
+							key: this.ui.add_variable_key,
+							value: (this.ui.add_variable_value !== undefined) ? this.ui.add_variable_value : ""
+						}
+					}]);
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
@@ -122,6 +435,27 @@ config.actions.geometry = {
 		name: "Clean Keyframes",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				clean_symbols: veToggle(this.ui.clean_symbols, {
+					name: "Clean Symbols",
+					onuserchange: (v) => this.ui.clean_symbols = v
+				}),
+				clean_keyframes: veButton(() => {
+					//Declare local instance variables
+					let all_flags = [];
+					if (this.ui.clean_symbols) all_flags.push("symbol");
+					
+					DALS.Timeline.parseAction("clean_keyframes", [{
+						[this.getDALSKey()]: this.id,
+						clean_keyframes: all_flags
+					}]);
+					
+					veToast(`Cleaned keyframes.`);
+				}, { name: "Confirm" })
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let current_brush_symbol = main.brush.getBrushSymbol();
@@ -148,10 +482,58 @@ config.actions.geometry = {
 			geometry_obj.history.getKeyframe(); //Refresh localisation
 		}
 	},
+	delete_description: {
+		name: "Delete Description",
+		scope: ["Geometry"],
+		
+		draw_function: function () {
+			veConfirm(`Are you sure you want to clear all descriptions for ${this.name}?`, {
+				special_function: () => {
+					DALS.Timeline.parseAction("delete_description", [{
+						[this.getDALSKey()]: this.id,
+						delete_description: true
+					}])
+					
+					if (this instanceof naissance.Feature) {
+						let all_geometries = this.getAllGeometries();
+						veToast(`Removed descriptions for ${String.formatNumber(all_geometries.length)} items.`);
+					} else {
+						veToast(`Removed description for ${this.name}.`);
+					}
+				}
+			});
+			return undefined;
+		},
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			
+			delete geometry_obj.metadata.description;
+		}
+	},
 	delete_geometry: {
 		name: "Delete Geometry",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				label: veHTML(`Are you sure you want to delete ${this.name}?`),
+				confirm: veButton(() => {
+					DALS.Timeline.parseAction("delete_geometry", [{
+						[this.getDALSKey()]: this.id,
+						delete_geometry: true
+					}]);
+					
+					//Delete all geometries in scope
+					if (this instanceof naissance.Feature) {
+						veToast(`Deleted all geometries in ${this.name}.`);
+					} else {
+						veToast(`Deleted ${this.name}.`);
+					}
+				})
+			};
+		},
 		special_function: async function (json) {
 			if (json.delete_geometry === true) json.naissance_obj.remove();
 		}
@@ -160,6 +542,25 @@ config.actions.geometry = {
 		name: "Delete Tags",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Return statement
+			return {
+				label: veHTML(`Removes all tags from ${this.name}.`),
+				confirm: veButton(() => {
+					DALS.Timeline.parseAction("delete_tags", [{
+						[this.getDALSKey()]: this.id,
+						delete_tags: true
+					}]);
+					
+					//Delete all tags in scope
+					if (this instanceof naissance.Feature) {
+						veToast(`Deleted all tags for geometries in ${this.name}.`);
+					} else {
+						veToast(`Deleted all tags.`);
+					}
+				})
+			}
+		},
 		special_function: async function (json) {
 			try { delete json.naissance_obj.metadata.tags; } catch (e) {}
 		}
@@ -494,7 +895,7 @@ config.actions.geometry = {
 					let current_max = (this.ui.set_zoom_max !== undefined) ? this.ui.set_zoom_max : -1;
 					
 					DALS.Timeline.parseAction("set_zoom", [{
-						feature_obj: this.id,
+						[this.getDALSKey()]: this.id,
 						set_zoom: {
 							is_start_keyframe: (this.ui.set_zoom_is_start),
 							max_zoom: (current_max === -1) ? "delete" : current_max,

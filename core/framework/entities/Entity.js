@@ -174,6 +174,17 @@ naissance.Entity = class extends ve.Class {
 	}
 	
 	/**
+	 * Returns either 'feature_obj'/'geometry_obj' depending on type.
+	 * 
+	 * @returns {string}
+	 */
+	getDALSKey () {
+		//Return statement
+		if (this.class_name.startsWith("Feature")) return "feature_obj";
+		return "geometry_obj";
+	}
+	
+	/**
 	 * Fetches the layer that the current {@link naissance.Entity} is appended to, if anything. Used for masking.
 	 *
 	 * @returns {naissance.FeatureLayer}

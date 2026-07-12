@@ -74,7 +74,7 @@ naissance.Action = class {
 					let action_name = (local_action.name || local_action.key);
 					
 					components_obj[local_action.key] = veButton(() => {
-						let local_components_obj = local_action.draw_function.call(naissance_obj);
+						let local_components_obj = local_action.draw_function.call(naissance_obj, local_action);
 						let local_name = (naissance_obj.name || naissance_obj.class_name);
 						
 						//Only initialise the window if local_components_obj doesn't return undefined
@@ -193,7 +193,7 @@ naissance.Action = class {
 						//.special_function handling
 						let special_function = local_action_obj.special_function;
 						
-						if (typeof special_function === "function") //[WIP] - This needs to ensure proper scoping based on .class_name
+						if (typeof special_function === "function")
 							new_options.special_function = async (json) => {
 								let feature_obj = naissance.Feature.instances[json.feature_obj];
 								
@@ -220,8 +220,6 @@ naissance.Action = class {
 										if (passes_check)
 											await special_function({
 												...json,
-												
-												feature_obj: undefined,
 												naissance_obj: all_geometries[i],
 											});
 									}
