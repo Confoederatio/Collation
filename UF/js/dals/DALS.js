@@ -64,7 +64,7 @@ if (!global.DALS) global.DALS = {
 		//Convert from parameters
 		let file_path = arg0_file_path.toString();
 		
-		//Declare local instance variables
+		//Write to file
 		fs.writeFile(file_path, JSON.stringify(DALS.toJSON()), (err) => {
 			if (err) console.error(err);
 		});
