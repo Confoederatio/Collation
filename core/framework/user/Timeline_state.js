@@ -65,6 +65,8 @@
 			} else {
 				if (json[i].load_save)
 					DALS.fromJSON(json[i].load_save);
+				if (json[i].load_savefile)
+					DALS.load(json[i].load_savefile);
 				if (json[i].set_date) {
 					UI_DateMenu.setDate(json[i].set_date);
 				} else if (json[i].refresh_date === true) {

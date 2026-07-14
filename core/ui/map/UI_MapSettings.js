@@ -21,6 +21,13 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 			this.projection_obj[spatial_reference._projection.code].selected = true;
 		
 		this.interface = veWindow({
+			behaviour_settings: veInterface({
+				save_undo_redo_trees: veToggle(main.map.settings.save_undo_redo_trees, {
+					name: "Save Undo/Redo Trees",
+					to_binding: "main.map.settings.save_undo_redo_trees",
+					x: 0, y: 0
+				})
+			}, { name: "Behaviour" }),
 			date_settings: veInterface({
 				autoload_last_date: veToggle(main.map.settings.autoload_last_date, { 
 					name: "Autoload last date", 
@@ -100,14 +107,18 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 		//Declare local instance variables
 		if (json.settings)
 			main.map.settings = json.settings;
+		let map_settings = main.map.settings;
 		
 		//Set date
 		if (json.date)
-			if (main.map.settings.autoload_last_date) {
+			if (map_settings.autoload_last_date) {
 				UI_DateMenu.setDate(JSON.parse(json.date));
-			} else if (main.map.settings.constant_load_date) {
-				UI_DateMenu.setDate(main.map.settings.constant_load_date);
+			} else if (map_settings.constant_load_date) {
+				UI_DateMenu.setDate(map_settings.constant_load_date);
 			}
+		if (map_settings.save_undo_redo_trees)
+			DALS.Timeline.fromJSON(json.undo_redo_trees);
+			
 		//Set spatial reference
 		if (json.spatial_reference)
 			map.setSpatialReference(json.spatial_reference);
@@ -123,6 +134,11 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 			settings: main.map.settings,
 			spatial_reference: map.getSpatialReference().toJSON()
 		};
+		let map_settings = main.map.settings;
+		
+		//Save Undo/Redo Trees if possible
+		if (map_settings.save_undo_redo_trees)
+			json_obj.undo_redo_trees = DALS.Timeline.toJSON();
 		
 		//Return statement
 		return json_obj;
