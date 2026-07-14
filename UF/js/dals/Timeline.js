@@ -1,28 +1,3 @@
-//Initialise class
-if (!global.DALS) global.DALS = {
-	/**
-	 * This is an example of how to declare documentation for a specific variable.
-	 *
-	 * @type {DALS.Timeline}
-	 * @typedef {DALS.timeline}
-	 */
-	timeline: undefined
-};
-
-//Define DALS.timeline as DALS.Timeline.current_timeline
-Object.defineProperty(DALS, "timeline", {
-	get () {
-		return DALS.Timeline.current_timeline;
-	},
-	
-	/**
-	 * @param {string} v
-	 */
-	set (v) {
-		DALS.Timeline.current_timeline = v;
-	}
-});
-
 /**
  * <span color = "yellow">{@link DALS.Timeline}</span>: Represents a singular timeline in an undo/redo tree within the Delta Action Logging System (DALS). `.value` is structured as an {@link Array}<{@link Object}>, with [0] representing the head state, and subsequent elements state mutations.
  * 
@@ -56,9 +31,7 @@ Object.defineProperty(DALS, "timeline", {
  * 
  * ##### Static Methods:
  * - <span color=00ffff>{@link DALS.Timeline.getTimeline|getTimeline}</span>(arg0_timeline_id:{@link string}) | {@link DALS.Timeline} - Returns a DALS.Timeline object given a timeline ID.
- * - <span color=00ffff>{@link DALS.Timeline.load|load}</span>(arg0_file_path:{@link string}) - Loads a new head state from a given file.
  * - <span color=00ffff>{@link DALS.Timeline.jumpToTimeline|jumpToTimeline}</span>(arg0_timeline_id:{@link string}) - Jumps to the head state of a specific timeline.
- * - <span color=00ffff>{@link DALS.Timeline.save|save}</span>(arg0_file_path:{@link string}) - Saves the present state to a given file.
  * 
  * @class
  * @memberof DALS
@@ -87,7 +60,7 @@ DALS.Timeline = class {
 		this.name = (options.name) ? options.name : `${loc("ve.registry.localisation.UndoRedo_timeline")} ${this.id}`;
 		this.options = options;
 		this.parent_timeline = options.parent_timeline;
-		this.value = [DALS.Timeline.saveState()];
+		this.value = [DALS.toJSON()];
 		
 		//Ensure that the current timeline is always the last timeline created/split off
 		if (options.current_timeline !== false)
@@ -191,7 +164,7 @@ DALS.Timeline = class {
 			this.value = [];
 			delete DALS.Timeline.current_timeline;
 			DALS.Timeline.instances = [];
-			DALS.Timeline.loadState({});
+			DALS.fromJSON({});
 		} else {
 			//1. Reassign all branched timelines to this timeline's .parent_timeline
 			for (let i = 0; i < DALS.Timeline.instances.length; i++) {
@@ -470,7 +443,7 @@ DALS.Timeline = class {
 		//2. Load initial state at head
 		DALS.Timeline.current_index = 0;
 		DALS.Timeline.current_timeline = this.id;
-		await Promise.resolve(DALS.Timeline.loadState(this.value[0]));
+		await Promise.resolve(DALS.fromJSON(this.value[0]));
 		
 		if (local_jump_token !== DALS.Timeline.jump_token)
 			return DALS.Timeline.current_index;
@@ -526,7 +499,7 @@ DALS.Timeline = class {
 		//Load initial state
 		DALS.Timeline.current_index = 0;
 		DALS.Timeline.current_timeline = this.id;
-		DALS.Timeline.loadState(this.value[0]);
+		DALS.fromJSON(this.value[0]);
 	}
 	
 	/**
@@ -657,26 +630,6 @@ DALS.Timeline = class {
 	}
 	
 	/**
-	 * Loads in a new state based upon the JSON data contained at a file path.
-	 * - Static method of: {@link DALS.Timeline}
-	 * 
-	 * @param {string} arg0_file_path
-	 */
-	static load (arg0_file_path) {
-		//Convert from parameters
-		let file_path = arg0_file_path.toString();
-		
-		//Read file, then attempt to call DALS.Timeline.loadState() with it
-		fs.readFile(file_path, "utf8", (err, data) => {
-			if (err) {
-				console.log(err);
-				return;
-			}
-			DALS.Timeline.loadState(data);
-		})
-	}
-	
-	/**
 	 * Jumps to the start of a timeline based off its ID.
 	 * - Static method of: {@link DALS.Timeline}
 	 * 
@@ -724,22 +677,6 @@ DALS.Timeline = class {
 		
 		//Return statement
 		return next_index;
-	}
-	
-	/**
-	 * Saves the present state as JSON to a new file path.
-	 * - Static method of: {@link DALS.Timeline}
-	 * 
-	 * @param {string} arg0_file_path
-	 */
-	static save (arg0_file_path) {
-		//Convert from parameters
-		let file_path = arg0_file_path.toString();
-		
-		//Declare local instance variables
-		fs.writeFile(file_path, JSON.stringify(DALS.Timeline.saveState()), (err) => {
-			if (err) console.error(err);
-		});
 	}
 	
 	/**

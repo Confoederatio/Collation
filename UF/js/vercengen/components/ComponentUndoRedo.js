@@ -64,7 +64,7 @@ ve.UndoRedo = class extends ve.Component {
 				}),
 				save_commit: new ve.Button(() => {
 					try {
-						let state_obj = DALS.Timeline.saveState();
+						let state_obj = DALS.toJSON();
 						
 						//Add new DALS Action under load_save
 						new DALS.Action({

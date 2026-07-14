@@ -102,11 +102,11 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 										UI_Settings.saveSettings();
 										
 										//Reload save
-										let cached_state = DALS.Timeline.saveState();
+										let cached_state = DALS.toJSON();
 										
 										ve.clear();
 										initialiseGlobal();
-										setTimeout(() => DALS.Timeline.loadState(cached_state), 200);
+										setTimeout(() => DALS.fromJSON(cached_state), 200);
 									}
 								}),
 								ui_scaling: new ve.Range(Math.returnSafeNumber(main.settings.ui_scaling, 1), {

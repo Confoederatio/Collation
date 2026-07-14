@@ -64,7 +64,7 @@
 				}
 			} else {
 				if (json[i].load_save)
-					DALS.Timeline.loadState(json[i].load_save);
+					DALS.fromJSON(json[i].load_save);
 				if (json[i].set_date) {
 					UI_DateMenu.setDate(json[i].set_date);
 				} else if (json[i].refresh_date === true) {
@@ -96,13 +96,13 @@
 
 //State save/load functions
 {
-	DALS.Timeline.loadState = function (arg0_json) { //[WIP] - Finish function body
+	DALS.fromJSON = function (arg0_json) {
 		//Convert from parameters
 		let json = (arg0_json) ? arg0_json : {};
 		if (typeof json === "string") json = JSON.parse(json);
 		
 		//0. Clear map
-		console.log(`DALS.Timeline.loadState called.`);
+		console.log(`DALS.fromJSON called.`);
 		{
 			//Clear _layers
 			main._layers.province_layers = [];
@@ -165,7 +165,7 @@
 		main.layers.cursor_layer.addGeometry(main.brush.cursor);
 	};
 	
-	DALS.Timeline.saveState = function () { //[WIP] - Finish function body for naissance.Feature
+	DALS.toJSON = function () { //[WIP] - Finish function body for naissance.Feature
 		//Declare local instance variables
 		let json_obj = {};
 		

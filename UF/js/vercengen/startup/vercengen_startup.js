@@ -460,6 +460,7 @@ global.path = require("path");
 			...((options.is_browser) ? browser_load_patterns : []),
 			
 			//DALS, Vercengen Components
+			"UF/js/dals/DALS.js",
 			"UF/js/dals/Timeline.js",
 			"UF/js/dals/Timeline_state.js",
 			"UF/js/vercengen/engine",
