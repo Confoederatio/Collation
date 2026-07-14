@@ -24,6 +24,7 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 			behaviour_settings: veInterface({
 				save_undo_redo_trees: veToggle(main.map.settings.save_undo_redo_trees, {
 					name: "Save Undo/Redo Trees",
+					tooltip: "Allows persistent version control and auditing.",
 					to_binding: "main.map.settings.save_undo_redo_trees",
 					x: 0, y: 0
 				})
