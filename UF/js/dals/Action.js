@@ -30,6 +30,8 @@ if (!global.DALS) global.DALS = {};
  * ##### Static Methods:
  * - <span color=00ffff>{@link DALS.Action.fromJSON|fromJSON}</span>(arg0_json:{@link Object}|{@link string}) | {@link DALS.Action} - Creates an Action from JSON and returns it.
  * 
+ * @class
+ * @memberof DALS
  * @type {DALS.Action}
  */
 DALS.Action = class {
@@ -57,7 +59,7 @@ DALS.Action = class {
 		this.id = Class.generateRandomID(DALS.Action);
 		this.options = (json.options) ? json.options : {};
 			this.name = (this.options.name) ? this.options.name : "New Action";
-		this.timeline = null; //Populated upon .addAction()
+		this.timeline = (json.timeline || null); //Populated upon .addAction()
 		this.value = json.value;
 		
 		//Assign Action to DALS.Timeline

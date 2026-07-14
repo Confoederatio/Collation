@@ -24,6 +24,9 @@
  * - <span color=00ffff>{@link DALS.Timeline.jumpToStart|jumpToStart}</span>()
  * - <span color=00ffff>{@link DALS.Timeline.removeAction|removeAction}</span>(arg0_action_id:{@link number}|{@link string}) - `arg0_action_id` is either the index of the action, or its `.id`.
  * 
+ * - <span color=00ffff>{@link DALS.Timeline.fromJSON|fromJSON}</span>(arg0_json:{@link Object}|{@link string}) | {@link DALS.Timeline}
+ * - <span color=00ffff>{@link DALS.Timeline.toJSON|toJSON}</span>() | {@link Object}
+ * 
  * ##### Static Fields:
  * - `.current_index`: {@link number} - The index of the current timeline the state is at.
  * - `.current_timeline`: {@link string} - The ID of the current timeline being displayed.
@@ -187,6 +190,45 @@ DALS.Timeline = class {
 					break;
 				}
 		}
+	}
+	
+	/**
+	 * Overwrites the current timeline instance with data from a JSON object.
+	 * - Method of: {@link DALS.Timeline}
+	 *
+	 * @param {Object|string} arg0_json
+	 *
+	 * @returns {DALS.Timeline}
+	 */
+	fromJSON (arg0_json) {
+		//Convert from parameters
+		let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
+		
+		//Declare local instance variables
+		this.id = json.id;
+		this.initial_timeline = (json.initial_timeline !== undefined) ? json.initial_timeline : this.initial_timeline;
+		this.name = json.name;
+		this.parent_timeline = json.parent_timeline;
+		this.date_created = new Date(json.date_created);
+		this.last_modified = new Date(json.last_modified);
+		
+		//Reconstruct value array. [0] is the head state JSON
+		this.value = [json.value[0]];
+		
+		//Reconstruct Actions for indices [1...n]
+		for (let i = 1; i < json.value.length; i++) {
+			let action_json = json.value[i];
+			
+			//Inject current timeline ID into options to ensure the Action constructor attaches correctly
+			if (!action_json.options) action_json.options = {};
+			action_json.options.timeline = this.id;
+			
+			//Re-instantiate action; the constructor handles placement into this.value
+			DALS.Action.fromJSON(action_json);
+		}
+		
+		//Return statement
+		return this;
 	}
 	
 	/**
@@ -544,8 +586,33 @@ DALS.Timeline = class {
 				this.value.splice(i, 1);
 	}
 	
+	/**
+	 * Returns a JSON representation of the current timeline.
+	 * - Method of: {@link DALS.Timeline}
+	 *
+	 * @returns {Object}
+	 */
 	toJSON () {
+		//Declare local instance variables
+		let serialised_values = [];
 		
+		//Iterate over value; if element is an Action, call its toJSON, otherwise keep as is (for head state)
+		for (let i = 0; i < this.value.length; i++) {
+			let local_value = this.value[i];
+			
+			serialised_values.push((local_value instanceof DALS.Action) ? local_value.toJSON() : local_value);
+		}
+		
+		//Return statement
+		return {
+			id: this.id,
+			initial_timeline: this.initial_timeline,
+			name: this.name,
+			parent_timeline: this.parent_timeline,
+			value: serialised_values,
+			date_created: this.date_created,
+			last_modified: this.last_modified
+		};
 	}
 	
 	/**
