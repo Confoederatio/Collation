@@ -260,14 +260,14 @@ ve.UndoRedo = class extends ve.Component {
 				let is_selected = false;
 				if (
 					local_value.timeline_id === DALS.Timeline.current_timeline && 
-					DALS.Timeline.current_index >= local_value.value.options.domain[0] + 1 &&
-					DALS.Timeline.current_index <= local_value.value.options.domain[1] + 1
+					DALS.Timeline.current_index >= local_value.options.domain[0] + 1 &&
+					DALS.Timeline.current_index <= local_value.options.domain[1] + 1
 				)
 					is_selected = true;
 				
 				let node_text;
-				if (local_value.value.options && local_value.value.options.name)
-					node_text = `${local_value.value.options.name} (${String.formatNumber(local_value.value.options.length)})`;
+				if (local_value.options && local_value.options.name)
+					node_text = `${local_value.options.name} (${String.formatNumber(local_value.options.length)})`;
 				if (node_text === undefined) node_text = loc("ve.registry.localisation.UndoRedo_unlisted");
 				if (local_value.child_timelines && local_value.x === 1)
 					node_text = loc("ve.registry.localisation.UndoRedo_initialisation");
@@ -381,8 +381,8 @@ ve.UndoRedo = class extends ve.Component {
 						click_x >= local_value.x - local_value.width/2 && click_x <= local_value.x + local_value.width/2 && click_y >= local_value.y - local_value.height/2 && click_y <= local_value.y + local_value.height/2
 					) {
 						let local_timeline = DALS.Timeline.getTimeline(local_value.timeline_id);
-						console.log(`Calling local_timeline.jumpToAction(${Math.returnSafeNumber(local_value.value.options.domain[1]) + 1})!`);
-						local_timeline.jumpToAction(Math.returnSafeNumber(local_value.value.options.domain[1]) + 1);
+						console.log(`Calling local_timeline.jumpToAction(${Math.returnSafeNumber(local_value.options.domain[1]) + 1})!`);
+						local_timeline.jumpToAction(Math.returnSafeNumber(local_value.options.domain[1]) + 1);
 						
 						if (local_timeline.id !== DALS.Timeline.current_timeline) {
 							this.from_binding_fire_silently = true;

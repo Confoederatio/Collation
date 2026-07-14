@@ -296,12 +296,12 @@ DALS.Timeline = class {
 			timeline_graph[local_id].timeline_index = first_action.options.timeline_index;
 			timeline_graph[local_id].timeline_group_index = i;
 			timeline_graph[local_id].value = group;
-				timeline_graph[local_id].value.options = first_action.value.options;
-					timeline_graph[local_id].value.options.domain = [
+				timeline_graph[local_id].options = first_action.options;
+					timeline_graph[local_id].options.domain = [
 						first_action.options.timeline_index,
 						group[group.length - 1].options.timeline_index
 					];
-			timeline_graph[local_id].value.options.length = group.length;
+			timeline_graph[local_id].options.length = group.length;
 			timeline_graph[local_id].x = i;
 			timeline_graph[local_id].y = current_y_offset;
 			
@@ -542,6 +542,10 @@ DALS.Timeline = class {
 		if (action_index >= 1)
 			for (let i = this.value.length - 1; i >= action_index; i--)
 				this.value.splice(i, 1);
+	}
+	
+	toJSON () {
+		
 	}
 	
 	/**
