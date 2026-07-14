@@ -118,6 +118,7 @@ ve.UndoRedo = class extends ve.Component {
 				name: "Save/Load",
 				components_obj: {
 					file_actions_bar: veRawInterface({
+						information: veHTML("Save/load for Undo/Redo Trees. If <b>Don't Overwrite On Load</b> is enabled, Undo/Redo Trees can be merged."),
 						do_not_overwrite_on_load: veToggle(settings_obj.do_not_overwrite_on_load, {
 							name: "Don't Overwrite on Load",
 							tooltip: "If true, timelines are merged into the existing save instead of overwriting it.",
