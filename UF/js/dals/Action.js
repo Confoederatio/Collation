@@ -56,7 +56,7 @@ DALS.Action = class {
 		if (ve.registry.settings.UndoRedo.manual_commits && !(json?.value?.load_save && json?.value?.type === "global"))
 			return;
 		
-		this.id = Class.generateRandomID(DALS.Action);
+		this.id = (json.id) ? json.id : Class.generateRandomID(DALS.Action);
 		this.options = (json.options) ? json.options : {};
 			this.name = (this.options.name) ? this.options.name : "New Action";
 		this.timeline = (json.timeline || null); //Populated upon .addAction()
