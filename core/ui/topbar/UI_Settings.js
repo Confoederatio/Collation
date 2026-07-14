@@ -268,7 +268,7 @@ global.UI_Settings = class extends ve.Class { //[WIP] - Add settings serialisati
 				
 				//Load state
 				setTimeout(() => {
-					DALS.Timeline.parseAction("load_save", [{ load_save: load_data }], true);
+					DALS.Timeline.parseAction("load_save", [{ load_save: load_data }]);
 				}, 100);
 			}
 	}

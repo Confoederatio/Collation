@@ -627,11 +627,10 @@ DALS.Timeline = class {
 	 * @param {Object} [arg1_options]
 	 *  @param {boolean} [arg1_options.do_not_overwrite=false] - If true, existing timelines and actions are preserved.
 	 */
-	static fromJSON (arg0_json, arg1_options) {
+	static async fromJSON (arg0_json, arg1_options) {
 		//Convert from parameters
-		let json =
-			typeof arg0_json === "string" ? JSON.parse(arg0_json) : arg0_json;
-		let options = arg1_options ? arg1_options : {};
+		let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
+		let options = (arg1_options) ? arg1_options : {};
 		
 		//1. Wipe existing registry if overwriting is enabled
 		if (!options.do_not_overwrite) {
@@ -640,25 +639,30 @@ DALS.Timeline = class {
 		}
 		
 		//2. Reconstruct each timeline object from the JSON array
-		if (json.timelines) {
+		if (json.timelines)
 			for (let i = 0; i < json.timelines.length; i++) {
-				let timeline_data = json.timelines[i];
+				let path_data = json.timelines[i];
+				let local_timeline = DALS.Timeline.getTimeline(path_data.id);
 				
-				let existing_timeline = DALS.Timeline.getTimeline(timeline_data.id);
-				let local_timeline = (existing_timeline) ? 
-					existing_timeline : new DALS.Timeline({
+				//If timeline doesn't exist, create a shell to be populated
+				if (!local_timeline)
+					local_timeline = new DALS.Timeline({
 						current_timeline: false,
 					});
 				
-				//Populate the timeline instance data
-				local_timeline.fromJSON(timeline_data);
+				local_timeline.fromJSON(path_data);
 			}
-		}
 		
-		//3. Reseat global pointers if overwriting
+		//3. Re-seat global pointers and synchronize application state if overwriting
 		if (!options.do_not_overwrite) {
 			DALS.Timeline.current_index = (json.current_index !== undefined) ? json.current_index : 0;
 			DALS.Timeline.current_timeline = json.current_timeline;
+			
+			let active_timeline = DALS.Timeline.getTimeline(DALS.Timeline.current_timeline);
+			
+			//Perform jump to sync the application state with the loaded current_index
+			if (active_timeline)
+				await active_timeline.jumpToAction(DALS.Timeline.current_index);
 		}
 	}
 	
