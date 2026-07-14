@@ -1,3 +1,40 @@
+/**
+ * Creates a {@link History} Object which stores {@link HistoryKeyframe|HistoryKeyframes}.
+ * 
+ * ##### Constructor:
+ * - `arg0_keyframes_obj`: {@link Object} - Map of keyframes.
+ * - `arg1_options`: {@link Object}
+ *   - `.components_obj`: {@link Object}
+ *   - `.draw_keyframes_function`: {@link function}({ components_obj:{@link Object}, key:{@link string}, value:{@link Array}})
+ *   - `.localisation_function`: {@link function}(arg0_new_keyframe:{@link HistoryKeyframe}, arg1_old_keyframe:{@link HistoryKeyframe}) | {@link string} - Localisation function to generate descriptions per keyframe. 
+ *   
+ * ##### Instance:
+ * - `.do_not_draw=false`: {@link boolean}
+ * - `.keyframes`: {@link Object} - Map of keyframes.
+ * - `.options`: {@link Object}
+ *   - `.components_obj`: {@link Object}
+ * 
+ * ##### Methods:
+ * - <span color=00ffff>{@link ve.History._getUniqueKeyframes|_getUniqueKeyframes}</span>(arg0_options:{@link Object}) | {@link Array}<{@link string}>
+ * - <span color=00ffff>{@link ve.History._hasTimestampAfter|_hasTimestampAfter}</span>(arg0_timestamp:{@link number|Object}) | {@link boolean}
+ * - <span color=00ffff>{@link ve.History.addKeyframe|addKeyframe}</span>(arg0_date:{@link number|Object}, ...argn_arguments) | {@link HistoryKeyframe}</span>
+ * - <span color=00ffff>{@link ve.History.callFunctionInDateRange|callFunctionInDateRange}</span>(arg0_date_range:{@link Array}<{@link number}>|{@link Array}<{@link Object}>, arg1_function:{@link function}(arg0_local_keyframe:{@link HistoryKeyframe}))
+ * - <span color=00ffff>{@link ve.History.cleanKeyframes|cleanKeyframes}</span>()
+ * - <span color=00ffff>{@link ve.History.draw|draw}</span>(arg0_interface_obj:{@link ve.Interface}) | {@link ve.Interface}
+ * - <span color=00ffff>{@link ve.History.fromJSON|fromJSON}</span>(arg0_json:{@link Object}|{@link string})
+ * - <span color=00ffff>{@link ve.History.getFirstKeyframe|getFirstKeyframe}</span>() | {@link HistoryKeyframe}
+ * - <span color=00ffff>{@link ve.History.getLastKeyframe|getLastKeyframe}</span>() | {@link HistoryKeyframe}
+ * - <span color=00ffff>{@link ve.History.getKeyframe|getKeyframe}</span>(arg0_options:{@link Object}) | {@link HistoryKeyframe}
+ * - <span color=00ffff>{@link ve.History.getTimestamps|getTimestamps}</span>() | {@link Array}<{@link number}>
+ * - <span color=00ffff>{@link ve.History.moveKeyframe|moveKeyframe}</span>(arg0_date:{@link number|Object}, arg1_new_date:{@link number|Object})
+ * - <span color=00ffff>{@link ve.History.removeKeyframe|removeKeyframe}</span>(arg0_date:{@link number|Object})
+ * - <span color=00ffff>{@link ve.History.replaceKeyframe|replaceKeyframe}</span>(arg0_date:{@link number|Object}, ...argn_arguments:{@link any}) | {@link HistoryKeyframe}
+ * - <span color=00ffff>{@link ve.History.toJSON|toJSON}</span>() | {@link string}
+ * 
+ * @augments ve.Class
+ * @class
+ * @type {History}
+ */
 global.History = class extends ve.Class {
 	constructor (arg0_keyframes_obj, arg1_options) {
 		//Convert from parameters
@@ -14,11 +51,13 @@ global.History = class extends ve.Class {
 	
 	/**
 	 * Returns all unique keyframes in the current History object.
+	 * - Private method of: {@link History}
 	 *
 	 * @param {Object} [arg0_options]
 	 *  @param {number[]} [arg0_options.indexes]
 	 *  @param {boolean} [arg0_options.return_timestamps=false]
-	 *
+	 *  
+	 * @returns {string[]}
 	 * @private
 	 */
 	_getUniqueKeyframes (arg0_options) {
@@ -54,6 +93,15 @@ global.History = class extends ve.Class {
 		return unique_timestamps;
 	}
 	
+	/**
+	 * Checks whether the History has an entry after a given timestamp.
+	 * - Privtae method of: {@link History}
+	 * 
+	 * @param {number|Object} arg0_timestamp
+	 * 
+	 * @returns {boolean}
+	 * @private
+	 */
 	_hasTimestampAfter (arg0_timestamp) {
 		//Convert from parameters
 		let timestamp = Date.getTimestamp(arg0_timestamp);
@@ -68,6 +116,15 @@ global.History = class extends ve.Class {
 		return false;
 	}
 	
+	/**
+	 * Adds a keyframe at the given timestamp with data fields.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {number|Object} arg0_date
+	 * @param {any} argn_arguments
+	 * 
+	 * @returns {HistoryKeyframe}
+	 */
 	addKeyframe (arg0_date, ...argn_arguments) {
 		//Convert from parameters
 		let date = (arg0_date !== undefined) ? Date.convertTimestampToDate(arg0_date) : main.date;
@@ -87,6 +144,13 @@ global.History = class extends ve.Class {
 		return this.keyframes[timestamp];
 	}
 	
+	/**
+	 * Calls a function within a given Date range.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {number[]|Object[]} arg0_date_range
+	 * @param {function} arg1_function - (arg0_local_keyframe:{@link HistoryKeyframe})
+	 */
 	callFunctionInDateRange (arg0_date_range, arg1_function) {
 		//Convert from parameters
 		let date_range = arg0_date_range;
@@ -106,7 +170,10 @@ global.History = class extends ve.Class {
 				special_function(keyframes[i]);
 	}
 	
-	//[QUARANTINE]
+	/**
+	 * Cleans keyframes within the given History object.
+	 * - Method of: {@link History}
+	 */
 	cleanKeyframes () {
 		//Declare local instance variables
 		let all_timestamps = Object.keys(this.keyframes).sort((a, b) => {
@@ -203,6 +270,14 @@ global.History = class extends ve.Class {
 		}
 	}
 	
+	/**
+	 * Draws the current History interface and places the end component in `this.interface`.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {ve.Interface} [arg0_interface_obj]
+	 * 
+	 * @returns {ve.Interface}
+	 */
 	draw (arg0_interface_obj) {
 		//Convert from parameter
 		let interface_obj = arg0_interface_obj;
@@ -228,11 +303,20 @@ global.History = class extends ve.Class {
 		} else {
 			this.interface = new ve.Interface(components_obj, { name: "Keyframes", width: 99 });
 		}
+		
+		//Return statement
+		return this.interface;
 	}
 	
+	/**
+	 * Initialises a History timeline from JSON.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {Object|string} arg0_json
+	 */
 	fromJSON (arg0_json) {
 		//Convert from parameters
-		let json = JSON.parse(arg0_json);
+		let json = (typeof arg0_json === "string") ? JSON.parse(arg0_json) : arg0_json;
 		
 		//Iterate over all_json_keys and assume them as keyframes
 		if (json.keyframes) {
@@ -251,6 +335,12 @@ global.History = class extends ve.Class {
 		}
 	}
 	
+	/**
+	 * Returns the first keyframe in `.keyframes`.
+	 * - Method of: {@link History}
+	 * 
+	 * @returns {HistoryKeyframe|undefined}
+	 */
 	getFirstKeyframe () {
 		//Declare local instance variables
 		let all_timestamps = this.getTimestamps();
@@ -259,6 +349,12 @@ global.History = class extends ve.Class {
 		return (all_timestamps.length > 0) ? this.keyframes[all_timestamps[0]] : undefined;
 	}
 	
+	/**
+	 * Returns the last keyframe in `.keyframes`.
+	 * - Method of: {@link History}
+	 * 
+	 * @returns {HistoryKeyframe|undefined}
+	 */
 	getLastKeyframe () {
 		//Declare local instance variables
 		let all_timestamps = this.getTimestamps();
@@ -268,10 +364,16 @@ global.History = class extends ve.Class {
 	}
 	
 	/**
+	 * Resolves a keyframe at the given date.
+	 * - Method of: {@link History}
+	 * 
 	 * @param {Object} [arg0_options]
 	 *  @param {boolean} [arg0_options.bake_keyframes=false]
+	 *  @param {number|Object} [arg0_options.date=main.date]
 	 *  @param {number[]} [arg0_options.guaranteed_indexes]
 	 *  @param {boolean} [arg0_options.refresh_localisation=false]
+	 *  
+	 * @return {Object}
 	 */
 	getKeyframe (arg0_options) {
 		//Convert from parameters
@@ -381,6 +483,12 @@ global.History = class extends ve.Class {
 		}
 	}
 	
+	/**
+	 * Sorts and returns all timestamp keys in chronological order.
+	 * - Method of: {@link History}
+	 * 
+	 * @returns {string[]}
+	 */
 	getTimestamps () {
 		//Return statement
 		return Object.keys(this.keyframes).sort((a, b) => {
@@ -388,6 +496,13 @@ global.History = class extends ve.Class {
 		});
 	}
 	
+	/**
+	 * Moves a keyframe from one date to another.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {number|Object} arg0_date - The date to move from.
+	 * @param {number|Object} arg1_date - The date to move to.
+	 */
 	moveKeyframe (arg0_date, arg1_date) {
 		//Convert from parameters
 		let timestamp = Date.getTimestamp(arg0_date);
@@ -408,6 +523,12 @@ global.History = class extends ve.Class {
 		}
 	}
 	
+	/**
+	 * Prunes a keyframe at the specified date.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {number|Object} arg0_date
+	 */
 	removeKeyframe (arg0_date) {
 		//Convert from parameters
 		let date = (arg0_date !== undefined) ? Date.convertTimestampToDate(arg0_date) : main.date;
@@ -419,6 +540,15 @@ global.History = class extends ve.Class {
 		delete this.keyframes[timestamp];
 	}
 	
+	/**
+	 * Replaces a keyframe at the specified date with another.
+	 * - Method of: {@link History}
+	 * 
+	 * @param {HistoryKeyframe} arg0_keyframe
+	 * @param {HistoryKeyframe} arg1_keyframe
+	 * @param {Object} [arg2_options]
+	 *  @param {boolean} [arg2_options.refresh_localisation=false]
+	 */
 	replaceKeyframe (arg0_keyframe, arg1_keyframe, arg2_options) {
 		//Convert from parameters
 		let keyframe = arg0_keyframe;
@@ -435,6 +565,12 @@ global.History = class extends ve.Class {
 		if (options.refresh_localisation !== false) this.getKeyframe();
 	}
 	
+	/**
+	 * Outputs the current History as a JSON string.
+	 * - Method of: {@link History}
+	 * 
+	 * @returns {string}
+	 */
 	toJSON () {
 		//Convert from parameters
 		let json_obj = {
