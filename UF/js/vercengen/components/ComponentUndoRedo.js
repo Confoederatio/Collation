@@ -114,6 +114,37 @@ ve.UndoRedo = class extends ve.Component {
 		});
 		
 		this.page_menu = new ve.PageMenu({
+			save_load: {
+				name: "Save/Load",
+				components_obj: {
+					file_actions_bar: veRawInterface({
+						do_not_overwrite_on_load: veToggle(settings_obj.do_not_overwrite_on_load, {
+							name: "Don't Overwrite on Load",
+							tooltip: "If true, timelines are merged into the existing save instead of overwriting it.",
+							onuserchange: (v) => {
+								settings_obj.do_not_overwrite_on_load = v;
+								this.saveSettings();
+							}
+						})
+					}),
+					file_explorer: veFileExplorer(path.join(process.cwd(), "saves"), {
+						name: " ",
+						navigation_only: true,
+						
+						load_function: (arg0_data) => {
+							//Convert from parameters
+							let data = (arg0_data) ? arg0_data : {};
+							
+							//Load state
+							DALS.Timeline.fromJSON(data, {
+								do_not_overwrite: settings_obj.do_not_overwrite_on_load
+							});
+						},
+						save_extension: ".json",
+						save_function: DALS.Timeline.toJSON
+					})
+				}
+			},
 			current_timeline: {
 				name: loc("ve.registry.localisation.UndoRedo_timeline_view"),
 				components_obj: {
