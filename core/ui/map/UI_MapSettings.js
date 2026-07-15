@@ -59,7 +59,7 @@ global.UI_MapSettings = class UI_MapSettings extends ve.Class { //[WIP] - Finish
 				}),
 				proj4js_confirm_settings: veButton(() => this._DALS_setCustomProjection(this.interface.projection_settings.proj4js_string.v), {
 					name: "Apply Proj4JS Projection",
-					tooltip: `<span style = "align-items: top; display: flex;"><icon>warning</icon><span style = "margin-left: 0.5rem;">Back up your save before applying a new Proj4JS projection, as custom projections can be unstable!</span></span>`,
+					tooltip: `<span style = "display: flex;"><icon>warning</icon><span style = "margin-left: 0.5rem;">Back up your save before applying a new Proj4JS projection, as custom projections can be unstable!</span></span>`,
 					x: 1, y: 1
 				})
 			}, { name: "Projection", open: true })
