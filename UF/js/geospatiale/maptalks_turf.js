@@ -3,6 +3,7 @@
 	if (!global.Geospatiale)
 		/**
 		 * The namespace for all UF/Geospatiale utility functions, typically for static methods.
+		 * Regular operations use [Turf.performant](https://github.com/ConfoederatioVF/Turf.performant/), which is a custom fork of Turf.js. See GeoJSON converters (i.e. `convertMaptalksToTurf`) for information on its usage. It has the same syntax, but features 60-120x the performance (average over union, difference, intersect).
 		 * 
 		 * @namespace Geospatiale
 		 */
