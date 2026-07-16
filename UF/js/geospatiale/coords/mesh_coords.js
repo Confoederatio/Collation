@@ -108,8 +108,11 @@
 			
 			triangles = triangles.filter((tri) => {
 				let circum = Geospatiale.getCircumcircle(tri.p1, tri.p2, tri.p3);
+				
 				if (Math.hypot(p.x - circum.x, p.y - circum.y) < circum.r) {
 					edges.push([tri.i1, tri.i2], [tri.i2, tri.i3], [tri.i3, tri.i1]);
+					
+					//Return statement
 					return false;
 				}
 				return true;
@@ -149,6 +152,7 @@
 			});
 		});
 		
+		//Iterate over all triangles
 		triangles.forEach((tri) => {
 			if (tri.i1 >= 0 && tri.i2 >= 0 && tri.i3 >= 0) 
 				indices.push(tri.i1, tri.i2, tri.i3);

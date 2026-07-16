@@ -13,6 +13,9 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.canvas = document.createElement("canvas");
 		this.ctx = this.canvas.getContext("2d");
 		
+		this.base_point_radius = 6;
+		this.base_hitbox_radius = 20;
+		this.grid_resolution = 20;
 		this.img_display_size = 400;
 		this.img_center = this.img_display_size / 2;
 		this.base_screen_padding = 400;
@@ -21,17 +24,9 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.buffer_scale = 1;
 		this.world_size = 0;
 		
-		this.tps_coeffs_x = [];
-		this.tps_coeffs_y = [];
-		this.grid_resolution = 20;
-		
 		this.canvas.width = this.img_display_size + 200;
 		this.canvas.height = this.canvas.width;
 		this.canvas.style.transformOrigin = "center center";
-		
-		this.base_point_radius = 6;
-		this.base_hitbox_radius = 20;
-		
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
 		this.geometry = undefined;
