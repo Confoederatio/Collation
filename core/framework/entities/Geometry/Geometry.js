@@ -445,7 +445,8 @@ naissance.Geometry = class extends naissance.Entity {
 			components_obj = {
 				selected: veCheckbox(this.selected, {
 					name: "Selected",
-					onuserchange: (v) => this.selected = v
+					onuserchange: (v) => this.selected = v,
+					style: { paddingLeft: 0 }
 				}),
 				
 				move_to_brush: veButton(() => {
@@ -672,15 +673,24 @@ naissance.Geometry = class extends naissance.Entity {
 					let coords = this.geometry.getCoordinates();
 					
 					return `${format_string} | ${String.truncate(String.formatMaptalksCoords(coords), 40)} (${String.formatNumber(coords.length)} total)`;
+				} else {
+					return format_string;
 				}
-					
+			}, {
+				style: { paddingLeft: 0, paddingTop: 0 }
 			}),
 			quick_actions: this.getQuickActionsComponent(),
 			
 			...((typeof this.drawUI === "function") ? this.drawUI() : {}),
 			...ve.Class.getVercengenComponents(this),
 			variables_ui: this.variables_ui
-		}, { is_folder: false });
+		}, { 
+			is_folder: false,
+			style: { 
+				padding: 0,
+				"> table > tbody > tr > td > [component]": { paddingLeft: 0 }
+			}
+		});
 		
 		
 		//Call super.open for naissance.Entity
