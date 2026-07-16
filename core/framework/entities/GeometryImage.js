@@ -16,7 +16,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.img_display_size = 400;
 		this.img_center = this.img_display_size / 2;
 		this.base_screen_padding = 400;
-		this.max_buffer_size = 8192;
+		this.max_buffer_size = 4096;
 		this.buffer_offset = 0;
 		this.buffer_scale = 1;
 		this.world_size = 0;
@@ -34,7 +34,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
-		this.marker = undefined;
+		this.geometry = undefined;
 		this.mesh_points = [];
 		this.mesh_triangles = [];
 		this.selected_point_index = null;
@@ -93,7 +93,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	 */
 	commitKeyframe (arg0_symbol_obj) {
 		let symbol_obj = arg0_symbol_obj;
-		let marker_coord = this.marker ? this.marker.getCoordinates() : map.getCenter();
+		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
 		this.history.addKeyframe(
 			main.date,
@@ -127,30 +127,40 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		if (!derender_geometry) {
 			try {
+				// Safety check: Don't attempt to add UI Markers if the map or its UI container isn't ready
+				if (!map || !map.isLoaded()) return;
+				
 				let coords_obj = this.value[0];
 				let symbol_obj = this.value[1];
 				
-				// Restore the specific zoom level this mesh was designed for
 				if (coords_obj.initial_zoom !== undefined) {
 					this.initial_zoom = coords_obj.initial_zoom;
 				}
 				
-				// Only update mesh from history if we aren't currently interacting
 				if (this.selected_point_index === null && coords_obj.mesh_points) {
 					this.mesh_points = JSON.parse(JSON.stringify(coords_obj.mesh_points));
 					this.updateTriangulation();
 				}
 				
-				if (!this.marker) {
-					this.marker = new maptalks.ui.UIMarker(coords_obj.center, {
+				if (!this.geometry) {
+					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, {
 						draggable: false,
 						single: false,
 						content: this.canvas,
 					});
-					this.marker.addTo(map).show();
+					this.geometry.addTo(map);
 				} else {
-					this.marker.setCoordinates(new maptalks.Coordinate(coords_obj.center));
-					this.marker.show();
+					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
+				}
+				
+				// Only call show if the marker has a map and the map has a UI container
+				if (this.geometry.getMap()) {
+					try {
+						this.geometry.show();
+					} catch (e) {
+						this.geometry.addTo(map);
+						this.geometry.show();
+					}
 				}
 				
 				this.canvas.style.opacity = symbol_obj.opacity !== undefined ? symbol_obj.opacity : 0.45;
@@ -164,10 +174,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				console.error(e);
 			}
 		} else {
-			if (this.marker) this.marker.hide();
+			if (this.geometry) this.geometry.hide();
 		}
 		
-		if (this.marker && !derender_geometry) this.history.draw(this.keyframes_ui);
+		if (this.geometry && !derender_geometry) this.history.draw(this.keyframes_ui);
 	}
 	
 	drawUI () {
@@ -247,7 +257,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	getLngLatToWorld(lng, lat) {
 		let projection = map.getProjection();
-		let marker_coord = this.marker.getCoordinates();
+		let marker_coord = this.geometry.getCoordinates();
 		let res = map.getResolution(this.initial_zoom);
 		
 		// Get absolute projection coordinates (e.g., meters)
@@ -266,12 +276,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	getScaleFactor() {
-		return Math.pow(2, map.getZoom() - this.initial_zoom);
+		// Use maptalks' own resolution model rather than 2^dz — maptalks interpolates
+		// resolutions linearly between integer zooms for fractional zoom levels, so a
+		// pure exponential drifts cyclically (worst mid-level, resetting at integers)
+		return map.getResolution(this.initial_zoom) / map.getResolution(map.getZoom());
 	}
 	
 	getWorldToLngLat(wx, wy) {
 		let projection = map.getProjection();
-		let marker_coord = this.marker.getCoordinates();
+		let marker_coord = this.geometry.getCoordinates();
 		let res = map.getResolution(this.initial_zoom);
 		
 		let center_auc = projection.project(marker_coord);
@@ -399,7 +412,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	remove(arg0_do_not_refresh) {
-		if (this.marker) this.marker.remove();
+		if (this.geometry) this.geometry.remove();
 		super.remove(arg0_do_not_refresh);
 	}
 	
@@ -409,8 +422,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ctx.save();
 		
-		// Scale the context to match the high-resolution buffer
-		let render_scale = this.buffer_scale * (window.devicePixelRatio || 1);
+		// Derive scale from the actual (integer) canvas size so the buffer spans
+		// exactly world_size world units — using the ideal buffer_scale here leaves
+		// a sub-pixel ceil() remainder that shifts the image slightly per zoom level
+		let render_scale = this.canvas.width / this.world_size;
 		this.ctx.scale(render_scale, render_scale);
 		this.ctx.translate(this.buffer_offset, this.buffer_offset);
 		
@@ -501,8 +516,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	updateCssSize() {
 		let factor = this.getScaleFactor();
-		this.canvas.style.width = this.world_size * factor + "px";
-		this.canvas.style.height = this.world_size * factor + "px";
+		// Round to whole CSS pixels so UIMarker's integer size measurement
+		// matches the layout size exactly (avoids half-pixel centering error)
+		let css_size = Math.round(this.world_size * factor);
+		this.canvas.style.width = css_size + "px";
+		this.canvas.style.height = css_size + "px";
 	}
 	
 	updateInfoPanels() {
