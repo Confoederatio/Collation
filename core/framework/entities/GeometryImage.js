@@ -4,42 +4,56 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		name: "Image",
 	};
 	
-	constructor () {
+	constructor() {
 		super();
 		this.class_name = "GeometryImage";
 		this.node_editor_mode = "Image";
 		
-		//Declare canvas/render state logic from ImageOverlayWarp
+		// Create a wrapper container. UIMarker acts simply as a 0x0 anchor point.
+		this.dom_wrapper = document.createElement("div");
+		this.dom_wrapper.style.pointerEvents = "none";
+		this.dom_wrapper.style.display = "flex";
+		this.dom_wrapper.style.justifyContent = "center";
+		this.dom_wrapper.style.alignItems = "center";
+		this.dom_wrapper.style.width = "0px";
+		this.dom_wrapper.style.height = "0px";
+		this.dom_wrapper.style.overflow = "visible";
+		this.dom_wrapper.style.perspective = "none";
+		
+		// Declare flat canvas logic
 		this.canvas = document.createElement("canvas");
 		this.ctx = this.canvas.getContext("2d");
+		this.canvas.style.pointerEvents = "auto";
+		this.canvas.style.position = "absolute";
+		this.canvas.style.transform = "translate(-50%, -50%)"; // Center over the 0x0 anchor
+		
+		this.dom_wrapper.appendChild(this.canvas);
 		
 		this.base_point_radius = 6;
 		this.base_hitbox_radius = 20;
 		this.grid_resolution = 20;
 		this.img_display_size = 400;
 		this.img_center = this.img_display_size / 2;
-		this.base_screen_padding = 400;
 		this.max_buffer_size = 4096;
-		this.buffer_offset = 0;
-		this.buffer_scale = 1;
-		this.world_size = 0;
 		
-		this.canvas.width = this.img_display_size + 200;
-		this.canvas.height = this.canvas.width;
-		this.canvas.style.transformOrigin = "center center";
+		this.canvas_w = 0;
+		this.canvas_h = 0;
+		this.canvas_dpr = 1;
+		
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
 		this.geometry = undefined;
 		this.mesh_points = [];
 		this.mesh_triangles = [];
+		this.screen_pts = [];
 		this.selected_point_index = null;
 		this._is_dragging = false;
 		
-		//Initialise mesh and bind events
+		// Initialise mesh and bind events
 		this.initMesh();
 		this.bindEvents();
 		
-		//Add keyframe with default coords/symbol upon instantiation
+		// Add keyframe with default coords/symbol
 		let map_centre = map.getCenter();
 		this.addKeyframe(
 			main.date,
@@ -56,13 +70,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		);
 		
 		this.draw();
-		
-		//KEEP AT BOTTOM!
 		this.updateOwner();
 	}
 	
-	bindEvents () {
-		//Canvas interactive events
+	bindEvents() {
 		this.canvas.addEventListener("mousedown", (e) => this.handleMouseDown(e));
 		this.canvas.addEventListener("mousemove", (e) => this.handleMouseMove(e));
 		this.canvas.addEventListener("mouseup", () => {
@@ -76,22 +87,14 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		});
 		this.canvas.addEventListener("dblclick", (e) => this.handleDoubleClick(e));
 		
-		//Map state triggers
-		map.addEventListener("zoomend", () => {
-			this.updateCSSSize();
+		map.on("viewchange", () => {
 			this.render();
 		});
 	}
 	
-	/**
-	 * Commits current working mesh and centre to history.
-	 */
-	commitKeyframe (arg0_symbol_obj) {
-		//Convert from parameters
+	commitKeyframe(arg0_symbol_obj) {
 		let symbol_obj = arg0_symbol_obj;
-		
-		//Declare local instance variables
-		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
+		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
 		this.history.addKeyframe(
 			main.date,
@@ -105,18 +108,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.draw();
 	}
 	
-	draw () {
+	draw() {
 		let derender_geometry = false;
-		
-		this.value = this.history.getKeyframe({
-			date: main.date,
-			guaranteed_indexes: [1],
-		}).value;
+		this.value = this.history.getKeyframe({ date: main.date, guaranteed_indexes: [1] }).value;
 		this.value[1] = this.getSymbol(this.value[1]);
 		
-		if (this.value === undefined || this.value.length === 0 || this._is_visible === false) derender_geometry = true;
-		
-		if (this.value && !this.value[0]) derender_geometry = true;
+		if (!this.value || this._is_visible === false) derender_geometry = true;
 		if (this.value && this.value[2]) {
 			if (this.value[2].hidden) derender_geometry = true;
 			if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) derender_geometry = true;
@@ -125,16 +122,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		if (!derender_geometry) {
 			try {
-				// Safety check: Don't attempt to add UI Markers if the map or its UI container isn't ready
 				if (!map || !map.isLoaded()) return;
-				
 				let coords_obj = this.value[0];
 				let symbol_obj = this.value[1];
 				
-				if (coords_obj.initial_zoom !== undefined) {
-					this.initial_zoom = coords_obj.initial_zoom;
-				}
-				
+				this.initial_zoom = coords_obj.initial_zoom ?? this.initial_zoom;
 				if (this.selected_point_index === null && coords_obj.mesh_points) {
 					this.mesh_points = JSON.parse(JSON.stringify(coords_obj.mesh_points));
 					this.updateTriangulation();
@@ -142,32 +134,22 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				
 				if (!this.geometry) {
 					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, {
-						draggable: false,
-						single: false,
-						content: this.canvas,
-						rotateWithMap: true,
+						draggable: false, single: false, content: this.dom_wrapper,
+						rotateWithMap: false, // Explicitly false! We natively map points to standard 2D flat screens!
+						pitchWithMap: false
 					});
 					this.geometry.addTo(map);
 				} else {
 					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
 				}
 				
-				// Only call show if the marker has a map and the map has a UI container
-				if (this.geometry.getMap()) {
-					try {
-						this.geometry.show();
-					} catch (e) {
-						this.geometry.addTo(map);
-						this.geometry.show();
-					}
-				}
+				if (this.geometry.getMap()) this.geometry.show();
 				
-				this.canvas.style.opacity = symbol_obj.opacity !== undefined ? symbol_obj.opacity : 0.45;
+				this.canvas.style.opacity = symbol_obj.opacity ?? 0.45;
 				if (symbol_obj.image_url !== this._loaded_image_url) {
 					this._loaded_image_url = symbol_obj.image_url;
 					this.loadImage(symbol_obj.image_url);
 				}
-				
 				this.render();
 			} catch (e) {
 				console.error(e);
@@ -175,11 +157,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		} else {
 			if (this.geometry) this.geometry.hide();
 		}
-		
 		if (this.geometry && !derender_geometry) this.history.draw(this.keyframes_ui);
 	}
 	
-	drawUI () {
+	drawUI() {
 		if (!this.points_area) {
 			this.points_area = document.createElement("textarea");
 			this.points_area.rows = 8;
@@ -190,12 +171,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					this.mesh_points = area_coords.map((c, i) => {
 						let world = this.getLngLatToWorld(c[0], c[1]);
 						let existing = this.mesh_points[i];
-						return {
-							x: world.x,
-							y: world.y,
-							src_x: existing ? existing.src_x : world.x,
-							src_y: existing ? existing.src_y : world.y,
-						};
+						return { x: world.x, y: world.y, src_x: existing ? existing.src_x : world.x, src_y: existing ? existing.src_y : world.y };
 					});
 					this.updateTriangulation();
 					this.commitKeyframe();
@@ -205,15 +181,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.extent_area.rows = 3;
 			this.extent_area.style.fontFamily = "monospace";
 			this.extent_area.addEventListener("input", () => {
-				let extent = Geospatiale.parseCoords(this.extent_area.value);
-				if (extent.length >= 2 && this.mesh_points.length >= 4) {
-					let tl = extent[0],
-						br = extent[1];
-					let corners = [tl, [br[0], tl[1]], br, [tl[0], br[1]]];
-					corners.forEach((coord, i) => {
-						let world = this.getLngLatToWorld(coord[0], coord[1]);
-						this.mesh_points[i].x = world.x;
-						this.mesh_points[i].y = world.y;
+				let extent_coords = Geospatiale.parseCoords(this.extent_area.value);
+				if (extent_coords.length >= 2 && this.mesh_points.length >= 4) {
+					let lng_values = extent_coords.map((c) => c[0]), lat_values = extent_coords.map((c) => c[1]);
+					let min_lng = Math.min(...lng_values), max_lng = Math.max(...lng_values), min_lat = Math.min(...lat_values), max_lat = Math.max(...lat_values);
+					let mesh_corners = [[min_lng, max_lat], [max_lng, max_lat], [max_lng, min_lat], [min_lng, min_lat]];
+					mesh_corners.forEach((coord, i) => {
+						let world_pos = this.getLngLatToWorld(coord[0], coord[1]);
+						this.mesh_points[i].x = world_pos.x;
+						this.mesh_points[i].y = world_pos.y;
 					});
 					this.commitKeyframe();
 				}
@@ -222,147 +198,107 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return {
 			edit_image_ui: veInterface(
 				{
-					warp_mode_select: veSelect(
-						{ triangulation: { name: "Affine Triangles" }, tps: { name: "Thin Plate Spline" } },
-						{
-							name: "Warp Mode",
-							selected: this.value[1]?.warp_mode || "triangulation",
-							onuserchange: (v) => this.commitKeyframe({ warp_mode: v }),
-						}
-					),
+					warp_mode_select: veSelect({ triangulation: { name: "Affine Triangles" }, tps: { name: "Thin Plate Spline" } }, { name: "Warp Mode", selected: this.value[1]?.warp_mode || "triangulation", onuserchange: (v) => this.commitKeyframe({ warp_mode: v }) }),
 					points_label: veHTML("Control Points [Lng, Lat]"),
 					points_area: veHTML(this.points_area),
 					extent_label: veHTML("Canvas Extent [TL, BR]"),
 					extent_area: veHTML(this.extent_area),
-					opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), {
-						name: "Opacity",
-						min: 0,
-						max: 1,
-						step: 0.01,
-						onuserchange: (v) => {
-							this.canvas.style.opacity = v;
-							this.commitKeyframe({ opacity: v });
-						},
-					}),
-					url_input: veText(this.value[1]?.image_url || "", {
-						name: "Image URL",
-						onuserchange: (v) => this.commitKeyframe({ image_url: v }),
-					}),
+					opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), { name: "Opacity", min: 0, max: 1, step: 0.01, onuserchange: (v) => { this.canvas.style.opacity = v; this.commitKeyframe({ opacity: v }); } }),
+					url_input: veText(this.value[1]?.image_url || "", { name: "Image URL", onuserchange: (v) => this.commitKeyframe({ image_url: v }) }),
 				},
 				{ name: "Edit Image", open: true }
 			),
 		};
 	}
 	
-	getLngLatToWorld (lng, lat) {
-		let projection = map.getProjection();
-		let marker_coord = this.geometry.getCoordinates();
-		let res = map.getResolution(this.initial_zoom);
-		
-		// Get absolute projection coordinates (e.g., meters)
-		let center_auc = projection.project(marker_coord);
-		let target_auc = projection.project(new maptalks.Coordinate(lng, lat));
-		
-		// Convert difference in projection units to pixels at the fixed initial zoom
-		// Note: y is inverted in screen space relative to projection space
-		let delta_x = (target_auc.x - center_auc.x) / res;
-		let delta_y = (center_auc.y - target_auc.y) / res;
-		
-		return {
-			x: delta_x + this.img_center,
-			y: this.img_center - delta_y,
-		};
+	getEventWorldPos(e) {
+		let rect = map.getContainer().getBoundingClientRect();
+		let pt = new maptalks.Point(e.clientX - rect.left, e.clientY - rect.top);
+		let coord = map.containerPointToCoordinate(pt);
+		if (!coord) return null; // Edge case (user clicks up into the horizon sky block)
+		return this.getLngLatToWorld(coord.x, coord.y);
 	}
 	
-	getScaleFactor () {
-		//Return statement
-		return map.getResolution(this.initial_zoom)/map.getResolution(map.getZoom());
+	getEventScreenPos(e) {
+		let rect = map.getContainer().getBoundingClientRect();
+		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 	}
 	
-	getWorldToLngLat (wx, wy) {
-		//Declare local instance variables
-		let projection = map.getProjection();
-		let marker_coord = this.geometry.getCoordinates();
-		let res = map.getResolution(this.initial_zoom);
-		
+	getLngLatToWorld(lng, lat) {
+		let projection = map.getProjection(), marker_coord = this.geometry.getCoordinates(), res = map.getResolution(this.initial_zoom);
+		let center_auc = projection.project(marker_coord), target_auc = projection.project(new maptalks.Coordinate(lng, lat));
+		return { x: (target_auc.x - center_auc.x) / res + this.img_center, y: this.img_center - (target_auc.y - center_auc.y) / res };
+	}
+	
+	getWorldToLngLat(wx, wy) {
+		let projection = map.getProjection(), marker_coord = this.geometry.getCoordinates(), res = map.getResolution(this.initial_zoom);
 		let center_auc = projection.project(marker_coord);
-		
-		// Calculate target projection coordinates from pixel deltas
-		let target_auc = new maptalks.Coordinate(
-			center_auc.x + (wx - this.img_center) * res,
-			center_auc.y - (wy - this.img_center) * res
-		);
-		
+		let target_auc = new maptalks.Coordinate(center_auc.x + (wx - this.img_center) * res, center_auc.y - (wy - this.img_center) * res);
 		let coordinate_result = projection.unproject(target_auc);
-		
-		//Return statement
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
-	handleDoubleClick (e) {
+	handleDoubleClick(e) {
 		if (!this.selected) return;
 		
-		let event_pos = Geospatiale.convertEventToWorld(
-			e,
-			this.canvas.getBoundingClientRect(),
-			this.getScaleFactor(),
-			this.buffer_offset
-		);
-		let point_idx = Geospatiale.getPointIndexAt(
-			event_pos.x,
-			event_pos.y,
-			this.mesh_points,
-			this.getScaleFactor(),
-			this.base_hitbox_radius
-		);
+		let mouse_sp = this.getEventScreenPos(e);
+		let point_idx = null;
+		let min_dist = this.base_hitbox_radius;
+		
+		// Intersect precisely with 2D projected screen pixel space
+		if (this.screen_pts) {
+			this.screen_pts.forEach((p, i) => {
+				let dist = Math.hypot(p.screen_x - mouse_sp.x, p.screen_y - mouse_sp.y);
+				if (dist < min_dist) {
+					min_dist = dist;
+					point_idx = i;
+				}
+			});
+		}
+		
 		if (point_idx !== null) {
 			this.mesh_points.splice(point_idx, 1);
 			this.updateTriangulation();
 			this.commitKeyframe();
+			this.render();
 		}
 	}
 	
-	handleMouseDown (e) {
-		if (!this.selected) return;
-		if (e.button === 1) return; //Ignore MMB panning
+	handleMouseDown(e) {
+		if (!this.selected || e.button === 1) return;
 		
-		let event_pos = Geospatiale.convertEventToWorld(e,
-			this.canvas.getBoundingClientRect(),
-			this.getScaleFactor(),
-			this.buffer_offset
-		);
-		this.selected_point_index = Geospatiale.getPointIndexAt(
-			event_pos.x,
-			event_pos.y,
-			this.mesh_points,
-			this.getScaleFactor(),
-			this.base_hitbox_radius
-		);
+		let mouse_sp = this.getEventScreenPos(e);
+		
+		this.selected_point_index = null;
+		let min_dist = this.base_hitbox_radius;
+		
+		if (this.screen_pts) {
+			this.screen_pts.forEach((p, i) => {
+				let dist = Math.hypot(p.screen_x - mouse_sp.x, p.screen_y - mouse_sp.y);
+				if (dist < min_dist) {
+					min_dist = dist;
+					this.selected_point_index = i;
+				}
+			});
+		}
+		
 		this._is_dragging = false;
 		
 		if (this.selected_point_index === null) {
-			let source_x = event_pos.x;
-			let source_y = event_pos.y;
+			let world_pos = this.getEventWorldPos(e);
+			if (!world_pos) return;
 			
-			//Iterate over all this.mesh_triangles
+			let source_x = world_pos.x, source_y = world_pos.y;
 			for (let i = 0; i < this.mesh_triangles.length; i += 3) {
-				let pt1 = this.mesh_points[this.mesh_triangles[i]];
-				let pt2 = this.mesh_points[this.mesh_triangles[i + 1]];
-				let pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
-				
-				let bary_info = Geospatiale.getBarycentric(event_pos, pt1, pt2, pt3);
+				let pt1 = this.mesh_points[this.mesh_triangles[i]], pt2 = this.mesh_points[this.mesh_triangles[i + 1]], pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
+				let bary_info = Geospatiale.getBarycentric(world_pos, pt1, pt2, pt3);
 				if (bary_info.inside) {
-					source_x = bary_info.u*pt1.src_x + bary_info.v*pt2.src_x + bary_info.w*pt3.src_x;
-					source_y = bary_info.u*pt1.src_y + bary_info.v*pt2.src_y + bary_info.w*pt3.src_y;
+					source_x = bary_info.u * pt1.src_x + bary_info.v * pt2.src_x + bary_info.w * pt3.src_x;
+					source_y = bary_info.u * pt1.src_y + bary_info.v * pt2.src_y + bary_info.w * pt3.src_y;
 					break;
 				}
 			}
-			this.mesh_points.push({
-				x: event_pos.x,
-				y: event_pos.y,
-				src_x: source_x,
-				src_y: source_y,
-			});
+			this.mesh_points.push({ x: world_pos.x, y: world_pos.y, src_x: source_x, src_y: source_y });
 			this.selected_point_index = this.mesh_points.length - 1;
 			this.updateTriangulation();
 			this.render();
@@ -370,219 +306,146 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	handleMouseMove (e) {
-		if (!this.selected) return;
+	handleMouseMove(e) {
+		if (!this.selected || this.selected_point_index === null) return;
+		this._is_dragging = true;
 		
-		if (this.selected_point_index !== null) {
-			this._is_dragging = true;
-			let event_pos = Geospatiale.convertEventToWorld(
-				e,
-				this.canvas.getBoundingClientRect(),
-				this.getScaleFactor(),
-				this.buffer_offset
-			);
-			this.mesh_points[this.selected_point_index].x = event_pos.x;
-			this.mesh_points[this.selected_point_index].y = event_pos.y;
-			this.render();
-		}
+		let world_pos = this.getEventWorldPos(e);
+		if (!world_pos) return;
+		
+		this.mesh_points[this.selected_point_index].x = world_pos.x;
+		this.mesh_points[this.selected_point_index].y = world_pos.y;
+		this.render();
 	}
 	
-	initMesh () {
-		this.mesh_points = [
-			{ x: 0, y: 0, src_x: 0, src_y: 0 },
-			{ x: this.img_display_size, y: 0, src_x: this.img_display_size, src_y: 0 },
-			{
-				x: this.img_display_size,
-				y: this.img_display_size,
-				src_x: this.img_display_size,
-				src_y: this.img_display_size,
-			},
-			{ x: 0, y: this.img_display_size, src_x: 0, src_y: this.img_display_size },
-		];
+	initMesh() {
+		this.mesh_points = [{ x: 0, y: 0, src_x: 0, src_y: 0 }, { x: this.img_display_size, y: 0, src_x: this.img_display_size, src_y: 0 }, { x: this.img_display_size, y: this.img_display_size, src_x: this.img_display_size, src_y: this.img_display_size }, { x: 0, y: this.img_display_size, src_x: 0, src_y: this.img_display_size }];
 		this.updateTriangulation();
 	}
 	
-	loadImage (arg0_url) {
-		//Convert from parameters
-		let url = (arg0_url) ? arg0_url : "";
-		
-		//Declare local instance variables
-		let map_defines = config.defines.map;
-		
-		//Initialise image
+	loadImage(arg0_url) {
+		let url = arg0_url || "", map_defines = config.defines.map;
 		this.image = new Image();
 		this.image.onerror = () => console.error("Image failed to load:", this.image.src);
 		this.image.onload = () => this.render();
-		
-		//Check if pattern matches a known URL
 		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
-		this.image.src = (url && pattern_check.test(url)) ? 
-			url : map_defines.default_image_src;
+		this.image.src = url && pattern_check.test(url) ? url : map_defines.default_image_src;
 	}
 	
-	remove (arg0_do_not_refresh) {
+	remove(arg0_do_not_refresh) {
 		if (this.geometry) this.geometry.remove();
 		super.remove(arg0_do_not_refresh);
 	}
 	
-	render () {
-		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return; //Internal guard clause to ensure image is valid
+	render() {
+		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return;
+		if (!map || !map.isLoaded() || !this.geometry) return;
 		
-		//Update surrounding buffer for UX
 		this.updateBufferSize();
+		if (!this.screen_pts) return;
+		
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ctx.save();
 		
-		//Derive scale from the actual (integer) canvas size so the buffer spans exactly world_size world units, using the ideal buffer_scale here leaves a subpixel ceil() remainder that shifts the image slightly per zoom level
-		let render_scale = this.canvas.width/this.world_size;
-		let warp_mode = (this.value[1]?.warp_mode) ? 
-			this.value[1].warp_mode : "triangulation";
+		// Scale purely to match retinal devices for crisp canvas vectors (keeps logical X/Y maths intact)
+		this.ctx.scale(this.canvas_dpr, this.canvas_dpr);
 		
-		//Scale/translate render
-		this.ctx.scale(render_scale, render_scale);
-		this.ctx.translate(this.buffer_offset, this.buffer_offset);
+		let warp_mode = this.value[1]?.warp_mode || "triangulation";
 		
-		if (warp_mode === "tps" && this.mesh_points.length >= 3) {
-			let coeffs = Geospatiale.computeTPSCoefficients(this.mesh_points);
-			
-			Geospatiale.renderTPSGrid(
-				this.ctx,
-				this.image,
-				this.img_display_size, //Source coordinate space
-				this.grid_resolution,
-				this.mesh_points,
-				coeffs.x,
-				coeffs.y
-			);
+		// Calculate final flat physical canvas drawing points
+		let canvas_pts = this.screen_pts.map(p => {
+			return {
+				x: this.canvas_w / 2 + p.rel_x,
+				y: this.canvas_h / 2 + p.rel_y,
+				src_x: p.src_x,
+				src_y: p.src_y
+			};
+		});
+		
+		if (warp_mode === "tps" && canvas_pts.length >= 3) {
+			let coeffs = Geospatiale.computeTPSCoefficients(canvas_pts);
+			Geospatiale.renderTPSGrid(this.ctx, this.image, this.img_display_size, this.grid_resolution, canvas_pts, coeffs.x, coeffs.y);
 		} else {
-			//Iterate over all mesh_triangles and draw them
 			for (let i = 0; i < this.mesh_triangles.length; i += 3) {
-				//Calculate local points
-				let p1 = this.mesh_points[this.mesh_triangles[i]],
-					p2 = this.mesh_points[this.mesh_triangles[i + 1]],
-					p3 = this.mesh_points[this.mesh_triangles[i + 2]];
-				
-				//Draw triangle part of image
-				Geospatiale.drawTriangle(
-					this.ctx, this.image, this.img_display_size,
-					{ x: p1.src_x, y: p1.src_y },
-					{ x: p2.src_x, y: p2.src_y },
-					{ x: p3.src_x, y: p3.src_y },
-					p1, p2, p3
-				);
+				let p1 = canvas_pts[this.mesh_triangles[i]], p2 = canvas_pts[this.mesh_triangles[i + 1]], p3 = canvas_pts[this.mesh_triangles[i + 2]];
+				Geospatiale.drawTriangle(this.ctx, this.image, this.img_display_size, { x: p1.src_x, y: p1.src_y }, { x: p2.src_x, y: p2.src_y }, { x: p3.src_x, y: p3.src_y }, p1, p2, p3);
 			}
 		}
 		
-		//Draw mesh overlay only if selected
-		if (this.selected)
-			Geospatiale.drawMeshOverlay(
-				this.ctx,
-				this.mesh_points,
-				this.mesh_triangles,
-				this.getScaleFactor(),
-				this.base_point_radius,
-				this.selected_point_index
-			);
+		if (this.selected) {
+			Geospatiale.drawMeshOverlay(this.ctx, canvas_pts, this.mesh_triangles, 1, this.base_point_radius, this.selected_point_index);
+		}
+		
 		this.ctx.restore();
 		this.updateInfoPanels();
 	}
 	
-	updateBufferSize () {
-		let factor = this.getScaleFactor();
-		let dpr = window.devicePixelRatio || 1;
-		let padding = this.base_screen_padding/factor;
-		let min_x = this.img_center,
-			max_x = this.img_center,
-			min_y = this.img_center,
-			max_y = this.img_center;
+	updateBufferSize() {
+		let marker_coord = this.geometry.getCoordinates();
+		let marker_screen = map.coordinateToContainerPoint(marker_coord);
+		if (!marker_screen) return;
 		
-		this.mesh_points.forEach((p) => {
-			min_x = Math.min(min_x, p.x);
-			max_x = Math.max(max_x, p.x);
-			min_y = Math.min(min_y, p.y);
-			max_y = Math.max(max_y, p.y);
-		});
+		let max_abs_x = 0, max_abs_y = 0;
+		this.screen_pts = [];
 		
-		let max_ext = Math.max(
-			Math.abs(min_x - this.img_center),
-			Math.abs(max_x - this.img_center),
-			Math.abs(min_y - this.img_center),
-			Math.abs(max_y - this.img_center)
-		);
-		
-		this.world_size = Math.ceil((max_ext + padding) * 2);
-		
-		// Calculate buffer scale based on the current map scale factor to maintain resolution
-		// We cap it so we don't exceed max_buffer_size, but otherwise target 1:1 pixel ratio
-		this.buffer_scale = Math.min(factor, this.max_buffer_size / (this.world_size * dpr));
-		
-		let target_width = Math.ceil(this.world_size * this.buffer_scale * dpr);
-		let target_height = Math.ceil(this.world_size * this.buffer_scale * dpr);
-		
-		if (this.canvas.width !== target_width || this.canvas.height !== target_height) {
-			this.canvas.width = target_width;
-			this.canvas.height = target_height;
+		for (let p of this.mesh_points) {
+			let lngLat = this.getWorldToLngLat(p.x, p.y);
+			let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(lngLat[0], lngLat[1]));
+			
+			// Protect against math singularities if points swing wildly behind the user's camera (negative Z)
+			if (!sp || isNaN(sp.x) || isNaN(sp.y)) sp = { x: marker_screen.x, y: marker_screen.y };
+			
+			let rel_x = sp.x - marker_screen.x;
+			let rel_y = sp.y - marker_screen.y;
+			
+			// Clip extremities for stability
+			if (rel_x > 15000) rel_x = 15000; if (rel_x < -15000) rel_x = -15000;
+			if (rel_y > 15000) rel_y = 15000; if (rel_y < -15000) rel_y = -15000;
+			
+			if (Math.abs(rel_x) > max_abs_x) max_abs_x = Math.abs(rel_x);
+			if (Math.abs(rel_y) > max_abs_y) max_abs_y = Math.abs(rel_y);
+			
+			this.screen_pts.push({ ...p, screen_x: sp.x, screen_y: sp.y, rel_x: rel_x, rel_y: rel_y });
 		}
 		
-		this.buffer_offset = this.world_size / 2 - this.img_center;
-		this.updateCSSSize();
+		let dpr = window.devicePixelRatio || 1;
+		let padding = 100;
+		let target_w = Math.ceil(max_abs_x * 2 + padding);
+		let target_h = Math.ceil(max_abs_y * 2 + padding);
+		
+		if (target_w > this.max_buffer_size) target_w = this.max_buffer_size;
+		if (target_h > this.max_buffer_size) target_h = this.max_buffer_size;
+		
+		// Push only logical sizes to CSS, keep pixel multiplier in canvas
+		if (this.canvas.style.width !== target_w + "px" || this.canvas.style.height !== target_h + "px") {
+			this.canvas.style.width = target_w + "px";
+			this.canvas.style.height = target_h + "px";
+			this.canvas.width = target_w * dpr;
+			this.canvas.height = target_h * dpr;
+		}
+		
+		this.canvas_w = target_w;
+		this.canvas_h = target_h;
+		this.canvas_dpr = dpr;
 	}
 	
-	updateCSSSize () {
-		let factor = this.getScaleFactor();
-		// Round to whole CSS pixels so UIMarker's integer size measurement
-		// matches the layout size exactly (avoids half-pixel centering error)
-		let css_size = Math.round(this.world_size * factor);
-		this.canvas.style.width = css_size + "px";
-		this.canvas.style.height = css_size + "px";
-	}
-	
-	updateInfoPanels () {
-		if (!this.points_area || document.activeElement === this.points_area || document.activeElement === this.extent_area)
-			return;
-		
-		this.points_area.value = this.mesh_points
-		.map((p) => {
-			let c = this.getWorldToLngLat(p.x, p.y);
-			return "[" + c[0].toFixed(6) + ", " + c[1].toFixed(6) + "]";
-		})
-		.join("\n");
-		
+	updateInfoPanels() {
+		if (!this.points_area || document.activeElement === this.points_area || document.activeElement === this.extent_area) return;
+		this.points_area.value = this.mesh_points.map((p) => { let c = this.getWorldToLngLat(p.x, p.y); return "[" + c[0].toFixed(6) + ", " + c[1].toFixed(6) + "]"; }).join("\n");
 		if (this.mesh_points.length > 0) {
-			let min_x = Infinity;
-			let min_y = Infinity;
-			let max_x = -Infinity;
-			let max_y = -Infinity;
-			
+			let min_x = Infinity, min_y = Infinity, max_x = -Infinity, max_y = -Infinity;
 			for (let i = 0; i < this.mesh_points.length; i++) {
 				let p = this.mesh_points[i];
-				if (p.x < min_x) min_x = p.x;
-				if (p.y < min_y) min_y = p.y;
-				if (p.x > max_x) max_x = p.x;
-				if (p.y > max_y) max_y = p.y;
+				if (p.x < min_x) min_x = p.x; if (p.y < min_y) min_y = p.y;
+				if (p.x > max_x) max_x = p.x; if (p.y > max_y) max_y = p.y;
 			}
-			
-			let tl_coords = this.getWorldToLngLat(min_x, min_y);
-			let br_coords = this.getWorldToLngLat(max_x, max_y);
-			
-			this.extent_area.value =
-				"[" +
-				tl_coords[0].toFixed(6) +
-				", " +
-				tl_coords[1].toFixed(6) +
-				"]\n[" +
-				br_coords[0].toFixed(6) +
-				", " +
-				br_coords[1].toFixed(6) +
-				"]";
+			let tl = this.getWorldToLngLat(min_x, min_y), br = this.getWorldToLngLat(max_x, max_y);
+			this.extent_area.value = `[${tl[0].toFixed(6)}, ${tl[1].toFixed(6)}]\n[${br[0].toFixed(6)}, ${br[1].toFixed(6)}]`;
 		}
 	}
 	
-	updateTriangulation () {
-		if (this.mesh_points.length < 3) {
-			this.mesh_triangles = [];
-			return;
-		}
+	updateTriangulation() {
+		if (this.mesh_points.length < 3) { this.mesh_triangles = []; return; }
 		this.mesh_triangles = Geospatiale.delaunayTriangulate(this.mesh_points, this.img_center);
 	}
 };
