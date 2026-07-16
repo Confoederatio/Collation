@@ -275,14 +275,13 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		};
 	}
 	
-	getScaleFactor() {
-		// Use maptalks' own resolution model rather than 2^dz — maptalks interpolates
-		// resolutions linearly between integer zooms for fractional zoom levels, so a
-		// pure exponential drifts cyclically (worst mid-level, resetting at integers)
-		return map.getResolution(this.initial_zoom) / map.getResolution(map.getZoom());
+	getScaleFactor () {
+		//Return statement
+		return map.getResolution(this.initial_zoom)/map.getResolution(map.getZoom());
 	}
 	
-	getWorldToLngLat(wx, wy) {
+	getWorldToLngLat (wx, wy) {
+		//Declare local instance variables
 		let projection = map.getProjection();
 		let marker_coord = this.geometry.getCoordinates();
 		let res = map.getResolution(this.initial_zoom);
@@ -296,6 +295,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		);
 		
 		let coordinate_result = projection.unproject(target_auc);
+		
+		//Return statement
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
@@ -322,12 +323,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	handleMouseDown(e) {
+	handleMouseDown (e) {
 		if (!this.selected) return;
-		if (e.button === 1) return;
+		if (e.button === 1) return; //Ignore MMB panning
 		
-		let event_pos = Geospatiale.convertEventToWorld(
-			e,
+		let event_pos = Geospatiale.convertEventToWorld(e,
 			this.canvas.getBoundingClientRect(),
 			this.getScaleFactor(),
 			this.buffer_offset
@@ -344,14 +344,17 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (this.selected_point_index === null) {
 			let source_x = event_pos.x;
 			let source_y = event_pos.y;
+			
+			//Iterate over all this.mesh_triangles
 			for (let i = 0; i < this.mesh_triangles.length; i += 3) {
 				let pt1 = this.mesh_points[this.mesh_triangles[i]];
 				let pt2 = this.mesh_points[this.mesh_triangles[i + 1]];
 				let pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
+				
 				let bary_info = Geospatiale.getBarycentric(event_pos, pt1, pt2, pt3);
 				if (bary_info.inside) {
-					source_x = bary_info.u * pt1.src_x + bary_info.v * pt2.src_x + bary_info.w * pt3.src_x;
-					source_y = bary_info.u * pt1.src_y + bary_info.v * pt2.src_y + bary_info.w * pt3.src_y;
+					source_x = bary_info.u*pt1.src_x + bary_info.v*pt2.src_x + bary_info.w*pt3.src_x;
+					source_y = bary_info.u*pt1.src_y + bary_info.v*pt2.src_y + bary_info.w*pt3.src_y;
 					break;
 				}
 			}
@@ -368,7 +371,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	handleMouseMove(e) {
+	handleMouseMove (e) {
 		if (!this.selected) return;
 		
 		if (this.selected_point_index !== null) {
@@ -385,7 +388,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	initMesh() {
+	initMesh () {
 		this.mesh_points = [
 			{ x: 0, y: 0, src_x: 0, src_y: 0 },
 			{ x: this.img_display_size, y: 0, src_x: this.img_display_size, src_y: 0 },
@@ -400,15 +403,22 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateTriangulation();
 	}
 	
-	loadImage(url) {
+	loadImage (arg0_url) {
+		//Convert from parameters
+		let url = (arg0_url) ? arg0_url : "";
+		
+		//Declare local instance variables
+		let map_defines = config.defines.map;
+		
+		//Initialise image
 		this.image = new Image();
-		this.image.onload = () => this.render();
 		this.image.onerror = () => console.error("Image failed to load:", this.image.src);
+		this.image.onload = () => this.render();
+		
+		//Check if pattern matches a known URL
 		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
-		this.image.src =
-			url && pattern_check.test(url)
-				? url
-				: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+		this.image.src = (url && pattern_check.test(url)) ? 
+			url : map_defines.default_image_src;
 	}
 	
 	remove(arg0_do_not_refresh) {
