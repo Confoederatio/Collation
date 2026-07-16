@@ -145,6 +145,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 						draggable: false,
 						single: false,
 						content: this.canvas,
+						rotateWithMap: true,
 					});
 					this.geometry.addTo(map);
 				} else {
