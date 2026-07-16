@@ -427,49 +427,54 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	render () {
-		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return;
+		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return; //Internal guard clause to ensure image is valid
+		
+		//Update surrounding buffer for UX
 		this.updateBufferSize();
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ctx.save();
 		
-		// Derive scale from the actual (integer) canvas size so the buffer spans
-		// exactly world_size world units — using the ideal buffer_scale here leaves
-		// a sub-pixel ceil() remainder that shifts the image slightly per zoom level
-		let render_scale = this.canvas.width / this.world_size;
+		//Derive scale from the actual (integer) canvas size so the buffer spans exactly world_size world units, using the ideal buffer_scale here leaves a subpixel ceil() remainder that shifts the image slightly per zoom level
+		let render_scale = this.canvas.width/this.world_size;
+		let warp_mode = (this.value[1]?.warp_mode) ? 
+			this.value[1].warp_mode : "triangulation";
+		
+		//Scale/translate render
 		this.ctx.scale(render_scale, render_scale);
 		this.ctx.translate(this.buffer_offset, this.buffer_offset);
 		
-		let warp_mode = this.value[1]?.warp_mode ? this.value[1].warp_mode : "triangulation";
 		if (warp_mode === "tps" && this.mesh_points.length >= 3) {
 			let coeffs = Geospatiale.computeTPSCoefficients(this.mesh_points);
+			
 			Geospatiale.renderTPSGrid(
 				this.ctx,
 				this.image,
-				this.img_display_size, // Source coordinate space
+				this.img_display_size, //Source coordinate space
 				this.grid_resolution,
 				this.mesh_points,
 				coeffs.x,
 				coeffs.y
 			);
 		} else {
+			//Iterate over all mesh_triangles and draw them
 			for (let i = 0; i < this.mesh_triangles.length; i += 3) {
+				//Calculate local points
 				let p1 = this.mesh_points[this.mesh_triangles[i]],
 					p2 = this.mesh_points[this.mesh_triangles[i + 1]],
 					p3 = this.mesh_points[this.mesh_triangles[i + 2]];
+				
+				//Draw triangle part of image
 				Geospatiale.drawTriangle(
-					this.ctx,
-					this.image,
-					this.img_display_size,
+					this.ctx, this.image, this.img_display_size,
 					{ x: p1.src_x, y: p1.src_y },
 					{ x: p2.src_x, y: p2.src_y },
 					{ x: p3.src_x, y: p3.src_y },
-					p1,
-					p2,
-					p3
+					p1, p2, p3
 				);
 			}
 		}
 		
+		//Draw mesh overlay only if selected
 		if (this.selected)
 			Geospatiale.drawMeshOverlay(
 				this.ctx,
@@ -486,7 +491,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	updateBufferSize () {
 		let factor = this.getScaleFactor();
 		let dpr = window.devicePixelRatio || 1;
-		let padding = this.base_screen_padding / factor;
+		let padding = this.base_screen_padding/factor;
 		let min_x = this.img_center,
 			max_x = this.img_center,
 			min_y = this.img_center,
