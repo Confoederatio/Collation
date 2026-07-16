@@ -204,15 +204,28 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.extent_area.rows = 3;
 			this.extent_area.style.fontFamily = "monospace";
 			this.extent_area.addEventListener("input", () => {
-				let extent = Geospatiale.parseCoords(this.extent_area.value);
-				if (extent.length >= 2 && this.mesh_points.length >= 4) {
-					let tl = extent[0],
-						br = extent[1];
-					let corners = [tl, [br[0], tl[1]], br, [tl[0], br[1]]];
-					corners.forEach((coord, i) => {
-						let world = this.getLngLatToWorld(coord[0], coord[1]);
-						this.mesh_points[i].x = world.x;
-						this.mesh_points[i].y = world.y;
+				let extent_coords = Geospatiale.parseCoords(this.extent_area.value);
+				if (extent_coords.length >= 2 && this.mesh_points.length >= 4) {
+					// Normalize coordinates to define a proper bounding box
+					let lng_values = extent_coords.map((c) => c[0]);
+					let lat_values = extent_coords.map((c) => c[1]);
+					let min_lng = Math.min(...lng_values);
+					let max_lng = Math.max(...lng_values);
+					let min_lat = Math.min(...lat_values);
+					let max_lat = Math.max(...lat_values);
+					
+					// Map bounds to mesh corners in order: TL, TR, BR, BL
+					let mesh_corners = [
+						[min_lng, max_lat], // Top-Left
+						[max_lng, max_lat], // Top-Right
+						[max_lng, min_lat], // Bottom-Right
+						[min_lng, min_lat], // Bottom-Left
+					];
+					
+					mesh_corners.forEach((coord, i) => {
+						let world_pos = this.getLngLatToWorld(coord[0], coord[1]);
+						this.mesh_points[i].x = world_pos.x;
+						this.mesh_points[i].y = world_pos.y;
 					});
 					this.commitKeyframe();
 				}
@@ -263,9 +276,9 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let target_auc = projection.project(new maptalks.Coordinate(lng, lat));
 		
 		// Convert difference in projection units to pixels at the fixed initial zoom
-		// Note: y is inverted in screen space relative to projection space
+		// target_auc.y increases as we go North; screen_pos.y must decrease as we go North
 		let delta_x = (target_auc.x - center_auc.x) / res;
-		let delta_y = (center_auc.y - target_auc.y) / res;
+		let delta_y = (target_auc.y - center_auc.y) / res;
 		
 		return {
 			x: delta_x + this.img_center,
