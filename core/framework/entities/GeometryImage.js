@@ -9,11 +9,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.class_name = "GeometryImage";
 		this.node_editor_mode = "Image";
 		
-		// Create a wrapper container to prevent interfering with UIMarker's internal transforms
+		// Create a wrapper container to avoid conflicts with UIMarker's coordinate transforms
 		this.dom_wrapper = document.createElement("div");
 		this.dom_wrapper.style.pointerEvents = "none";
 		
-		// Declare canvas/render state logic from ImageOverlayWarp
+		// Declare canvas/render state logic
 		this.canvas = document.createElement("canvas");
 		this.ctx = this.canvas.getContext("2d");
 		this.canvas.style.pointerEvents = "auto";
@@ -84,7 +84,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		});
 		this.canvas.addEventListener("dblclick", (e) => this.handleDoubleClick(e));
 		
-		// Map state triggers - use viewchange for smooth updates during zoom/rotate/pitch
+		// Map state triggers
 		map.on("viewchange", () => {
 			this.updateCSSSize();
 			this.render();
@@ -95,10 +95,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	 * Commits current working mesh and centre to history.
 	 */
 	commitKeyframe(arg0_symbol_obj) {
-		// Convert from parameters
 		let symbol_obj = arg0_symbol_obj;
-		
-		// Declare local instance variables
 		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
 		this.history.addKeyframe(
@@ -123,7 +120,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.value[1] = this.getSymbol(this.value[1]);
 		
 		if (this.value === undefined || this.value.length === 0 || this._is_visible === false) derender_geometry = true;
-		
 		if (this.value && !this.value[0]) derender_geometry = true;
 		if (this.value && this.value[2]) {
 			if (this.value[2].hidden) derender_geometry = true;
@@ -298,10 +294,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		let center_auc = projection.project(marker_coord);
 		
-		let target_auc = new maptalks.Coordinate(
-			center_auc.x + (wx - this.img_center) * res,
-			center_auc.y - (wy - this.img_center) * res
-		);
+		let target_auc = new maptalks.Coordinate(center_auc.x + (wx - this.img_center) * res, center_auc.y - (wy - this.img_center) * res);
 		
 		let coordinate_result = projection.unproject(target_auc);
 		
@@ -485,20 +478,21 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let factor = this.getScaleFactor();
 		let css_size = Math.round(this.world_size * factor);
 		
-		// Size the marker container
 		this.dom_wrapper.style.width = css_size + "px";
 		this.dom_wrapper.style.height = css_size + "px";
-		
-		// Size the canvas
 		this.canvas.style.width = css_size + "px";
 		this.canvas.style.height = css_size + "px";
 		
-		// Perspective calculations
 		let map_bearing = map.getBearing();
 		let map_pitch = map.getPitch();
+		let map_size = map.getSize();
+		let fov = map.getFov ? map.getFov() : 60; // Use map field of view (standard default is 60)
 		
-		// Update canvas transformation relative to the wrapper
-		this.canvas.style.transform = `perspective(1000px) rotateX(${map_pitch}deg) rotateZ(${-map_bearing}deg)`;
+		// Calculate precise perspective distance: dist = (height/2) / tan(fov/2)
+		// This represents the camera's distance from the focal plane in pixels.
+		let perspective = (map_size.height / 2) / Math.tan((fov / 2) * Math.PI / 180);
+		
+		this.canvas.style.transform = `perspective(${perspective}px) rotateX(${map_pitch}deg) rotateZ(${-map_bearing}deg)`;
 	}
 	
 	updateInfoPanels() {
