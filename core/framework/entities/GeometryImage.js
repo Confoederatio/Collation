@@ -129,7 +129,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				}
 				
 				if (!this.geometry) {
-					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, { draggable: false, single: false, content: this.dom_wrapper });
+					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, { 
+						draggable: false, 
+						single: false, 
+						content: this.dom_wrapper,
+					});
 					this.geometry.addTo(map);
 				} else {
 					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
