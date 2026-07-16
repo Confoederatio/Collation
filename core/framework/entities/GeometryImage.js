@@ -31,14 +31,9 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.base_hitbox_radius = 20;
 		this.grid_resolution = 20;
 		this.img_display_size = 400;
-		this.img_center = this.img_display_size / 2;
+		this.img_center = this.img_display_size/2;
 		this.max_buffer_size = 4096;
 		this.hit_area_padding = 50;
-		
-		// [FIX] Perspective is nonlinear; affine triangles between distant vertices
-		// over/undershoot the projection (error flips sign with bearing). Each user
-		// triangle is subdivided so sub-triangle edges stay below this many screen
-		// pixels, making the piecewise-affine approximation of perspective accurate.
 		this.max_edge_screen_px = 48;
 		this.max_subdivision = 16;
 		
@@ -286,8 +281,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let center_auc = projection.project(marker_coord),
 			target_auc = projection.project(new maptalks.Coordinate(lng, lat));
 		return {
-			x: (target_auc.x - center_auc.x) / res + this.img_center,
-			y: this.img_center - (target_auc.y - center_auc.y) / res,
+			x: (target_auc.x - center_auc.x)/res + this.img_center,
+			y: this.img_center - (target_auc.y - center_auc.y)/res,
 		};
 	}
 	
@@ -297,8 +292,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			res = map.getResolution(this.initial_zoom);
 		let center_auc = projection.project(marker_coord);
 		let target_auc = new maptalks.Coordinate(
-			center_auc.x + (wx - this.img_center) * res,
-			center_auc.y - (wy - this.img_center) * res
+			center_auc.x + (wx - this.img_center)*res,
+			center_auc.y - (wy - this.img_center)*res
 		);
 		let coordinate_result = projection.unproject(target_auc);
 		return [coordinate_result.x, coordinate_result.y];
@@ -359,8 +354,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
 				let bary_info = Geospatiale.getBarycentric(world_pos, pt1, pt2, pt3);
 				if (bary_info.inside) {
-					source_x = bary_info.u * pt1.src_x + bary_info.v * pt2.src_x + bary_info.w * pt3.src_x;
-					source_y = bary_info.u * pt1.src_y + bary_info.v * pt2.src_y + bary_info.w * pt3.src_y;
+					source_x = bary_info.u*pt1.src_x + bary_info.v*pt2.src_x + bary_info.w*pt3.src_x;
+					source_y = bary_info.u*pt1.src_y + bary_info.v*pt2.src_y + bary_info.w*pt3.src_y;
 					break;
 				}
 			}
@@ -504,13 +499,14 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateInfoPanels();
 	}
 	
-	renderTriangleSubdivided(a, b, c) {
+	//[WIP] - Reactor later
+	renderTriangleSubdivided (a, b, c) {
 		let edge_px = Math.max(
 			Math.hypot(a.screen_x - b.screen_x, a.screen_y - b.screen_y),
 			Math.hypot(b.screen_x - c.screen_x, b.screen_y - c.screen_y),
 			Math.hypot(c.screen_x - a.screen_x, c.screen_y - a.screen_y)
 		);
-		let n = Math.ceil(edge_px / this.max_edge_screen_px);
+		let n = Math.ceil(edge_px/this.max_edge_screen_px);
 		if (n < 1) n = 1;
 		if (n > this.max_subdivision) n = this.max_subdivision;
 		
@@ -518,13 +514,13 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let fallback = { x: a.screen_x, y: a.screen_y };
 		for (let i = 0; i <= n; i++) {
 			for (let j = 0; j <= n - i; j++) {
-				let u = i / n,
-					v = j / n,
+				let u = i/n,
+					v = j/n,
 					w = 1 - u - v;
-				let wx = u * a.x + v * b.x + w * c.x;
-				let wy = u * a.y + v * b.y + w * c.y;
-				let sx_src = u * a.src_x + v * b.src_x + w * c.src_x;
-				let sy_src = u * a.src_y + v * b.src_y + w * c.src_y;
+				let wx = u*a.x + v*b.x + w*c.x;
+				let wy = u*a.y + v*b.y + w*c.y;
+				let sx_src = u*a.src_x + v*b.src_x + w*c.src_x;
+				let sy_src = u*a.src_y + v*b.src_y + w*c.src_y;
 				let sp =
 					n === 1
 						? i === 1
@@ -537,7 +533,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			}
 		}
 		
-		let row_start = (i) => (i * (2 * n - i + 3)) / 2;
+		let row_start = (i) => (i*(2*n - i + 3))/2;
 		
 		for (let i = 0; i < n; i++) {
 			for (let j = 0; j < n - i; j++) {
@@ -582,15 +578,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}));
 		let coeffs = Geospatiale.computeTPSCoefficients(world_pts);
 		let res = this.grid_resolution;
-		let step = this.img_display_size / res;
+		let step = this.img_display_size/res;
 		let fallback = this.screen_pts.length ? { x: this.screen_pts[0].screen_x, y: this.screen_pts[0].screen_y } : { x: 0, y: 0 };
 		
 		let grid = [];
 		for (let gy = 0; gy <= res; gy++) {
 			let row = [];
 			for (let gx = 0; gx <= res; gx++) {
-				let sx = gx * step,
-					sy = gy * step;
+				let sx = gx*step,
+					sy = gy*step;
 				let pos = Geospatiale.getTPSPosition(sx, sy, world_pts, coeffs.x, coeffs.y);
 				let sp = this.getWorldToScreen(pos.x, pos.y, fallback);
 				row.push({ x: sp.x, y: sp.y, src_x: sx, src_y: sy });
@@ -635,7 +631,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (!map_size) return;
 		
 		this.screen_pts = [];
-		let fallback = { x: map_size.width / 2, y: map_size.height / 2 };
+		let fallback = { x: map_size.width/2, y: map_size.height/2 };
 		
 		for (let p of this.mesh_points) {
 			let sp = this.getWorldToScreen(p.x, p.y, fallback);
@@ -646,8 +642,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let target_w = Math.ceil(map_size.width);
 		let target_h = Math.ceil(map_size.height);
 		
-		if (target_w * dpr > this.max_buffer_size) target_w = Math.floor(this.max_buffer_size / dpr);
-		if (target_h * dpr > this.max_buffer_size) target_h = Math.floor(this.max_buffer_size / dpr);
+		if (target_w*dpr > this.max_buffer_size) target_w = Math.floor(this.max_buffer_size/dpr);
+		if (target_h*dpr > this.max_buffer_size) target_h = Math.floor(this.max_buffer_size/dpr);
 		
 		if (
 			this.canvas.style.width !== target_w + "px" ||
@@ -656,8 +652,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		) {
 			this.canvas.style.width = target_w + "px";
 			this.canvas.style.height = target_h + "px";
-			this.canvas.width = target_w * dpr;
-			this.canvas.height = target_h * dpr;
+			this.canvas.width = target_w*dpr;
+			this.canvas.height = target_h*dpr;
 		}
 		
 		this.canvas_w = target_w;
