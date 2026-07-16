@@ -3,7 +3,7 @@
     "D:\\Project 1509 - SVEA\\saves\\atlas.naissance"
   ],
   "disable_autoload": true,
-  "autoloading_mode": "disable_autoload",
+  "autoloading_mode": "default",
   "sort_settings_alphabetically": false,
   "font_registry": [
     "Arial",
@@ -42,5 +42,5 @@
   },
   "use_fallback_wiki": false,
   "wiki_service": "obsidian",
-  "load_savefile_as": "json"
+  "load_savefile_as": "file"
 }

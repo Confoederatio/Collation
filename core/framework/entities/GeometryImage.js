@@ -51,6 +51,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			{
 				center: [map_centre.x, map_centre.y],
 				mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
+				initial_zoom: this.initial_zoom,
 			},
 			{
 				image_url: "",
@@ -99,6 +100,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			{
 				center: [marker_coord.x, marker_coord.y],
 				mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
+				initial_zoom: this.initial_zoom,
 			},
 			symbol_obj
 		);
@@ -128,7 +130,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				let coords_obj = this.value[0];
 				let symbol_obj = this.value[1];
 				
-				// Only update mesh from history if we aren't currently interacting to prevent state jumping
+				// Restore the specific zoom level this mesh was designed for
+				if (coords_obj.initial_zoom !== undefined) {
+					this.initial_zoom = coords_obj.initial_zoom;
+				}
+				
+				// Only update mesh from history if we aren't currently interacting
 				if (this.selected_point_index === null && coords_obj.mesh_points) {
 					this.mesh_points = JSON.parse(JSON.stringify(coords_obj.mesh_points));
 					this.updateTriangulation();
@@ -165,14 +172,17 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	getLngLatToWorld(lng, lat) {
 		let marker_coord = this.marker.getCoordinates();
-		let zoom_factor = this.getScaleFactor();
-		let center_px = map.coordinateToContainerPoint(marker_coord);
-		let target_px = map.coordinateToContainerPoint(new maptalks.Coordinate(lng, lat));
-		let delta_x = target_px.x - center_px.x;
-		let delta_y = target_px.y - center_px.y;
+		
+		// Project both coordinates to "Point" pixels at the FIXED initial zoom
+		let center_pt = map.coordToPoint(marker_coord, this.initial_zoom);
+		let target_pt = map.coordToPoint(new maptalks.Coordinate(lng, lat), this.initial_zoom);
+		
+		let delta_x = target_pt.x - center_pt.x;
+		let delta_y = target_pt.y - center_pt.y;
+		
 		return {
-			x: delta_x / zoom_factor + this.img_center,
-			y: delta_y / zoom_factor + this.img_center,
+			x: delta_x + this.img_center,
+			y: delta_y + this.img_center,
 		};
 	}
 	
@@ -182,12 +192,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	getWorldToLngLat(wx, wy) {
 		let marker_coord = this.marker.getCoordinates();
-		let zoom_factor = this.getScaleFactor();
-		let delta_x = (wx - this.img_center) * zoom_factor;
-		let delta_y = (wy - this.img_center) * zoom_factor;
-		let center_px = map.coordinateToContainerPoint(marker_coord);
-		let target_px = new maptalks.Point(center_px.x + delta_x, center_px.y + delta_y);
-		let coordinate_result = map.containerPointToCoordinate(target_px);
+		let center_pt = map.coordToPoint(marker_coord, this.initial_zoom);
+		
+		// Calculate the target pixel point relative to the center at the FIXED initial zoom
+		let target_pt = new maptalks.Point(
+			center_pt.x + (wx - this.img_center),
+			center_pt.y + (wy - this.img_center)
+		);
+		
+		let coordinate_result = map.pointToCoord(target_pt, this.initial_zoom);
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
@@ -217,7 +230,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	handleMouseDown(e) {
 		if (!this.selected) return;
 		if (e.button === 1) return;
-		console.log(e);
 		
 		let event_pos = Geospatiale.convertEventToWorld(
 			e,
@@ -248,11 +260,16 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					break;
 				}
 			}
-			this.mesh_points.push({ x: event_pos.x, y: event_pos.y, src_x: source_x, src_y: source_y });
+			this.mesh_points.push({
+				x: event_pos.x,
+				y: event_pos.y,
+				src_x: source_x,
+				src_y: source_y,
+			});
 			this.selected_point_index = this.mesh_points.length - 1;
 			this.updateTriangulation();
 			this.render();
-			this.commitKeyframe(); // Immediate commit for new points
+			this.commitKeyframe();
 		}
 	}
 	
@@ -277,7 +294,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.mesh_points = [
 			{ x: 0, y: 0, src_x: 0, src_y: 0 },
 			{ x: this.img_display_size, y: 0, src_x: this.img_display_size, src_y: 0 },
-			{ x: this.img_display_size, y: this.img_display_size, src_x: this.img_display_size, src_y: this.img_display_size },
+			{
+				x: this.img_display_size,
+				y: this.img_display_size,
+				src_x: this.img_display_size,
+				src_y: this.img_display_size,
+			},
 			{ x: 0, y: this.img_display_size, src_x: 0, src_y: this.img_display_size },
 		];
 		this.updateTriangulation();
@@ -419,7 +441,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					this.mesh_points = area_coords.map((c, i) => {
 						let world = this.getLngLatToWorld(c[0], c[1]);
 						let existing = this.mesh_points[i];
-						return { x: world.x, y: world.y, src_x: existing ? existing.src_x : world.x, src_y: existing ? existing.src_y : world.y };
+						return {
+							x: world.x,
+							y: world.y,
+							src_x: existing ? existing.src_x : world.x,
+							src_y: existing ? existing.src_y : world.y,
+						};
 					});
 					this.updateTriangulation();
 					this.commitKeyframe();
