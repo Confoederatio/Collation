@@ -4,7 +4,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		name: "Image",
 	};
 	
-	constructor() {
+	constructor () {
 		super();
 		this.class_name = "GeometryImage";
 		this.node_editor_mode = "Image";
@@ -78,7 +78,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		//Map state triggers
 		map.addEventListener("zoomend", () => {
-			this.updateCssSize();
+			this.updateCSSSize();
 			this.render();
 		});
 	}
@@ -250,7 +250,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		};
 	}
 	
-	getLngLatToWorld(lng, lat) {
+	getLngLatToWorld (lng, lat) {
 		let projection = map.getProjection();
 		let marker_coord = this.geometry.getCoordinates();
 		let res = map.getResolution(this.initial_zoom);
@@ -295,7 +295,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
-	handleDoubleClick(e) {
+	handleDoubleClick (e) {
 		if (!this.selected) return;
 		
 		let event_pos = Geospatiale.convertEventToWorld(
@@ -416,7 +416,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			url : map_defines.default_image_src;
 	}
 	
-	remove(arg0_do_not_refresh) {
+	remove (arg0_do_not_refresh) {
 		if (this.geometry) this.geometry.remove();
 		super.remove(arg0_do_not_refresh);
 	}
@@ -521,10 +521,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 		
 		this.buffer_offset = this.world_size / 2 - this.img_center;
-		this.updateCssSize();
+		this.updateCSSSize();
 	}
 	
-	updateCssSize() {
+	updateCSSSize () {
 		let factor = this.getScaleFactor();
 		// Round to whole CSS pixels so UIMarker's integer size measurement
 		// matches the layout size exactly (avoids half-pixel centering error)
@@ -533,7 +533,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.canvas.style.height = css_size + "px";
 	}
 	
-	updateInfoPanels() {
+	updateInfoPanels () {
 		if (!this.points_area || document.activeElement === this.points_area || document.activeElement === this.extent_area)
 			return;
 		
