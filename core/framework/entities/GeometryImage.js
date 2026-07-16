@@ -501,6 +501,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	//[WIP] - Reactor later
 	renderTriangleSubdivided (a, b, c) {
+		//Declare local instance variables
 		let edge_px = Math.max(
 			Math.hypot(a.screen_x - b.screen_x, a.screen_y - b.screen_y),
 			Math.hypot(b.screen_x - c.screen_x, b.screen_y - c.screen_y),
@@ -512,7 +513,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		let verts = [];
 		let fallback = { x: a.screen_x, y: a.screen_y };
-		for (let i = 0; i <= n; i++) {
+		
+		for (let i = 0; i <= n; i++)
 			for (let j = 0; j <= n - i; j++) {
 				let u = i/n,
 					v = j/n,
@@ -521,21 +523,18 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				let wy = u*a.y + v*b.y + w*c.y;
 				let sx_src = u*a.src_x + v*b.src_x + w*c.src_x;
 				let sy_src = u*a.src_y + v*b.src_y + w*c.src_y;
-				let sp =
-					n === 1
-						? i === 1
-							? { x: a.screen_x, y: a.screen_y }
-							: j === 1
-								? { x: b.screen_x, y: b.screen_y }
-								: { x: c.screen_x, y: c.screen_y }
+				let sp = (n === 1) ? 
+					(i === 1) ? 
+						{ x: a.screen_x, y: a.screen_y }
+						: (j === 1) ? 
+							{ x: b.screen_x, y: b.screen_y } : { x: c.screen_x, y: c.screen_y }
 						: this.getWorldToScreen(wx, wy, fallback);
 				verts.push({ x: sp.x, y: sp.y, src_x: sx_src, src_y: sy_src });
 			}
-		}
 		
 		let row_start = (i) => (i*(2*n - i + 3))/2;
 		
-		for (let i = 0; i < n; i++) {
+		for (let i = 0; i < n; i++)
 			for (let j = 0; j < n - i; j++) {
 				let v00 = verts[row_start(i) + j];
 				let v01 = verts[row_start(i) + j + 1];
@@ -560,13 +559,9 @@ naissance.GeometryImage = class extends naissance.Geometry {
 						{ x: v01.src_x, y: v01.src_y },
 						{ x: v11.src_x, y: v11.src_y },
 						{ x: v10.src_x, y: v10.src_y },
-						v01,
-						v11,
-						v10
-					);
+						v01, v11, v10);
 				}
 			}
-		}
 	}
 	
 	renderTPSSubdivided() {
