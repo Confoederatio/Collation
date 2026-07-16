@@ -99,9 +99,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	commitKeyframe(arg0_symbol_obj) {
 		let symbol_obj = arg0_symbol_obj;
-		let marker_coord = this.geometry
-			? this.geometry.getCoordinates()
-			: map.getCenter();
+		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
 		this.history.addKeyframe(
 			main.date,
@@ -126,10 +124,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (!this.value || this._is_visible === false) derender_geometry = true;
 		if (this.value && this.value[2]) {
 			if (this.value[2].hidden) derender_geometry = true;
-			if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom)
-				derender_geometry = true;
-			if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom)
-				derender_geometry = true;
+			if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) derender_geometry = true;
+			if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) derender_geometry = true;
 		}
 		
 		if (!derender_geometry) {
@@ -154,9 +150,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					});
 					this.geometry.addTo(map);
 				} else {
-					this.geometry.setCoordinates(
-						new maptalks.Coordinate(coords_obj.center)
-					);
+					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
 				}
 				
 				if (this.geometry.getMap()) this.geometry.show();
@@ -177,8 +171,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.canvas.style.display = "none";
 			this._canvas_hidden = true;
 		}
-		if (this.geometry && !derender_geometry)
-			this.history.draw(this.keyframes_ui);
+		if (this.geometry && !derender_geometry) this.history.draw(this.keyframes_ui);
 	}
 	
 	drawUI() {
@@ -248,19 +241,16 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					points_area: veHTML(this.points_area),
 					extent_label: veHTML("Canvas Extent [TL, BR]"),
 					extent_area: veHTML(this.extent_area),
-					opacity_slider: veRange(
-						Math.returnSafeNumber(this.value[1]?.opacity, 0.45),
-						{
-							name: "Opacity",
-							min: 0,
-							max: 1,
-							step: 0.01,
-							onuserchange: (v) => {
-								this.canvas.style.opacity = v;
-								this.commitKeyframe({ opacity: v });
-							},
-						}
-					),
+					opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), {
+						name: "Opacity",
+						min: 0,
+						max: 1,
+						step: 0.01,
+						onuserchange: (v) => {
+							this.canvas.style.opacity = v;
+							this.commitKeyframe({ opacity: v });
+						},
+					}),
 					url_input: veText(this.value[1]?.image_url || "", {
 						name: "Image URL",
 						onuserchange: (v) => this.commitKeyframe({ image_url: v }),
@@ -269,29 +259,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				{ name: "Edit Image", open: true }
 			),
 		};
-	}
-	
-	evaluateTPS(arg0_coeffs, arg1_control_pts, arg2_x, arg3_y) {
-		if (Geospatiale.evaluateTPS)
-			return Geospatiale.evaluateTPS(
-				arg0_coeffs,
-				arg1_control_pts,
-				arg2_x,
-				arg3_y
-			);
-		
-		let n = arg1_control_pts.length;
-		let result =
-			arg0_coeffs[n] +
-			arg0_coeffs[n + 1] * arg2_x +
-			arg0_coeffs[n + 2] * arg3_y;
-		for (let i = 0; i < n; i++) {
-			let dx = arg2_x - arg1_control_pts[i].src_x,
-				dy = arg3_y - arg1_control_pts[i].src_y;
-			let r2 = dx * dx + dy * dy;
-			if (r2 > 0) result += arg0_coeffs[i] * r2 * Math.log(r2);
-		}
-		return result;
 	}
 	
 	getEventWorldPos(e) {
@@ -308,19 +275,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	getHitPointIndex(mouse_sp) {
-		let point_idx = null;
-		let min_dist = this.base_hitbox_radius;
-		
-		if (this.screen_pts) {
-			this.screen_pts.forEach((p, i) => {
-				let dist = Math.hypot(p.screen_x - mouse_sp.x, p.screen_y - mouse_sp.y);
-				if (dist < min_dist) {
-					min_dist = dist;
-					point_idx = i;
-				}
-			});
-		}
-		return point_idx;
+		if (!this.screen_pts) return null;
+		return Geospatiale.getPointIndexAt(mouse_sp.x, mouse_sp.y, this.screen_pts.map(p => ({ x: p.screen_x, y: p.screen_y })), 1, this.base_hitbox_radius);
 	}
 	
 	getLngLatToWorld(lng, lat) {
@@ -350,9 +306,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	getWorldToScreen(wx, wy, fallback_sp) {
 		let lngLat = this.getWorldToLngLat(wx, wy);
-		let sp = map.coordinateToContainerPoint(
-			new maptalks.Coordinate(lngLat[0], lngLat[1])
-		);
+		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(lngLat[0], lngLat[1]));
 		
 		if (!sp || isNaN(sp.x) || isNaN(sp.y)) sp = fallback_sp || { x: 0, y: 0 };
 		
@@ -405,14 +359,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
 				let bary_info = Geospatiale.getBarycentric(world_pos, pt1, pt2, pt3);
 				if (bary_info.inside) {
-					source_x =
-						bary_info.u * pt1.src_x +
-						bary_info.v * pt2.src_x +
-						bary_info.w * pt3.src_x;
-					source_y =
-						bary_info.u * pt1.src_y +
-						bary_info.v * pt2.src_y +
-						bary_info.w * pt3.src_y;
+					source_x = bary_info.u * pt1.src_x + bary_info.v * pt2.src_x + bary_info.w * pt3.src_x;
+					source_y = bary_info.u * pt1.src_y + bary_info.v * pt2.src_y + bary_info.w * pt3.src_y;
 					break;
 				}
 			}
@@ -500,15 +448,13 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.image.onerror = () => console.error("Image failed to load:", url);
 		this.image.onload = () => this.render();
 		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
-		this.image.src =
-			url && pattern_check.test(url) ? url : map_defines.default_image_src;
+		this.image.src = url && pattern_check.test(url) ? url : map_defines.default_image_src;
 	}
 	
 	remove(arg0_do_not_refresh) {
 		if (this.geometry) this.geometry.remove();
 		
-		if (this.canvas && this.canvas.parentNode)
-			this.canvas.parentNode.removeChild(this.canvas);
+		if (this.canvas && this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
 		let container = map.getContainer();
 		if (container) {
 			container.removeEventListener("mousedown", this._on_mousedown, true);
@@ -521,10 +467,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	render() {
-		if (!this.image || !this.image.complete || this.image.naturalWidth === 0)
-			return;
-		if (!map || !map.isLoaded() || !this.geometry || this._canvas_hidden)
-			return;
+		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return;
+		if (!map || !map.isLoaded() || !this.geometry || this._canvas_hidden) return;
 		
 		this.updateBufferSize();
 		if (!this.screen_pts) return;
@@ -553,14 +497,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				src_x: p.src_x,
 				src_y: p.src_y,
 			}));
-			Geospatiale.drawMeshOverlay(
-				this.ctx,
-				overlay_pts,
-				this.mesh_triangles,
-				1,
-				this.base_point_radius,
-				this.selected_point_index
-			);
+			Geospatiale.drawMeshOverlay(this.ctx, overlay_pts, this.mesh_triangles, 1, this.base_point_radius, this.selected_point_index);
 		}
 		
 		this.ctx.restore();
@@ -646,9 +583,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let coeffs = Geospatiale.computeTPSCoefficients(world_pts);
 		let res = this.grid_resolution;
 		let step = this.img_display_size / res;
-		let fallback = this.screen_pts.length
-			? { x: this.screen_pts[0].screen_x, y: this.screen_pts[0].screen_y }
-			: { x: 0, y: 0 };
+		let fallback = this.screen_pts.length ? { x: this.screen_pts[0].screen_x, y: this.screen_pts[0].screen_y } : { x: 0, y: 0 };
 		
 		let grid = [];
 		for (let gy = 0; gy <= res; gy++) {
@@ -656,9 +591,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			for (let gx = 0; gx <= res; gx++) {
 				let sx = gx * step,
 					sy = gy * step;
-				let wx = this.evaluateTPS(coeffs.x, world_pts, sx, sy);
-				let wy = this.evaluateTPS(coeffs.y, world_pts, sx, sy);
-				let sp = this.getWorldToScreen(wx, wy, fallback);
+				let pos = Geospatiale.getTPSPosition(sx, sy, world_pts, coeffs.x, coeffs.y);
+				let sp = this.getWorldToScreen(pos.x, pos.y, fallback);
 				row.push({ x: sp.x, y: sp.y, src_x: sx, src_y: sy });
 			}
 			grid.push(row);
@@ -712,10 +646,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let target_w = Math.ceil(map_size.width);
 		let target_h = Math.ceil(map_size.height);
 		
-		if (target_w * dpr > this.max_buffer_size)
-			target_w = Math.floor(this.max_buffer_size / dpr);
-		if (target_h * dpr > this.max_buffer_size)
-			target_h = Math.floor(this.max_buffer_size / dpr);
+		if (target_w * dpr > this.max_buffer_size) target_w = Math.floor(this.max_buffer_size / dpr);
+		if (target_h * dpr > this.max_buffer_size) target_h = Math.floor(this.max_buffer_size / dpr);
 		
 		if (
 			this.canvas.style.width !== target_w + "px" ||
@@ -734,12 +666,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	updateInfoPanels() {
-		if (
-			!this.points_area ||
-			document.activeElement === this.points_area ||
-			document.activeElement === this.extent_area
-		)
-			return;
+		if (!this.points_area || document.activeElement === this.points_area || document.activeElement === this.extent_area) return;
 		this.points_area.value = this.mesh_points
 		.map((p) => {
 			let c = this.getWorldToLngLat(p.x, p.y);
@@ -769,9 +696,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.mesh_triangles = [];
 			return;
 		}
-		this.mesh_triangles = Geospatiale.delaunayTriangulate(
-			this.mesh_points,
-			this.img_center
-		);
+		this.mesh_triangles = Geospatiale.delaunayTriangulate(this.mesh_points, this.img_center);
 	}
 };
