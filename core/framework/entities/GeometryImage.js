@@ -84,11 +84,14 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	/**
-	 * Commits current working mesh and center to history.
+	 * Commits current working mesh and centre to history.
 	 */
 	commitKeyframe (arg0_symbol_obj) {
+		//Convert from parameters
 		let symbol_obj = arg0_symbol_obj;
-		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
+		
+		//Declare local instance variables
+		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
 		
 		this.history.addKeyframe(
 			main.date,
