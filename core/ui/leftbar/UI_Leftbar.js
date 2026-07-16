@@ -20,7 +20,7 @@ global.UI_Leftbar = class extends ve.Class {
 							
 							//Load state
 							if (main.settings.load_savefile_as === "file") {
-								DALS.Timeline.parseAction("load_savefile", [{ load_savefile: data }]);
+								DALS.Timeline.parseAction("load_savefile", [{ load_savefile: file }]);
 							} else {
 								DALS.Timeline.parseAction("load_save", [{ load_save: data }]);
 							}
