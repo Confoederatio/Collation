@@ -87,7 +87,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		container.addEventListener("mouseup", this._on_mouseup, true);
 		container.addEventListener("dblclick", this._on_dblclick, true);
 		
-		map.on("viewchange", () => {
+		map.on("viewchange mousemove", (e) => {
 			this.render();
 		});
 	}
@@ -117,6 +117,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.value[1] = this.getSymbol(this.value[1]);
 		
 		if (!this.value || this._is_visible === false) derender_geometry = true;
+		if (!this.value[0]) derender_geometry = true;
 		if (this.value && this.value[2]) {
 			if (this.value[2].hidden) derender_geometry = true;
 			if (this.value[2].max_zoom && map.getZoom() > this.value[2].max_zoom) derender_geometry = true;
