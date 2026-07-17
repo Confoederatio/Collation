@@ -236,7 +236,10 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	getEventScreenPos (e) {
+		//Declare local instance variables
 		let rect = map.getContainer().getBoundingClientRect();
+		
+		//Return statement
 		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 	}
 	
@@ -251,32 +254,50 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			1, this.base_hitbox_radius);
 	}
 	
-	getLngLatToWorld (lng, lat) {
+	getLngLatToWorld (arg0_lng, arg1_lat) {
+		//Convert from parameters
+		let lng = arg0_lng;
+		let lat = arg1_lat;
+		
+		//Declare local instance variables
 		let projection = map.getProjection(),
 			marker_coord = this.geometry.getCoordinates(),
 			res = map.getResolution(this.initial_zoom);
 		let center_auc = projection.project(marker_coord),
 			target_auc = projection.project(new maptalks.Coordinate(lng, lat));
+		
+		//Return statement
 		return {
 			x: (target_auc.x - center_auc.x)/res + this.img_center,
 			y: this.img_center - (target_auc.y - center_auc.y)/res,
 		};
 	}
 	
-	getWorldToLngLat (wx, wy) {
+	getWorldToLngLat (arg0_wx, arg1_wy) {
+		//Convert from parameters
+		let wx = arg0_wx;
+		let wy = arg1_wy;
+		
+		//Declare local instance variables
 		let projection = map.getProjection(),
 			marker_coord = this.geometry.getCoordinates(),
 			res = map.getResolution(this.initial_zoom);
 		let center_auc = projection.project(marker_coord);
 		let target_auc = new maptalks.Coordinate(
 			center_auc.x + (wx - this.img_center)*res,
-			center_auc.y - (wy - this.img_center)*res
-		);
+			center_auc.y - (wy - this.img_center)*res);
 		let coordinate_result = projection.unproject(target_auc);
+		
+		//Return statement
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
-	getWorldToScreen (wx, wy, fallback_sp) {
+	getWorldToScreen (arg0_wx, arg1_wy, arg2_fallback_sp) {
+		//Convert from parameters
+		let wx = arg0_wx;
+		let wy = arg1_wy;
+		let fallback_sp = arg2_fallback_sp;
+		
 		//Declare local instance variables
 		let coord = this.getWorldToLngLat(wx, wy);
 		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(coord[0], coord[1]));
