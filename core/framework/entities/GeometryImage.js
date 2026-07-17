@@ -310,34 +310,42 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		let symbol_obj = (this.value) ? this.value[1] : {};
 		let sp;
 		
-		if (symbol_obj.disable_pitch || symbol_obj.disable_rotation) {
+		if (symbol_obj.disable_pitch) {
+			//Case: Pitch is disabled. Handle rotation manually for 2D flattening.
 			let map_size = map.getSize();
 			let projection = map.getProjection();
-			
-			//Project coordinates into absolute units (AUC)
 			let center_auc = projection.project(map.getCenter());
 			let target_auc = projection.project(new maptalks.Coordinate(coord[0], coord[1]));
-			
-			//Get the resolution at the current zoom level from the map
 			let current_res = map.getResolution();
 			
-			//Calculate world distance from map center in pixels. dx is East-West offset, dy is North-South offset
 			let dx = (target_auc.x - center_auc.x)/current_res;
 			let dy = (target_auc.y - center_auc.y)/current_res;
 			
-			//Apply 2D rotation based on map bearing to maintain rotation while ignoring pitch. Maptalks bearing is in degrees, where 0 is North and positive is clockwise
-			let bearing_rad = (map.getBearing() || 0)*Math.PI/180;
-				if (symbol_obj.disable_rotation) bearing_rad = 0;
+			let bearing_rad = (symbol_obj.disable_rotation) ? 0 : (map.getBearing() || 0)*Math.PI/180;
+			let rx = (bearing_rad !== 0) ? dx*Math.cos(bearing_rad) - dy*Math.sin(bearing_rad) : dx;
+			let ry = (bearing_rad !== 0) ? dx*Math.sin(bearing_rad) + dy*Math.cos(bearing_rad) : dy;
 			
-			//Calculate screen relative offsets using a 2D rotation matrix:
+			sp = {
+				x: map_size.width / 2 + rx,
+				y: map_size.height / 2 - ry
+			};
+		} else if (symbol_obj.disable_rotation && map.getBearing() !== 0) {
+			//Case: Only rotation is disabled. We pre-rotate the point in AUC space to cancel map bearing.
+			let projection = map.getProjection();
+			let center_auc = projection.project(map.getCenter());
+			let target_auc = projection.project(new maptalks.Coordinate(coord[0], coord[1]));
+			let bearing_rad = -(map.getBearing() || 0)*Math.PI/180;
+			
+			let dx = target_auc.x - center_auc.x;
+			let dy = target_auc.y - center_auc.y;
+			
 			let rx = dx*Math.cos(bearing_rad) - dy*Math.sin(bearing_rad);
 			let ry = dx*Math.sin(bearing_rad) + dy*Math.cos(bearing_rad);
 			
-			sp = {
-				x: map_size.width/2 + rx,
-				y: map_size.height/2 - ry
-			};
+			let rotated_coord = projection.unproject(new maptalks.Coordinate(center_auc.x + rx, center_auc.y + ry));
+			sp = map.coordinateToContainerPoint(rotated_coord);
 		} else {
+			//Case: Standard behaviour.
 			sp = map.coordinateToContainerPoint(new maptalks.Coordinate(coord[0], coord[1]));
 		}
 		
