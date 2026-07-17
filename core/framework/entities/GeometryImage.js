@@ -4,7 +4,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		name: "Image",
 	};
 	
-	constructor() {
+	constructor () {
 		super();
 		this.class_name = "GeometryImage";
 		this.node_editor_mode = "Image";
@@ -75,7 +75,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateOwner();
 	}
 	
-	bindEvents() {
+	bindEvents () {
 		this._on_mousedown = (e) => this.handleMouseDown(e);
 		this._on_mousemove = (e) => this.handleMouseMove(e);
 		this._on_mouseup = (e) => this.handleMouseUp(e);
@@ -92,7 +92,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		});
 	}
 	
-	commitKeyframe(arg0_symbol_obj) {
+	commitKeyframe (arg0_symbol_obj) {
 		let symbol_obj = arg0_symbol_obj;
 		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
@@ -108,7 +108,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.draw();
 	}
 	
-	draw() {
+	draw () {
 		let derender_geometry = false;
 		this.value = this.history.getKeyframe({
 			date: main.date,
@@ -168,7 +168,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (this.geometry && !derender_geometry) this.history.draw(this.keyframes_ui);
 	}
 	
-	drawUI() {
+	drawUI () {
 		if (!this.points_area) {
 			this.points_area = document.createElement("textarea");
 			this.points_area.rows = 8;
@@ -255,7 +255,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		};
 	}
 	
-	getEventWorldPos(e) {
+	getEventWorldPos (e) {
 		let rect = map.getContainer().getBoundingClientRect();
 		let pt = new maptalks.Point(e.clientX - rect.left, e.clientY - rect.top);
 		let coord = map.containerPointToCoordinate(pt);
@@ -263,17 +263,17 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return this.getLngLatToWorld(coord.x, coord.y);
 	}
 	
-	getEventScreenPos(e) {
+	getEventScreenPos (e) {
 		let rect = map.getContainer().getBoundingClientRect();
 		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 	}
 	
-	getHitPointIndex(mouse_sp) {
+	getHitPointIndex (mouse_sp) {
 		if (!this.screen_pts) return null;
 		return Geospatiale.getPointIndexAt(mouse_sp.x, mouse_sp.y, this.screen_pts.map(p => ({ x: p.screen_x, y: p.screen_y })), 1, this.base_hitbox_radius);
 	}
 	
-	getLngLatToWorld(lng, lat) {
+	getLngLatToWorld (lng, lat) {
 		let projection = map.getProjection(),
 			marker_coord = this.geometry.getCoordinates(),
 			res = map.getResolution(this.initial_zoom);
@@ -285,7 +285,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		};
 	}
 	
-	getWorldToLngLat(wx, wy) {
+	getWorldToLngLat (wx, wy) {
 		let projection = map.getProjection(),
 			marker_coord = this.geometry.getCoordinates(),
 			res = map.getResolution(this.initial_zoom);
@@ -298,7 +298,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return [coordinate_result.x, coordinate_result.y];
 	}
 	
-	getWorldToScreen(wx, wy, fallback_sp) {
+	getWorldToScreen (wx, wy, fallback_sp) {
 		let lngLat = this.getWorldToLngLat(wx, wy);
 		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(lngLat[0], lngLat[1]));
 		
@@ -313,7 +313,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return { x: sx, y: sy };
 	}
 	
-	handleDoubleClick(e) {
+	handleDoubleClick (e) {
 		if (!this.selected || this._canvas_hidden) return;
 		
 		let mouse_sp = this.getEventScreenPos(e);
@@ -329,7 +329,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	handleMouseDown(e) {
+	handleMouseDown (e) {
 		if (!this.selected || this._canvas_hidden || e.button === 1) return;
 		
 		let mouse_sp = this.getEventScreenPos(e);
@@ -374,7 +374,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	handleMouseMove(e) {
+	handleMouseMove (e) {
 		if (!this.selected || this.selected_point_index === null) return;
 		this._is_dragging = true;
 		
@@ -389,7 +389,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.render();
 	}
 	
-	handleMouseUp(e) {
+	handleMouseUp (e) {
 		if (this.selected_point_index !== null) {
 			e.stopPropagation();
 			this.selected_point_index = null;
@@ -400,7 +400,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	initMesh() {
+	initMesh () {
 		this.mesh_points = [
 			{ x: 0, y: 0, src_x: 0, src_y: 0 },
 			{ x: this.img_display_size, y: 0, src_x: this.img_display_size, src_y: 0 },
@@ -415,7 +415,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateTriangulation();
 	}
 	
-	isInsideImageArea(mouse_sp) {
+	isInsideImageArea (mouse_sp) {
 		if (!this.screen_pts || this.screen_pts.length === 0) return false;
 		let min_x = Infinity,
 			min_y = Infinity,
@@ -435,7 +435,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		);
 	}
 	
-	loadImage(arg0_url) {
+	loadImage (arg0_url) {
 		let url = arg0_url || "",
 			map_defines = config.defines.map;
 		this.image = new Image();
@@ -445,7 +445,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.image.src = url && pattern_check.test(url) ? url : map_defines.default_image_src;
 	}
 	
-	remove(arg0_do_not_refresh) {
+	remove (arg0_do_not_refresh) {
 		if (this.geometry) this.geometry.remove();
 		
 		if (this.canvas && this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
@@ -460,7 +460,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		super.remove(arg0_do_not_refresh);
 	}
 	
-	render() {
+	render () {
 		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return;
 		if (!map || !map.isLoaded() || !this.geometry || this._canvas_hidden) return;
 		
@@ -498,7 +498,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateInfoPanels();
 	}
 	
-	//[WIP] - Reactor later
 	renderTriangleSubdivided (a, b, c) {
 		//Declare local instance variables
 		let edge_px = Math.max(
@@ -563,7 +562,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			}
 	}
 	
-	renderTPSSubdivided() {
+	renderTPSSubdivided () {
 		let world_pts = this.mesh_points.map((p) => ({
 			x: p.x,
 			y: p.y,
@@ -620,7 +619,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	updateBufferSize() {
+	updateBufferSize () {
 		let map_size = map.getSize();
 		if (!map_size) return;
 		
@@ -655,7 +654,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.canvas_dpr = dpr;
 	}
 	
-	updateInfoPanels() {
+	updateInfoPanels () {
 		if (!this.points_area || document.activeElement === this.points_area || document.activeElement === this.extent_area) return;
 		this.points_area.value = this.mesh_points
 		.map((p) => {
@@ -681,7 +680,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		}
 	}
 	
-	updateTriangulation() {
+	updateTriangulation () {
 		if (this.mesh_points.length < 3) {
 			this.mesh_triangles = [];
 			return;
