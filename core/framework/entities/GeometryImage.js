@@ -76,36 +76,21 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	bindEvents () {
-		this._on_mousedown = (e) => this.handleMouseDown(e);
-		this._on_mousemove = (e) => this.handleMouseMove(e);
-		this._on_mouseup = (e) => this.handleMouseUp(e);
-		this._on_dblclick = (e) => this.handleDoubleClick(e);
-		
+		//Declare local instance variables; add event handlers
 		let container = map.getContainer();
-		container.addEventListener("mousedown", this._on_mousedown, true);
-		container.addEventListener("mousemove", this._on_mousemove, true);
-		container.addEventListener("mouseup", this._on_mouseup, true);
-		container.addEventListener("dblclick", this._on_dblclick, true);
 		
-		map.on("viewchange mousemove", (e) => {
-			this.render();
-		});
-	}
-	
-	commitKeyframe (arg0_symbol_obj) {
-		//Convert from parameters
-		let symbol_obj = arg0_symbol_obj;
+		this._ondblclick = (e) => this.handleDoubleClick(e);
+		this._onmousedown = (e) => this.handleMouseDown(e);
+		this._onmousemove = (e) => this.handleMouseMove(e);
+		this._onmouseup = (e) => this.handleMouseUp(e);
 		
-		//Declare local instance variables
-		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
+		container.addEventListener("dblclick", this._ondblclick, true);
+		container.addEventListener("mousedown", this._onmousedown, true);
+		container.addEventListener("mousemove", this._onmousemove, true);
+		container.addEventListener("mouseup", this._onmouseup, true);
 		
-		//Add keyframe; draw call
-		this.history.addKeyframe(main.date, {
-			center: [marker_coord.x, marker_coord.y],
-			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
-			initial_zoom: this.initial_zoom,
-		}, symbol_obj);
-		this.draw();
+		//Add map refresh call
+		map.on("viewchange mousemove", () => this.render());
 	}
 	
 	draw () {
@@ -195,7 +180,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 						};
 					});
 					this.updateTriangulation();
-					this.commitKeyframe();
+					this.updateKeyframe();
 				}
 			});
 			
@@ -222,7 +207,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 						this.mesh_points[i].x = world_pos.x;
 						this.mesh_points[i].y = world_pos.y;
 					});
-					this.commitKeyframe();
+					this.updateKeyframe();
 				}
 			});
 		}
@@ -237,7 +222,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				{
 					name: "Warp Mode",
 					selected: this.value[1]?.warp_mode || "triangulation",
-					onuserchange: (v) => this.commitKeyframe({ warp_mode: v }),
+					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
 				}),
 				points_label: veHTML("Control Points [Lng, Lat]"),
 				points_area: veHTML(this.points_area),
@@ -250,12 +235,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					step: 0.01,
 					onuserchange: (v) => {
 						this.canvas.style.opacity = v;
-						this.commitKeyframe({ opacity: v });
+						this.updateKeyframe({ opacity: v });
 					},
 				}),
 				url_input: veText(this.value[1]?.image_url || "", {
 					name: "Image URL",
-					onuserchange: (v) => this.commitKeyframe({ image_url: v }),
+					onuserchange: (v) => this.updateKeyframe({ image_url: v }),
 				}),
 			},
 			{ name: "Edit Image", open: true }),
@@ -315,10 +300,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	getWorldToScreen (wx, wy, fallback_sp) {
-		let lngLat = this.getWorldToLngLat(wx, wy);
-		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(lngLat[0], lngLat[1]));
+		//Declare local instance variables
+		let coord = this.getWorldToLngLat(wx, wy);
+		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(coord[0], coord[1]));
 		
-		if (!sp || isNaN(sp.x) || isNaN(sp.y)) sp = fallback_sp || { x: 0, y: 0 };
+		//Determine sp
+		if (!sp || isNaN(sp.x) || isNaN(sp.y)) sp = (fallback_sp || { x: 0, y: 0 });
 		
 		let sx = sp.x,
 			sy = sp.y;
@@ -326,11 +313,13 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (sx < -20000) sx = -20000;
 		if (sy > 20000) sy = 20000;
 		if (sy < -20000) sy = -20000;
+		
+		//Return statement
 		return { x: sx, y: sy };
 	}
 	
 	handleDoubleClick (e) {
-		if (!this.selected || this._canvas_hidden) return;
+		if (!this.selected || this._canvas_hidden) return; //Internal guard clause
 		
 		let mouse_sp = this.getEventScreenPos(e);
 		let point_idx = this.getHitpointIndex(mouse_sp);
@@ -340,13 +329,13 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			e.preventDefault();
 			this.mesh_points.splice(point_idx, 1);
 			this.updateTriangulation();
-			this.commitKeyframe();
+			this.updateKeyframe();
 			this.render();
 		}
 	}
 	
 	handleMouseDown (e) {
-		if (!this.selected || this._canvas_hidden || e.button === 1) return;
+		if (!this.selected || this._canvas_hidden || e.button === 1) return; //Internal guard clause
 		
 		let mouse_sp = this.getEventScreenPos(e);
 		this.selected_point_index = this.getHitpointIndex(mouse_sp);
@@ -383,7 +372,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.selected_point_index = this.mesh_points.length - 1;
 			this.updateTriangulation();
 			this.render();
-			this.commitKeyframe();
+			this.updateKeyframe();
 		} else {
 			e.stopPropagation();
 			e.preventDefault();
@@ -411,7 +400,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			this.selected_point_index = null;
 			if (this._is_dragging) {
 				this._is_dragging = false;
-				this.commitKeyframe();
+				this.updateKeyframe();
 			}
 		}
 	}
@@ -694,6 +683,22 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				br = this.getWorldToLngLat(max_x, max_y);
 			this.extent_area.value = `[${tl[0].toFixed(6)}, ${tl[1].toFixed(6)}]\n[${br[0].toFixed(6)}, ${br[1].toFixed(6)}]`;
 		}
+	}
+	
+	updateKeyframe (arg0_symbol_obj) {
+		//Convert from parameters
+		let symbol_obj = arg0_symbol_obj;
+		
+		//Declare local instance variables
+		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
+		
+		//Add keyframe; draw call
+		this.history.addKeyframe(main.date, {
+			center: [marker_coord.x, marker_coord.y],
+			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
+			initial_zoom: this.initial_zoom,
+		}, symbol_obj);
+		this.draw();
 	}
 	
 	updateTriangulation () {
