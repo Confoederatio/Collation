@@ -139,9 +139,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, {
 						draggable: false,
 						single: false,
-						content: this.dom_wrapper,
-						rotateWithMap: false,
-						pitchWithMap: false,
+						content: this.dom_wrapper
 					});
 					this.geometry.addTo(map);
 				} else {
