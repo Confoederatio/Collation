@@ -1,4 +1,4 @@
-naissance.GeometryImage = class extends naissance.Geometry {
+naissance.GeometryMedia = class extends naissance.Geometry {
 	static hierarchy_symbol = {
 		icon: "image",
 		name: "Image",
@@ -6,8 +6,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	
 	constructor () {
 		super();
-		this.class_name = "GeometryImage";
-		this.node_editor_mode = "Image";
+		this.class_name = "GeometryMedia";
+		this.node_editor_mode = "Media";
 		
 		//Declare local instance variables
 		this.dom_wrapper = document.createElement("div");
