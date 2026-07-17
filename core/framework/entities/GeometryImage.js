@@ -93,29 +93,33 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	}
 	
 	commitKeyframe (arg0_symbol_obj) {
+		//Convert from parameters
 		let symbol_obj = arg0_symbol_obj;
-		let marker_coord = this.geometry ? this.geometry.getCoordinates() : map.getCenter();
 		
-		this.history.addKeyframe(
-			main.date,
-			{
-				center: [marker_coord.x, marker_coord.y],
-				mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
-				initial_zoom: this.initial_zoom,
-			},
-			symbol_obj
-		);
+		//Declare local instance variables
+		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
+		
+		//Add keyframe; draw call
+		this.history.addKeyframe(main.date, {
+			center: [marker_coord.x, marker_coord.y],
+			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
+			initial_zoom: this.initial_zoom,
+		}, symbol_obj);
 		this.draw();
 	}
 	
 	draw () {
+		//Declare local instance variables
 		let derender_geometry = false;
+		
+		//1. Set this.value from current relative keyframe
 		this.value = this.history.getKeyframe({
 			date: main.date,
 			guaranteed_indexes: [1],
 		}).value;
 		this.value[1] = this.getSymbol(this.value[1]);
 		
+		//2.  Check any cause for derendering
 		if (!this.value || this._is_visible === false) derender_geometry = true;
 		if (!this.value[0]) derender_geometry = true;
 		if (this.value && this.value[2]) {
@@ -124,6 +128,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 			if (this.value[2].min_zoom && map.getZoom() < this.value[2].min_zoom) derender_geometry = true;
 		}
 		
+		//3. Draw this.geometry onto map
 		if (!derender_geometry) {
 			try {
 				if (!map || !map.isLoaded()) return;
@@ -146,7 +151,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				} else {
 					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
 				}
-				
 				if (this.geometry.getMap()) this.geometry.show();
 				
 				this.canvas.style.display = "";
@@ -157,18 +161,20 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					this.loadImage(symbol_obj.image_url);
 				}
 				this.render();
-			} catch (e) {
-				console.error(e);
-			}
+			} catch (e) { console.error(e); }
 		} else {
+			//Derender geometry
 			if (this.geometry) this.geometry.hide();
 			this.canvas.style.display = "none";
 			this._canvas_hidden = true;
 		}
+		
+		//Draw keyframes
 		if (this.geometry && !derender_geometry) this.history.draw(this.keyframes_ui);
 	}
 	
 	drawUI () {
+		//Initialise elements if not already extant
 		if (!this.points_area) {
 			this.points_area = document.createElement("textarea");
 			this.points_area.rows = 8;
@@ -179,17 +185,20 @@ naissance.GeometryImage = class extends naissance.Geometry {
 					this.mesh_points = area_coords.map((c, i) => {
 						let world = this.getLngLatToWorld(c[0], c[1]);
 						let existing = this.mesh_points[i];
+						
+						//Return statement
 						return {
 							x: world.x,
 							y: world.y,
-							src_x: existing ? existing.src_x : world.x,
-							src_y: existing ? existing.src_y : world.y,
+							src_x: (existing) ? existing.src_x : world.x,
+							src_y: (existing) ? existing.src_y : world.y,
 						};
 					});
 					this.updateTriangulation();
 					this.commitKeyframe();
 				}
 			});
+			
 			this.extent_area = document.createElement("textarea");
 			this.extent_area.rows = 3;
 			this.extent_area.style.fontFamily = "monospace";
@@ -217,48 +226,49 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				}
 			});
 		}
+		
+		//Return statement
 		return {
-			edit_image_ui: veInterface(
-				{
-					warp_mode_select: veSelect(
-						{
-							triangulation: { name: "Affine Triangles" },
-							tps: { name: "Thin Plate Spline" },
-						},
-						{
-							name: "Warp Mode",
-							selected: this.value[1]?.warp_mode || "triangulation",
-							onuserchange: (v) => this.commitKeyframe({ warp_mode: v }),
-						}
-					),
-					points_label: veHTML("Control Points [Lng, Lat]"),
-					points_area: veHTML(this.points_area),
-					extent_label: veHTML("Canvas Extent [TL, BR]"),
-					extent_area: veHTML(this.extent_area),
-					opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), {
-						name: "Opacity",
-						min: 0,
-						max: 1,
-						step: 0.01,
-						onuserchange: (v) => {
-							this.canvas.style.opacity = v;
-							this.commitKeyframe({ opacity: v });
-						},
-					}),
-					url_input: veText(this.value[1]?.image_url || "", {
-						name: "Image URL",
-						onuserchange: (v) => this.commitKeyframe({ image_url: v }),
-					}),
+			edit_image_ui: veInterface({
+				warp_mode_select: veSelect({
+					triangulation: { name: "Affine Triangles" },
+					tps: { name: "Thin Plate Spline" },
 				},
-				{ name: "Edit Image", open: true }
-			),
+				{
+					name: "Warp Mode",
+					selected: this.value[1]?.warp_mode || "triangulation",
+					onuserchange: (v) => this.commitKeyframe({ warp_mode: v }),
+				}),
+				points_label: veHTML("Control Points [Lng, Lat]"),
+				points_area: veHTML(this.points_area),
+				extent_label: veHTML("Canvas Extent [TL, BR]"),
+				extent_area: veHTML(this.extent_area),
+				opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), {
+					name: "Opacity",
+					min: 0,
+					max: 1,
+					step: 0.01,
+					onuserchange: (v) => {
+						this.canvas.style.opacity = v;
+						this.commitKeyframe({ opacity: v });
+					},
+				}),
+				url_input: veText(this.value[1]?.image_url || "", {
+					name: "Image URL",
+					onuserchange: (v) => this.commitKeyframe({ image_url: v }),
+				}),
+			},
+			{ name: "Edit Image", open: true }),
 		};
 	}
 	
 	getEventWorldPos (e) {
+		//Declare local instance variables
 		let rect = map.getContainer().getBoundingClientRect();
 		let pt = new maptalks.Point(e.clientX - rect.left, e.clientY - rect.top);
 		let coord = map.containerPointToCoordinate(pt);
+		
+		//Return statement
 		if (!coord) return null;
 		return this.getLngLatToWorld(coord.x, coord.y);
 	}
@@ -268,9 +278,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 	}
 	
-	getHitPointIndex (mouse_sp) {
+	getHitpointIndex (arg0_mouse_sp) {
+		//Convert from parameters
+		let mouse_sp = arg0_mouse_sp;
+		
+		//Return statement
 		if (!this.screen_pts) return null;
-		return Geospatiale.getPointIndexAt(mouse_sp.x, mouse_sp.y, this.screen_pts.map(p => ({ x: p.screen_x, y: p.screen_y })), 1, this.base_hitbox_radius);
+		return Geospatiale.getPointIndexAt(mouse_sp.x, mouse_sp.y, 
+			this.screen_pts.map((p) => ({ x: p.screen_x, y: p.screen_y })), 
+			1, this.base_hitbox_radius);
 	}
 	
 	getLngLatToWorld (lng, lat) {
@@ -317,7 +333,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (!this.selected || this._canvas_hidden) return;
 		
 		let mouse_sp = this.getEventScreenPos(e);
-		let point_idx = this.getHitPointIndex(mouse_sp);
+		let point_idx = this.getHitpointIndex(mouse_sp);
 		
 		if (point_idx !== null) {
 			e.stopPropagation();
@@ -333,7 +349,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (!this.selected || this._canvas_hidden || e.button === 1) return;
 		
 		let mouse_sp = this.getEventScreenPos(e);
-		this.selected_point_index = this.getHitPointIndex(mouse_sp);
+		this.selected_point_index = this.getHitpointIndex(mouse_sp);
 		this._is_dragging = false;
 		
 		if (this.selected_point_index === null) {
