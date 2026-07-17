@@ -56,19 +56,15 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		//Add keyframe with default coords/symbol
 		let map_centre = map.getCenter();
-		this.addKeyframe(
-			main.date,
-			{
-				center: [map_centre.x, map_centre.y],
-				mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
-				initial_zoom: this.initial_zoom,
-			},
-			{
-				image_url: "",
-				opacity: 0.45,
-				warp_mode: "triangulation",
-			}
-		);
+		this.addKeyframe(main.date, {
+			center: [map_centre.x, map_centre.y],
+			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
+			initial_zoom: this.initial_zoom,
+		}, {
+			image_url: "",
+			opacity: 0.45,
+			warp_mode: "triangulation",
+		});
 		
 		this.draw();
 		this.updateOwner();
