@@ -195,11 +195,18 @@ naissance.GeometryImage = class extends naissance.Geometry {
 				warp_mode_select: veSelect({
 					triangulation: { name: "Affine Triangles" },
 					tps: { name: "Thin Plate Spline" },
-				},
-				{
+				}, {
 					name: "Warp Mode",
 					selected: this.value[1]?.warp_mode || "triangulation",
 					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
+				}),
+				disable_pitch_checkbox: veCheckbox(this.value[1]?.disable_pitch || false, {
+					name: "Disable Pitch",
+					onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
+				}),
+				disable_rotation: veCheckbox(this.value[1]?.disable_rotation || false, {
+					name: "Disable Rotation",
+					onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
 				}),
 				points_label: veHTML("Control Points [Lng, Lat]"),
 				points_area: veHTML(this.points_area),
@@ -300,7 +307,39 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		//Declare local instance variables
 		let coord = this.getWorldToLngLat(wx, wy);
-		let sp = map.coordinateToContainerPoint(new maptalks.Coordinate(coord[0], coord[1]));
+		let symbol_obj = (this.value) ? this.value[1] : {};
+		let sp;
+		
+		if (symbol_obj.disable_pitch || symbol_obj.disable_rotation) {
+			let map_size = map.getSize();
+			let projection = map.getProjection();
+			
+			//Project coordinates into absolute units (AUC)
+			let center_auc = projection.project(map.getCenter());
+			let target_auc = projection.project(new maptalks.Coordinate(coord[0], coord[1]));
+			
+			//Get the resolution at the current zoom level from the map
+			let current_res = map.getResolution();
+			
+			//Calculate world distance from map center in pixels. dx is East-West offset, dy is North-South offset
+			let dx = (target_auc.x - center_auc.x)/current_res;
+			let dy = (target_auc.y - center_auc.y)/current_res;
+			
+			//Apply 2D rotation based on map bearing to maintain rotation while ignoring pitch. Maptalks bearing is in degrees, where 0 is North and positive is clockwise
+			let bearing_rad = (map.getBearing() || 0)*Math.PI/180;
+				if (symbol_obj.disable_rotation) bearing_rad = 0;
+			
+			//Calculate screen relative offsets using a 2D rotation matrix:
+			let rx = dx*Math.cos(bearing_rad) - dy*Math.sin(bearing_rad);
+			let ry = dx*Math.sin(bearing_rad) + dy*Math.cos(bearing_rad);
+			
+			sp = {
+				x: map_size.width/2 + rx,
+				y: map_size.height/2 - ry
+			};
+		} else {
+			sp = map.coordinateToContainerPoint(new maptalks.Coordinate(coord[0], coord[1]));
+		}
 		
 		//Determine sp
 		if (!sp || isNaN(sp.x) || isNaN(sp.y)) sp = (fallback_sp || { x: 0, y: 0 });
@@ -502,7 +541,7 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.ctx.save();
 		this.ctx.scale(this.canvas_dpr, this.canvas_dpr);
 		
-		let warp_mode = this.value[1]?.warp_mode || "triangulation";
+		let warp_mode = (this.value[1]?.warp_mode || "triangulation");
 		
 		if (warp_mode === "tps" && this.mesh_points.length >= 3) {
 			this.renderTPSSubdivided();
