@@ -9,20 +9,20 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.class_name = "GeometryImage";
 		this.node_editor_mode = "Image";
 		
-		// UIMarker acts purely as a 0x0 coordinate anchor for keyframes.
+		//Declare local instance variables
 		this.dom_wrapper = document.createElement("div");
-		this.dom_wrapper.style.pointerEvents = "none";
-		this.dom_wrapper.style.width = "0px";
-		this.dom_wrapper.style.height = "0px";
+		this.dom_wrapper.style.height = "0";
 		this.dom_wrapper.style.overflow = "visible";
+		this.dom_wrapper.style.pointerEvents = "none";
+		this.dom_wrapper.style.width = "0";
 		
-		// Full-viewport screen-space canvas attached directly to the map container.
+		//Full-viewport screen-space canvas attached directly to the map container
 		this.canvas = document.createElement("canvas");
-		this.ctx = this.canvas.getContext("2d");
+			this.ctx = this.canvas.getContext("2d");
+		this.canvas.style.left = "0";
 		this.canvas.style.pointerEvents = "none";
 		this.canvas.style.position = "absolute";
 		this.canvas.style.top = "0";
-		this.canvas.style.left = "0";
 		this.canvas.style.zIndex = "1";
 		
 		map.getContainer().appendChild(this.canvas);
@@ -37,10 +37,11 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.max_edge_screen_px = 48;
 		this.max_subdivision = 16;
 		
+		this._is_dragging = false;
+		this._canvas_hidden = false;
 		this.canvas_w = 0;
 		this.canvas_h = 0;
 		this.canvas_dpr = 1;
-		
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
 		this.geometry = undefined;
@@ -48,14 +49,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.mesh_triangles = [];
 		this.screen_pts = [];
 		this.selected_point_index = null;
-		this._is_dragging = false;
-		this._canvas_hidden = false;
 		
-		// Initialise mesh and bind events
+		//Initialise mesh and bind events
 		this.initMesh();
-		this.bindEvents();
+		this.handleEvents();
 		
-		// Add keyframe with default coords/symbol
+		//Add keyframe with default coords/symbol
 		let map_centre = map.getCenter();
 		this.addKeyframe(
 			main.date,
@@ -73,24 +72,6 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		
 		this.draw();
 		this.updateOwner();
-	}
-	
-	bindEvents () {
-		//Declare local instance variables; add event handlers
-		let container = map.getContainer();
-		
-		this._ondblclick = (e) => this.handleDoubleClick(e);
-		this._onmousedown = (e) => this.handleMouseDown(e);
-		this._onmousemove = (e) => this.handleMouseMove(e);
-		this._onmouseup = (e) => this.handleMouseUp(e);
-		
-		container.addEventListener("dblclick", this._ondblclick, true);
-		container.addEventListener("mousedown", this._onmousedown, true);
-		container.addEventListener("mousemove", this._onmousemove, true);
-		container.addEventListener("mouseup", this._onmouseup, true);
-		
-		//Add map refresh call
-		map.on("viewchange mousemove", () => this.render());
 	}
 	
 	draw () {
@@ -327,11 +308,30 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		if (point_idx !== null) {
 			e.stopPropagation();
 			e.preventDefault();
+			
 			this.mesh_points.splice(point_idx, 1);
 			this.updateTriangulation();
 			this.updateKeyframe();
 			this.render();
 		}
+	}
+	
+	handleEvents () {
+		//Declare local instance variables; add event handlers
+		let container = map.getContainer();
+		
+		this._ondblclick = (e) => this.handleDoubleClick(e);
+		this._onmousedown = (e) => this.handleMouseDown(e);
+		this._onmousemove = (e) => this.handleMouseMove(e);
+		this._onmouseup = (e) => this.handleMouseUp(e);
+		
+		container.addEventListener("dblclick", this._ondblclick, true);
+		container.addEventListener("mousedown", this._onmousedown, true);
+		container.addEventListener("mousemove", this._onmousemove, true);
+		container.addEventListener("mouseup", this._onmouseup, true);
+		
+		//Add map refresh call
+		map.on("viewchange mousemove", () => this.render());
 	}
 	
 	handleMouseDown (e) {
@@ -397,6 +397,8 @@ naissance.GeometryImage = class extends naissance.Geometry {
 	handleMouseUp (e) {
 		if (this.selected_point_index !== null) {
 			e.stopPropagation();
+			e.preventDefault();
+			
 			this.selected_point_index = null;
 			if (this._is_dragging) {
 				this._is_dragging = false;
@@ -420,24 +422,31 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateTriangulation();
 	}
 	
-	isInsideImageArea (mouse_sp) {
-		if (!this.screen_pts || this.screen_pts.length === 0) return false;
+	isInsideImageArea (arg0_mouse_sp) {
+		//Convert from parameters
+		let mouse_sp = arg0_mouse_sp;
+		
+		if (!this.screen_pts || this.screen_pts.length === 0) return false; //Internal guard clause
+		
+		//Declare local instance variables
 		let min_x = Infinity,
 			min_y = Infinity,
 			max_x = -Infinity,
 			max_y = -Infinity;
+		
+		//Iterate over all this.screen_pts
 		for (let p of this.screen_pts) {
 			if (p.screen_x < min_x) min_x = p.screen_x;
 			if (p.screen_y < min_y) min_y = p.screen_y;
 			if (p.screen_x > max_x) max_x = p.screen_x;
 			if (p.screen_y > max_y) max_y = p.screen_y;
 		}
-		return (
-			mouse_sp.x >= min_x - this.hit_area_padding &&
+		
+		//Return statement
+		return (mouse_sp.x >= min_x - this.hit_area_padding &&
 			mouse_sp.x <= max_x + this.hit_area_padding &&
 			mouse_sp.y >= min_y - this.hit_area_padding &&
-			mouse_sp.y <= max_y + this.hit_area_padding
-		);
+			mouse_sp.y <= max_y + this.hit_area_padding);
 	}
 	
 	loadImage (arg0_url) {
@@ -503,7 +512,12 @@ naissance.GeometryImage = class extends naissance.Geometry {
 		this.updateInfoPanels();
 	}
 	
-	renderTriangleSubdivided (a, b, c) {
+	renderTriangleSubdivided (arg0_a, arg1_b, arg2_c) {
+		//Convert from parameters
+		let a = arg0_a;
+		let b = arg1_b;
+		let c = arg2_c;
+		
 		//Declare local instance variables
 		let edge_px = Math.max(
 			Math.hypot(a.screen_x - b.screen_x, a.screen_y - b.screen_y),
