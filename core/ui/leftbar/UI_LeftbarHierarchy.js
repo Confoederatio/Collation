@@ -301,8 +301,8 @@ global.UI_LeftbarHierarchy = class {
 						create_image_overlay: new ve.Button(() => {
 							let geometry_id = Class.generateRandomID(naissance.Geometry);
 							DALS.Timeline.parseAction("create_media", { 
-								type: "GeometryMedia", create_image: { id: geometry_id } });
-						}, { attributes: { class: "add-button" }, name: "<icon>image</icon> Create Image Overlay" }),
+								type: "GeometryMedia", create_media: { id: geometry_id } });
+						}, { attributes: { class: "add-button" }, name: "<icon>image</icon> Create Media Overlay" }),
 						create_new_sketch_map: new ve.Button(() => {
 							let f_id = Class.generateRandomID(naissance.Feature);
 							DALS.Timeline.parseAction("create_sketch_map", { 

@@ -119,7 +119,12 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				this._canvas_hidden = false;
 				this.canvas.style.opacity = String(symbol_obj.opacity ?? 0.45);
 				
-				this.loadFile(symbol_obj.url, symbol_obj.timestamp);
+				if (this._loaded_url !== symbol_obj.url || this._loaded_timestamp !== symbol_obj.timestamp) {
+					this.loadFile(symbol_obj.url, symbol_obj.timestamp);
+					
+					this._loaded_timestamp = symbol_obj.timestamp;
+					this._loaded_url = symbol_obj.url;
+				}
 				this.render();
 			} catch (e) { console.error(e); }
 		} else {
@@ -227,10 +232,33 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				media_timestamp: veNumber(this.value[1]?.media_timestamp, {
 					name: "Media Timestamp",
 					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
-				})
+				}),
+				media_test_play: veButton(() => {
+					this._playVideo();
+				}, { name: "Test Play" })
 			},
 			{ name: "Edit Image", open: true }),
 		};
+	}
+	
+	_playVideo () {
+		if (!this.video_el) return;
+		
+		if (this.video_el.paused) {
+			// Start playing
+			this.video_el.play();
+			this.image = this.video_el; // Point image to the live video element
+			
+			const playFrame = () => {
+				if (!this.video_el || this.video_el.paused || this.video_el.ended) return;
+				this.render();
+				requestAnimationFrame(playFrame);
+			};
+			requestAnimationFrame(playFrame);
+		} else {
+			// Pause
+			this.video_el.pause();
+		}
 	}
 	
 	getEventWorldPos (e) {
@@ -365,33 +393,14 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		return { x: sx, y: sy };
 	}
 	
-	handleDoubleClick (e) {
-		if (!this.selected || this._canvas_hidden) return; //Internal guard clause
-		
-		let mouse_sp = this.getEventScreenPos(e);
-		let point_idx = this.getHitpointIndex(mouse_sp);
-		
-		if (point_idx !== null) {
-			e.stopPropagation();
-			e.preventDefault();
-			
-			this.mesh_points.splice(point_idx, 1);
-			this.updateTriangulation();
-			this.updateKeyframe();
-			this.render();
-		}
-	}
-	
 	handleEvents () {
 		//Declare local instance variables; add event handlers
 		let container = map.getContainer();
 		
-		this._ondblclick = (e) => this.handleDoubleClick(e);
 		this._onmousedown = (e) => this.handleMouseDown(e);
 		this._onmousemove = (e) => this.handleMouseMove(e);
 		this._onmouseup = (e) => this.handleMouseUp(e);
 		
-		container.addEventListener("dblclick", this._ondblclick, true);
 		container.addEventListener("mousedown", this._onmousedown, true);
 		container.addEventListener("mousemove", this._onmousemove, true);
 		container.addEventListener("mouseup", this._onmouseup, true);
@@ -403,45 +412,60 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	handleMouseDown (e) {
 		if (!this.selected || this._canvas_hidden || e.button === 1) return; //Internal guard clause
 		
-		let mouse_sp = this.getEventScreenPos(e);
-		this.selected_point_index = this.getHitpointIndex(mouse_sp);
-		this._is_dragging = false;
-		
-		if (this.selected_point_index === null) {
-			if (!this.isInsideImageArea(mouse_sp)) return;
+		if (HTML.ctrl_pressed) {
+			let mouse_sp = this.getEventScreenPos(e);
+			let point_idx = this.getHitpointIndex(mouse_sp);
 			
-			let world_pos = this.getEventWorldPos(e);
-			if (!world_pos) return;
-			
-			e.stopPropagation();
-			e.preventDefault();
-			
-			let source_x = world_pos.x,
-				source_y = world_pos.y;
-			for (let i = 0; i < this.mesh_triangles.length; i += 3) {
-				let pt1 = this.mesh_points[this.mesh_triangles[i]],
-					pt2 = this.mesh_points[this.mesh_triangles[i + 1]],
-					pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
-				let bary_info = Geospatiale.getBarycentric(world_pos, pt1, pt2, pt3);
-				if (bary_info.inside) {
-					source_x = bary_info.u*pt1.src_x + bary_info.v*pt2.src_x + bary_info.w*pt3.src_x;
-					source_y = bary_info.u*pt1.src_y + bary_info.v*pt2.src_y + bary_info.w*pt3.src_y;
-					break;
-				}
+			if (point_idx !== null) {
+				e.stopPropagation();
+				e.preventDefault();
+				
+				this.mesh_points.splice(point_idx, 1);
+				this.updateTriangulation();
+				this.updateKeyframe();
+				this.render();
 			}
-			this.mesh_points.push({
-				x: world_pos.x,
-				y: world_pos.y,
-				src_x: source_x,
-				src_y: source_y,
-			});
-			this.selected_point_index = this.mesh_points.length - 1;
-			this.updateTriangulation();
-			this.render();
-			this.updateKeyframe();
 		} else {
-			e.stopPropagation();
-			e.preventDefault();
+			let mouse_sp = this.getEventScreenPos(e);
+			this.selected_point_index = this.getHitpointIndex(mouse_sp);
+			this._is_dragging = false;
+			
+			if (this.selected_point_index === null) {
+				if (!this.isInsideImageArea(mouse_sp)) return;
+				
+				let world_pos = this.getEventWorldPos(e);
+				if (!world_pos) return;
+				
+				e.stopPropagation();
+				e.preventDefault();
+				
+				let source_x = world_pos.x,
+					source_y = world_pos.y;
+				for (let i = 0; i < this.mesh_triangles.length; i += 3) {
+					let pt1 = this.mesh_points[this.mesh_triangles[i]],
+						pt2 = this.mesh_points[this.mesh_triangles[i + 1]],
+						pt3 = this.mesh_points[this.mesh_triangles[i + 2]];
+					let bary_info = Geospatiale.getBarycentric(world_pos, pt1, pt2, pt3);
+					if (bary_info.inside) {
+						source_x = bary_info.u*pt1.src_x + bary_info.v*pt2.src_x + bary_info.w*pt3.src_x;
+						source_y = bary_info.u*pt1.src_y + bary_info.v*pt2.src_y + bary_info.w*pt3.src_y;
+						break;
+					}
+				}
+				this.mesh_points.push({
+					x: world_pos.x,
+					y: world_pos.y,
+					src_x: source_x,
+					src_y: source_y,
+				});
+				this.selected_point_index = this.mesh_points.length - 1;
+				this.updateTriangulation();
+				this.render();
+				this.updateKeyframe();
+			} else {
+				e.stopPropagation();
+				e.preventDefault();
+			}
 		}
 	}
 	
@@ -547,42 +571,45 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	loadVideo (arg0_url, arg1_timestamp) {
-		//Convert from parameters
 		let file_path = arg0_url;
 		let timestamp = Math.returnSafeNumber(arg1_timestamp);
-		
-		//Declare local instance variables
 		let map_defines = config.defines.map;
-		let temp_video = document.createElement("video");
 		
-		//Set up video for seeking
-		temp_video.src = file_path;
-		temp_video.crossOrigin = "anonymous";
-		temp_video.currentTime = timestamp;
+		if (!this.video_el) {
+			this.video_el = document.createElement("video");
+			this.video_el.crossOrigin = "anonymous";
+			this.video_el.muted = true;
+			this.video_el.playsInline = true;
+		}
 		
-		//Wait for video to load the frame
-		this._video_loaded = false;
-		temp_video.onseeked = () => {
-			let temp_canvas = document.createElement("canvas");
-			let canvas_context = temp_canvas.getContext("2d");
-			
-			temp_canvas.width = temp_video.videoWidth;
-			temp_canvas.height = temp_video.videoHeight;
-			
-			//Draw video frame to canvas
-			canvas_context.drawImage(temp_video, 0, 0, temp_canvas.width, temp_canvas.height);
-			
-			//Construct new image from canvas data
-			this.image = new Image();
-			this.image.onerror = () => console.error("Video frame failed to load:", file_path);
-			this.image.onload = () => this.render();
-			this.image.src = temp_canvas.toDataURL("image/png");
+		if (this.video_el.src !== file_path) {
+			this.video_el.src = file_path;
+			this._video_loaded = false;
+		}
+		
+		// If the video is playing, don't force a seek! This is the jitter cause.
+		if (!this.video_el.paused) {
+			this.image = this.video_el;
 			this._video_loaded = true;
-		};
+			return;
+		}
 		
-		//Handle video loading errors
-		temp_video.onerror = (e) => {
-			console.error("Video source failed to load:", file_path,  e);
+		// Only seek if the timestamp is significantly different from current position
+		if (Math.abs(this.video_el.currentTime - timestamp) > 0.1) {
+			this.video_el.currentTime = timestamp;
+			this._video_loaded = false;
+			this.video_el.onseeked = () => {
+				this.image = this.video_el;
+				this._video_loaded = true;
+				this.render();
+			};
+		} else {
+			this.image = this.video_el;
+			this._video_loaded = true;
+		}
+		
+		this.video_el.onerror = (arg0_e) => {
+			console.error("Video source failed to load:", file_path, arg0_e);
 			this.loadImage(map_defines.default_image_src);
 		};
 	}
@@ -593,17 +620,24 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		if (this.canvas && this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
 		let container = map.getContainer();
 		if (container) {
-			container.removeEventListener("mousedown", this._on_mousedown, true);
-			container.removeEventListener("mousemove", this._on_mousemove, true);
-			container.removeEventListener("mouseup", this._on_mouseup, true);
-			container.removeEventListener("dblclick", this._on_dblclick, true);
+			container.removeEventListener("mousedown", this._onmousedown, true);
+			container.removeEventListener("mousemove", this._onmousemove, true);
+			container.removeEventListener("mouseup", this._onmouseup, true);
 		}
 		
 		super.remove(arg0_do_not_refresh);
 	}
 	
 	render () {
-		if (!this.image || !this.image.complete || this.image.naturalWidth === 0) return;
+		// New Guard Clause: Support Video and Canvas elements directly
+		if (!this.image) return;
+		
+		if (this.image instanceof HTMLImageElement) {
+			if (!this.image.complete || this.image.naturalWidth === 0) return;
+		} else if (this.image instanceof HTMLVideoElement) {
+			if (this.image.readyState < 2) return; // HAVE_CURRENT_DATA
+		}
+		
 		if (!map || !map.isLoaded() || !this.geometry || this._canvas_hidden) return;
 		
 		this.updateBufferSize();
