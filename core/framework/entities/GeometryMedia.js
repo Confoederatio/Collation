@@ -229,7 +229,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					name: "Media URL",
 					onuserchange: (v) => this.updateKeyframe({ url: v }),
 				}),
-				media_timestamp: veNumber(this.value[1]?.media_timestamp, {
+				media_timestamp: veNumber(this.value[1]?.timestamp, {
 					name: "Media Timestamp",
 					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
 				}),
@@ -242,21 +242,22 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	_playVideo () {
-		if (!this.video_el) return;
+		if (!this.video_el) return;  //Internal guard  clause if this.video_el doesn't exist
 		
 		if (this.video_el.paused) {
-			// Start playing
+			//Start playing
 			this.video_el.play();
-			this.image = this.video_el; // Point image to the live video element
+			this.image = this.video_el; //Point image to the live video element
 			
-			const playFrame = () => {
+			//Immediate play pattern for playFrame
+			let playFrame = () => {
 				if (!this.video_el || this.video_el.paused || this.video_el.ended) return;
 				this.render();
 				requestAnimationFrame(playFrame);
 			};
 			requestAnimationFrame(playFrame);
 		} else {
-			// Pause
+			//Pause video
 			this.video_el.pause();
 		}
 	}

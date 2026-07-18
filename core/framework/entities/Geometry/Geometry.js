@@ -2,7 +2,7 @@ if (!global.naissance) global.naissance = {};
 naissance.Geometry = class extends naissance.Entity {
 	static special_properties = ["hidden", "label_geometries", "label_name", "label_symbol", "max_zoom", "min_zoom", "name", "variables"];
 	
-	static history_localisation_function = (new_keyframe, old_keyframe) => {
+	static history_localisation_function = (history, new_keyframe, old_keyframe) => {
 		//Declare local instance variables
 		let return_string = [];
 		
