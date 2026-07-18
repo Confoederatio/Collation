@@ -30,12 +30,12 @@ naissance.History = class {
 				}),
 				move_keyframe: veButton(() => {
 					let move_keyframe_window = veWindow({
-						new_date: veDate(JSON.parse(JSON.stringify(local_value.date)), { name: "New Date" }),
+						new_date: veDate(local_value.timestamp, { name: "New Date" }),
 						confirm: veButton(() => {
 							DALS.Timeline.parseAction("move_keyframe", [{
 								geometry_obj: history_obj.options._id(),
 								move_keyframe: {
-									date: local_value.date,
+									date: local_value.timestamp,
 									ot_date: move_keyframe_window.new_date.v
 								}
 							}]);
@@ -78,9 +78,7 @@ naissance.History = class {
 					veToast(`Copied timestamp to keyboard.`);
 				}, { name: "Copy Timestamp" }),
 				copy_geometry_to_date: veButton(() => {
-					let timestamp = Date.getTimestamp(main.date);
-					
-					history_obj.addKeyframe(timestamp, ...[local_value.value[0]]);
+					history_obj.addKeyframe(main.timestamp, ...[local_value.value[0]]);
 					veToast(`Copied geometry keyframe to present date.`);
 				}, { name: "Copy Geometry To Date" }),
 				
