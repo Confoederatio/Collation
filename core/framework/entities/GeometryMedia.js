@@ -521,7 +521,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		let timestamp = Math.returnSafeNumber(arg1_timestamp);
 		
 		//Declare local instance variables
-		let is_image = File.extensionIsImage(file_path);
+		let is_image = File.isImage(file_path);
 		
 		if (is_image) {
 			this.loadImage(file_path);
