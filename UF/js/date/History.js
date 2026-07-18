@@ -290,7 +290,7 @@ global.History = class extends ve.Class {
 		//Iterate over all_keyframes and push it to components_obj
 		Object.iterate(this.keyframes, (local_key, local_value) => {
 			if (this.options.draw_keyframe_function)
-				this.options.draw_keyframe_function({
+				this.options.draw_keyframe_function.call(this, {
 					components_obj,
 					key: local_key,
 					value: local_value

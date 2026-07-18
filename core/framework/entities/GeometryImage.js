@@ -1,7 +1,7 @@
 naissance.GeometryMedia = class extends naissance.Geometry {
 	static hierarchy_symbol = {
 		icon: "image",
-		name: "Image",
+		name: "Media Overlay",
 	};
 	
 	constructor () {
@@ -514,13 +514,61 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	loadImage (arg0_url) {
-		let url = arg0_url || "",
-			map_defines = config.defines.map;
+		//Convert from parameters
+		let url = (arg0_url) ? arg0_url : "";
+		
+		//Declare local instance variables
+		let map_defines = config.defines.map;
+		
+		//Construct new image
 		this.image = new Image();
 		this.image.onerror = () => console.error("Image failed to load:", url);
 		this.image.onload = () => this.render();
+		
+		//Test image validity
 		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
-		this.image.src = url && pattern_check.test(url) ? url : map_defines.default_image_src;
+		this.image.src = (url && pattern_check.test(url)) ? url : map_defines.default_image_src;
+	}
+	
+	loadVideo (arg0_url, arg1_timestamp) {
+		//Convert from parameters
+		let file_path = arg0_url;
+		let timestamp = Math.returnSafeNumber(arg1_timestamp);
+		
+		//Declare local instance variables
+		let map_defines = config.defines.map;
+		let temp_video = document.createElement("video");
+		
+		//Set up video for seeking
+		temp_video.src = file_path;
+		temp_video.crossOrigin = "anonymous";
+		temp_video.currentTime = timestamp;
+		
+		//Wait for video to load the frame
+		this._video_loaded = false;
+		temp_video.onseeked = () => {
+			let temp_canvas = document.createElement("canvas");
+			let canvas_context = temp_canvas.getContext("2d");
+			
+			temp_canvas.width = temp_video.videoWidth;
+			temp_canvas.height = temp_video.videoHeight;
+			
+			//Draw video frame to canvas
+			canvas_context.drawImage(temp_video, 0, 0, temp_canvas.width, temp_canvas.height);
+			
+			//Construct new image from canvas data
+			this.image = new Image();
+			this.image.onerror = () => console.error("Video frame failed to load:", file_path);
+			this.image.onload = () => this.render();
+			this.image.src = temp_canvas.toDataURL("image/png");
+			this._video_loaded = true;
+		};
+		
+		//Handle video loading errors
+		temp_video.onerror = () => {
+			console.error("Video source failed to load:", file_path);
+			this.loadImage(map_defines.default_image_src);
+		};
 	}
 	
 	remove (arg0_do_not_refresh) {
