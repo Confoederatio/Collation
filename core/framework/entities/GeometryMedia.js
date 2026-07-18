@@ -95,7 +95,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			try {
 				if (!map || !map.isLoaded()) return;
 				let coords_obj = this.value[0];
-				let symbol_obj = this.value[1];
+				let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
 				
 				this.initial_zoom = coords_obj.initial_zoom ?? this.initial_zoom;
 				if (this.selected_point_index === null && coords_obj.mesh_points) {
@@ -117,7 +117,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				
 				this.canvas.style.display = "";
 				this._canvas_hidden = false;
-				this.canvas.style.opacity = String(symbol_obj.opacity ?? 0.45);
+				this.canvas.style.opacity = String(Math.returnSafeNumber(symbol_obj.opacity, 0.45));
 				
 				if (this._loaded_url !== symbol_obj.url || this._loaded_timestamp !== symbol_obj.timestamp) {
 					this.loadFile(symbol_obj.url, symbol_obj.timestamp);
@@ -139,6 +139,9 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	drawUI () {
+		//Declare local instance variables
+		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+		
 		//Initialise elements if not already extant
 		if (!this.points_area) {
 			this.points_area = document.createElement("textarea");
@@ -200,14 +203,14 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					tps: { name: "Thin Plate Spline" },
 				}, {
 					name: "Warp Mode",
-					selected: (this.value[1]?.warp_mode || "triangulation"),
+					selected: (symbol_obj.warp_mode || "triangulation"),
 					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
 				}),
-				disable_pitch_checkbox: veCheckbox(this.value[1]?.disable_pitch || false, {
+				disable_pitch_checkbox: veCheckbox(symbol_obj.disable_pitch || false, {
 					name: "Disable Pitch",
 					onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
 				}),
-				disable_rotation: veCheckbox(this.value[1]?.disable_rotation || false, {
+				disable_rotation: veCheckbox(symbol_obj.disable_rotation || false, {
 					name: "Disable Rotation",
 					onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
 				}),
@@ -215,7 +218,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				points_area: veHTML(this.points_area),
 				extent_label: veHTML("Canvas Extent [TL, BR]"),
 				extent_area: veHTML(this.extent_area),
-				opacity_slider: veRange(Math.returnSafeNumber(this.value[1]?.opacity, 0.45), {
+				opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
 					name: "Opacity",
 					min: 0,
 					max: 1,
@@ -225,11 +228,11 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						this.updateKeyframe({ opacity: v });
 					},
 				}),
-				url_input: veText(this.value[1]?.url || "", {
+				url_input: veText(symbol_obj.url || "", {
 					name: "Media URL",
 					onuserchange: (v) => this.updateKeyframe({ url: v }),
 				}),
-				media_timestamp: veNumber(this.value[1]?.timestamp, {
+				media_timestamp: veNumber(symbol_obj.timestamp, {
 					name: "Media Timestamp",
 					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
 				}),
@@ -338,7 +341,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		
 		//Declare local instance variables
 		let coord = this.getWorldToLngLat(wx, wy);
-		let symbol_obj = (this.value) ? this.value[1] : {};
+		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
 		let sp;
 		
 		if (symbol_obj.disable_pitch) {
@@ -630,8 +633,10 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	render () {
-		// New Guard Clause: Support Video and Canvas elements directly
-		if (!this.image) return;
+		//Convert from parameters
+		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+		
+		if (!this.image) return; //Internal guard clause for this.image
 		
 		if (this.image instanceof HTMLImageElement) {
 			if (!this.image.complete || this.image.naturalWidth === 0) return;
@@ -648,7 +653,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		this.ctx.save();
 		this.ctx.scale(this.canvas_dpr, this.canvas_dpr);
 		
-		let warp_mode = (this.value[1]?.warp_mode || "triangulation");
+		let warp_mode = (symbol_obj.warp_mode || "triangulation");
 		
 		if (warp_mode === "tps" && this.mesh_points.length >= 3) {
 			this.renderTPSSubdivided();
