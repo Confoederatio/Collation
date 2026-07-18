@@ -39,8 +39,6 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		
 		this._is_dragging = false;
 		this._canvas_hidden = false;
-		this.canvas_w = 0;
-		this.canvas_h = 0;
 		this.canvas_dpr = 1;
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
