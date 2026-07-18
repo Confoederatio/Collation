@@ -720,6 +720,8 @@ config.actions.geometry = {
 			//Iterate over timestamps and act on .mode
 			for (let i = 0; i < timestamps.length; i++) {
 				let local_keyframe = geometry_obj.history.keyframes[timestamps[i]];
+				if (!local_keyframe) continue;
+				
 				let local_value = local_keyframe.value;
 				
 				if (mode === "property_to_property") {
@@ -733,12 +735,12 @@ config.actions.geometry = {
 				}
 				
 				if (local_value[from_index]) {
-					let from_value = Object.getValue(local_value[from_index], action_json.from_key);
+					let from_value = structuredClone(Object.getValue(local_value[from_index], action_json.from_key));
 					
 					if (!local_value[to_index]) local_value[to_index] = {};
 					Object.setValue(local_value[to_index], action_json.to_key, from_value);
-					Object.deleteValue(local_value[from_index], action_json.from_key);
-					console.log(from_value, local_value[to_index], action_json.to_key);
+					if (!action_json.do_not_delete)
+						Object.deleteValue(local_value[from_index], action_json.from_key);
 				}
 			}
 		}
@@ -922,6 +924,50 @@ config.actions.geometry = {
 		feature_name: "Move Geometry Keyframes",
 		scope: ["Geometry"],
 		
+		draw_function: function () {
+			//Declare local instance variables
+			let from_date = () => (this.ui.move_keyframe_from_date) ? 
+				this.ui.move_keyframe_from_date : main.timestamp;
+			let to_date = () => (this.ui.move_keyframe_to_date) ? 
+				this.ui.move_keyframe_to_date : main.timestamp;
+			
+			//Return statement
+			return {
+				from_date: veDate(from_date(), {
+					name: "From Date",
+					onuserchange: (v) => this.ui.move_keyframe_from_date = v
+				}),
+				to_date: veDate(to_date(), {
+					name: "To Date",
+					onuserchange: (v) => this.ui.move_keyframe_to_date = v
+				}),
+				confirm: veButton(() => {
+					//Declare local instance variables
+					let timestamp = from_date();
+					let ot_timestamp = to_date();
+					
+					if (timestamp === ot_timestamp) {
+						veToast(`<icon>warning</icon> You must specify a different date to move to.`);
+						return;
+					}
+					
+					//Parse action
+					DALS.Timeline.parseAction("move_keyframe", {
+						[this.getDALSKey()]: this.id,
+						move_keyframe: {
+							date: timestamp,
+							ot_date: ot_timestamp
+						}
+					});
+					
+					if (this instanceof naissance.Feature) {
+						veToast(`Moved keyframe from ${String.formatDate(from_date())} to ${String.formatDate(to_date())} for all geometries in ${this.name}.`);
+					} else {
+						veToast(`Moved keyframe from ${String.formatDate(from_date())} to ${String.formatDate(to_date())} for ${this.name}.`);
+					}
+				})
+			};
+		},
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
