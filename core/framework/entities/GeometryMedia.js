@@ -573,8 +573,11 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	loadVideo (arg0_url, arg1_timestamp) {
+		//Convert from parameters
 		let file_path = arg0_url;
 		let timestamp = Math.returnSafeNumber(arg1_timestamp);
+		
+		//Declare local instance variables
 		let map_defines = config.defines.map;
 		
 		if (!this.video_el) {
@@ -584,32 +587,26 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			this.video_el.playsInline = true;
 		}
 		
-		if (this.video_el.src !== file_path) {
-			this.video_el.src = file_path;
-			this._video_loaded = false;
-		}
+		if (this.video_el.src !== file_path) this.video_el.src = file_path;
 		
-		// If the video is playing, don't force a seek! This is the jitter cause.
+		//If the video is playing, don't force a seek
 		if (!this.video_el.paused) {
 			this.image = this.video_el;
-			this._video_loaded = true;
-			return;
+			return; //Internal guard clause
 		}
 		
-		// Only seek if the timestamp is significantly different from current position
+		//Only seek if the timestamp is significantly different from current position
 		if (Math.abs(this.video_el.currentTime - timestamp) > 0.1) {
 			this.video_el.currentTime = timestamp;
-			this._video_loaded = false;
 			this.video_el.onseeked = () => {
 				this.image = this.video_el;
-				this._video_loaded = true;
 				this.render();
 			};
 		} else {
 			this.image = this.video_el;
-			this._video_loaded = true;
 		}
 		
+		//Log any media errors
 		this.video_el.onerror = (arg0_e) => {
 			console.error("Video source failed to load:", file_path, arg0_e);
 			this.loadImage(map_defines.default_image_src);
