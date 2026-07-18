@@ -61,7 +61,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
 			initial_zoom: this.initial_zoom,
 		}, {
-			image_url: "",
+			url: "",
 			opacity: 0.45,
 			warp_mode: "triangulation",
 		});
@@ -117,11 +117,9 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				
 				this.canvas.style.display = "";
 				this._canvas_hidden = false;
-				this.canvas.style.opacity = symbol_obj.opacity ?? 0.45;
-				if (symbol_obj.image_url !== this._loaded_image_url) {
-					this._loaded_image_url = symbol_obj.image_url;
-					this.loadImage(symbol_obj.image_url);
-				}
+				this.canvas.style.opacity = String(symbol_obj.opacity ?? 0.45);
+				
+				this.loadFile(symbol_obj.url, symbol_obj.timestamp);
 				this.render();
 			} catch (e) { console.error(e); }
 		} else {
@@ -197,7 +195,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					tps: { name: "Thin Plate Spline" },
 				}, {
 					name: "Warp Mode",
-					selected: this.value[1]?.warp_mode || "triangulation",
+					selected: (this.value[1]?.warp_mode || "triangulation"),
 					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
 				}),
 				disable_pitch_checkbox: veCheckbox(this.value[1]?.disable_pitch || false, {
@@ -222,10 +220,14 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						this.updateKeyframe({ opacity: v });
 					},
 				}),
-				url_input: veText(this.value[1]?.image_url || "", {
-					name: "Image URL",
-					onuserchange: (v) => this.updateKeyframe({ image_url: v }),
+				url_input: veText(this.value[1]?.url || "", {
+					name: "Media URL",
+					onuserchange: (v) => this.updateKeyframe({ url: v }),
 				}),
+				media_timestamp: veNumber(this.value[1]?.media_timestamp, {
+					name: "Media Timestamp",
+					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
+				})
 			},
 			{ name: "Edit Image", open: true }),
 		};
@@ -513,6 +515,21 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			mouse_sp.y <= max_y + this.hit_area_padding);
 	}
 	
+	loadFile (arg0_url, arg1_timestamp) {
+		//Convert from parameters
+		let file_path = arg0_url;
+		let timestamp = Math.returnSafeNumber(arg1_timestamp);
+		
+		//Declare local instance variables
+		let is_image = File.extensionIsImage(file_path);
+		
+		if (is_image) {
+			this.loadImage(file_path);
+		} else {
+			this.loadVideo(file_path, timestamp);
+		}
+	}
+	
 	loadImage (arg0_url) {
 		//Convert from parameters
 		let url = (arg0_url) ? arg0_url : "";
@@ -525,9 +542,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		this.image.onerror = () => console.error("Image failed to load:", url);
 		this.image.onload = () => this.render();
 		
-		//Test image validity
-		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
-		this.image.src = (url && pattern_check.test(url)) ? url : map_defines.default_image_src;
+		//Ensure image validity
+		this.image.src = (url || map_defines.default_image_src);
 	}
 	
 	loadVideo (arg0_url, arg1_timestamp) {
@@ -565,8 +581,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		};
 		
 		//Handle video loading errors
-		temp_video.onerror = () => {
-			console.error("Video source failed to load:", file_path);
+		temp_video.onerror = (e) => {
+			console.error("Video source failed to load:", file_path,  e);
 			this.loadImage(map_defines.default_image_src);
 		};
 	}

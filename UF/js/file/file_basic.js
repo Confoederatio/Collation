@@ -45,6 +45,28 @@
 		return file_buffer.toString("base64");
 	};
 	
+	File.extensionIsImage = function (arg0_file_path) {
+		//Convert from parameters
+		let file_path = arg0_file_path;
+		
+		//Declare local instance variables
+		let pattern_check = /\.(jpeg|jpg|gif|png|webp|svg|bmp)$|^data:image/i;
+		
+		//Return statement
+		return pattern_check.test(file_path);
+	};
+	
+	File.extensionIsVideo = function (arg0_file_path) {
+		//Convert from parameters
+		let file_path = arg0_file_path;
+		
+		//Declare local instance variables
+		let pattern_check = /\.(mp4|mov|avi|wmv|flv|mkv|webm)$/i;
+		
+		//Return statement
+		return pattern_check.test(file_path);
+	};
+	
 	/**
 	 * Returns all drives in the current operating system.
 	 * @alias File.getAllDrives
