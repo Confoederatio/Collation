@@ -240,9 +240,57 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					media_pause: veButton(() => this._playVideo(), 
 						{ name: "Pause Video", limit: () => !this.video_el.paused }),
 					edit_video: veButton(() => {
+						let timestamps = this.history.getTimestamps();
+						
 						this.video_window = veWindow({
 							video_el: veHTML(this.video_el, {
 								style: { "video": { width: "100%" } }
+							}),
+							video_settings: veInterface({
+								actions_bar:  veRawInterface({
+									open_crop_brush: veButton(() => {
+										
+									}, { name: "Crop Brush" }),
+									go_to_media_timestamp: veButton(() => {
+										if (this.video_el) {
+											let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
+											
+											this.video_el.currentTime = timestamp;
+											veToast(`Jumped to ${timestamp}s.`);
+										}
+									}, { name: "Go To Media Timestamp" })
+								}, { x: 0, y: 0 }),
+								enable_sync: veToggle(false, {
+									name: "Enable Sync",
+									x: 1, y: 0
+								}),
+								
+								video_sync_global_date: veCheckbox(false, {
+									name: "Move Global Date with Video",
+									x: 0, y: 1
+								}),
+								video_sync_to_others: veCheckbox(false, {
+									name: "Play Other Videos in Sync",
+									x: 1, y: 1
+								}),
+							}, { name: "Video Settings" }),
+							
+							timeframes: veList(veInterface({
+								date: veDate(timestamps[0], {
+									tooltip: "Date at Timestamp",
+									x: 0, y: 0 
+								}),
+								timestamp: veNumber(0, {
+									tooltip: "Timestamp (seconds)",
+									x: 1, y: 0 
+								})
+							}, { is_folder: false }), {
+								name: "Edit Timestamps",
+								onadd: (v, e) => console.log(`Add item:`, v, e),
+								onuserchange: (v, e) => console.log(v, e),
+								style: {
+									"[component='ve-interface'] td": { verticalAlign: "bottom" }
+								}
 							})
 						}, { 
 							name: `Video Controls (${this.name})`,
