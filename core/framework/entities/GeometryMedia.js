@@ -214,7 +214,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				}),
 				points_label: veHTML("Control Points [Lng, Lat]"),
 				points_area: veHTML(this.points_area),
-				extent_label: veHTML("Canvas Extent [TL, BR]"),
+				extent_label: veHTML("Canvas Extent [NW, SE]"),
 				extent_area: veHTML(this.extent_area),
 				opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
 					name: "Opacity",
@@ -234,9 +234,12 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					name: "Media Timestamp",
 					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
 				}),
-				media_test_play: veButton(() => {
-					this._playVideo();
-				}, { name: "Test Play" })
+				media_controls: veRawInterface({
+					media_play: veButton(() =>  this._playVideo(), 
+						{ name: "Play Video", limit: () => this.video_el.paused }),
+					media_pause: veButton(() => this._playVideo(), 
+						{ name: "Pause Video", limit: () => !this.video_el.paused }),
+				})
 			},
 			{ name: "Edit Image", open: true }),
 		};
