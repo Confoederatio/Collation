@@ -239,9 +239,16 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						{ name: "Play Video", limit: () => this.video_el.paused }),
 					media_pause: veButton(() => this._playVideo(), 
 						{ name: "Pause Video", limit: () => !this.video_el.paused }),
-					advanced_media_controls: veButton(() => {
-						
-					}, { name: "Advanced Media Controls" })
+					edit_video: veButton(() => {
+						this.video_window = veWindow({
+							video_el: veHTML(this.video_el, {
+								style: { "video": { width: "100%" } }
+							})
+						}, { 
+							name: `Video Controls (${this.name})`,
+							can_rename: false
+						})
+					}, { name: "Edit Video" })
 				}, {
 					limit: () => File.isVideo(this._loaded_url),
 					style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
@@ -592,6 +599,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		
 		if (!this.video_el) {
 			this.video_el = document.createElement("video");
+			this.video_el.controls = true;
 			this.video_el.crossOrigin = "anonymous";
 			this.video_el.muted = true;
 			this.video_el.playsInline = true;
