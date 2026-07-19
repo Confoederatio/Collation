@@ -121,7 +121,6 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					this.loadFile(symbol_obj.url, symbol_obj.timestamp);
 					
 					this._loaded_timestamp = symbol_obj.timestamp;
-					this._loaded_url = symbol_obj.url;
 				}
 				this.render();
 			} catch (e) { console.error(e); }
@@ -232,6 +231,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				}),
 				media_timestamp: veNumber(symbol_obj.timestamp, {
 					name: "Media Timestamp",
+					limit: () => File.isVideo(this._loaded_url),
 					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
 				}),
 				media_controls: veRawInterface({
@@ -239,6 +239,12 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						{ name: "Play Video", limit: () => this.video_el.paused }),
 					media_pause: veButton(() => this._playVideo(), 
 						{ name: "Pause Video", limit: () => !this.video_el.paused }),
+					advanced_media_controls: veButton(() => {
+						
+					}, { name: "Advanced Media Controls" })
+				}, {
+					limit: () => File.isVideo(this._loaded_url),
+					style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
 				})
 			},
 			{ name: "Edit Image", open: true }),
@@ -552,6 +558,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		//Declare local instance variables
 		let is_image = File.isImage(file_path);
 		
+		this._loaded_url = file_path;
 		if (is_image) {
 			this.loadImage(file_path);
 		} else {
