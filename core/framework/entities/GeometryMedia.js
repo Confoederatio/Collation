@@ -286,7 +286,10 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 								})
 							}, { is_folder: false }), {
 								name: "Edit Timestamps",
-								onadd: (v, e) => console.log(`Add item:`, v, e),
+								onadd: (v) => {
+									v.date.v = main.timestamp;
+									v.timestamp.v = Math.returnSafeNumber(this.video_el?.currentTime);
+								},
 								onuserchange: (v, e) => console.log(v, e),
 								style: {
 									"[component='ve-interface'] td": { verticalAlign: "bottom" }
