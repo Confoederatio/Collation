@@ -186,6 +186,8 @@
 				metadata: local_geometry.metadata,
 				type: "geometry"
 			}
+			
+			//Visibility is handled via keyframes, so the same sort of handling naissance.Feature needs isn't required
 		});
 		
 		//Iterate over all naissance.Feature.instances and serialise them
