@@ -144,6 +144,7 @@
 					});
 					
 					if (local_value.id) feature_obj.setID(local_value.id);
+					if (local_value.is_visible === false) feature_obj.hide();
 					if (local_value.value) feature_obj.json = local_value.value;
 				}
 			}
@@ -184,7 +185,7 @@
 				history: local_geometry.history.toJSON(),
 				metadata: local_geometry.metadata,
 				type: "geometry"
-			};
+			}
 		});
 		
 		//Iterate over all naissance.Feature.instances and serialise them
@@ -196,6 +197,10 @@
 				type: "feature",
 				value: local_feature.toJSON()
 			};
+			
+			let local_json = json_obj[local_feature.id];
+			if (!local_feature._is_visible)
+				local_json.is_visible = false;
 		});
 		
 		//Return statement
