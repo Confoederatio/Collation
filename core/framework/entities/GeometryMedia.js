@@ -461,8 +461,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 										tooltip: "Date at Timestamp",
 										x: 0, y: 0
 									}),
-									timestamp: veNumber(symbol_obj.timeframes[i].timestamp, {
-										tooltip: "Timestamp (seconds)",
+									timestamp: veTime(symbol_obj.timeframes[i].timestamp, {
+										tooltip: "Timestamp (hh:mm:ss.ms)",
 										x: 1, y: 0
 									})
 								}, { is_folder: false }));
