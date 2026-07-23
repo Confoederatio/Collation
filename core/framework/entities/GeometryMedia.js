@@ -1044,8 +1044,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				this.preview_ctx.beginPath();
 				this.preview_ctx.arc(center_mask_x, center_mask_y, mask_radius, 0, Math.PI * 2);
 				this.preview_ctx.lineWidth = 1;
-				this.preview_ctx.strokeStyle = "rgb(235, 65, 65)";
-				this.preview_ctx.fillStyle = "rgba(235, 65, 65, 0.25)";
+				this.preview_ctx.strokeStyle = "rgb(240, 60, 60)";
+				this.preview_ctx.fillStyle = "rgba(240, 60, 60, 0.5)";
 				this.preview_ctx.fill();
 				this.preview_ctx.stroke();
 				this.preview_ctx.restore();
