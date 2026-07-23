@@ -1318,22 +1318,19 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		}
 	}
 	
-	updateKeyframe (arg0_symbol_obj) {
+	updateKeyframe (arg0_symbol_obj, arg1_do_not_push_to_dals) {
 		//Convert from parameters
 		let symbol_obj = arg0_symbol_obj;
+		let do_not_push_to_dals = arg1_do_not_push_to_dals;
 		
-		//Declare local instance variables
-		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
-		
-		let geometry_obj = {
-			center: [marker_coord.x, marker_coord.y],
-			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
-			initial_zoom: this.initial_zoom,
-		};
-		
-		//Add keyframe; draw call
-		this.history.addKeyframe(main.date, geometry_obj, symbol_obj);
-		this.draw();
+		//Call update media keyframe
+		DALS.Timeline.parseAction("update_media_keyframe", {
+			geometry_obj: this.id,
+			update_keyframe: {
+				date: main.date,
+				symbol_obj
+			}
+		}, do_not_push_to_dals);
 	}
 	
 	updateTriangulation () {
