@@ -69,6 +69,18 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		this.updateOwner();
 	}
 	
+	_pauseVideo () {
+		if (this.video_el) {
+			this.video_el.pause();
+			this._last_global_sync = 0; //Reset throttle to ensure accuracy on pause
+			this.syncGlobalDateToVideo(); //Force one final update on pause
+		}
+	}
+	
+	_playVideo () {
+		if (this.video_el) this.video_el.play();
+	}
+	
 	draw () {
 		//Declare local instance variables
 		let derender_geometry = false;
@@ -321,18 +333,6 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				},
 				{ name: "Edit Image", open: true }),
 		};
-	}
-	
-	_pauseVideo () {
-		if (this.video_el) {
-			this.video_el.pause();
-			this._last_global_sync = 0; //Reset throttle to ensure accuracy on pause
-			this.syncGlobalDateToVideo(); //Force one final update on pause
-		}
-	}
-	
-	_playVideo () {
-		if (this.video_el) this.video_el.play();
 	}
 	
 	getEventWorldPos (e) {
