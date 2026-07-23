@@ -473,28 +473,25 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 								style: { "video": { width: "100%" } }
 							}),
 							video_settings: veInterface({
-								actions_bar: veRawInterface({
-									open_crop_brush: veButton(() => {
-										this.toggleCropBrush();
+								//Row 1
+								go_to_media_timestamp: veButton(() => {
+									if (this.video_el) {
+										let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
 										
-										veToast(this.crop_brush_active ? "Crop Brush Enabled" : "Crop Brush Disabled");
-										this.render();
-									}, { name: "Crop Brush" }),
-									go_to_media_timestamp: veButton(() => {
-										if (this.video_el) {
-											let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
-											
-											this.video_el.currentTime = timestamp;
-											if (typeof veToast === "function") veToast(`Jumped to ${timestamp}s.`);
-										}
-									}, { name: "Go To Media Timestamp" })
-								}, { x: 0, y: 0 }),
+										this.video_el.currentTime = timestamp;
+										if (typeof veToast === "function") veToast(`Jumped to ${timestamp}s.`);
+									}
+								}, { 
+									name: "Go To Media Timestamp",
+									x: 0, y: 0
+								}),
 								enable_sync: veToggle(symbol_obj.enable_sync, {
 									name: "Enable Sync",
 									onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
 									x: 1, y: 0
 								}),
 								
+								//Row 2
 								video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
 									name: "Move Global Date with Video",
 									onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),

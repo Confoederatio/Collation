@@ -70,13 +70,15 @@
 				if (json[i].set_date) {
 					UI_DateMenu.setDate(json[i].set_date);
 				} else if (json[i].refresh_date === true) {
+					let is_playing = UI_DateMenu.isPlaying();
+					
 					Object.iterate(naissance.Geometry.instances, (local_key, local_value) =>{
 						local_value.draw();
 						local_value.update();
 					});
 					naissance.GeometryMedia.syncToDate();
 					naissance.Mapmode.draw();
-					UI_Leftbar.refresh();
+					if (!is_playing) UI_Leftbar.refresh();
 				}
 			}
 		}

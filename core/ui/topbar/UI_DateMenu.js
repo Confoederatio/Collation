@@ -186,13 +186,18 @@ global.UI_DateMenu = class extends ve.Class {
 				}
 			}
 			
-			// Update global state and UI
+			//Update global state and UI
 			UI_DateMenu.setDate(next);
 			//Schedule next tick
 			UI_DateMenu.logic_loop = setTimeout(tick, this.tick_speed);
 		};
 		
 		tick();
+	}
+	
+	static isPlaying () {
+		//Return statement
+		return main.interfaces.date_ui.is_playing;
 	}
 	
 	static setDate (arg0_date) {

@@ -341,13 +341,17 @@ global.UI_LeftbarHierarchy = class {
 	}
 	
 	static refresh () {
+		//console.trace("UI_LeftbarHierarchy.refresh");
 		if (UI_LeftbarHierarchy.do_not_refresh) return;
 		this.refresh_frame = true;
 		
 		if (!this.logic_loop) this.logic_loop = setInterval(() => {
 			if (this.refresh_frame) {
-				for (let i = 0; i < this.instances.length; i++)
+				for (let i = 0; i < this.instances.length; i++) {
+					console.time("UI_LeftbarHierarchy.refresh")
 					this.instances[i].refresh();
+					console.timeEnd("UI_LeftbarHierarchy.refresh")
+				}
 				delete this.refresh_frame;
 			}
 		}, 100);
