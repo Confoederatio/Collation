@@ -744,6 +744,7 @@ naissance.Geometry = class extends naissance.Entity {
 		this.history = new History();
 		if (!do_not_refresh)
 			this.draw();
+		if (this.interface) this.interface.remove();
 	}
 	
 	/**
