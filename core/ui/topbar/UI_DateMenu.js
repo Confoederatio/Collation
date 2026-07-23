@@ -200,6 +200,9 @@ global.UI_DateMenu = class extends ve.Class {
 		let date = (arg0_date !== undefined) ? arg0_date : main.interfaces.date_ui.date.v;
 			date = Date.convertTimestampToDate(date);
 		
+		//Round minutes since we don't support seconds yet
+		if (date.minute) date.minute = Math.round(date.minute);
+		
 		//Set date
 		main.date = date;
 		main.timestamp = Date.getTimestamp(date);

@@ -39,6 +39,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		
 		this._is_dragging = false;
 		this._canvas_hidden = false;
+		this._last_global_sync = 0;
 		this.canvas_dpr = 1;
 		this.image = undefined;
 		this.initial_zoom = map.getZoom();
@@ -240,6 +241,26 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						media_pause: veButton(() => this._pauseVideo(),
 							{ name: "Pause Video", limit: () => !this.video_el?.paused }),
 						edit_video: veButton(() => {
+							let current_timeframes = [];
+							let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+							
+							//Iterate over all symbol_obj.timeframes
+							if (!symbol_obj.timeframes)
+								symbol_obj.timeframes = [{ date: structuredClone(main.date), timestamp: 0 }];
+							if (symbol_obj.timeframes) {
+								for (let i = 0; i < symbol_obj.timeframes.length; i++)
+									current_timeframes.push(veInterface({
+										date: veDate(structuredClone(symbol_obj.timeframes[i].date), {
+											tooltip: "Date at Timestamp",
+											x: 0, y: 0
+										}),
+										timestamp: veNumber(symbol_obj.timeframes[i].timestamp, {
+											tooltip: "Timestamp (seconds)",
+											x: 1, y: 0
+										})
+									}, { is_folder: false }));
+							}
+							
 							this.video_window = veWindow({
 								video_el: veHTML(this.video_el, {
 									style: { "video": { width: "100%" } }
@@ -271,16 +292,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 									}),
 								}, { name: "Video Settings" }),
 								
-								timeframes: veList(veInterface({
-									date: veDate(main.date, {
-										tooltip: "Date at Timestamp",
-										x: 0, y: 0
-									}),
-									timestamp: veNumber(0, {
-										tooltip: "Timestamp (seconds)",
-										x: 1, y: 0
-									})
-								}, { is_folder: false }), {
+								timeframes: veList(current_timeframes, {
 									name: "Edit Timestamps",
 									onadd: (v) => {
 										v.date.v = structuredClone(main.date);
@@ -315,6 +327,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		if (this.video_el) {
 			this.video_el.pause();
 			this._last_global_sync = 0; //Reset throttle to ensure accuracy on pause
+			this.syncGlobalDateToVideo(); //Force one final update on pause
 		}
 	}
 	
@@ -646,6 +659,16 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			this.video_el.crossOrigin = "anonymous";
 			this.video_el.muted = true;
 			this.video_el.playsInline = true;
+			
+			//Drive canvas frames and throttled date sync during playback
+			this.video_el.ontimeupdate = () => this.render();
+			
+			//Ensure sync is immediate when user manually jumps the playbar
+			this.video_el.addEventListener("seeked", () => {
+				this.image = this.video_el;
+				this.render();
+				this.syncGlobalDateToVideo(true);
+			});
 		}
 		
 		if (this.video_el.src !== file_path) this.video_el.src = file_path;
@@ -732,37 +755,10 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			Geospatiale.drawMeshOverlay(this.ctx, overlay_pts, this.mesh_triangles, 1, this.base_point_radius, this.selected_point_index);
 		}
 		
-		if (this.video_el && !this.video_el.paused) {
-			let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
-			
-			if (symbol_obj.video_sync_global_date) {
-				let frames = symbol_obj.timeframes || [];
-				if (frames.length >= 2) {
-					let video_time = this.video_el.currentTime;
-					let sorted_frames = [...frames].sort((a, b) => a.timestamp - b.timestamp);
-					let f0 = null, f1 = null;
-					
-					for (let i = 0; i < sorted_frames.length; i++) {
-						if (sorted_frames[i].timestamp <= video_time) f0 = sorted_frames[i];
-						if (sorted_frames[i].timestamp > video_time && !f1) f1 = sorted_frames[i];
-					}
-					
-					if (f0 && f1) {
-						let factor = (f1.timestamp === f0.timestamp) ? 0 : (video_time - f0.timestamp) / (f1.timestamp - f0.timestamp);
-						let ts0 = Date.getTimestamp(f0.date), ts1 = Date.getTimestamp(f1.date);
-						let target_ts = ts0 + factor * (ts1 - ts0);
-						
-						let now = Date.now();
-						if (!this._last_global_sync || now - this._last_global_sync > 1000) {
-							UI_DateMenu.setDate(target_ts);
-							this._last_global_sync = now;
-						}
-					}
-				}
-			}
-		}
-		
 		this.ctx.restore();
+		
+		//Video -> global date sync (throttled, deferred to avoid re-entrant render loops)
+		this.syncGlobalDateToVideo();
 		this.updateInfoPanels();
 	}
 	
@@ -889,6 +885,44 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					v10
 				);
 			}
+		}
+	}
+	
+	syncGlobalDateToVideo (arg0_force) {
+		//Convert from parameters
+		let force = arg0_force;
+		
+		//Declare local instance variables
+		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+		
+		if (!this.video_el) return; //Internal guard clause
+		if (this.video_el.paused && !force) return; //Internal guard clause
+		if (!symbol_obj.video_sync_global_date) return; //Internal guard clause
+		
+		let frames = symbol_obj.timeframes || [];
+		if (frames.length < 2) return; //Internal guard clause
+		
+		let video_time = this.video_el.currentTime;
+		let sorted_frames = [...frames].sort((a, b) => a.timestamp - b.timestamp);
+		let f0 = null,
+			f1 = null;
+		
+		for (let i = 0; i < sorted_frames.length; i++) {
+			if (sorted_frames[i].timestamp <= video_time) f0 = sorted_frames[i];
+			if (sorted_frames[i].timestamp > video_time && !f1) f1 = sorted_frames[i];
+		}
+		if (!f0 || !f1) return; //Internal guard clause
+		
+		let factor = (f1.timestamp === f0.timestamp) ? 0 : (video_time - f0.timestamp)/(f1.timestamp - f0.timestamp);
+		let ts0 = Date.getTimestamp(f0.date),
+			ts1 = Date.getTimestamp(f1.date);
+		let target_ts = ts0 + factor*(ts1 - ts0);
+		
+		//If forced (e.g. playbar jump), we update immediately. Otherwise, we throttle to 1s.
+		let now = Date.now();
+		if (force || now - this._last_global_sync > 1000) {
+			this._last_global_sync = now;
+			setTimeout(() => UI_DateMenu.setDate(target_ts));
 		}
 	}
 	
@@ -1023,5 +1057,4 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			}
 		}
 	}
-	
 };
