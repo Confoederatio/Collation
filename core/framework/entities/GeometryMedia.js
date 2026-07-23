@@ -30,7 +30,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		this.base_point_radius = 6;
 		this.base_hitbox_radius = 20;
 		this.grid_resolution = 20;
-		this.img_display_size = 400;
+		this.img_display_size = 400; //This is dynamically adjusted after start
 		this.img_center = this.img_display_size/2;
 		this.max_buffer_size = 4096;
 		this.hit_area_padding = 50;
@@ -1043,7 +1043,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				this.preview_ctx.save();
 				this.preview_ctx.beginPath();
 				this.preview_ctx.arc(center_mask_x, center_mask_y, mask_radius, 0, Math.PI * 2);
-				this.preview_ctx.lineWidth = Math.max(2, Math.round(2 * scale_x));
+				this.preview_ctx.lineWidth = 1;
 				this.preview_ctx.strokeStyle = "rgb(235, 65, 65)";
 				this.preview_ctx.fillStyle = "rgba(235, 65, 65, 0.25)";
 				this.preview_ctx.fill();
