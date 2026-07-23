@@ -347,11 +347,8 @@ global.UI_LeftbarHierarchy = class {
 		
 		if (!this.logic_loop) this.logic_loop = setInterval(() => {
 			if (this.refresh_frame) {
-				for (let i = 0; i < this.instances.length; i++) {
-					console.time("UI_LeftbarHierarchy.refresh")
+				for (let i = 0; i < this.instances.length; i++)
 					this.instances[i].refresh();
-					console.timeEnd("UI_LeftbarHierarchy.refresh")
-				}
 				delete this.refresh_frame;
 			}
 		}, 100);
