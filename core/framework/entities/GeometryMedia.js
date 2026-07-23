@@ -390,149 +390,148 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		//Return statement
 		return {
 			edit_image_ui: veInterface({
-					warp_mode_select: veSelect({
-						triangulation: { name: "Affine Triangles" },
-						tps: { name: "Thin Plate Spline" },
-					}, {
-						name: "Warp Mode",
-						selected: (symbol_obj.warp_mode || "triangulation"),
-						onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
-					}),
-					crop_brush_toggle: veToggle(this.crop_brush_active, {
-						name: "Crop Brush Tool",
-						onuserchange: (v) => {
-							this.crop_brush_active = v;
-							this.render();
-						},
-					}),
-					clear_crop_mask: veButton(() => {
-						let dim = this.getImageDimensions();
-						this.crop_mask_ctx.clearRect(0, 0, dim.w, dim.h);
-						this.has_crop_mask = false;
-						this._crop_mask_dirty = false;
-						this.updateKeyframe({ crop_mask: "" });
+				warp_mode_select: veSelect({
+					triangulation: { name: "Affine Triangles" },
+					tps: { name: "Thin Plate Spline" },
+				}, {
+					name: "Warp Mode",
+					selected: (symbol_obj.warp_mode || "triangulation"),
+					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
+				}),
+				crop_brush_toggle: veToggle(this.crop_brush_active, {
+					name: "Crop Brush Tool",
+					onuserchange: (v) => {
+						this.toggleCropBrush(v);
 						this.render();
-					}, { name: "Clear Crop Mask" }),
-					disable_pitch_checkbox: veCheckbox(symbol_obj.disable_pitch || false, {
-						name: "Disable Pitch",
-						onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
-					}),
-					disable_rotation: veCheckbox(symbol_obj.disable_rotation || false, {
-						name: "Disable Rotation",
-						onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
-					}),
-					points_label: veHTML("Control Points [Lng, Lat]"),
-					points_area: veHTML(this.points_area),
-					extent_label: veHTML("Canvas Extent [NW, SE]"),
-					extent_area: veHTML(this.extent_area),
-					opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
-						name: "Opacity",
-						min: 0,
-						max: 1,
-						step: 0.01,
-						onuserchange: (v) => {
-							this.canvas.style.opacity = v;
-							this.updateKeyframe({ opacity: v });
-						},
-					}),
-					url_input: veText(symbol_obj.url || "", {
-						name: "Media URL",
-						onuserchange: (v) => this.updateKeyframe({ url: v }),
-					}),
-					media_timestamp: veNumber(symbol_obj.timestamp, {
-						name: "Media Timestamp",
-						limit: () => File.isVideo(this._loaded_url),
-						onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
-					}),
-					media_controls: veRawInterface({
-						media_play: veButton(() =>  this._playVideo(),
-							{ name: "Play Video", limit: () => this.video_el?.paused }),
-						media_pause: veButton(() => this._pauseVideo(),
-							{ name: "Pause Video", limit: () => !this.video_el?.paused }),
-						edit_video: veButton(() => {
-							let current_timeframes = [];
-							let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
-							
-							//Iterate over all symbol_obj.timeframes
-							if (!symbol_obj.timeframes)
-								symbol_obj.timeframes = [{ date: structuredClone(main.date), timestamp: 0 }];
-							if (symbol_obj.timeframes) {
-								for (let i = 0; i < symbol_obj.timeframes.length; i++)
-									current_timeframes.push(veInterface({
-										date: veDate(structuredClone(symbol_obj.timeframes[i].date), {
-											tooltip: "Date at Timestamp",
-											x: 0, y: 0
-										}),
-										timestamp: veNumber(symbol_obj.timeframes[i].timestamp, {
-											tooltip: "Timestamp (seconds)",
-											x: 1, y: 0
-										})
-									}, { is_folder: false }));
-							}
-							
-							this.video_window = veWindow({
-								video_el: veHTML(this.video_el, {
-									style: { "video": { width: "100%" } }
-								}),
-								video_settings: veInterface({
-									actions_bar: veRawInterface({
-										open_crop_brush: veButton(() => {
-											this.crop_brush_active = !this.crop_brush_active;
-											if (typeof veToast === "function") {
-												veToast(this.crop_brush_active ? "Crop Brush Enabled" : "Crop Brush Disabled");
-											}
-											this.render();
-										}, { name: "Crop Brush" }),
-										go_to_media_timestamp: veButton(() => {
-											if (this.video_el) {
-												let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
-												
-												this.video_el.currentTime = timestamp;
-												if (typeof veToast === "function") veToast(`Jumped to ${timestamp}s.`);
-											}
-										}, { name: "Go To Media Timestamp" })
-									}, { x: 0, y: 0 }),
-									enable_sync: veToggle(symbol_obj.enable_sync, {
-										name: "Enable Sync",
-										onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
+					},
+				}),
+				clear_crop_mask: veButton(() => {
+					let dim = this.getImageDimensions();
+					this.crop_mask_ctx.clearRect(0, 0, dim.w, dim.h);
+					this.has_crop_mask = false;
+					this._crop_mask_dirty = false;
+					this.updateKeyframe({ crop_mask: "" });
+					this.render();
+				}, { name: "Clear Crop Mask" }),
+				disable_pitch_checkbox: veCheckbox(symbol_obj.disable_pitch || false, {
+					name: "Disable Pitch",
+					onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
+				}),
+				disable_rotation: veCheckbox(symbol_obj.disable_rotation || false, {
+					name: "Disable Rotation",
+					onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
+				}),
+				points_label: veHTML("Control Points [Lng, Lat]"),
+				points_area: veHTML(this.points_area),
+				extent_label: veHTML("Canvas Extent [NW, SE]"),
+				extent_area: veHTML(this.extent_area),
+				opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
+					name: "Opacity",
+					min: 0,
+					max: 1,
+					step: 0.01,
+					onuserchange: (v) => {
+						this.canvas.style.opacity = v;
+						this.updateKeyframe({ opacity: v });
+					},
+				}),
+				url_input: veText(symbol_obj.url || "", {
+					name: "Media URL",
+					onuserchange: (v) => this.updateKeyframe({ url: v }),
+				}),
+				media_timestamp: veNumber(symbol_obj.timestamp, {
+					name: "Media Timestamp",
+					limit: () => File.isVideo(this._loaded_url),
+					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
+				}),
+				media_controls: veRawInterface({
+					media_play: veButton(() =>  this._playVideo(),
+						{ name: "Play Video", limit: () => this.video_el?.paused }),
+					media_pause: veButton(() => this._pauseVideo(),
+						{ name: "Pause Video", limit: () => !this.video_el?.paused }),
+					edit_video: veButton(() => {
+						let current_timeframes = [];
+						let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+						
+						//Iterate over all symbol_obj.timeframes
+						if (!symbol_obj.timeframes)
+							symbol_obj.timeframes = [{ date: structuredClone(main.date), timestamp: 0 }];
+						if (symbol_obj.timeframes) {
+							for (let i = 0; i < symbol_obj.timeframes.length; i++)
+								current_timeframes.push(veInterface({
+									date: veDate(structuredClone(symbol_obj.timeframes[i].date), {
+										tooltip: "Date at Timestamp",
+										x: 0, y: 0
+									}),
+									timestamp: veNumber(symbol_obj.timeframes[i].timestamp, {
+										tooltip: "Timestamp (seconds)",
 										x: 1, y: 0
-									}),
-									
-									video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
-										name: "Move Global Date with Video",
-										onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
-										x: 0, y: 1
-									}),
-								}, { name: "Video Settings" }),
+									})
+								}, { is_folder: false }));
+						}
+						
+						this.video_window = veWindow({
+							video_el: veHTML(this.video_el, {
+								style: { "video": { width: "100%" } }
+							}),
+							video_settings: veInterface({
+								actions_bar: veRawInterface({
+									open_crop_brush: veButton(() => {
+										this.toggleCropBrush();
+										
+										veToast(this.crop_brush_active ? "Crop Brush Enabled" : "Crop Brush Disabled");
+										this.render();
+									}, { name: "Crop Brush" }),
+									go_to_media_timestamp: veButton(() => {
+										if (this.video_el) {
+											let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
+											
+											this.video_el.currentTime = timestamp;
+											if (typeof veToast === "function") veToast(`Jumped to ${timestamp}s.`);
+										}
+									}, { name: "Go To Media Timestamp" })
+								}, { x: 0, y: 0 }),
+								enable_sync: veToggle(symbol_obj.enable_sync, {
+									name: "Enable Sync",
+									onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
+									x: 1, y: 0
+								}),
 								
-								timeframes: veList(current_timeframes, {
-									name: "Edit Timestamps",
-									onadd: (v) => {
-										v.date.v = structuredClone(main.date);
-										v.timestamp.v = Math.returnSafeNumber(this.video_el?.currentTime);
-									},
-									onuserchange: (v) => {
-										let updated_list = v.map((item) => ({
-											date: item.date.v,
-											timestamp: item.timestamp.v,
-										}));
-										this.updateKeyframe({ timeframes: updated_list });
-									},
-									style: {
-										"[component='ve-interface'] td": { verticalAlign: "bottom" }
-									}
-								})
-							}, {
-								name: `Video Controls (${this.name})`,
-								can_rename: false
+								video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
+									name: "Move Global Date with Video",
+									onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
+									x: 0, y: 1
+								}),
+							}, { name: "Video Settings" }),
+							
+							timeframes: veList(current_timeframes, {
+								name: "Edit Timestamps",
+								onadd: (v) => {
+									v.date.v = structuredClone(main.date);
+									v.timestamp.v = Math.returnSafeNumber(this.video_el?.currentTime);
+								},
+								onuserchange: (v) => {
+									let updated_list = v.map((item) => ({
+										date: item.date.v,
+										timestamp: item.timestamp.v,
+									}));
+									this.updateKeyframe({ timeframes: updated_list });
+								},
+								style: {
+									"[component='ve-interface'] td": { verticalAlign: "bottom" }
+								}
 							})
-						}, { name: "Edit Video" })
-					}, {
-						limit: () => File.isVideo(this._loaded_url),
-						style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
-					})
-				},
-				{ name: "Edit Image", open: true }),
+						}, {
+							name: `Video Controls (${this.name})`,
+							can_rename: false
+						})
+					}, { name: "Edit Video" })
+				}, {
+					limit: () => File.isVideo(this._loaded_url),
+					style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
+				})
+			},
+			{ name: "Edit Image", open: true }),
 		};
 	}
 	
@@ -685,7 +684,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			if (this.crop_brush_active && (e.ctrlKey || HTML.ctrl_pressed)) {
 				e.preventDefault();
 				e.stopPropagation();
-				let delta = e.deltaY < 0 ? 2 : -2;
+				let delta = (e.deltaY < 0) ? -2 : 2;
 				this.crop_brush_radius = Math.max(2, Math.min(200, this.crop_brush_radius + delta));
 				this.render();
 			}
@@ -1249,6 +1248,15 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			this._last_global_sync = now;
 			setTimeout(() => UI_DateMenu.setDate(target_ts));
 		}
+	}
+	
+	toggleCropBrush (arg0_value) {
+		//Convert from parameters
+		let value = arg0_value;
+		
+		//Set this.crop_brush_active
+		this.crop_brush_active = (value === undefined) ? (!this.crop_brush_active) : value;
+		main.brush.disabled = (this.crop_brush_active);
 	}
 	
 	updateBufferSize () {
