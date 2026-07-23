@@ -76,6 +76,10 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		//Declare local instance variables
 		let derender_geometry = false;
 		
+		//Remove geometry first to handle it
+		if (this.selected_geometry) this.selected_geometry.remove();
+		this.selected_geometry = undefined;
+		
 		//1. Set this.value from current relative keyframe
 		this.value = this.history.getKeyframe({ 
 			date: main.date,
@@ -118,8 +122,6 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		
 		//4. Draw this.selected_geometry
 		try {
-			this.selected_geometry = undefined;
-			
 			if (this.geometry && this.selected) {
 				this.selected_geometry = this.geometry.copy();
 				this.selected_geometry.setSymbol({
@@ -136,20 +138,19 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		if (this.geometry) {
 			this.history.draw(this.keyframes_ui);
 			
-			this.geometry.addEventListener("click", (e) => {
-				if (!["node", "node_override", "node_transfer"].includes(main.brush.mode) && !HTML.ctrl_pressed)
-					this.open("instance", { name: this.name, ...this.window_options });
-				
-				if (
-					HTML.ctrl_pressed &&
-					main.brush._selected_geometry?.id === this.id
-					&& e.pickGeometryIndex !== undefined
-				) {
-					//Remove this index from the line instead
-					DALS.Timeline.parseAction("remove_from_line", [{
-						geometry_obj: main.brush._selected_geometry.id,
-						remove_from_line: e.pickGeometryIndex
-					}]);
+			this.handleOnclick({
+				special_function: (e) => {
+					if (
+						HTML.ctrl_pressed &&
+						main.brush._selected_geometry?.id === this.id
+						&& e.pickGeometryIndex !== undefined
+					) {
+						//Remove this index from the line instead
+						DALS.Timeline.parseAction("remove_from_line", [{
+							geometry_obj: main.brush._selected_geometry.id,
+							remove_from_line: e.pickGeometryIndex
+						}]);
+					}
 				}
 			});
 		}

@@ -149,10 +149,11 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 		if (this.geometry) {
 			this.history.draw(this.keyframes_ui);
 			
-			this.geometry.addEventListener("click", (e) => {
-				this.selected_index = e.pickGeometryIndex;
-				this.open("instance", { name: this.name, ...this.window_options });
-				this.draw(); //Refreshes select geometry
+			this.handleOnclick({
+				special_function: () => {
+					this.selected_index = e.pickGeometryIndex;
+					this.draw(); //Refreshes select geometry
+				}
 			});
 		}
 		

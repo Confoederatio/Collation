@@ -625,6 +625,24 @@ naissance.Geometry = class extends naissance.Entity {
 		return symbol_obj;
 	}
 	
+	handleOnclick (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		options.limit = (options.limit === undefined) ? true : options.limit;
+		
+		//Handle generic onclick event
+		if (this.geometry && options.limit)
+			this.geometry.addEventListener("click", (e)  => {
+				if (main.brush._selected_geometry?.class_name !== "GeometryMedia")
+					if (!["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode))
+						this.open("instance", { name: this.name, ...this.window_options });
+				
+				if (options.special_function) options.special_function(e);
+			});
+	}
+	
 	/**
 	 * Hides the present Geometry. Used by {@link naissance.Feature}, not internally used.
 	 */

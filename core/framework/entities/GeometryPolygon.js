@@ -181,11 +181,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 			} catch (e) { console.error(e); }
 			
 			//5. Add bindings
-			if (this.geometry && !is_province)
-				this.geometry.addEventListener("click", (e) => {
-					if (!["fill_tool", "node", "node_override", "node_transfer"].includes(main.brush.mode))
-						this.open("instance", { name: this.name, ...this.window_options });
-				});
+			this.handleOnclick({ limit: !is_province });
 		}
 	}
 	
