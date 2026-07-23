@@ -338,7 +338,6 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		if (!this.points_area) {
 			this.points_area = document.createElement("textarea");
 			this.points_area.rows = 8;
-			this.points_area.style.fontFamily = "monospace";
 			this.points_area.addEventListener("input", () => {
 				let area_coords = Geospatiale.parseCoords(this.points_area.value);
 				if (area_coords.length > 0) {
@@ -361,7 +360,6 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			
 			this.extent_area = document.createElement("textarea");
 			this.extent_area.rows = 3;
-			this.extent_area.style.fontFamily = "monospace";
 			this.extent_area.addEventListener("input", () => {
 				let extent_coords = Geospatiale.parseCoords(this.extent_area.value);
 				if (extent_coords.length >= 2 && this.mesh_points.length >= 4) {
