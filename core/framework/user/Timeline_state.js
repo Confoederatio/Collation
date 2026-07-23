@@ -168,7 +168,7 @@
 		main.layers.cursor_layer.addGeometry(main.brush.cursor);
 	};
 	
-	DALS.toJSON = function () { //[WIP] - Finish function body for naissance.Feature
+	DALS.toJSON = function () {
 		//Declare local instance variables
 		let json_obj = {};
 		

@@ -240,6 +240,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					media_pause: veButton(() => this._playVideo(), 
 						{ name: "Pause Video", limit: () => !this.video_el.paused }),
 					edit_video: veButton(() => {
+						let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
 						let timestamps = this.history.getTimestamps();
 						
 						this.video_window = veWindow({
@@ -260,18 +261,16 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 										}
 									}, { name: "Go To Media Timestamp" })
 								}, { x: 0, y: 0 }),
-								enable_sync: veToggle(false, {
+								enable_sync: veToggle(symbol_obj.enable_sync, {
 									name: "Enable Sync",
+									onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
 									x: 1, y: 0
 								}),
 								
-								video_sync_global_date: veCheckbox(false, {
+								video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
 									name: "Move Global Date with Video",
+									onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
 									x: 0, y: 1
-								}),
-								video_sync_to_others: veCheckbox(false, {
-									name: "Play Other Videos in Sync",
-									x: 1, y: 1
 								}),
 							}, { name: "Video Settings" }),
 							
@@ -953,5 +952,29 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			return;
 		}
 		this.mesh_triangles = Geospatiale.delaunayTriangulate(this.mesh_points, this.img_center);
+	}
+	
+	static getInstances () {
+		//Declare local instance variables
+		let all_geometry_medias = [];
+		
+		//Iterate over naissance.Geometry.instances
+		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
+			if (local_geometry.class_name === "GeometryMedia") all_geometry_medias.push(local_geometry);
+		});
+		
+		//Return statement
+		return all_geometry_medias;
+	}
+	
+	static syncToDate () {
+		//Declare local instance variables
+		let all_instances = naissance.GeometryMedia.getInstances();
+		
+		//Iterate over all_instances and check if .video_el?.paused
+		for (let i = 0; i < all_instances.length; i++)
+			if (all_instances[i].video_el?.paused) {
+				
+			}
 	}
 };
