@@ -1317,12 +1317,13 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		let symbol_obj = arg0_symbol_obj;
 		
 		//Declare local instance variables
+		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
+		
 		let geometry_obj = {
 			center: [marker_coord.x, marker_coord.y],
 			mesh_points: JSON.parse(JSON.stringify(this.mesh_points)),
 			initial_zoom: this.initial_zoom,
 		};
-		let marker_coord = (this.geometry) ? this.geometry.getCoordinates() : map.getCenter();
 		
 		//Add keyframe; draw call
 		this.history.addKeyframe(main.date, geometry_obj, symbol_obj);
