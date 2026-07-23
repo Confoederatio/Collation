@@ -74,6 +74,7 @@
 						local_value.draw();
 						local_value.update();
 					});
+					naissance.GeometryMedia.syncToDate();
 					naissance.Mapmode.draw();
 					UI_Leftbar.refresh();
 				}

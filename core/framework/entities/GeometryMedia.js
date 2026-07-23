@@ -195,138 +195,131 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		//Return statement
 		return {
 			edit_image_ui: veInterface({
-				warp_mode_select: veSelect({
-					triangulation: { name: "Affine Triangles" },
-					tps: { name: "Thin Plate Spline" },
-				}, {
-					name: "Warp Mode",
-					selected: (symbol_obj.warp_mode || "triangulation"),
-					onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
-				}),
-				disable_pitch_checkbox: veCheckbox(symbol_obj.disable_pitch || false, {
-					name: "Disable Pitch",
-					onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
-				}),
-				disable_rotation: veCheckbox(symbol_obj.disable_rotation || false, {
-					name: "Disable Rotation",
-					onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
-				}),
-				points_label: veHTML("Control Points [Lng, Lat]"),
-				points_area: veHTML(this.points_area),
-				extent_label: veHTML("Canvas Extent [NW, SE]"),
-				extent_area: veHTML(this.extent_area),
-				opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
-					name: "Opacity",
-					min: 0,
-					max: 1,
-					step: 0.01,
-					onuserchange: (v) => {
-						this.canvas.style.opacity = v;
-						this.updateKeyframe({ opacity: v });
-					},
-				}),
-				url_input: veText(symbol_obj.url || "", {
-					name: "Media URL",
-					onuserchange: (v) => this.updateKeyframe({ url: v }),
-				}),
-				media_timestamp: veNumber(symbol_obj.timestamp, {
-					name: "Media Timestamp",
-					limit: () => File.isVideo(this._loaded_url),
-					onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
-				}),
-				media_controls: veRawInterface({
-					media_play: veButton(() =>  this._playVideo(), 
-						{ name: "Play Video", limit: () => this.video_el.paused }),
-					media_pause: veButton(() => this._playVideo(), 
-						{ name: "Pause Video", limit: () => !this.video_el.paused }),
-					edit_video: veButton(() => {
-						let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
-						let timestamps = this.history.getTimestamps();
-						
-						this.video_window = veWindow({
-							video_el: veHTML(this.video_el, {
-								style: { "video": { width: "100%" } }
-							}),
-							video_settings: veInterface({
-								actions_bar:  veRawInterface({
-									open_crop_brush: veButton(() => {
-										
-									}, { name: "Crop Brush" }),
-									go_to_media_timestamp: veButton(() => {
-										if (this.video_el) {
-											let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
+					warp_mode_select: veSelect({
+						triangulation: { name: "Affine Triangles" },
+						tps: { name: "Thin Plate Spline" },
+					}, {
+						name: "Warp Mode",
+						selected: (symbol_obj.warp_mode || "triangulation"),
+						onuserchange: (v) => this.updateKeyframe({ warp_mode: v }),
+					}),
+					disable_pitch_checkbox: veCheckbox(symbol_obj.disable_pitch || false, {
+						name: "Disable Pitch",
+						onuserchange: (v) => this.updateKeyframe({ disable_pitch: v }),
+					}),
+					disable_rotation: veCheckbox(symbol_obj.disable_rotation || false, {
+						name: "Disable Rotation",
+						onuserchange: (v) => this.updateKeyframe({ disable_rotation: v }),
+					}),
+					points_label: veHTML("Control Points [Lng, Lat]"),
+					points_area: veHTML(this.points_area),
+					extent_label: veHTML("Canvas Extent [NW, SE]"),
+					extent_area: veHTML(this.extent_area),
+					opacity_slider: veRange(Math.returnSafeNumber(symbol_obj.opacity, 0.45), {
+						name: "Opacity",
+						min: 0,
+						max: 1,
+						step: 0.01,
+						onuserchange: (v) => {
+							this.canvas.style.opacity = v;
+							this.updateKeyframe({ opacity: v });
+						},
+					}),
+					url_input: veText(symbol_obj.url || "", {
+						name: "Media URL",
+						onuserchange: (v) => this.updateKeyframe({ url: v }),
+					}),
+					media_timestamp: veNumber(symbol_obj.timestamp, {
+						name: "Media Timestamp",
+						limit: () => File.isVideo(this._loaded_url),
+						onuserchange: (v) => this.updateKeyframe({ timestamp: v }),
+					}),
+					media_controls: veRawInterface({
+						media_play: veButton(() =>  this._playVideo(),
+							{ name: "Play Video", limit: () => this.video_el?.paused }),
+						media_pause: veButton(() => this._pauseVideo(),
+							{ name: "Pause Video", limit: () => !this.video_el?.paused }),
+						edit_video: veButton(() => {
+							this.video_window = veWindow({
+								video_el: veHTML(this.video_el, {
+									style: { "video": { width: "100%" } }
+								}),
+								video_settings: veInterface({
+									actions_bar:  veRawInterface({
+										open_crop_brush: veButton(() => {
 											
-											this.video_el.currentTime = timestamp;
-											veToast(`Jumped to ${timestamp}s.`);
-										}
-									}, { name: "Go To Media Timestamp" })
-								}, { x: 0, y: 0 }),
-								enable_sync: veToggle(symbol_obj.enable_sync, {
-									name: "Enable Sync",
-									onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
-									x: 1, y: 0
-								}),
+										}, { name: "Crop Brush" }),
+										go_to_media_timestamp: veButton(() => {
+											if (this.video_el) {
+												let timestamp = Math.returnSafeNumber(this.value?.[1]?.timestamp);
+												
+												this.video_el.currentTime = timestamp;
+												veToast(`Jumped to ${timestamp}s.`);
+											}
+										}, { name: "Go To Media Timestamp" })
+									}, { x: 0, y: 0 }),
+									enable_sync: veToggle(symbol_obj.enable_sync, {
+										name: "Enable Sync",
+										onuserchange: (v) => this.updateKeyframe({ enable_sync: v }),
+										x: 1, y: 0
+									}),
+									
+									video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
+										name: "Move Global Date with Video",
+										onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
+										x: 0, y: 1
+									}),
+								}, { name: "Video Settings" }),
 								
-								video_sync_global_date: veCheckbox(symbol_obj.video_sync_global_date, {
-									name: "Move Global Date with Video",
-									onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
-									x: 0, y: 1
-								}),
-							}, { name: "Video Settings" }),
-							
-							timeframes: veList(veInterface({
-								date: veDate(timestamps[0], {
-									tooltip: "Date at Timestamp",
-									x: 0, y: 0 
-								}),
-								timestamp: veNumber(0, {
-									tooltip: "Timestamp (seconds)",
-									x: 1, y: 0 
+								timeframes: veList(veInterface({
+									date: veDate(main.date, {
+										tooltip: "Date at Timestamp",
+										x: 0, y: 0
+									}),
+									timestamp: veNumber(0, {
+										tooltip: "Timestamp (seconds)",
+										x: 1, y: 0
+									})
+								}, { is_folder: false }), {
+									name: "Edit Timestamps",
+									onadd: (v) => {
+										v.date.v = structuredClone(main.date);
+										v.timestamp.v = Math.returnSafeNumber(this.video_el?.currentTime);
+									},
+									onuserchange: (v) => {
+										let updated_list = v.map((item) => ({
+											date: item.date.v,
+											timestamp: item.timestamp.v,
+										}));
+										this.updateKeyframe({ timeframes: updated_list });
+									},
+									style: {
+										"[component='ve-interface'] td": { verticalAlign: "bottom" }
+									}
 								})
-							}, { is_folder: false }), {
-								name: "Edit Timestamps",
-								onadd: (v) => {
-									v.date.v = main.timestamp;
-									v.timestamp.v = Math.returnSafeNumber(this.video_el?.currentTime);
-								},
-								onuserchange: (v, e) => console.log(v, e),
-								style: {
-									"[component='ve-interface'] td": { verticalAlign: "bottom" }
-								}
+							}, {
+								name: `Video Controls (${this.name})`,
+								can_rename: false
 							})
-						}, { 
-							name: `Video Controls (${this.name})`,
-							can_rename: false
-						})
-					}, { name: "Edit Video" })
-				}, {
-					limit: () => File.isVideo(this._loaded_url),
-					style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
-				})
-			},
-			{ name: "Edit Image", open: true }),
+						}, { name: "Edit Video" })
+					}, {
+						limit: () => File.isVideo(this._loaded_url),
+						style: { "[component='ve-button']": { marginLeft: "var(--padding)" } }
+					})
+				},
+				{ name: "Edit Image", open: true }),
 		};
 	}
 	
-	_playVideo () {
-		if (!this.video_el) return;  //Internal guard  clause if this.video_el doesn't exist
-		
-		if (this.video_el.paused) {
-			//Start playing
-			this.video_el.play();
-			this.image = this.video_el; //Point image to the live video element
-			
-			//Immediate play pattern for playFrame
-			let playFrame = () => {
-				if (!this.video_el || this.video_el.paused || this.video_el.ended) return;
-				this.render();
-				requestAnimationFrame(playFrame);
-			};
-			requestAnimationFrame(playFrame);
-		} else {
-			//Pause video
+	_pauseVideo () {
+		if (this.video_el) {
 			this.video_el.pause();
+			this._last_global_sync = 0; //Reset throttle to ensure accuracy on pause
 		}
+	}
+	
+	_playVideo () {
+		if (this.video_el) this.video_el.play();
 	}
 	
 	getEventWorldPos (e) {
@@ -739,6 +732,36 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			Geospatiale.drawMeshOverlay(this.ctx, overlay_pts, this.mesh_triangles, 1, this.base_point_radius, this.selected_point_index);
 		}
 		
+		if (this.video_el && !this.video_el.paused) {
+			let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+			
+			if (symbol_obj.video_sync_global_date) {
+				let frames = symbol_obj.timeframes || [];
+				if (frames.length >= 2) {
+					let video_time = this.video_el.currentTime;
+					let sorted_frames = [...frames].sort((a, b) => a.timestamp - b.timestamp);
+					let f0 = null, f1 = null;
+					
+					for (let i = 0; i < sorted_frames.length; i++) {
+						if (sorted_frames[i].timestamp <= video_time) f0 = sorted_frames[i];
+						if (sorted_frames[i].timestamp > video_time && !f1) f1 = sorted_frames[i];
+					}
+					
+					if (f0 && f1) {
+						let factor = (f1.timestamp === f0.timestamp) ? 0 : (video_time - f0.timestamp) / (f1.timestamp - f0.timestamp);
+						let ts0 = Date.getTimestamp(f0.date), ts1 = Date.getTimestamp(f1.date);
+						let target_ts = ts0 + factor * (ts1 - ts0);
+						
+						let now = Date.now();
+						if (!this._last_global_sync || now - this._last_global_sync > 1000) {
+							UI_DateMenu.setDate(target_ts);
+							this._last_global_sync = now;
+						}
+					}
+				}
+			}
+		}
+		
 		this.ctx.restore();
 		this.updateInfoPanels();
 	}
@@ -970,11 +993,35 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	static syncToDate () {
 		//Declare local instance variables
 		let all_instances = naissance.GeometryMedia.getInstances();
+		let global_ts = Date.getTimestamp(main.date);
 		
-		//Iterate over all_instances and check if .video_el?.paused
-		for (let i = 0; i < all_instances.length; i++)
-			if (all_instances[i].video_el?.paused) {
-				
+		for (let i = 0; i < all_instances.length; i++) {
+			let inst = all_instances[i];
+			let symbol = inst.value?.[1];
+			
+			if (inst.video_el && symbol?.enable_sync && inst.video_el.paused) {
+				let frames = symbol.timeframes || [];
+				if (frames.length >= 2) {
+					let sorted = [...frames].sort((a, b) => Date.getTimestamp(a.date) - Date.getTimestamp(b.date));
+					let f0 = null, f1 = null;
+					
+					for (let x = 0; x < sorted.length; x++) {
+						let ts = Date.getTimestamp(sorted[x].date);
+						if (ts <= global_ts) f0 = sorted[x];
+						if (ts > global_ts && !f1) f1 = sorted[x];
+					}
+					
+					if (f0 && f1) {
+						let t0 = Date.getTimestamp(f0.date), t1 = Date.getTimestamp(f1.date);
+						let factor = (t1 === t0) ? 0 : (global_ts - t0) / (t1 - t0);
+						let target_v_time = f0.timestamp + factor * (f1.timestamp - f0.timestamp);
+						
+						if (Math.abs(inst.video_el.currentTime - target_v_time) > 0.1)
+							inst.video_el.currentTime = target_v_time;
+					}
+				}
 			}
+		}
 	}
+	
 };
