@@ -75,7 +75,12 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 		let default_symbol = naissance.Renderer.getDefaultSymbol();
 		let derender_geometry = false;
 		
+		//Remove geometry first to handle it
 		if (this.geometry) this.geometry.remove(); //Remove geometry to preserve flash behaviour
+		if (this.selected_geometry) this.selected_geometry.remove();
+		
+		this.geometry = undefined;
+		this.selected_geometry = undefined;
 		
 		//1. Set this.value from current relative keyframe
 		this.value = this.history.getKeyframe({
@@ -99,13 +104,11 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 		//3. Draw this.geometry, this.label from this.value onto map
 		if (!derender_geometry) {
 			try {
-				if (this.geometry) this.geometry.remove();
 				if (this.label_geometries)
 					for (let i = this.label_geometries.length - 1; i >= 0; i--) {
 						this.label_geometries[i].remove();
 						this.label_geometries.splice(i, 1);
 					}
-				if (this.selected_geometry) this.selected_geometry.remove();
 				
 				//Draw this.geometry, this.label_geometries, this.selected_geometry
 				if (this.value[0]) {
@@ -150,7 +153,7 @@ naissance.GeometryPoint = class extends naissance.Geometry {
 			this.history.draw(this.keyframes_ui);
 			
 			this.handleOnclick({
-				special_function: () => {
+				special_function: (e) => {
 					this.selected_index = e.pickGeometryIndex;
 					this.draw(); //Refreshes select geometry
 				}
