@@ -14,7 +14,7 @@ Geospatiale.ArcCurve = class {
 		this.text_string = options.text_string;
 		
 		this.base_font_size = Math.returnSafeNumber(options.base_font_size, 16);
-		this.base_zoom = (options.base_zoom !== undefined) ? options.base_zoom : map.getZoom();
+		this.base_zoom = (options.base_zoom !== undefined) ? options.base_zoom : this.map.getZoom();
 		this.glyph_markers = [];
 		this.symbol_obj = {
 			textSize: structuredClone(this.base_font_size),
@@ -75,10 +75,10 @@ Geospatiale.ArcCurve = class {
 	measureTextWidth (arg0_text, arg1_font_size) {
 		//Convert from parameters
 		let text = (arg0_text) ? arg0_text : "";
-		let font_size =  Math.returnSafeNumber(arg1_font_size, this.symbol_obj.textSize);
+		let font_size =  Math.returnSafeNumber(arg1_font_size, this.base_font_size);
 		
 		//Declare local instance variables
-		this.ctx.font = `bold ${font_size}px ${this.symbol_obj.textFaceName}`;
+		this.ctx.font = `bold ${font_size}px ${this.base_font_size}`;
 		
 		let metrics = this.ctx.measureText(text);
 		
@@ -100,7 +100,7 @@ Geospatiale.ArcCurve = class {
 		//Declare local instance variables
 		let char_widths = [];
 		let cumulative_distances = [0];
-		let map_bearing = map.getBearing();
+		let map_bearing = this.map.getBearing();
 		let sampled_coords = this.getSmoothPoints(this.coords, 25);
 		let projected_points = [];
 		let text_total_width = 0;
@@ -172,12 +172,12 @@ Geospatiale.ArcCurve = class {
 			let target_coord = this.map.pointToCoord(target_pt, this.base_zoom);
 			
 			let symbol_obj = {
+				...this.symbol_obj,
 				textName: char,
 				textHorizontalAlignment: "center",
 				textVerticalAlignment: "middle",
-				textRotation: angle_deg  + map_bearing,
+				textRotation: angle_deg + map_bearing,
 				textSize: current_font_size,
-				...this.symbol_obj
 			};
 			
 			if (marker_index < this.glyph_markers.length) {
@@ -201,7 +201,7 @@ Geospatiale.ArcCurve = class {
 			for (let i = 0; i < this.text_string.length; i++) renderChar(i);
 		} else {
 			map_bearing += 180;
-			for (let i = 0; i < this.text_string.length; i++) renderChar(i);
+			for (let i = this.text_string.length - 1; i >= 0; i--) renderChar(i);
 		}
 		
 		//Remove markers as needed
