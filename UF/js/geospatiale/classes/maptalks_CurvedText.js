@@ -275,6 +275,16 @@ Geospatiale.maptalks_CurvedText = class {
 		this.render();
 	}
 	
+	setFontSize (arg0_size) {
+		//Convert from parameters
+		let font_size = Math.returnSafeNumber(arg0_size, 16);
+		
+		//Refresh font_size relative to screenspace
+		this.base_font_size = font_size;
+		this.base_zoom = this.map.getZoom();
+		this.render();
+	}
+	
 	setText (arg0_text) {
 		//Convert from parameters
 		let text = arg0_text;
