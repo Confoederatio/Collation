@@ -1,6 +1,18 @@
 if (!global.Geospatiale)
 	global.Geospatiale = {};
 
+/**
+ * Curved text Geometry for Maptalks.
+ * 
+ * @param {Array.<number[]>|maptalks.Coordinate[]}
+ * @param {Object} [arg1_options]
+ *  @param {number} [arg1_options.base_font_size=16]
+ *  @param {maptalks.Layer} [arg1_options.layer]
+ *  @param {maptalks.Map} [arg1_options.map]
+ *  @param {Object} [arg1_options.symbbol_obj]
+ * 
+ * @type {Geospatiale.maptalks_CurvedText}
+ */
 Geospatiale.maptalks_CurvedText = class {
 	constructor (arg0_coords, arg1_options) {
 		//Convert from parameters
