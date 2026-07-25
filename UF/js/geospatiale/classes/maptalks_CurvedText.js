@@ -343,8 +343,49 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
+	 * Exports class to JSON.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @returns {Object} 
+	 */
+	toJSON () {
+		//Declare local instance variables
+		let new_options_obj = {};
+		
+		//Iterate over all this.options and move serialisable JSON into new_options_obj
+		Object.iterate(this.options, (local_key, local_value) => {
+			if (local_key !== "map")
+				new_options_obj[local_key] = local_value;
+		});
+		
+		//Return statement
+		return {
+			coords: this.coords,
+			options: new_options_obj
+		};
+	}
+	
+	/**
 	 * Internal helper function to refresh zoom.
 	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
 	 */
 	updateZoom () { this.render(); }
+	
+	/**
+	 * Creates a new maptalks_CurvedText geometry from JSON.
+	 * - Static method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {maptalks.Map} arg0_map
+	 * @param {Object|string} arg1_json
+	 * 
+	 * @returns {Geospatiale.maptalks_CurvedText}
+	 */
+	static fromJSON (arg0_map, arg1_json) {
+		//Convert from parameters
+		let map = arg0_map;
+		let json = (typeof arg1_json === "string") ? JSON.parse(arg1_json) : arg1_json;	
+		
+		//Declare local instance variables
+		return new Geospatiale.maptalks_CurvedText(map, json);
+	}
 };
