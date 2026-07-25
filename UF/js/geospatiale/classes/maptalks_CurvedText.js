@@ -7,9 +7,9 @@ if (!global.Geospatiale)
  * @param {Array.<number[]>|maptalks.Coordinate[]}
  * @param {Object} [arg1_options]
  *  @param {number} [arg1_options.base_font_size=16]
- *  @param {maptalks.Layer} [arg1_options.layer]
+ *  @param {string} [arg1_options.class] - Overrides manual .style using a preset class.
  *  @param {maptalks.Map} [arg1_options.map]
- *  @param {Object} [arg1_options.symbol_obj]
+ *  @param {Object} [arg1_options.style]
  * 
  * @type {Geospatiale.maptalks_CurvedText}
  */
@@ -21,18 +21,20 @@ Geospatiale.maptalks_CurvedText = class {
 		
 		//Declare local instance variables
 		this.coords = coords;
-		this.layer  = options.layer;
+		this.options = options;
 		this.map = options.map;
-		this.text_string = options.text_string;
 		
-		this.base_font_size = Math.returnSafeNumber(options.base_font_size, 16);
-		this.base_zoom = (options.base_zoom !== undefined) ? options.base_zoom : this.map.getZoom();
+		this.base_font_size = Math.returnSafeNumber(this.options.base_font_size, 16);
+		this.base_zoom = (this.options.base_zoom !== undefined) ? this.options.base_zoom : this.map.getZoom();
 		this.glyph_markers = [];
-		this.symbol_obj = {
-			textSize: this.base_font_size,
-			textFaceName: "sans-serif",
-			...options.symbol_obj
+		this.style = {
+			fontFamily: "sans-serif",
+			fontSize: this.base_font_size,
+			opacity: 0.85,
+			pointerEvents: "none",
+			...this.options.style
 		};
+		this.text_string = this.options.text_string;
 		
 		this.canvas = document.createElement("canvas");
 		this.ctx = this.canvas.getContext("2d");
@@ -90,7 +92,7 @@ Geospatiale.maptalks_CurvedText = class {
 		let font_size =  Math.returnSafeNumber(arg1_font_size, this.base_font_size);
 		
 		//Declare local instance variables
-		this.ctx.font = `bold ${font_size}px ${this.symbol_obj.textFaceName}`;
+		this.ctx.font = `bold ${font_size}px ${this.style.fontFamily}`;
 		
 		let metrics = this.ctx.measureText(text);
 		
@@ -219,15 +221,16 @@ Geospatiale.maptalks_CurvedText = class {
 			let current_font_size = this.base_font_size*zoom_scale*perspective_scale;
 			
 			let dom_el = document.createElement("div");
+			//This needs an inner element since transform is reserved on wrapper
 			dom_el.innerHTML = `<span style = "position: absolute; transform: translate(-50%, -50%) rotateZ(${-total_rotation}deg);">${char}</span>`;
-			dom_el.style.display = "inline-block";
 			
-			dom_el.style.color = (this.symbol_obj.textFill || "#000000");
-			dom_el.style.fontSize = `${current_font_size}px`;
-			dom_el.style.fontFamily = (this.symbol_obj.textFaceName || "sans-serif");
-			dom_el.style.fontWeight = "700";
-			dom_el.style.opacity = "0.85";
-			dom_el.style.pointerEvents = "none";
+			if (this.options.class) {
+				dom_el.setAttribute("class", this.options.class);
+			} else {
+				Object.iterate(this.style, (local_key, local_value) =>
+					dom_el.style[local_key] = String(local_value));
+				dom_el.style.fontSize = `${current_font_size}px`;
+			}
 			
 			if (marker_index < this.glyph_markers.length) {
 				let existing_marker = this.glyph_markers[marker_index];
