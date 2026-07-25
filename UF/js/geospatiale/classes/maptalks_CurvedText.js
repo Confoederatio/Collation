@@ -8,6 +8,7 @@ if (!global.Geospatiale)
  * @param {Object} [arg1_options]
  *  @param {number} [arg1_options.base_font_size=16]
  *  @param {string} [arg1_options.class] - Overrides manual .style using a preset class.
+ *  @param {number} [arg1_options.letter_spacing=0]
  *  @param {maptalks.Map} [arg1_options.map]
  *  @param {Object} [arg1_options.style]
  * 
@@ -45,6 +46,15 @@ Geospatiale.maptalks_CurvedText = class {
 		this.render();
 	}
 	
+	/**
+	 * Returns smoothed points between coords for arc curves.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {Array.<number[]>} arg0_coords
+	 * @param [arg1_samples_per_segment=25]
+	 * 
+	 * @returns {Array.<number[]>}
+	 */
 	getSmoothPoints (arg0_coords, arg1_samples_per_segment) {
 		//Convert from parameters
 		let coords = arg0_coords;
@@ -86,13 +96,22 @@ Geospatiale.maptalks_CurvedText = class {
 		return smooth_points;
 	}
 	
+	/**
+	 * Measures actual text width using a `<canvas>` to assess kerning.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {string} arg0_text
+	 * @param {number} arg1_font_size
+	 * 
+	 * @returns {number}
+	 */
 	measureTextWidth (arg0_text, arg1_font_size) {
 		//Convert from parameters
 		let text = (arg0_text) ? arg0_text : "";
 		let font_size =  Math.returnSafeNumber(arg1_font_size, this.base_font_size);
 		
 		//Declare local instance variables
-		this.ctx.font = `bold ${font_size}px ${this.style.fontFamily}`;
+		this.ctx.font = `bold ${font_size + Math.returnSafeNumber(this.options.letter_spacing)}px ${this.style.fontFamily}`;
 		
 		let metrics = this.ctx.measureText(text);
 		
@@ -100,6 +119,10 @@ Geospatiale.maptalks_CurvedText = class {
 		return metrics.width;
 	}
 	
+	/**
+	 * Removes the maptalks_CurvedText geometry from the map.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 */
 	remove () {
 		//Remove map view event handlers
 		if (this.map && this.onviewchange_handler)
@@ -111,6 +134,10 @@ Geospatiale.maptalks_CurvedText = class {
 		this.glyph_markers = [];
 	}
 	
+	/**
+	 * Renders the maptalks_CurvedText geometry to the map.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 */
 	render () {
 		if (!this.map || !this.text_string) return; //Internal guard clause
 		
@@ -269,6 +296,12 @@ Geospatiale.maptalks_CurvedText = class {
 		}
 	}
 	
+	/**
+	 * Sets coordinates for the maptalks_CurvedText geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {Array.<number[]>} arg0_coords
+	 */
 	setCoordinates (arg0_coords) {
 		//Convert from parameters
 		let coords = arg0_coords;
@@ -278,6 +311,12 @@ Geospatiale.maptalks_CurvedText = class {
 		this.render();
 	}
 	
+	/**
+	 * Sets the font size for the maptalks_CurvedText geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {number} arg0_size
+	 */
 	setFontSize (arg0_size) {
 		//Convert from parameters
 		let font_size = Math.returnSafeNumber(arg0_size, 16);
@@ -288,6 +327,12 @@ Geospatiale.maptalks_CurvedText = class {
 		this.render();
 	}
 	
+	/**
+	 * Sets the new text for the maptalks_CurvedText geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * 
+	 * @param {string} arg0_text
+	 */
 	setText (arg0_text) {
 		//Convert from parameters
 		let text = arg0_text;
@@ -297,7 +342,9 @@ Geospatiale.maptalks_CurvedText = class {
 		this.render();
 	}
 	
-	updateZoom () {
-		this.render();
-	}
+	/**
+	 * Internal helper function to refresh zoom.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 */
+	updateZoom () { this.render(); }
 };
