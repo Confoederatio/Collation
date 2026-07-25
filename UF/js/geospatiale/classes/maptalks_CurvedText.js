@@ -193,6 +193,7 @@ Geospatiale.maptalks_CurvedText = class {
 			
 			//[WIP] - Local helper function: sample two orthogonal world directions and take the maximum; corresponds to unforeshortened axis (parallel to the camera's tilt) = pure distance attenuation. At intermediate bearings of high pitch, this still results in some size inconsistency, but is minimised
 			let current_zoom = this.map.getZoom();
+			let scale_constant = 100; //[WIP] - This appears like something of a magic number
 			let screen_pt = this.map.coordToContainerPoint(target_coord);
 			let world_pt = this.map.coordToPoint(target_coord, current_zoom);
 			
@@ -202,10 +203,10 @@ Geospatiale.maptalks_CurvedText = class {
 				let screen_pt_offset = this.map.coordToContainerPoint(coord_offset);
 				
 				//Return statement
-				return screen_pt.distanceTo(screen_pt_offset)/100;
+				return screen_pt.distanceTo(screen_pt_offset)/scale_constant;
 			};
 			
-			let perspective_scale = Math.max(scaleAlong(100, 0), scaleAlong(0, 100));
+			let perspective_scale = Math.max(scaleAlong(scale_constant, 0), scaleAlong(0, scale_constant));
 			let zoom_scale = Math.pow(2, current_zoom - this.base_zoom);
 			let current_font_size = this.base_font_size*zoom_scale*perspective_scale;
 			
