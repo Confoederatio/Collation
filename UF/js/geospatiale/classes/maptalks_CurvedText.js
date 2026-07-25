@@ -2,14 +2,14 @@ if (!global.Geospatiale)
 	global.Geospatiale = {};
 
 /**
- * Curved text Geometry for Maptalks.
+ * Curved text Geometry for Maptalks (UIMarker-based).
  * 
  * @param {Array.<number[]>|maptalks.Coordinate[]}
  * @param {Object} [arg1_options]
  *  @param {number} [arg1_options.base_font_size=16]
  *  @param {maptalks.Layer} [arg1_options.layer]
  *  @param {maptalks.Map} [arg1_options.map]
- *  @param {Object} [arg1_options.symbbol_obj]
+ *  @param {Object} [arg1_options.symbol_obj]
  * 
  * @type {Geospatiale.maptalks_CurvedText}
  */
@@ -38,8 +38,8 @@ Geospatiale.maptalks_CurvedText = class {
 		this.ctx = this.canvas.getContext("2d");
 		
 		//Event handling and initial render
-		this.onzoom_handler = this.updateZoom.bind(this);
-		this.map.on("zoomend zooming", this.onzoom_handler);
+		this.onviewchange_handler = this.render.bind(this);
+		this.map.on("zoomend zooming moving moveend rotate pitch", this.onviewchange_handler);
 		this.render();
 	}
 	
@@ -99,8 +99,9 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	remove () {
-		//Remove zoomend, zooming event handler
-		this.map.off("zoomend zooming", this.onzoom_handler);
+		//Remove map view event handlers
+		if (this.map && this.onviewchange_handler)
+			this.map.off("zoomend zooming moving moveend rotate pitch", this.onviewchange_handler);
 		
 		//Iterate over all this.glyph_markers and remove them
 		for (let i = 0; i < this.glyph_markers.length; i++)
@@ -109,6 +110,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	render () {
+		if (!this.map || !this.text_string) return; //Internal guard clause
+		
 		//Declare local instance variables
 		let char_widths = [];
 		let cumulative_distances = [0];
@@ -119,7 +122,7 @@ Geospatiale.maptalks_CurvedText = class {
 		let total_path_length = 0;
 		
 		//Iterate over all sampled_coords
-		for (let i  = 0; i < sampled_coords.length; i++) {
+		for (let i = 0; i < sampled_coords.length; i++) {
 			let local_coord = new maptalks.Coordinate(sampled_coords[i]);
 			let local_point = this.map.coordToPoint(local_coord, this.base_zoom);
 			
@@ -127,7 +130,7 @@ Geospatiale.maptalks_CurvedText = class {
 		}
 		
 		//Iterate over all projected_points, calculate total_path_length; cumulative_distances
-		for (let i = 1; i <  projected_points.length; i++) {
+		for (let i = 1; i < projected_points.length; i++) {
 			let dx = projected_points[i].x - projected_points[i - 1].x;
 			let dy = projected_points[i].y - projected_points[i - 1].y;
 			let distance = Math.sqrt(dx*dx + dy*dy);
@@ -145,7 +148,7 @@ Geospatiale.maptalks_CurvedText = class {
 		}
 		
 		//Render character constants
-		let start_distance = (total_path_length  - text_total_width)/2;
+		let start_distance = (total_path_length - text_total_width)/2;
 		if (start_distance < 0) start_distance = 0;
 		
 		let current_zoom = this.map.getZoom();
@@ -153,9 +156,12 @@ Geospatiale.maptalks_CurvedText = class {
 		
 		let current_font_size = this.base_font_size*zoom_scale;
 		let marker_index = 0;
-		let running_distance  = start_distance;
+		let running_distance = start_distance;
 		
-		let renderChar = (i) => {
+		let renderChar = (i, arg1_options) => {
+			//Convert from parameters
+			let options = (arg1_options) ? arg1_options : {};
+			
 			//Declare local instance variables
 			let char = this.text_string[i];
 			let char_width = char_widths[i];
@@ -182,25 +188,36 @@ Geospatiale.maptalks_CurvedText = class {
 			let angle_deg = (Math.atan2(dy, dx)*180)/Math.PI;
 			let target_pt = new maptalks.Point(current_x, current_y);
 			let target_coord = this.map.pointToCoord(target_pt, this.base_zoom);
+			let total_rotation = angle_deg;
+				if (options.invert) total_rotation += 180;
 			
-			let symbol_obj = {
-				...this.symbol_obj,
-				textName: char,
-				textHorizontalAlignment: "center",
-				textVerticalAlignment: "middle",
-				textRotation: angle_deg + map_bearing,
-				textSize: current_font_size,
-			};
+			let dom_el = document.createElement("div");
+				dom_el.innerHTML = `<span style = "position: absolute; transform: translate(-50%, -50%) rotateZ(${-total_rotation}deg);">${char}</span>`;
+			dom_el.style.display = "inline-block";
+			
+			dom_el.style.color = (this.symbol_obj.textFill || "#000000");
+			dom_el.style.fontSize = `${current_font_size}px`;
+			dom_el.style.fontFamily = (this.symbol_obj.textFaceName || "sans-serif");
+			dom_el.style.fontWeight = "700";
+			dom_el.style.opacity = "0.85";
+			dom_el.style.pointerEvents = "none";
 			
 			if (marker_index < this.glyph_markers.length) {
 				let existing_marker = this.glyph_markers[marker_index];
 				existing_marker.setCoordinates(target_coord);
-				existing_marker.setSymbol(symbol_obj);
+				existing_marker.setContent(dom_el);
+				if (!existing_marker.isVisible()) existing_marker.show();
 			} else {
-				let new_marker = new maptalks.Marker(target_coord, { 
-					symbol: symbol_obj
+				let new_marker = new maptalks.ui.UIMarker(target_coord, {
+					draggable: false,
+					single: false,
+					eventsPropagation: false,
+					pitchWithMap: true,
+					rotateWithMap: true,
+					
+					content: dom_el
 				});
-				new_marker.addTo(this.layer);
+				new_marker.addTo(this.map);
 				this.glyph_markers.push(new_marker);
 			}
 			
@@ -209,11 +226,10 @@ Geospatiale.maptalks_CurvedText = class {
 		};
 		
 		//Render all characters depending on map bearing
-		if (map_bearing  > -90 && map_bearing <= 90) {
+		if (map_bearing > -90 && map_bearing <= 90) {
 			for (let i = 0; i < this.text_string.length; i++) renderChar(i);
 		} else {
-			map_bearing += 180;
-			for (let i = this.text_string.length - 1; i >= 0; i--) renderChar(i);
+			for (let i = this.text_string.length - 1; i >= 0; i--) renderChar(i, { invert: true });
 		}
 		
 		//Remove markers as needed
@@ -242,18 +258,6 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	updateZoom () {
-		//Declare local instance variables
-		let current_zoom = this.map.getZoom();
-		let zoom_scale = Math.pow(2, current_zoom - this.base_zoom);
-		
-		let new_text_size = this.base_font_size*zoom_scale;
-		
-		//Update symbols
-		for (let i = 0; i < this.glyph_markers.length; i++) {
-			let local_symbol = this.glyph_markers[i].getSymbol();
-			let updated_symbol = Object.assign({}, local_symbol, { textSize: new_text_size });
-			
-			this.glyph_markers[i].setSymbol(updated_symbol);
-		}
+		this.render();
 	}
 };
