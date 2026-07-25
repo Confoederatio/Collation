@@ -191,17 +191,21 @@ Geospatiale.maptalks_CurvedText = class {
 			let total_rotation = angle_deg;
 			if (options.invert) total_rotation += 180;
 			
-			//Manual Perspective Scale Calculation; project a reference distance to see how much the 3D perspective squashes it
+			//[WIP] - Local helper function: sample two orthogonal world directions and take the maximum; corresponds to unforeshortened axis (parallel to the camera's tilt) = pure distance attenuation. At intermediate bearings of high pitch, this still results in some size inconsistency, but is minimised
 			let current_zoom = this.map.getZoom();
 			let screen_pt = this.map.coordToContainerPoint(target_coord);
-			
 			let world_pt = this.map.coordToPoint(target_coord, current_zoom);
-			let world_pt_offset = new maptalks.Point(world_pt.x + 100, world_pt.y);
-			let coord_offset = this.map.pointToCoord(world_pt_offset, current_zoom);
-			let screen_pt_offset = this.map.coordToContainerPoint(coord_offset);
 			
-			//The perspective scale is the ratio of projected pixels vs flat pixels
-			let perspective_scale = screen_pt.distanceTo(screen_pt_offset)/100;
+			let scaleAlong = (offset_x, offset_y) => {
+				let world_pt_offset = new maptalks.Point(world_pt.x + offset_x, world_pt.y + offset_y);
+				let coord_offset = this.map.pointToCoord(world_pt_offset, current_zoom);
+				let screen_pt_offset = this.map.coordToContainerPoint(coord_offset);
+				
+				//Return statement
+				return screen_pt.distanceTo(screen_pt_offset)/100;
+			};
+			
+			let perspective_scale = Math.max(scaleAlong(100, 0), scaleAlong(0, 100));
 			let zoom_scale = Math.pow(2, current_zoom - this.base_zoom);
 			let current_font_size = this.base_font_size*zoom_scale*perspective_scale;
 			
