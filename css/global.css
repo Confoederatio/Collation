@@ -43,6 +43,3 @@ a { color: var(--accent-secondary-colour); }
 :root {
     --geometry-selection-colour: yellow;
 }
-
-
-.test { color: yellow !important; }
