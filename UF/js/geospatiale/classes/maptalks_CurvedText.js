@@ -1,7 +1,7 @@
 if (!global.Geospatiale)
 	global.Geospatiale = {};
 
-Geospatiale.ArcCurve = class {
+Geospatiale.maptalks_CurvedText = class {
 	constructor (arg0_coords, arg1_options) {
 		//Convert from parameters
 		let coords = arg0_coords;
