@@ -17,7 +17,7 @@ Geospatiale.ArcCurve = class {
 		this.base_zoom = (options.base_zoom !== undefined) ? options.base_zoom : this.map.getZoom();
 		this.glyph_markers = [];
 		this.symbol_obj = {
-			textSize: structuredClone(this.base_font_size),
+			textSize: this.base_font_size,
 			textFaceName: "sans-serif",
 			...options.symbol_obj
 		};
@@ -78,7 +78,7 @@ Geospatiale.ArcCurve = class {
 		let font_size =  Math.returnSafeNumber(arg1_font_size, this.base_font_size);
 		
 		//Declare local instance variables
-		this.ctx.font = `bold ${font_size}px ${this.base_font_size}`;
+		this.ctx.font = `bold ${font_size}px ${this.symbol_obj.textFaceName}`;
 		
 		let metrics = this.ctx.measureText(text);
 		
