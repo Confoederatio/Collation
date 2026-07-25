@@ -191,14 +191,22 @@ Geospatiale.maptalks_CurvedText = class {
 			let total_rotation = angle_deg;
 			if (options.invert) total_rotation += 180;
 			
-			//[WIP] - Local helper function: sample two orthogonal world directions and take the maximum; corresponds to unforeshortened axis (parallel to the camera's tilt) = pure distance attenuation. At intermediate bearings of high pitch, this still results in some size inconsistency, but is minimised
+			//Local helper function: sample two orthogonal screen-aligned world directions and take the maximum; corresponds to the unforeshortened axis (parallel to the camera's tilt) = pure distance attenuation
 			let current_zoom = this.map.getZoom();
-			let scale_constant = 100; //[WIP] - This appears like something of a magic number
+			let scale_constant = 100;
 			let screen_pt = this.map.coordToContainerPoint(target_coord);
 			let world_pt = this.map.coordToPoint(target_coord, current_zoom);
 			
+			let bearing_rad = -(this.map.getBearing()*Math.PI)/180; //Bearing is a float in [-180, 180]; trig handles wrapping implicitly
+			let cos_bearing = Math.cos(bearing_rad);
+			let sin_bearing = Math.sin(bearing_rad);
+			
 			let scaleAlong = (offset_x, offset_y) => {
-				let world_pt_offset = new maptalks.Point(world_pt.x + offset_x, world_pt.y + offset_y);
+				//Counter-rotate the requested screen-space direction into world-space
+				let rotated_x = (offset_x*cos_bearing) - (offset_y*sin_bearing);
+				let rotated_y = (offset_x*sin_bearing) + (offset_y*cos_bearing);
+				
+				let world_pt_offset = new maptalks.Point(world_pt.x + rotated_x, world_pt.y + rotated_y);
 				let coord_offset = this.map.pointToCoord(world_pt_offset, current_zoom);
 				let screen_pt_offset = this.map.coordToContainerPoint(coord_offset);
 				
