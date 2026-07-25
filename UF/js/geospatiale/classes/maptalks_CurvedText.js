@@ -189,10 +189,24 @@ Geospatiale.maptalks_CurvedText = class {
 			let target_pt = new maptalks.Point(current_x, current_y);
 			let target_coord = this.map.pointToCoord(target_pt, this.base_zoom);
 			let total_rotation = angle_deg;
-				if (options.invert) total_rotation += 180;
+			if (options.invert) total_rotation += 180;
+			
+			//Manual Perspective Scale Calculation; project a reference distance to see how much the 3D perspective squashes it
+			let current_zoom = this.map.getZoom();
+			let screen_pt = this.map.coordToContainerPoint(target_coord);
+			
+			let world_pt = this.map.coordToPoint(target_coord, current_zoom);
+			let world_pt_offset = new maptalks.Point(world_pt.x + 100, world_pt.y);
+			let coord_offset = this.map.pointToCoord(world_pt_offset, current_zoom);
+			let screen_pt_offset = this.map.coordToContainerPoint(coord_offset);
+			
+			//The perspective scale is the ratio of projected pixels vs flat pixels
+			let perspective_scale = screen_pt.distanceTo(screen_pt_offset)/100;
+			let zoom_scale = Math.pow(2, current_zoom - this.base_zoom);
+			let current_font_size = this.base_font_size*zoom_scale*perspective_scale;
 			
 			let dom_el = document.createElement("div");
-				dom_el.innerHTML = `<span style = "position: absolute; transform: translate(-50%, -50%) rotateZ(${-total_rotation}deg);">${char}</span>`;
+			dom_el.innerHTML = `<span style = "position: absolute; transform: translate(-50%, -50%) rotateZ(${-total_rotation}deg);">${char}</span>`;
 			dom_el.style.display = "inline-block";
 			
 			dom_el.style.color = (this.symbol_obj.textFill || "#000000");
