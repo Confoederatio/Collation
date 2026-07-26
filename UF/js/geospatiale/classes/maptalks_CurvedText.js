@@ -254,9 +254,11 @@ Geospatiale.maptalks_CurvedText = class {
 			if (this.options.class) {
 				dom_el.setAttribute("class", this.options.class);
 			} else {
+				let span_el = dom_el.querySelector("span");
+				
 				Object.iterate(this.style, (local_key, local_value) =>
-					dom_el.style[local_key] = String(local_value));
-				dom_el.style.fontSize = `${current_font_size}px`;
+					span_el.style[local_key] = String(local_value));
+				span_el.style.fontSize = `${current_font_size}px`;
 			}
 			
 			if (marker_index < this.glyph_markers.length) {
