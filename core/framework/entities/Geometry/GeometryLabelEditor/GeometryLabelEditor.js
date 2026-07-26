@@ -1,7 +1,8 @@
 if (!global.naissance) global.naissance = {};
 
 /**
- * - `.geometry`: {@link maptalks.Geometry}
+ * - `.geometries`: {@link Array}<{@link maptalks.Geometry}> - Any currently rendered geometries.
+ * - `.geometry`: {@link maptalks.Geometry} - The parent geometry this GeometryLabelEditor is anchored to.
  * - `.label_geometries`: {@link Array}<{@link Object}>
  *   - `.geometry`: {@link naissance.Geometry}
  *   - `.options`: {@link Object}
