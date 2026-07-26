@@ -2,7 +2,8 @@ if (!global.naissance) global.naissance = {};
 
 /**
  * Label editor bound to a {@link naissance.Geometry} entity.
- *
+ * 
+ * ##### Instance:
  * - `.geometry`: {@link naissance.Geometry} - The parent Naissance geometry entity. The rendered {@link maptalks.Geometry} is available as `.geometry.geometry`.
  * - `.interfaces`: {@link Object}
  * - `.label_geometries`: {@link Array}<{@link Object}>
@@ -180,7 +181,8 @@ naissance.GeometryLabelEditor = class {
 		if (!parent_entity || !parent_entity.is_naissance_geometry) return; //Internal guard clause if parent entity doesn't exist
 		
 		//Commit keyframe
-		let label_geometries = parent_entity.value?.[2]?.label_geometries || [];
+		let label_geometries = (parent_entity.value?.[2]?.label_geometries || []);
+		
 		parent_entity.addKeyframe(main.date, undefined, parent_entity.value[1], {
 			...parent_entity.value[2],
 			label_geometries
