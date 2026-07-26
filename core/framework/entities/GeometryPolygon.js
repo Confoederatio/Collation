@@ -26,12 +26,13 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					if (local_area < hide_labels_under_km2*1000000 && i > 0) continue; //Internal guard clause for small exclaves <1000km^2
 					
 					let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
-					local_label_geometry.area = local_area;
+						local_label_geometry.area = local_area;
 					naissance_obj.label_geometries.push(local_label_geometry);
 				}
 			} else {
-				naissance_obj.label_geometries[0] = new maptalks.Marker(naissance_obj.geometry.getCenter());
-				naissance_obj.label_geometries[0].area = naissance_obj.geometry.getArea();
+				let label_geometry = new maptalks.Marker(naissance_obj.geometry.getCenter());
+					label_geometry.area = naissance_obj.geometry.getArea();
+				naissance_obj.label_geometries.push(label_geometry);
 			}
 		}
 	};
@@ -54,10 +55,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		//KEEP AT BOTTOM!
 		this.updateOwner();
-	}
-	
-	_drawLabels () {
-		this.drawLabels();
 	}
 	
 	draw () {
@@ -106,7 +103,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 							...naissance.Renderer.getDefaultSymbol({ exclude: ["point"] }),
 							...this.value?.[1],
 						});
-						this._drawLabels();
+						this.drawLabels();
 					}
 					//Provinces rendering
 					else {

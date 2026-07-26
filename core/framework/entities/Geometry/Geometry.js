@@ -249,6 +249,7 @@ naissance.Geometry = class extends naissance.Entity {
 						
 						local_label_geometry.setSymbol({
 							...base_label_symbol,
+							...(class_settings.autolabel_symbol_function ? class_settings.autolabel_symbol_function(this) : {}),
 							textName: default_label_name || ""
 						});
 						local_label_geometry.addTo(target_layer);

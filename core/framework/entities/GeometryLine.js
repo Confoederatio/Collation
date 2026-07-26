@@ -7,6 +7,21 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		
 		colour: "stroke"
 	};
+	static labelling_options = {
+		autolabel_function: (naissance_obj) => {
+			if (naissance_obj.geometry.getGeometries) {
+				let all_geometries = naissance_obj.geometry.getGeometries();
+				
+				for (let i = 0; i < all_geometries.length; i++)  {
+					let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
+					naissance_obj.label_geometries.push(local_label_geometry);
+				}
+			} else {
+				let local_label_geometry = new maptalks.Marker(naissance_obj.geometry.getCenter());
+				naissance_obj.label_geometries.push(local_label_geometry);
+			}
+		}
+	};
 	
 	constructor () {
 		super();
@@ -20,56 +35,6 @@ naissance.GeometryLine = class extends naissance.Geometry {
 		
 		//KEEP AT BOTTOM!
 		this.updateOwner();
-	}
-	
-	_drawLabels () {
-		if (this.value[2])
-			if (this.geometry) {
-				//Declare local instance variables
-				let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
-				let label_geometries = (this.value[2].label_geometries) ?
-					this.value[2].label_geometries : [];
-				let label_name = (this.value[2].label_name) ?
-					this.value[2].label_name : this.value[2].name;
-				if (!label_name) return;
-				
-				let label_symbol = {
-					...default_label_symbol,
-					...this.value[1].label_symbol
-				};
-				if (label_symbol.hide_label) return;
-				
-				//1. .label_coordinates
-				if (label_geometries.length === 0) {
-					if (!this.geometry.getGeometries) {
-						this.label_geometries[0] = new maptalks.Marker(this.geometry.getCenter());
-					} else {
-						let all_geometries = this.geometry.getGeometries();
-						
-						for (let i = 0; i < all_geometries.length; i++)
-							this.label_geometries[i] = new maptalks.Marker(all_geometries[i].getCenter());
-					}
-				} else {
-					for (let i = 0; i < label_geometries.length; i++)
-						this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
-				}
-				
-				//Iterate over all this.label_geometries, apply settings
-				for (let i = 0; i < this.label_geometries.length; i++) {
-					//2. .label_name/.name
-					if (label_geometries.length === 0) {
-						this.label_geometries[i].setSymbol({
-							...label_symbol,
-							textName: label_name,
-						});
-						
-						if (main.settings.hide_labels_by_default)
-							this.label_geometries[i].hide();
-					}
-					
-					this.label_geometries[i].addTo(main.layers.label_layer);
-				}
-			}
 	}
 	
 	draw () {
@@ -115,7 +80,7 @@ naissance.GeometryLine = class extends naissance.Geometry {
 					if (this.value[1] && this.geometry) this.geometry.setSymbol(this.value[1]);
 					main.layers.entity_layer.addGeometry(this.geometry);
 					
-					this._drawLabels(); //Draw labels
+					this.drawLabels(); //Draw labels
 				}
 			} catch (e) { console.error(e); }
 		}
