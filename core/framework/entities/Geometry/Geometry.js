@@ -224,7 +224,6 @@ naissance.Geometry = class extends naissance.Entity {
 				if (!label_name) return;
 				
 				let is_autolabelled = (label_geometries.length === 0);
-				console.log(is_autolabelled);
 				let label_symbol = {
 					...default_label_symbol,
 					...this.value[1].label_symbol
