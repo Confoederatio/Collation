@@ -37,8 +37,6 @@ naissance.GeometryLabelEditor = class {
 					textName: this.geometry.name
 				}
 			});
-		} else {
-			this.draw();
 		}
 	}
 	
@@ -66,45 +64,10 @@ naissance.GeometryLabelEditor = class {
 		if (!this.geometry.value[2].label_geometries) this.geometry.value[2].label_geometries = [];
 		
 		this.geometry.value[2].label_geometries.push(json_obj);
-		this.save();
-		this.draw();
+		this.updateKeyframe();
 		
 		let new_index = this.geometry.value[2].label_geometries.length - 1;
 		this.drawLabelGeometryUI(new_index);
-	}
-	
-	draw () {
-		if (!this.geometry) return;
-		
-		this.geometry.draw();
-		
-		if (this.geometry.label_geometries) {
-			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
-				let local_marker = this.geometry.label_geometries[i];
-				if (!local_marker) continue;
-				
-				local_marker.config("draggable", true);
-				
-				local_marker.off("click");
-				local_marker.off("dragend");
-				
-				local_marker.on("click", (e) => {
-					this.select(i);
-					this.drawLabelGeometryUI(i);
-				});
-				
-				local_marker.on("dragend", (e) => {
-					let saved_labels = this.geometry.value?.[2]?.label_geometries || [];
-					if (saved_labels[i]) {
-						let updated_json = local_marker.toJSON();
-						updated_json.options = saved_labels[i].options || {};
-						updated_json.options.symbol_obj = local_marker.getSymbol();
-						saved_labels[i] = updated_json;
-						this.save();
-					}
-				});
-			}
-		}
 	}
 	
 	drawLabelGeometryUI (arg0_index) {
@@ -132,8 +95,7 @@ naissance.GeometryLabelEditor = class {
 				name: "Label Text",
 				onuserchange: (v) => {
 					label_json.options.symbol_obj.textName = v;
-					this.save();
-					this.draw();
+					this.updateKeyframe();
 				}
 			}),
 			font_size: veNumber(label_json.options.symbol_obj.textSize || 12, {
@@ -141,8 +103,7 @@ naissance.GeometryLabelEditor = class {
 				min: 0,
 				onuserchange: (v) => {
 					label_json.options.symbol_obj.textSize = v;
-					this.save();
-					this.draw();
+					this.updateKeyframe();
 				}
 			}),
 			delete_label: veButton(() => {
@@ -151,55 +112,11 @@ naissance.GeometryLabelEditor = class {
 		}, { name: (this.geometry?.name || "Edit Label") + " (" + index + ")" });
 	}
 	
-	save () {
-		let parent_entity = this.geometry;
-		if (!parent_entity || !parent_entity.is_naissance_geometry) return;
-		
-		let saved_labels = parent_entity.value?.[2]?.label_geometries || [];
-		
-		parent_entity.addKeyframe(
-			main.date,
-			undefined,
-			parent_entity.value[1],
-			{
-				...parent_entity.value[2],
-				label_geometries: saved_labels
-			}
-		);
-	}
-	
-	removeLabelGeometry (arg0_index) {
-		let index = arg0_index;
-		let saved_labels = this.geometry.value?.[2]?.label_geometries;
-		
-		if (saved_labels && saved_labels[index]) {
-			let selected_index = this.selected_indexes.indexOf(index);
-			if (selected_index !== -1)
-				this.selected_indexes.splice(selected_index, 1);
-			
-			saved_labels.splice(index, 1);
-			
-			if (this.interfaces[index]) {
-				this.interfaces[index].remove();
-				delete this.interfaces[index];
-			}
-			
-			this.save();
-			this.draw();
-		}
-	}
-	
-	select (arg0_index) {
-		let index = arg0_index;
-		if (!this.selected_indexes.includes(index))
-			this.selected_indexes.push(index);
-	}
-	
 	remove () {
 		this.geometry.is_label_editor_open = false;
 		
 		Object.iterate(this.interfaces, (local_key, local_value) => {
-			if (local_value && local_value.remove) local_value.remove();
+			if (local_value.remove) local_value.remove();
 		});
 		this.interfaces = {};
 		
@@ -207,8 +124,52 @@ naissance.GeometryLabelEditor = class {
 			if (this.selected_geometries[i]) this.selected_geometries[i].remove();
 		this.selected_geometries = [];
 		
-		if (this.geometry && this.geometry.draw) {
+		if (this.geometry && this.geometry.draw)
 			this.geometry.draw();
+	}
+	
+	removeLabelGeometry (arg0_index) {
+		//Convert from parameters
+		let index = arg0_index;
+		
+		//Declare local instance variables
+		let label_geometries = this.geometry.value?.[2]?.label_geometries;
+		
+		if (label_geometries && label_geometries[index]) {
+			let selected_index = this.selected_indexes.indexOf(index);
+			if (selected_index !== -1)
+				this.selected_indexes.splice(selected_index, 1);
+			
+			label_geometries.splice(index, 1);
+			
+			if (this.interfaces[index]) {
+				this.interfaces[index].remove();
+				delete this.interfaces[index];
+			}
+			this.updateKeyframe();
 		}
+	}
+	
+	select (arg0_index) {
+		//Convert from parameters
+		let index = arg0_index;
+		
+		//Select index if possible
+		if (!this.selected_indexes.includes(index))
+			this.selected_indexes.push(index);
+	}
+	
+	updateKeyframe () {
+		//Declare local instance variables
+		let parent_entity = this.geometry;
+		
+		if (!parent_entity || !parent_entity.is_naissance_geometry) return; //Internal guard clause if parent entity doesn't exist
+		
+		//Commit keyframe
+		let label_geometries = parent_entity.value?.[2]?.label_geometries || [];
+		parent_entity.addKeyframe(main.date, undefined, parent_entity.value[1], {
+			...parent_entity.value[2],
+			label_geometries
+		});
 	}
 };
