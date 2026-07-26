@@ -23,14 +23,14 @@ naissance.GeometryLabelEditor = class {
 		
 		//Declare local instance variables
 		this.geometry = geometry;
+			this.geometry.is_label_editor_open = true;
 		this.interfaces = {};
 		this.selected_geometries = [];
 		this.selected_indexes = [];
 		
-		this.geometry.is_label_editor_open = true;
-		
-		let saved_labels = this.geometry.value?.[2]?.label_geometries;
-		if (!saved_labels || saved_labels.length === 0) {
+		//Update label_geometries
+		let label_geometries = this.geometry.value?.[2]?.label_geometries;
+		if (!label_geometries || label_geometries.length === 0) {
 			let center_coords = (this.geometry.geometry) ? this.geometry.geometry.getCenter() : map.getCenter();
 			this.addLabelGeometry(center_coords, {
 				symbol_obj: {
@@ -70,25 +70,28 @@ naissance.GeometryLabelEditor = class {
 		if (!this.geometry.value) this.geometry.value = [];
 		if (!this.geometry.value[2]) this.geometry.value[2] = {};
 		if (!this.geometry.value[2].label_geometries) this.geometry.value[2].label_geometries = [];
-		
-		this.geometry.value[2].label_geometries.push(json_obj);
+		let label_geometries = this.geometry.value[2].label_geometries;
+			label_geometries.push(json_obj);
+			
+		//Update keyframe; draw UI
 		this.updateKeyframe();
-		
-		let new_index = this.geometry.value[2].label_geometries.length - 1;
-		this.drawLabelGeometryUI(new_index);
+		this.drawLabelGeometryUI(label_geometries.length - 1);
 	}
 	
 	drawLabelGeometryUI (arg0_index) {
+		//Convert from  parameters
 		let index = arg0_index;
-		let saved_labels = this.geometry.value?.[2]?.label_geometries;
-		if (!saved_labels || !saved_labels[index]) return;
 		
-		let label_json = saved_labels[index];
-		if (!label_json.options) label_json.options = {};
-		if (!label_json.options.symbol_obj) label_json.options.symbol_obj = label_json.symbol || {};
+		//Declare local instance variables
+		let label_geometries = this.geometry.value?.[2]?.label_geometries;
+		
+		if (!label_geometries || !label_geometries[index]) return; //Internal guard clause if label_geometries doesn't exist
+		
+		let label_json = label_geometries[index];
+			if (!label_json.options) label_json.options = {};
+			if (!label_json.options.symbol_obj) label_json.options.symbol_obj = (label_json.symbol || {});
 		
 		if (this.interfaces[index]) this.interfaces[index].remove();
-		
 		this.interfaces[index] = new ve.Window({
 			add_label: veButton(() => {
 				let local_marker = this.geometry.label_geometries?.[index];
@@ -121,6 +124,7 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	remove () {
+		//Declare local instance variables
 		this.geometry.is_label_editor_open = false;
 		
 		Object.iterate(this.interfaces, (local_key, local_value) => {
@@ -128,10 +132,12 @@ naissance.GeometryLabelEditor = class {
 		});
 		this.interfaces = {};
 		
+		//Iterate over all this.selected_geometries and remove them
 		for (let i = 0; i < this.selected_geometries.length; i++)
 			if (this.selected_geometries[i]) this.selected_geometries[i].remove();
 		this.selected_geometries = [];
 		
+		//Call parent .draw() now that labels are removed
 		if (this.geometry && this.geometry.draw)
 			this.geometry.draw();
 	}
