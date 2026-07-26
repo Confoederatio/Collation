@@ -56,7 +56,10 @@ naissance.GeometryLabelEditor = class {
 		let options = (arg1_options) ? arg1_options : {};
 		
 		//Initialise options
-		if (!options.symbol_obj) options.symbol_obj = naissance.Renderer.getDefaultLabelSymbol();
+		options.symbol_obj = {
+			...naissance.Renderer.getDefaultLabelSymbol(),
+			...options.symbol_obj
+		}
 		if (!options.type) options.type = "straight";
 		if (!options.symbol_obj.textName) options.symbol_obj.textName = (this.geometry && this.geometry.name) ? this.geometry.name : "New Label";
 		
