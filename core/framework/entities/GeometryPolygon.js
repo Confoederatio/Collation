@@ -162,11 +162,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				label_editor_btn: veButton(() => {
 					if (this.geometry) {
 						if (this.label_editor) this.label_editor.remove();
-						
-						let saved_label_geometries = (this.value && this.value[2]) ? this.value[2].label_geometries : undefined;
-						this.label_editor = new naissance.GeometryLabelEditor(this, saved_label_geometries);
-						this.label_editor.draw();
-						this.label_editor.addLabelGeometry(this.geometry.getCenter());
+						this.label_editor = new naissance.GeometryLabelEditor(this);
 					}
 				}, { name: "Edit Labels" })
 			}, { name: "Edit Symbol" })
