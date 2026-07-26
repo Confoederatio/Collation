@@ -211,12 +211,12 @@ naissance.Geometry = class extends naissance.Entity {
 		this.draw();
 	}
 	
-	drawLabels () { //[WIP] - Finish function body
+	drawLabels () {
 		try {
+			if (this.is_label_editor_open) return;
 			if (this.value[2] && this.geometry) {
 				let class_settings = (naissance[this.class_name].labelling_options || {});
 				let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
-				let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
 				let label_geometries = (this.value[2].label_geometries) ?
 					this.value[2].label_geometries : [];
 				let label_name = (this.value[2].label_name) ?
@@ -224,6 +224,7 @@ naissance.Geometry = class extends naissance.Entity {
 				if (!label_name) return;
 				
 				let is_autolabelled = (label_geometries.length === 0);
+				console.log(is_autolabelled);
 				let label_symbol = {
 					...default_label_symbol,
 					...this.value[1].label_symbol
@@ -235,8 +236,11 @@ naissance.Geometry = class extends naissance.Entity {
 				
 				//1. .label_coordinates
 				if (is_autolabelled) {
-					
+					if (class_settings.autolabel_function) class_settings.autolabel_function(this);
 				} else {
+					for (let i = 0; i < this.label_geometries.length; i++) {
+						this.label_geometries[i].remove();
+					}
 					for (let i = 0; i < label_geometries.length; i++)
 						this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
 				}

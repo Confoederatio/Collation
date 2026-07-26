@@ -14,6 +14,27 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 		
 		colour: "fill" //Either 'fill'/'stroke'
 	};
+	static labelling_options = {
+		autolabel_function: (naissance_obj) => {
+			let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
+			
+			if (naissance_obj.geometry.getGeometries) {
+				let all_geometries = naissance_obj.geometry.getGeometries();
+				
+				for (let i = 0; i < all_geometries.length; i++) {
+					let local_area = all_geometries[i].getArea();
+					if (local_area < hide_labels_under_km2*1000000 && i > 0) continue; //Internal guard clause for small exclaves <1000km^2
+					
+					let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
+					local_label_geometry.area = local_area;
+					naissance_obj.label_geometries.push(local_label_geometry);
+				}
+			} else {
+				naissance_obj.label_geometries[0] = new maptalks.Marker(naissance_obj.geometry.getCenter());
+				naissance_obj.label_geometries[0].area = naissance_obj.geometry.getArea();
+			}
+		}
+	};
 	
 	constructor (arg0_options) {
 		//Convert from parameters
@@ -36,73 +57,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 	}
 	
 	_drawLabels () {
-		try {
-			if (this.value[2]) {
-				//Declare local instance variables
-				let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
-				let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
-				
-				//Fetch this.value[2].label_coordinates, this.value[2].label_name/name, this.value[1].label_symbol
-				if (this.geometry) {
-					let label_geometries = (this.value[2].label_geometries) ?
-						this.value[2].label_geometries : [];
-					let label_name = (this.value[2].label_name) ?
-						this.value[2].label_name : this.value[2].name;
-					if (!label_name) return;
-					
-					let label_symbol = {
-						...default_label_symbol,
-						...this.value[1].label_symbol
-					};
-					if (label_symbol.hide_label) return;
-					
-					let target_layer = (label_geometries.length === 0) ? 
-						main.layers.label_layer : main.layers.overlay_label_layer;
-					
-					//1. .label_coordinates
-					if (label_geometries.length === 0) {
-						if (!this.geometry.getGeometries) {
-							this.label_geometries[0] = new maptalks.Marker(this.geometry.getCenter());
-							this.label_geometries[0].area = this.geometry.getArea();
-						} else {
-							let all_geometries = this.geometry.getGeometries();
-							
-							for (let i = 0; i < all_geometries.length; i++) {
-								let local_area = all_geometries[i].getArea();
-								if (local_area < hide_labels_under_km2*1000000 && i > 0) continue; //Internal guard clause for small exclaves <1000km^2
-								
-								let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
-								local_label_geometry.area = local_area;
-								this.label_geometries.push(local_label_geometry);
-							}
-						}
-					} else {
-						for (let i = 0; i < label_geometries.length; i++)
-							this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
-					}
-					
-					//Iterate over all this.label_geometries, apply settings
-					for (let i = 0; i < this.label_geometries.length; i++) {
-						let local_label_geometry = this.label_geometries[i];
-						if (!local_label_geometry) continue;
-						
-						//2. .label_name/.name
-						local_label_geometry.setSymbol({
-							...label_symbol,
-							textName: label_name,
-						});
-						local_label_geometry.addTo(target_layer);
-						
-						if (label_geometries.length === 0)
-							if (main.settings.hide_labels_by_default)
-								this.label_geometries[i].hide();
-						
-						if (local_label_geometry.area !== undefined)
-							local_label_geometry.setZIndex(-local_label_geometry.area);
-					}
-				}
-			}
-		} catch (e) { console.error(e); }
+		this.drawLabels();
 	}
 	
 	draw () {
@@ -206,12 +161,12 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				}),
 				label_editor_btn: veButton(() => {
 					if (this.geometry) {
-						this.geometry._parent_entity = this;
-						let label_editor = new naissance.GeometryLabelEditor(this.geometry, this.value[2].label_geometries);
-						label_editor.draw();
+						if (this.label_editor) this.label_editor.remove();
 						
-						//Add a button to add new labels
-						label_editor.addLabelGeometry(this.geometry.getCenter());
+						let saved_label_geometries = (this.value && this.value[2]) ? this.value[2].label_geometries : undefined;
+						this.label_editor = new naissance.GeometryLabelEditor(this, saved_label_geometries);
+						this.label_editor.draw();
+						this.label_editor.addLabelGeometry(this.geometry.getCenter());
 					}
 				}, { name: "Edit Labels" })
 			}, { name: "Edit Symbol" })
