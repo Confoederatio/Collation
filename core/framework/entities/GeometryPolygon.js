@@ -56,6 +56,9 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					};
 					if (label_symbol.hide_label) return;
 					
+					let target_layer = (label_geometries.length === 0) ? 
+						main.layers.label_layer : main.layers.manual_label_layer;
+					
 					//1. .label_coordinates
 					if (label_geometries.length === 0) {
 						if (!this.geometry.getGeometries) {
@@ -88,6 +91,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 							...label_symbol,
 							textName: label_name,
 						});
+						local_label_geometry.addTo(target_layer);
 						
 						if (label_geometries.length === 0)
 							if (main.settings.hide_labels_by_default)
@@ -95,7 +99,6 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 						
 						if (local_label_geometry.area !== undefined)
 							local_label_geometry.setZIndex(-local_label_geometry.area);
-						local_label_geometry.addTo(main.layers.label_layer);
 					}
 				}
 			}
