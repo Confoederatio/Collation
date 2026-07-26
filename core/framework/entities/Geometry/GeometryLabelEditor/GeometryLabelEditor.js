@@ -4,6 +4,8 @@ if (!global.naissance) global.naissance = {};
  * - `.geometry`: {@link maptalks.Geometry}
  * - `.label_geometries`: {@link Array}<{@link Object}>
  *   - `.geometry`: {@link naissance.Geometry}
+ *   - `.options`: {@link Object}
+ *     - `.length`: {@link number} - Any positive length results in truncation.
  *   - `.type`: {@link string} - Either 'curved'/'straight'.
  * 
  * @type {naissance.GeometryLabelEditor}
@@ -22,9 +24,10 @@ naissance.GeometryLabelEditor = class {  //[WIP] - Finish class body
 		this.selected_indexes = []; //Indexes of selected_indexes
 	}
 	
-	addLabelGeometry (arg0_options) {
+	addLabelGeometry (arg0_coords, arg1_options) {
 		//Convert from parameters
-		let options = (arg0_options) ? arg0_options : {};
+		let coords = arg0_coords;
+		let options = (arg1_options) ? arg1_options : {};
 	}
 	
 	/**
@@ -41,7 +44,7 @@ naissance.GeometryLabelEditor = class {  //[WIP] - Finish class body
 		if (this.interfaces[index]) this.interfaces[index].remove();
 		this.interfaces[index] = new ve.Window({
 			
-		}, { name: (this.geometry?.name || "Edit Label") });
+		}, { name: (this.geometry?.name || "Edit Labels") });
 	}
 	
 	removeLabelGeometry (arg0_index) {
