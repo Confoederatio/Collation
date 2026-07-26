@@ -17,81 +17,76 @@ if (!global.naissance) global.naissance = {};
  * @type {naissance.GeometryLabelEditor}
  */
 naissance.GeometryLabelEditor = class {
-	constructor (arg0_geometry, arg1_label_geometries) {
+	constructor (arg0_geometry) {
 		//Convert from parameters
 		let geometry = arg0_geometry;
-		let label_geometries = (arg1_label_geometries) ? arg1_label_geometries : [];
 		
 		//Declare local instance variables
 		this.geometry = geometry;
 		this.interfaces = {};
-		this.label_geometries = [];
 		this.selected_geometries = [];
 		this.selected_indexes = [];
 		
-		//Suppress normal geometry label rendering while this editor owns labels
 		this.geometry.is_label_editor_open = true;
-		if (this.geometry.label_geometries)
-			for (let i = this.geometry.label_geometries.length - 1; i >= 0; i--) {
-				this.geometry.label_geometries[i].remove();
-				this.geometry.label_geometries.splice(i, 1);
-			}
 		
-		//Initialise label geometries if they exist as JSON
-		for (let i = 0; i < label_geometries.length; i++) {
-			let local_label = label_geometries[i];
-			let local_geometry = maptalks.Geometry.fromJSON(local_label);
-			
-			this.label_geometries.push({
-				geometry: local_geometry,
-				options: local_label.options || { type: "straight", symbol_obj: local_geometry.getSymbol() }
+		let saved_labels = this.geometry.value?.[2]?.label_geometries;
+		if (!saved_labels || saved_labels.length === 0) {
+			let center_coords = (this.geometry.geometry) ? this.geometry.geometry.getCenter() : map.getCenter();
+			this.addLabelGeometry(center_coords, {
+				symbol_obj: {
+					textName: this.geometry.name
+				}
 			});
+		} else {
+			this.draw();
 		}
 	}
 	
 	addLabelGeometry (arg0_coords, arg1_options) {
-		//Convert from parameters
 		let rendered_geometry = this.geometry?.geometry;
 		let coords = (arg0_coords) ? arg0_coords : ((rendered_geometry) ? rendered_geometry.getCenter() : map.getCenter());
 		let options = (arg1_options) ? arg1_options : {};
 		
-		//Initialise options
 		options.symbol_obj = {
 			...naissance.Renderer.getDefaultLabelSymbol(),
 			...options.symbol_obj
-		}
+		};
 		if (!options.type) options.type = "straight";
 		if (!options.symbol_obj.textName) options.symbol_obj.textName = (this.geometry && this.geometry.name) ? this.geometry.name : "New Label";
 		
-		//Declare local instance variables
-		let geometry_obj = { options };
+		let new_marker = new maptalks.Marker(coords, {
+			symbol: options.symbol_obj
+		});
 		
-		if (options.type === "straight") {
-			geometry_obj.geometry = new maptalks.Marker(coords, {
-				symbol: options.symbol_obj
-			});
-		}
+		let json_obj = new_marker.toJSON();
+		json_obj.options = options;
 		
-		//Push this.label_geometries to render
-		this.label_geometries.push(geometry_obj);
-		this.draw();
+		if (!this.geometry.value) this.geometry.value = [];
+		if (!this.geometry.value[2]) this.geometry.value[2] = {};
+		if (!this.geometry.value[2].label_geometries) this.geometry.value[2].label_geometries = [];
+		
+		this.geometry.value[2].label_geometries.push(json_obj);
 		this.save();
+		this.draw();
 		
-		//Open UI for the newly created label
-		this.drawLabelGeometryUI(this.label_geometries.length - 1);
+		let new_index = this.geometry.value[2].label_geometries.length - 1;
+		this.drawLabelGeometryUI(new_index);
 	}
 	
-	/**
-	 * Draws attached label_geometries with selection editing.
-	 */
 	draw () {
-		for (let i = 0; i < this.label_geometries.length; i++) {
-			let label_obj = this.label_geometries[i];
-			let local_marker = label_obj.geometry;
-			
-			if (!local_marker.getLayer()) {
-				local_marker.addTo(main.layers.overlay_label_layer);
+		if (!this.geometry) return;
+		
+		this.geometry.draw();
+		
+		if (this.geometry.label_geometries) {
+			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
+				let local_marker = this.geometry.label_geometries[i];
+				if (!local_marker) continue;
+				
 				local_marker.config("draggable", true);
+				
+				local_marker.off("click");
+				local_marker.off("dragend");
 				
 				local_marker.on("click", (e) => {
 					this.select(i);
@@ -99,85 +94,95 @@ naissance.GeometryLabelEditor = class {
 				});
 				
 				local_marker.on("dragend", (e) => {
-					this.save();
+					let saved_labels = this.geometry.value?.[2]?.label_geometries || [];
+					if (saved_labels[i]) {
+						let updated_json = local_marker.toJSON();
+						updated_json.options = saved_labels[i].options || {};
+						updated_json.options.symbol_obj = local_marker.getSymbol();
+						saved_labels[i] = updated_json;
+						this.save();
+					}
 				});
 			}
 		}
 	}
 	
 	drawLabelGeometryUI (arg0_index) {
-		//Convert from parameters
 		let index = arg0_index;
-		let label_obj = this.label_geometries[index];
-		if (!label_obj) return;
+		let saved_labels = this.geometry.value?.[2]?.label_geometries;
+		if (!saved_labels || !saved_labels[index]) return;
+		
+		let label_json = saved_labels[index];
+		if (!label_json.options) label_json.options = {};
+		if (!label_json.options.symbol_obj) label_json.options.symbol_obj = label_json.symbol || {};
 		
 		if (this.interfaces[index]) this.interfaces[index].remove();
+		
 		this.interfaces[index] = new ve.Window({
 			add_label: veButton(() => {
-				this.addLabelGeometry(label_obj.geometry.getCoordinates(), {
+				let local_marker = this.geometry.label_geometries?.[index];
+				let coords = (local_marker) ? local_marker.getCoordinates() : map.getCenter();
+				this.addLabelGeometry(coords, {
 					symbol_obj: {
 						textName: this.geometry.name
 					}
 				});
 			}, { name: "Add Label" }),
-			text_input: veText(label_obj.options.symbol_obj.textName || "", {
+			text_input: veText(label_json.options.symbol_obj.textName || this.geometry.name || "", {
 				name: "Label Text",
 				onuserchange: (v) => {
-					label_obj.options.symbol_obj.textName = v;
-					label_obj.geometry.setSymbol(label_obj.options.symbol_obj);
+					label_json.options.symbol_obj.textName = v;
 					this.save();
+					this.draw();
 				}
 			}),
-			font_size: veNumber(label_obj.options.symbol_obj.textSize || 12, {
+			font_size: veNumber(label_json.options.symbol_obj.textSize || 12, {
 				name: "Font Size",
 				min: 0,
-				onuserchange: (v) =>  {
-					label_obj.options.symbol_obj.textSize = v;
-					label_obj.geometry.setSymbol(label_obj.options.symbol_obj);
+				onuserchange: (v) => {
+					label_json.options.symbol_obj.textSize = v;
 					this.save();
+					this.draw();
 				}
 			}),
 			delete_label: veButton(() => {
 				this.removeLabelGeometry(index);
-				if (this.interfaces[index]) this.interfaces[index].remove();
-			},  { name: "Delete Label" })
-		}, { name: (this.geometry?.name || "Edit Label (" + index + ")") });
+			}, { name: "Delete Label" })
+		}, { name: (this.geometry?.name || "Edit Label") + " (" + index + ")" });
 	}
 	
 	save () {
-		//Declare local instance variables
 		let parent_entity = this.geometry;
 		if (!parent_entity || !parent_entity.is_naissance_geometry) return;
 		
-		let serialized_labels = [];
+		let saved_labels = parent_entity.value?.[2]?.label_geometries || [];
 		
-		for (let i = 0; i < this.label_geometries.length; i++) {
-			let local_json = this.label_geometries[i].geometry.toJSON();
-			local_json.options = this.label_geometries[i].options;
-			serialized_labels.push(local_json);
-		}
-		
-		//Update current frame data
-		if (!parent_entity.value) parent_entity.value = [];
-		if (!parent_entity.value[2]) parent_entity.value[2] = {};
-		parent_entity.value[2].label_geometries = serialized_labels;
-		
-		//Trigger history keyframe update so map state persists
-		parent_entity.addKeyframe(main.date, undefined, parent_entity.value[1], parent_entity.value[2]);
+		parent_entity.addKeyframe(
+			main.date,
+			undefined,
+			parent_entity.value[1],
+			{
+				...parent_entity.value[2],
+				label_geometries: saved_labels
+			}
+		);
 	}
 	
 	removeLabelGeometry (arg0_index) {
-		//Convert from parameters
 		let index = arg0_index;
-		let remove_geometry = this.label_geometries[index];
+		let saved_labels = this.geometry.value?.[2]?.label_geometries;
 		
-		if (remove_geometry) {
+		if (saved_labels && saved_labels[index]) {
 			let selected_index = this.selected_indexes.indexOf(index);
 			if (selected_index !== -1)
 				this.selected_indexes.splice(selected_index, 1);
 			
-			remove_geometry.geometry.remove();
-			this.label_geometries.splice(index, 1);
+			saved_labels.splice(index, 1);
+			
+			if (this.interfaces[index]) {
+				this.interfaces[index].remove();
+				delete this.interfaces[index];
+			}
 			
 			this.save();
 			this.draw();
@@ -191,16 +196,19 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	remove () {
-		for (let i = 0; i < this.label_geometries.length; i++)
-			this.label_geometries[i].geometry.remove();
-		for (let i = 0; i < this.selected_geometries.length; i++)
-			this.selected_geometries[i].remove();
-		this.selected_geometries = [];
-		Object.iterate(this.interfaces, (local_key, local_value) => local_value.remove());
+		this.geometry.is_label_editor_open = false;
 		
-		if (this.geometry) {
-			this.geometry.is_label_editor_open = false;
-			if (this.geometry.draw) this.geometry.draw();
+		Object.iterate(this.interfaces, (local_key, local_value) => {
+			if (local_value && local_value.remove) local_value.remove();
+		});
+		this.interfaces = {};
+		
+		for (let i = 0; i < this.selected_geometries.length; i++)
+			if (this.selected_geometries[i]) this.selected_geometries[i].remove();
+		this.selected_geometries = [];
+		
+		if (this.geometry && this.geometry.draw) {
+			this.geometry.draw();
 		}
 	}
 };

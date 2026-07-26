@@ -213,52 +213,66 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	drawLabels () {
 		try {
-			if (this.is_label_editor_open) return;
-			if (this.value[2] && this.geometry) {
-				let class_settings = (naissance[this.class_name].labelling_options || {});
+			if (this.label_geometries) {
+				for (let i = this.label_geometries.length - 1; i >= 0; i--) {
+					if (this.label_geometries[i]) this.label_geometries[i].remove();
+				}
+				this.label_geometries = [];
+			} else {
+				this.label_geometries = [];
+			}
+			
+			if (this.value && this.value[2] && this.geometry) {
+				let class_settings = (naissance[this.class_name]?.labelling_options || {});
 				let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
-				let label_geometries = (this.value[2].label_geometries) ?
+				let saved_label_geometries = (this.value[2].label_geometries) ?
 					this.value[2].label_geometries : [];
-				let label_name = (this.value[2].label_name) ?
+				let default_label_name = (this.value[2].label_name) ?
 					this.value[2].label_name : this.value[2].name;
-				if (!label_name) return;
 				
-				let is_autolabelled = (label_geometries.length === 0);
-				let label_symbol = {
+				let is_autolabelled = (saved_label_geometries.length === 0);
+				let base_label_symbol = {
 					...default_label_symbol,
-					...this.value[1].label_symbol
+					...(this.value[1]?.label_symbol || {})
 				};
-				if (label_symbol.hide_label) return;
+				if (base_label_symbol.hide_label) return;
 				
 				let target_layer = (is_autolabelled) ?
 					main.layers.label_layer : main.layers.overlay_label_layer;
 				
-				//1. .label_coordinates
 				if (is_autolabelled) {
 					if (class_settings.autolabel_function) class_settings.autolabel_function(this);
-				} else {
+					
 					for (let i = 0; i < this.label_geometries.length; i++) {
-						this.label_geometries[i].remove();
+						let local_label_geometry = this.label_geometries[i];
+						if (!local_label_geometry) continue;
+						
+						local_label_geometry.setSymbol({
+							...base_label_symbol,
+							textName: default_label_name || ""
+						});
+						local_label_geometry.addTo(target_layer);
+						
+						if (main.settings.hide_labels_by_default)
+							local_label_geometry.hide();
 					}
-					for (let i = 0; i < label_geometries.length; i++)
-						this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
-				}
-				
-				//Iterate over all this.label_geometries, apply settings
-				for (let i = 0; i < this.label_geometries.length; i++) {
-					let local_label_geometry = this.label_geometries[i];
-					if (!local_label_geometry) continue;
-					
-					//2. .label_name/.name
-					local_label_geometry.setSymbol({
-						...label_symbol,
-						textName: label_name
-					});
-					local_label_geometry.addTo(target_layer);
-					
-					if (is_autolabelled && main.settings.hide_labels_by_default)
-						this.label_geometries[i].hide();
-					
+				} else {
+					for (let i = 0; i < saved_label_geometries.length; i++) {
+						let label_json = saved_label_geometries[i];
+						let local_label_geometry = maptalks.Geometry.fromJSON(label_json);
+						
+						let stored_symbol = label_json.options?.symbol_obj || label_json.symbol || {};
+						let final_symbol = {
+							...base_label_symbol,
+							...stored_symbol
+						};
+						if (!final_symbol.textName)
+							final_symbol.textName = default_label_name || "";
+						
+						local_label_geometry.setSymbol(final_symbol);
+						local_label_geometry.addTo(target_layer);
+						this.label_geometries.push(local_label_geometry);
+					}
 				}
 			}
 		} catch (e) { console.error(e); }
