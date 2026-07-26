@@ -86,7 +86,7 @@ global.l4p = "./livemap/4.view/politics/";
 				cursor_layer: new maptalks.VectorLayer("cursor_layer", [], { hitDetect: false, interactive: false, zIndex: 10000 }),
 				
 				//Background layers
-				manual_label_layer: new maptalks.VectorLayer("manual_label_layer", [], {
+				overlay_label_layer: new maptalks.VectorLayer("overlay_label_layer", [], {
 					hitDetect: true,
 					interactive: true,
 					zIndex: 7

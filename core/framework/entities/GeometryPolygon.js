@@ -57,7 +57,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					if (label_symbol.hide_label) return;
 					
 					let target_layer = (label_geometries.length === 0) ? 
-						main.layers.label_layer : main.layers.manual_label_layer;
+						main.layers.label_layer : main.layers.overlay_label_layer;
 					
 					//1. .label_coordinates
 					if (label_geometries.length === 0) {

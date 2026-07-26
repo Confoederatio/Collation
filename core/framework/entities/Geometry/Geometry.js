@@ -211,6 +211,56 @@ naissance.Geometry = class extends naissance.Entity {
 		this.draw();
 	}
 	
+	drawLabels () { //[WIP] - Finish function body
+		try {
+			if (this.value[2] && this.geometry) {
+				let class_settings = (naissance[this.class_name].labelling_options || {});
+				let default_label_symbol = naissance.Renderer.getDefaultLabelSymbol();
+				let hide_labels_under_km2 = Math.returnSafeNumber(main.settings.hide_labels_under_km2, 1000);
+				let label_geometries = (this.value[2].label_geometries) ?
+					this.value[2].label_geometries : [];
+				let label_name = (this.value[2].label_name) ?
+					this.value[2].label_name : this.value[2].name;
+				if (!label_name) return;
+				
+				let is_autolabelled = (label_geometries.length === 0);
+				let label_symbol = {
+					...default_label_symbol,
+					...this.value[1].label_symbol
+				};
+				if (label_symbol.hide_label) return;
+				
+				let target_layer = (is_autolabelled) ?
+					main.layers.label_layer : main.layers.overlay_label_layer;
+				
+				//1. .label_coordinates
+				if (is_autolabelled) {
+					
+				} else {
+					for (let i = 0; i < label_geometries.length; i++)
+						this.label_geometries[i] = maptalks.Geometry.fromJSON(label_geometries[i]);
+				}
+				
+				//Iterate over all this.label_geometries, apply settings
+				for (let i = 0; i < this.label_geometries.length; i++) {
+					let local_label_geometry = this.label_geometries[i];
+					if (!local_label_geometry) continue;
+					
+					//2. .label_name/.name
+					local_label_geometry.setSymbol({
+						...label_symbol,
+						textName: label_name
+					});
+					local_label_geometry.addTo(target_layer);
+					
+					if (is_autolabelled && main.settings.hide_labels_by_default)
+						this.label_geometries[i].hide();
+					
+				}
+			}
+		} catch (e) { console.error(e); }
+	}
+	
 	/**
 	 * Draws the variables editor for the current geometry UI.
 	 */
