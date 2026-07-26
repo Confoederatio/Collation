@@ -25,13 +25,15 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 					let local_area = all_geometries[i].getArea();
 					if (local_area < hide_labels_under_km2*1000000 && i > 0) continue; //Internal guard clause for small exclaves <1000km^2
 					
-					let local_label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
-						local_label_geometry.area = local_area;
-					naissance_obj.label_geometries.push(local_label_geometry);
+					let label_geometry = new maptalks.Marker(all_geometries[i].getCenter());
+						label_geometry.area = local_area;
+						label_geometry.setZIndex(-local_area);
+					naissance_obj.label_geometries.push(label_geometry);
 				}
 			} else {
 				let label_geometry = new maptalks.Marker(naissance_obj.geometry.getCenter());
 					label_geometry.area = naissance_obj.geometry.getArea();
+					label_geometry.setZIndex(-label_geometry.area);
 				naissance_obj.label_geometries.push(label_geometry);
 			}
 		}

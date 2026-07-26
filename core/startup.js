@@ -92,7 +92,7 @@ global.l4p = "./livemap/4.view/politics/";
 					zIndex: 7
 				}),
 				label_layer: new maptalks.VectorLayer("label_layer", [], {
-					collision: false,
+					collision: true,
 					collisionDelay: 250,
 					forceRenderOnMoving: true,
 					forceRenderOnRotating: true,
