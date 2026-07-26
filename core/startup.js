@@ -87,7 +87,7 @@ global.l4p = "./livemap/4.view/politics/";
 				
 				//Background layers
 				label_layer: new maptalks.VectorLayer("label_layer", [], {
-					collision: true,
+					collision: false,
 					collisionDelay: 250,
 					forceRenderOnMoving: true,
 					forceRenderOnRotating: true,

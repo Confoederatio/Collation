@@ -84,15 +84,15 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 						if (!local_label_geometry) continue;
 						
 						//2. .label_name/.name
-						if (label_geometries.length === 0) {
-							this.label_geometries[i].setSymbol({
-								...label_symbol,
-								textName: label_name,
-							});
-							
+						local_label_geometry.setSymbol({
+							...label_symbol,
+							textName: label_name,
+						});
+						
+						if (label_geometries.length === 0)
 							if (main.settings.hide_labels_by_default)
 								this.label_geometries[i].hide();
-						}
+						
 						if (local_label_geometry.area !== undefined)
 							local_label_geometry.setZIndex(-local_label_geometry.area);
 						local_label_geometry.addTo(main.layers.label_layer);
