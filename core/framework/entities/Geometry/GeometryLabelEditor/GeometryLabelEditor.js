@@ -41,24 +41,32 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	addLabelGeometry (arg0_coords, arg1_options) {
-		let rendered_geometry = this.geometry?.geometry;
-		let coords = (arg0_coords) ? arg0_coords : ((rendered_geometry) ? rendered_geometry.getCenter() : map.getCenter());
+		//Convert  from parameters
+		let coords = arg0_coords;
 		let options = (arg1_options) ? arg1_options : {};
 		
+		//Initialise options
 		options.symbol_obj = {
 			...naissance.Renderer.getDefaultLabelSymbol(),
 			...options.symbol_obj
 		};
+		if (!options.symbol_obj.textName)
+			options.symbol_obj.textName = (this.geometry?.name || "New Label");
 		if (!options.type) options.type = "straight";
-		if (!options.symbol_obj.textName) options.symbol_obj.textName = (this.geometry && this.geometry.name) ? this.geometry.name : "New Label";
 		
+		//Declare local instance variables
+		let rendered_geometry = this.geometry?.geometry;
+			if (coords === undefined) coords = (rendered_geometry) ? rendered_geometry.getCenter() : map.getCenter();
+		
+		//Initialise new_marker
 		let new_marker = new maptalks.Marker(coords, {
 			symbol: options.symbol_obj
 		});
 		
 		let json_obj = new_marker.toJSON();
-		json_obj.options = options;
+			json_obj.options = options;
 		
+		//Ensure .value[2].label_geometries exists
 		if (!this.geometry.value) this.geometry.value = [];
 		if (!this.geometry.value[2]) this.geometry.value[2] = {};
 		if (!this.geometry.value[2].label_geometries) this.geometry.value[2].label_geometries = [];
