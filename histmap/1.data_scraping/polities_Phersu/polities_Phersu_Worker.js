@@ -8,7 +8,7 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 		let options = (arg0_options) ? arg0_options : {};
 		
 		//Initialise options
-		options.interval = Math.returnSafeNumber(options.interval, Infinity);
+		options.interval = Math.returnSafeNumber(options.interval, 1e15);
 		super("polities_Phersu", {
 			...options,
 			do_not_close_tab: true,
@@ -170,30 +170,6 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 					fs.writeFileSync(file_path, arg0_entry.string);
 					this.log(`Saved new polities layer GeoJSON for [${date_string}] to ${file_path}`);
 				}
-				
-				last_geojson_string = arg0_entry.string;
-				let current_scrape_time = Date.now();
-				let event_id = `phersu_polities_${date_string}`;
-				
-				let ontology_obj = new Ontology_Event(
-					[
-						{
-							date: current_scrape_time,
-							data: {
-								date_string: date_string,
-								geojson: arg0_entry.data
-							}
-						}
-					],
-					{
-						id: event_id,
-						worker_type: "polities_Phersu"
-					}
-				);
-				
-				if (typeof ontology_obj.draw === "function")
-					ontology_obj.draw();
-				ontologies.push(ontology_obj);
 			}
 		};
 		
@@ -239,6 +215,6 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 			}
 		}
 		
-		return ontologies;
+		return [];
 	}
 };
