@@ -190,13 +190,46 @@ naissance.GeometryLabelEditor = class {
 						
 						veToast(`Cleared selected labels.`);
 					}, { name: "Clear Selection" }),
+					move_selection: veButton((v, local_component) => {
+						if (!this._is_being_moved) {
+							veToast(`Click a new location on the map to move these labels to.`);
+							this._is_being_moved = true;
+							local_component.name = `Cancel Moving Selection`;
+							
+							map.once("click", (e) => {
+								let saved_labels = this.geometry.value?.[2]?.label_geometries;
+								
+								for (let i = 0; i < this.selected_indexes.length; i++) {
+									let local_geometry = this.geometry.label_geometries[this.selected_indexes[i]];
+									let local_json = saved_labels[this.selected_indexes[i]];
+									
+									if (local_geometry && local_json)
+										try {
+											local_json.feature.geometry.coordinates = e.coordinate.toJSON();
+										} catch (e) {}
+								}
+								
+								//Finish moving selection
+								delete this._is_being_moved;
+								local_component.name = `Move Selection`;
+								this.updateKeyframe();
+								if (this.geometry) this.geometry.draw();
+								this.drawSelectedGeometries();
+							});
+						} else {
+							veToast(`Cancelled moving selection.`);
+							delete this._is_being_moved;
+							local_component.name = `Move Selection`;
+						}
+					}, { name: "Move Selection" }),
 					delete_selected_labels: veButton(() => {
+						veToast(`Deleted ${String.formatNumber(this.selected_indexes.length)} selected labels.`);
+						
+						//Iterate in reverse and remove label geometries
 						for (let i = this.selected_indexes.length - 1; i >= 0; i--)
 							this.removeLabelGeometry(this.selected_indexes[i]);
 						this.selected_indexes = [];
 						if (this.geometry) this.geometry.draw();
-						
-						veToast(`Deleted ${String.formatNumber(this.selected_indexes.length)} selected labels.`);
 					}, { name: "Delete Selected Labels" })
 				})
 			}, { name: "Selection", open: true })
