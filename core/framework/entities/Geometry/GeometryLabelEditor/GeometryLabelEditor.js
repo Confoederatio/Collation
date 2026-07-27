@@ -76,52 +76,71 @@ naissance.GeometryLabelEditor = class {
 			
 		//Update keyframe; draw UI
 		this.updateKeyframe();
-		this.drawLabelGeometryUI(label_geometries.length - 1);
 	}
 	
-	drawLabelGeometryUI (arg0_index) {
-		//Convert from  parameters
+	deselect (arg0_index) {
+		//Convert from parameters
 		let index = arg0_index;
 		
-		//Declare local instance variables
-		let label_geometries = this.geometry.value?.[2]?.label_geometries;
+		//Iterate over all selected_indexes and splice matches
+		for (let i = this.selected_indexes.length - 1; i >= 0; i--)
+			if (this.selected_indexes[i] === index)
+					this.selected_indexes.splice(i, 1);
+		this.drawSelectedGeometries();
+	}
+	
+	drawSelectedGeometries () {
+		//Clear currently rendered this.selected_geometries
+		for (let i = 0; i < this.selected_geometries.length; i++)
+			this.selected_geometries[i].remove();
+		this.selected_geometries = [];
 		
-		if (!label_geometries || !label_geometries[index]) return; //Internal guard clause if label_geometries doesn't exist
-		
-		let label_json = label_geometries[index];
-			if (!label_json.options) label_json.options = {};
-			if (!label_json.options.symbol_obj) label_json.options.symbol_obj = (label_json.symbol || {});
-		
-		if (this.interfaces[index]) this.interfaces[index].remove();
-		this.interfaces[index] = new ve.Window({
+		if (this.geometry.selected)
+			for (let i = 0; i < this.selected_indexes.length; i++) try {
+				let local_geometry = this.geometry.label_geometries[this.selected_indexes[i]];
+				let local_selected_geometry = local_geometry.copy();
+				
+				local_selected_geometry.setSymbol({
+					...local_geometry.getSymbol(),
+					textHaloFill: `rgba(255, 255, 0, 0.5)`,
+					textHaloRadius: 4
+				});
+				main.layers.selection_layer.addGeometry(local_selected_geometry);
+				this.selected_geometries.push(local_selected_geometry);
+			} catch (e) { console.error(e); }
+	}
+	
+	handleEvents () {
+		//Attach event handles
+		if (this?.geometry?.label_geometries)
+			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
+				let local_geometry = this.geometry.label_geometries[i];
+				
+				local_geometry.on("click", () => {
+					if (!this.selected_indexes.includes(i)) {
+						this.select(i);
+					} else {
+						this.deselect(i);
+					}
+				});
+			}
+	}
+	
+	open () {
+		if (this.window) this.window.close();
+		this.window = veWindow({
 			add_label: veButton(() => {
-				let local_marker = this.geometry.label_geometries?.[index];
-				let coords = (local_marker) ? local_marker.getCoordinates() : map.getCenter();
-				this.addLabelGeometry(coords, {
+				this.addLabelGeometry(map.getCenter(), {
 					symbol_obj: {
 						textName: this.geometry.name
 					}
 				});
 			}, { name: "Add Label" }),
-			text_input: veText(label_json.options.symbol_obj.textName || this.geometry.name || "", {
-				name: "Label Text",
-				onuserchange: (v) => {
-					label_json.options.symbol_obj.textName = v;
-					this.updateKeyframe();
-				}
-			}),
-			font_size: veNumber(label_json.options.symbol_obj.textSize || 12, {
-				name: "Font Size",
-				min: 0,
-				onuserchange: (v) => {
-					label_json.options.symbol_obj.textSize = v;
-					this.updateKeyframe();
-				}
-			}),
-			delete_label: veButton(() => {
-				this.removeLabelGeometry(index);
-			}, { name: "Delete Label" })
-		}, { name: (this.geometry?.name || "Edit Label") + " (" + index + ")" });
+		}, {
+			can_rename: false,
+			name: `Edit Labels (${this.geometry.name})`,
+			width: "20rem"
+		});
 	}
 	
 	remove () {
@@ -156,11 +175,6 @@ naissance.GeometryLabelEditor = class {
 				this.selected_indexes.splice(selected_index, 1);
 			
 			label_geometries.splice(index, 1);
-			
-			if (this.interfaces[index]) {
-				this.interfaces[index].remove();
-				delete this.interfaces[index];
-			}
 			this.updateKeyframe();
 		}
 	}
@@ -172,6 +186,7 @@ naissance.GeometryLabelEditor = class {
 		//Select index if possible
 		if (!this.selected_indexes.includes(index))
 			this.selected_indexes.push(index);
+		this.drawSelectedGeometries();
 	}
 	
 	updateKeyframe () {

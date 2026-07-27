@@ -275,6 +275,11 @@ naissance.Geometry = class extends naissance.Entity {
 						this.label_geometries.push(local_label_geometry);
 					}
 				}
+				
+				if (this.label_editor) {
+					this.label_editor.handleEvents();
+					this.label_editor.drawSelectedGeometries();
+				}
 			}
 		} catch (e) { console.error(e); }
 	}
