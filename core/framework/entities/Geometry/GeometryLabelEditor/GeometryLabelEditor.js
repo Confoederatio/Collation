@@ -127,15 +127,72 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	open () {
+		//Declare local instance variables
+		let default_label_symbol = {
+			...main.settings.default_label_symbol,
+			...(this.value?.[1]?.label_symbol || {})
+		};
+		
 		if (this.window) this.window.close();
 		this.window = veWindow({
-			add_label: veButton(() => {
-				this.addLabelGeometry(map.getCenter(), {
-					symbol_obj: {
-						textName: this.geometry.name
+			actions_bar: veRawInterface({
+				add_straight_label: veButton(() => {
+					this.addLabelGeometry(map.getCenter(), {
+						symbol_obj: {
+							textName: this.geometry.name
+						}
+					});
+				}, { name: "Add Label (Straight)" }),
+				add_curved_label: veButton(() => {
+				}, { name: "Add Label (Curved)" })
+			}),
+			
+			edit_selected_labels: new UI_LabelSymbol(default_label_symbol, {
+				name: "Edit Selected Labels",
+				special_function: (v) => {
+					let label_geometries = this.geometry.label_geometries;
+					let saved_label_data = this.geometry.value?.[2]?.label_geometries;
+					
+					if (label_geometries && saved_label_data) {
+						for (let i = 0; i < this.selected_indexes.length; i++) {
+							let local_index = this.selected_indexes[i];
+							let local_geometry = label_geometries[local_index];
+							let local_json = saved_label_data[local_index];
+							
+							if (local_geometry && local_json) {
+								//Update live geometry
+								let new_symbol = {
+									...local_geometry.getSymbol(),
+									...v
+								};
+								local_geometry.setSymbol(new_symbol);
+								
+								//Update the JSON storage so it persists through draw() calls
+								if (!local_json.options) local_json.options = {};
+								local_json.options.symbol_obj = new_symbol;
+								local_json.symbol = new_symbol;
+							}
+						}
+						
+						//Update keyframe; redraw
+						this.updateKeyframe();
+						if (this.geometry) this.geometry.draw();
+						this.drawSelectedGeometries();
 					}
-				});
-			}, { name: "Add Label" }),
+				}
+			}),
+			selection_bar: veRawInterface({
+				clear_selection: veButton(() => {
+					this.selected_indexes = [];
+					this.drawSelectedGeometries();
+				}, { name: "Clear Selection" }),
+				delete_selected_labels: veButton(() => {
+					for (let i = this.selected_indexes.length - 1; i >= 0; i--)
+						this.removeLabelGeometry(this.selected_indexes[i]);
+					this.selected_indexes = [];
+					if (this.geometry) this.geometry.draw();
+				}, { name: "Delete Selected Labels" })
+			})
 		}, {
 			can_rename: false,
 			name: `Edit Labels (${this.geometry.name})`,

@@ -180,7 +180,7 @@ naissance.Geometry = class extends naissance.Entity {
 		let is_selected;
 		
 		//Fetch is_selected
-		if (main.brush && main.brush.selected_geometry && main.brush.selected_geometry.id === this.id) {
+		if (main.brush && main.brush._selected_geometry && main.brush._selected_geometry.id === this.id) {
 			is_selected = true;
 		} else {
 			is_selected = this._selected;
@@ -194,6 +194,11 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	set selected (v) {
 		//Set selected, then update draw
+		if (v === false && main.brush?._selected_geometry?.id === this.id) {
+			delete main.brush._selected_geometry;
+		} else if (v === true) {
+			main.brush._selected_geometry = this;
+		}
 		this._selected = v;
 		this.draw();
 		UI_Leftbar.refresh();
