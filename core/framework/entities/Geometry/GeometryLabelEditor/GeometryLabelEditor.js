@@ -135,17 +135,19 @@ naissance.GeometryLabelEditor = class {
 		
 		if (this.window) this.window.close();
 		this.window = veWindow({
-			actions_bar: veRawInterface({
-				add_straight_label: veButton(() => {
-					this.addLabelGeometry(map.getCenter(), {
-						symbol_obj: {
-							textName: this.geometry.name
-						}
-					});
-				}, { name: "Add Label (Straight)" }),
-				add_curved_label: veButton(() => {
-				}, { name: "Add Label (Curved)" })
-			}),
+			actions_bar: veInterface({
+				menu: veRawInterface({
+					add_straight_label: veButton(() => {
+						this.addLabelGeometry(map.getCenter(), {
+							symbol_obj: {
+								textName: this.geometry.name
+							}
+						});
+					}, { name: "Add Label (Straight)" }),
+					add_curved_label: veButton(() => {
+					}, { name: "Add Label (Curved)" })
+				})
+			}, { name: "Label Actions", open: true }),
 			
 			edit_selected_labels: new UI_LabelSymbol(default_label_symbol, {
 				name: "Edit Selected Labels",
@@ -165,12 +167,11 @@ naissance.GeometryLabelEditor = class {
 									...local_geometry.getSymbol(),
 									...v
 								};
-								local_geometry.setSymbol(new_symbol);
 								
 								//Update the JSON storage so it persists through draw() calls
 								if (!local_json.options) local_json.options = {};
-								local_json.options.symbol_obj = new_symbol;
-								local_json.symbol = new_symbol;
+									local_json.options.symbol_obj = new_symbol;
+									local_json.symbol = new_symbol;
 							}
 						}
 						
@@ -181,18 +182,24 @@ naissance.GeometryLabelEditor = class {
 					}
 				}
 			}),
-			selection_bar: veRawInterface({
-				clear_selection: veButton(() => {
-					this.selected_indexes = [];
-					this.drawSelectedGeometries();
-				}, { name: "Clear Selection" }),
-				delete_selected_labels: veButton(() => {
-					for (let i = this.selected_indexes.length - 1; i >= 0; i--)
-						this.removeLabelGeometry(this.selected_indexes[i]);
-					this.selected_indexes = [];
-					if (this.geometry) this.geometry.draw();
-				}, { name: "Delete Selected Labels" })
-			})
+			selection: veInterface({
+				menu: veRawInterface({
+					clear_selection: veButton(() => {
+						this.selected_indexes = [];
+						this.drawSelectedGeometries();
+						
+						veToast(`Cleared selected labels.`);
+					}, { name: "Clear Selection" }),
+					delete_selected_labels: veButton(() => {
+						for (let i = this.selected_indexes.length - 1; i >= 0; i--)
+							this.removeLabelGeometry(this.selected_indexes[i]);
+						this.selected_indexes = [];
+						if (this.geometry) this.geometry.draw();
+						
+						veToast(`Deleted ${String.formatNumber(this.selected_indexes.length)} selected labels.`);
+					}, { name: "Delete Selected Labels" })
+				})
+			}, { name: "Selection", open: true })
 		}, {
 			can_rename: false,
 			name: `Edit Labels (${this.geometry.name})`,
