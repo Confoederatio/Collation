@@ -7,7 +7,7 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 			
 		//Declare local instance variables
 		this.options = options;
-		this.value = this._createCSSList((value) ? value : {});
+		this.value = (value || {});
 		
 		this.list_component = veList(veRawInterface({ css_key: veText(), css_value: veText() }), { 
 			name: "CSS Style",
