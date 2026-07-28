@@ -290,7 +290,11 @@ naissance.Geometry = class extends naissance.Entity {
 							if (existing_geom instanceof Geospatiale.maptalks_CurvedLabel) {
 								existing_geom.setCoordinates(label_json.coords);
 								if (label_json.options?.style) existing_geom.style = { ...existing_geom.style, ...label_json.options.style };
+								if (final_symbol.textSize !== undefined) existing_geom.setFontSize(final_symbol.textSize);
+								if (final_symbol.textFill !== undefined) existing_geom.style.color = final_symbol.textFill;
+								if (final_symbol.textFaceName !== undefined) existing_geom.style.fontFamily = final_symbol.textFaceName;
 								existing_geom.setText(final_symbol.textName);
+								existing_geom.render();
 								new_label_geometries.push(existing_geom);
 							} else {
 								if (existing_geom) existing_geom.remove();

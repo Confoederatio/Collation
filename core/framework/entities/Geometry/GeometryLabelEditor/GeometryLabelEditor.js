@@ -300,10 +300,21 @@ naissance.GeometryLabelEditor = class {
 								local_json.symbol = new_symbol;
 								
 								if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
-									if (v.textSize !== undefined) local_geometry.setFontSize(v.textSize);
+									if (v.textSize !== undefined) {
+										local_geometry.setFontSize(v.textSize);
+										local_json.options.base_font_size = v.textSize;
+									}
 									if (v.textName !== undefined) local_geometry.setText(v.textName);
-									if (v.textFill !== undefined) local_geometry.style.color = v.textFill;
-									if (v.textFaceName !== undefined) local_geometry.style.fontFamily = v.textFaceName;
+									if (v.textFill !== undefined) {
+										local_geometry.style.color = v.textFill;
+										if (!local_json.options.style) local_json.options.style = {};
+										local_json.options.style.color = v.textFill;
+									}
+									if (v.textFaceName !== undefined) {
+										local_geometry.style.fontFamily = v.textFaceName;
+										if (!local_json.options.style) local_json.options.style = {};
+										local_json.options.style.fontFamily = v.textFaceName;
+									}
 									local_geometry.render();
 								} else if (typeof local_geometry.setSymbol === "function") {
 									local_geometry.setSymbol(new_symbol);
