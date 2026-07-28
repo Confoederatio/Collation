@@ -1022,6 +1022,26 @@ config.actions.geometry = {
 			geometry_obj.moveToFeature(feature_obj);
 		}
 	},
+	refresh_label_geometries: {
+		name: "Refresh Label Geometries",
+		feature_name: "Refresh Label Geometries",
+		scope: ["Geometry"],
+		do_not_bind_to_feature: true,
+		
+		special_function: async function (json) {
+			//Declare local instance variables
+			let geometry_obj = json.naissance_obj;
+			let label_geometries = (geometry_obj.label_geometries || []);
+			
+			//Commit existing label_geometries
+			if (json.refresh_label_geometries) {
+				label_geometries.addKeyframe(main.date, undefined, geometry_obj.value[1], {
+					...geometry_obj.value[2],
+					label_geometries
+				});
+			}
+		}
+	},
 	remove_column: {
 		name: "Remove Columns",
 		feature_name: "Remove Columns",
@@ -1600,5 +1620,5 @@ config.actions.geometry = {
 			//Unlink geometry
 			if (json.unlink_geometry)	delete geometry_obj.metadata.linked_id;
 		}
-	}
+	},
 };

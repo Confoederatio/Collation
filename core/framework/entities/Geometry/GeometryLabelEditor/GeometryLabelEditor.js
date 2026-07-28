@@ -506,13 +506,9 @@ naissance.GeometryLabelEditor = class {
 		let parent_entity = this.geometry;
 		
 		if (!parent_entity || !parent_entity.is_naissance_geometry) return; //Internal guard clause if parent entity doesn't exist
-		
-		//Commit keyframe
-		let label_geometries = (parent_entity.value?.[2]?.label_geometries || []);
-		
-		parent_entity.addKeyframe(main.date, undefined, parent_entity.value[1], {
-			...parent_entity.value[2],
-			label_geometries
+		DALS.Timeline.parseAction("refresh_label_geometries", { 
+			geometry_id: this.geometry.id, 
+			refresh_label_geometries: true 
 		});
 	}
 };
