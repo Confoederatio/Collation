@@ -507,7 +507,7 @@ naissance.GeometryLabelEditor = class {
 		
 		if (!parent_entity || !parent_entity.is_naissance_geometry) return; //Internal guard clause if parent entity doesn't exist
 		DALS.Timeline.parseAction("refresh_label_geometries", { 
-			geometry_id: this.geometry.id, 
+			geometry_obj: this.geometry.id, 
 			refresh_label_geometries: true 
 		});
 	}

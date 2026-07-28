@@ -1031,11 +1031,12 @@ config.actions.geometry = {
 		special_function: async function (json) {
 			//Declare local instance variables
 			let geometry_obj = json.naissance_obj;
-			let label_geometries = (geometry_obj.label_geometries || []);
+			let label_geometries = (geometry_obj?.value?.[2]?.label_geometries || []);
+			console.log(`Label geometries:`, geometry_obj, geometry_obj.label_geometries)
 			
 			//Commit existing label_geometries
 			if (json.refresh_label_geometries) {
-				label_geometries.addKeyframe(main.date, undefined, geometry_obj.value[1], {
+				geometry_obj.addKeyframe(main.date, undefined, geometry_obj.value[1], {
 					...geometry_obj.value[2],
 					label_geometries
 				});

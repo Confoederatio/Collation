@@ -138,8 +138,9 @@ Geospatiale.maptalks_CurvedLabel = class {
 			this.map.off("zoomend zooming moving moveend rotate pitch", this.onviewchange_handler);
 		
 		//Iterate over all this.glyph_markers and remove them
-		for (let i = 0; i < this.glyph_markers.length; i++)
+		for (let i = 0; i < this.glyph_markers.length; i++) try {
 			this.glyph_markers[i].remove();
+		} catch (e) {}
 		this.glyph_markers = [];
 	}
 	

@@ -157,14 +157,7 @@ naissance.GeometryPolygon = class extends naissance.Geometry {
 				edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
 					name: "Stroke",
 					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ ...v, _id: this.id })
-				}),
-				label_editor: veButton(() => {
-					if (this.geometry) {
-						if (this.label_editor) this.label_editor.remove();
-						this.label_editor = new naissance.GeometryLabelEditor(this);
-						this.label_editor.open();
-					}
-				}, { name: "Edit Labels" })
+				})
 			}, { name: "Edit Symbol" })
 		};
 	}

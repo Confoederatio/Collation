@@ -663,7 +663,19 @@ naissance.Geometry = class extends naissance.Entity {
 				}),
 				
 				open_actions_palette: veButton(() => {
-					naissance.Action.openActionsPalette(this);
+					naissance.Action.openActionsPalette(this, {
+						components_obj: {
+							more_editors: veInterface({
+								actions_bar: veRawInterface({
+									edit_labels: veButton(() => {
+										if (this.label_editor) this.label_editor.remove();
+										this.label_editor = new naissance.GeometryLabelEditor(this);
+										this.label_editor.open();
+									}, { name: "Open Label Editor" })
+								})
+							}, { name: "More Editors", open: true })
+						}
+					});
 				}, {
 					name: "<icon>more_vert</icon>",
 					tootlip: "Open Actions Palette"
