@@ -1,3 +1,13 @@
+/**
+ * Represents a {@link Geospatiale.maptalks_CurvedLabel} symbol for {@link naissance.GeometryLabelEditor}.
+ * 
+ * @param {Object} [arg0_value={}]
+ * @param {Object} [arg1_options]
+ *  @param {string} [arg1_options.name="Curved Label Symbol"]
+ *  @param {Object} [arg1_options.style]
+ * 
+ * @type {UI_CurvedLabelSymbol}
+ */
 global.UI_CurvedLabelSymbol = class extends ve.Component {
 	constructor (arg0_value, arg1_options) {
 		//Convert from parameters
@@ -19,7 +29,8 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 		this.element = this.list_component.element;
 		
 		HTML.applyTelestyle(this.element, {
-			"[component='ve-text']": { display: "inline" }
+			"[component='ve-text']": { display: "inline" },
+			...this.options.style
 		});
 	}
 	
