@@ -23,7 +23,21 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 		});
 	}
 	
-	get v () { return this.value; }
+	get v () {
+		//Declare local instance variables
+		let list_component_value = this.list_component.v;
+		let return_obj = {};
+		
+		for (let i = 0; i < list_component_value.length; i++) {
+			let local_component = list_component_value[i];
+			
+			if (local_component.css_key.v.length > 0)
+				return_obj[local_component.css_key.v]= local_component.css_value.v;
+		}
+		
+		//Return statement
+		return return_obj;
+	}
 	
 	set v (arg0_value) {
 		//Convert from parameters
