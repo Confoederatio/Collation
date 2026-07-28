@@ -213,7 +213,7 @@ naissance.GeometryLabelEditor = class {
 	
 	handleEvents () {
 		//Attach event handles
-		if (this?.geometry?.label_geometries)
+		if (this?.geometry?.label_geometries && this?.geometry?.selected)
 			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
 				let local_geometry = this.geometry.label_geometries[i];
 				

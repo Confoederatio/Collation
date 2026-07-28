@@ -177,14 +177,8 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	get selected () {
 		//Declare local instance variables
-		let is_selected;
+		let is_selected = (this._selected || main.brush?.selected_geometry?.id === this.id);
 		
-		//Fetch is_selected
-		if (main.brush && main.brush._selected_geometry && main.brush._selected_geometry.id === this.id) {
-			is_selected = true;
-		} else {
-			is_selected = this._selected;
-		}
 		if (this.interface && this.interface.selected)
 			this.interface.selected.v = is_selected;
 		
@@ -193,13 +187,19 @@ naissance.Geometry = class extends naissance.Entity {
 	}
 	
 	set selected (v) {
-		//Set selected, then update draw
-		if (v === false && main.brush?._selected_geometry?.id === this.id) {
-			delete main.brush._selected_geometry;
-		} else if (v === true) {
-			main.brush._selected_geometry = this;
-		}
+		//Set underlying selection flag
 		this._selected = v;
+		
+		if (v === true) {
+			//Set as primary only if no primary geometry is currently active
+			if (!main.brush.selected_geometry)
+				main.brush.selected_geometry = this;
+		} else {
+			//If deselecting the primary geometry, reassign primary to another selected geometry if available
+			if (main.brush?.selected_geometry?.id === this.id)
+				main.brush.selected_geometry = undefined;
+		}
+		
 		this.draw();
 		UI_Leftbar.refresh();
 	}
