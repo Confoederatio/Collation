@@ -9,11 +9,18 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 		this.options = options;
 		this.value = (value || {});
 		
-		this.list_component = veList(veRawInterface({ css_key: veText(), css_value: veText() }), { 
+		this.list_component = veList(veRawInterface({ 
+			css_key: veText("", { name: "Key" }), 
+			css_value: veText("", { name: "Value" }) 
+		}), {
 			name: "CSS Style",
 			onuserchange: () => this.fireToBinding()
 		});
 		this.element = this.list_component.element;
+		
+		HTML.applyTelestyle(this.element, {
+			"[component='ve-text']": { display: "inline" }
+		});
 	}
 	
 	get v () { return this.value; }
@@ -28,8 +35,8 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 		//Iterate over all keys in value
 		Object.iterate(value, (local_key, local_value) => {
 			css_list.push(veRawInterface({
-				css_key: veText(local_key),
-				css_value: veText(local_value)
+				css_key: veText(local_key, { name: "Key" }),
+				css_value: veText(local_value, { name: "Value" })
 			}));
 		});
 		
