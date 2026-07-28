@@ -3,6 +3,7 @@
  * 
  * @param {Object} [arg0_value={}]
  * @param {Object} [arg1_options]
+ *  @param {Object} [arg1_options.interface_options]
  *  @param {string} [arg1_options.name="Curved Label Symbol"]
  *  @param {Object} [arg1_options.style]
  * 
@@ -26,7 +27,7 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 			name: "CSS Style",
 			onuserchange: () => this.fireToBinding()
 		});
-		this.element = this.list_component.element;
+		this.element = this.draw().element;
 		
 		HTML.applyTelestyle(this.element, {
 			"[component='ve-text']": { display: "inline" },
@@ -71,6 +72,9 @@ global.UI_CurvedLabelSymbol = class extends ve.Component {
 	draw () {
 		return veInterface({
 			list_component: this.list_component
-		}, { name: (this.options.name || "Curved Label Symbol") });
+		}, { 
+			name: (this.options.name || "Curved Label Symbol"),
+			...this.options.interface_options
+		});
 	}
 };

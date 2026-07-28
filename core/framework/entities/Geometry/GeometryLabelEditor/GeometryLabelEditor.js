@@ -125,7 +125,7 @@ naissance.GeometryLabelEditor = class {
 		if (this.geometry?.label_geometries)
 			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
 				let local_geometry = this.geometry.label_geometries[i];
-				let is_selected = this.selected_indexes.includes(i) && this.geometry.selected;
+				let is_selected = (this.selected_indexes.includes(i) && this.isSelected());
 				
 				if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
 					//Toggle outline highlight directly on glyph DOM elements
@@ -213,7 +213,7 @@ naissance.GeometryLabelEditor = class {
 	
 	handleEvents () {
 		//Attach event handles
-		if (this?.geometry?.label_geometries && this?.geometry?.selected)
+		if (this?.geometry?.label_geometries && this.isSelected())
 			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
 				let local_geometry = this.geometry.label_geometries[i];
 				
@@ -247,6 +247,11 @@ naissance.GeometryLabelEditor = class {
 					}
 				}
 			}
+	}
+	
+	isSelected () {
+		//Return statement
+		return (this?.geometry?.selected || this.window);
 	}
 	
 	open () {
@@ -287,9 +292,41 @@ naissance.GeometryLabelEditor = class {
 					}, { name: "Add Label (Curved)" })
 				})
 			}, { name: "Label Actions", open: true }),
-			
+			edit_curved_label_style: new UI_CurvedLabelSymbol({}, {
+				name: "Edit Selected Labels (Curved)",
+				onuserchange: (v) => {
+					let label_geometries = this.geometry.label_geometries;
+					let saved_label_data = this.geometry.value?.[2]?.label_geometries;
+					
+					if (label_geometries && saved_label_data) {
+						for (let i = 0; i < this.selected_indexes.length; i++) {
+							let local_index = this.selected_indexes[i];
+							let local_geometry = label_geometries[local_index];
+							let local_json = saved_label_data[local_index];
+							
+							if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
+								local_geometry.style = {
+									...local_geometry.style,
+									...v
+								};
+								if (!local_json.options) local_json.options = {};
+								local_json.options.style = { ...local_geometry.style };
+								local_geometry.render();
+								
+								let existing_symbol = local_json.options?.symbol_obj || local_json.symbol;
+								saved_label_data[local_index] = local_geometry.toJSON();
+								if (existing_symbol) {
+									saved_label_data[local_index].options.symbol_obj = existing_symbol;
+									saved_label_data[local_index].symbol = existing_symbol;
+								}
+							}
+						}
+						this.updateKeyframe();
+					}
+				}
+			}),
 			edit_selected_labels: new UI_LabelSymbol(default_label_symbol, {
-				name: "Edit Selected Labels",
+				name: "Edit Selected Labels (Straight)",
 				special_function: (v) => {
 					let label_geometries = this.geometry.label_geometries;
 					let saved_label_data = this.geometry.value?.[2]?.label_geometries;
@@ -336,41 +373,6 @@ naissance.GeometryLabelEditor = class {
 					}
 				}
 			}),
-			
-			edit_curved_label_style: new UI_CurvedLabelSymbol({}, {
-				name: "Curved Label CSS Style",
-				onuserchange: (v) => {
-					let label_geometries = this.geometry.label_geometries;
-					let saved_label_data = this.geometry.value?.[2]?.label_geometries;
-					
-					if (label_geometries && saved_label_data) {
-						for (let i = 0; i < this.selected_indexes.length; i++) {
-							let local_index = this.selected_indexes[i];
-							let local_geometry = label_geometries[local_index];
-							let local_json = saved_label_data[local_index];
-							
-							if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
-								local_geometry.style = {
-									...local_geometry.style,
-									...v
-								};
-								if (!local_json.options) local_json.options = {};
-								local_json.options.style = { ...local_geometry.style };
-								local_geometry.render();
-								
-								let existing_symbol = local_json.options?.symbol_obj || local_json.symbol;
-								saved_label_data[local_index] = local_geometry.toJSON();
-								if (existing_symbol) {
-									saved_label_data[local_index].options.symbol_obj = existing_symbol;
-									saved_label_data[local_index].symbol = existing_symbol;
-								}
-							}
-						}
-						this.updateKeyframe();
-					}
-				}
-			}),
-			
 			selection: veInterface({
 				menu: veRawInterface({
 					clear_selection: veButton(() => {
@@ -445,7 +447,17 @@ naissance.GeometryLabelEditor = class {
 							this.removeLabelGeometry(this.selected_indexes[i]);
 						this.selected_indexes = [];
 						if (this.geometry) this.geometry.draw();
-					}, { name: "Delete Selected Labels" })
+					}, { name: "Delete Selected Labels" }),
+					select_all: veButton(() => {
+						//Declare local instance variables
+						let label_geometries = this.geometry.label_geometries;
+						
+						//Iterate over all label_geometries and select them
+						for (let i = 0; i < label_geometries.length; i++)
+							this.select(i);
+						
+						veToast(`Selected all ${String.formatNumber(label_geometries.length)} label geometries associated with ${this.geometry.name}.`);
+					}, { name: "Select All" })
 				})
 			}, { name: "Selection", open: true })
 		}, {

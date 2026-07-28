@@ -673,12 +673,12 @@ naissance.Geometry = class extends naissance.Entity {
 										this.label_editor.open();
 									}, { name: "Open Label Editor" })
 								})
-							}, { name: "More Editors", open: true })
+							}, { name: "Symbology", open: true })
 						}
 					});
 				}, {
 					name: "<icon>more_vert</icon>",
-					tootlip: "Open Actions Palette"
+					tooltip: "More Actions"
 				}),
 			};
 		}
