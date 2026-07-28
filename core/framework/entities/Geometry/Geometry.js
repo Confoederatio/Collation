@@ -295,6 +295,14 @@ naissance.Geometry = class extends naissance.Entity {
 								if (final_symbol.textFaceName !== undefined) existing_geom.style.fontFamily = final_symbol.textFaceName;
 								existing_geom.setText(final_symbol.textName);
 								existing_geom.render();
+								
+								if (!existing_geom.options) existing_geom.options = {};
+								existing_geom.options.symbol_obj = final_symbol;
+								
+								saved_label_geometries[i] = existing_geom.toJSON();
+								saved_label_geometries[i].options.symbol_obj = final_symbol;
+								saved_label_geometries[i].symbol = final_symbol;
+								
 								new_label_geometries.push(existing_geom);
 							} else {
 								if (existing_geom) existing_geom.remove();
@@ -304,12 +312,13 @@ naissance.Geometry = class extends naissance.Entity {
 									options: {
 										...label_json.options,
 										text_string: final_symbol.textName,
-										base_font_size: Math.returnSafeNumber(final_symbol.textSize, 16),
+										base_font_size: Math.returnSafeNumber(final_symbol.textSize, label_json.options?.base_font_size || 16),
 										style: {
-											fontFamily: final_symbol.textFaceName || "sans-serif",
-											color: final_symbol.textFill || "#ffffff",
-											...(label_json.options?.style || {})
-										}
+											...(label_json.options?.style || {}),
+											fontFamily: final_symbol.textFaceName || label_json.options?.style?.fontFamily || "sans-serif",
+											color: final_symbol.textFill || label_json.options?.style?.color || "#ffffff"
+										},
+										symbol_obj: final_symbol
 									}
 								};
 								let curved_label = Geospatiale.maptalks_CurvedLabel.fromJSON(map_instance, curved_json);

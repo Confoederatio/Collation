@@ -169,8 +169,19 @@ naissance.GeometryLabelEditor = class {
 								local_geometry.setCoordinates(updated_coords);
 								
 								let saved_label_data = this.geometry.value?.[2]?.label_geometries;
-								if (saved_label_data && saved_label_data[i])
+								if (saved_label_data && saved_label_data[i]) {
+									let current_symbol = saved_label_data[i].options?.symbol_obj || saved_label_data[i].symbol || local_geometry.options?.symbol_obj;
+									
+									if (!local_geometry.options) local_geometry.options = {};
+									if (current_symbol) local_geometry.options.symbol_obj = current_symbol;
+									
 									saved_label_data[i] = local_geometry.toJSON();
+									if (current_symbol) {
+										if (!saved_label_data[i].options) saved_label_data[i].options = {};
+										saved_label_data[i].options.symbol_obj = current_symbol;
+										saved_label_data[i].symbol = current_symbol;
+									}
+								}
 								
 								this.updateKeyframe();
 							};
@@ -300,22 +311,18 @@ naissance.GeometryLabelEditor = class {
 								local_json.symbol = new_symbol;
 								
 								if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
-									if (v.textSize !== undefined) {
-										local_geometry.setFontSize(v.textSize);
-										local_json.options.base_font_size = v.textSize;
-									}
+									if (!local_geometry.options) local_geometry.options = {};
+									local_geometry.options.symbol_obj = new_symbol;
+									
+									if (v.textSize !== undefined) local_geometry.setFontSize(v.textSize);
 									if (v.textName !== undefined) local_geometry.setText(v.textName);
-									if (v.textFill !== undefined) {
-										local_geometry.style.color = v.textFill;
-										if (!local_json.options.style) local_json.options.style = {};
-										local_json.options.style.color = v.textFill;
-									}
-									if (v.textFaceName !== undefined) {
-										local_geometry.style.fontFamily = v.textFaceName;
-										if (!local_json.options.style) local_json.options.style = {};
-										local_json.options.style.fontFamily = v.textFaceName;
-									}
+									if (v.textFill !== undefined) local_geometry.style.color = v.textFill;
+									if (v.textFaceName !== undefined) local_geometry.style.fontFamily = v.textFaceName;
 									local_geometry.render();
+									
+									saved_label_data[local_index] = local_geometry.toJSON();
+									saved_label_data[local_index].options.symbol_obj = new_symbol;
+									saved_label_data[local_index].symbol = new_symbol;
 								} else if (typeof local_geometry.setSymbol === "function") {
 									local_geometry.setSymbol(new_symbol);
 								}
@@ -350,6 +357,13 @@ naissance.GeometryLabelEditor = class {
 								if (!local_json.options) local_json.options = {};
 								local_json.options.style = { ...local_geometry.style };
 								local_geometry.render();
+								
+								let existing_symbol = local_json.options?.symbol_obj || local_json.symbol;
+								saved_label_data[local_index] = local_geometry.toJSON();
+								if (existing_symbol) {
+									saved_label_data[local_index].options.symbol_obj = existing_symbol;
+									saved_label_data[local_index].symbol = existing_symbol;
+								}
 							}
 						}
 						this.updateKeyframe();

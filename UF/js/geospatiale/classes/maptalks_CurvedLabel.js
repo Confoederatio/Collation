@@ -30,10 +30,10 @@ Geospatiale.maptalks_CurvedLabel = class {
 		this.glyph_markers = [];
 		this.style = {
 			fontFamily: "sans-serif",
-			fontSize: this.base_font_size,
 			opacity: 0.85,
 			pointerEvents: "none",
-			...this.options.style
+			...this.options.style,
+			fontSize: this.base_font_size
 		};
 		this.text_string = this.options.text_string;
 		
@@ -333,7 +333,7 @@ Geospatiale.maptalks_CurvedLabel = class {
 		
 		//Refresh font_size relative to screenspace
 		this.base_font_size = font_size;
-		this.base_zoom = this.map.getZoom();
+		this.style.fontSize = font_size;
 		this.render();
 	}
 	
@@ -370,7 +370,7 @@ Geospatiale.maptalks_CurvedLabel = class {
 		
 		new_options_obj.base_font_size = this.base_font_size;
 		new_options_obj.base_zoom = this.base_zoom;
-		new_options_obj.style = { ...this.style };
+		new_options_obj.style = { ...this.style, fontSize: this.base_font_size };
 		new_options_obj.text_string = this.text_string;
 		new_options_obj.type = "curved";
 		
