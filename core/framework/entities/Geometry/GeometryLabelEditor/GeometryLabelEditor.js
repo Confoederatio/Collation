@@ -7,7 +7,7 @@ if (!global.naissance) global.naissance = {};
  * - `.geometry`: {@link naissance.Geometry} - The parent Naissance geometry entity. The rendered {@link maptalks.Geometry} is available as `.geometry.geometry`.
  * - `.interfaces`: {@link Object}
  * - `.label_geometries`: {@link Array}<{@link Object}>
- *   - `.geometry`: {@link Geospatiale.maptalks_CurvedText}|{@link maptalks.Geometry} - The rendered label geometry owned by this editor.
+ *   - `.geometry`: {@link Geospatiale.maptalks_CurvedLabel}|{@link maptalks.Geometry} - The rendered label geometry owned by this editor.
  *   - `.options`: {@link Object}
  *     - `.length`: {@link number} - Any positive length results in truncation.
  *     - `.symbol_obj`: {@link Object} - The maptalks symbol used by the label.

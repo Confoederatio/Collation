@@ -12,9 +12,9 @@ if (!global.Geospatiale)
  *  @param {maptalks.Map} [arg1_options.map]
  *  @param {Object} [arg1_options.style]
  * 
- * @type {Geospatiale.maptalks_CurvedText}
+ * @type {Geospatiale.maptalks_CurvedLabel}
  */
-Geospatiale.maptalks_CurvedText = class {
+Geospatiale.maptalks_CurvedLabel = class {
 	constructor (arg0_coords, arg1_options) {
 		//Convert from parameters
 		let coords = arg0_coords;
@@ -48,7 +48,7 @@ Geospatiale.maptalks_CurvedText = class {
 	
 	/**
 	 * Returns smoothed points between coords for arc curves.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {Array.<number[]>} arg0_coords
 	 * @param [arg1_samples_per_segment=25]
@@ -98,7 +98,7 @@ Geospatiale.maptalks_CurvedText = class {
 	
 	/**
 	 * Measures actual text width using a `<canvas>` to assess kerning.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {string} arg0_text
 	 * @param {number} arg1_font_size
@@ -120,8 +120,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
-	 * Removes the maptalks_CurvedText geometry from the map.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Removes the maptalks_CurvedLabel geometry from the map.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 */
 	remove () {
 		//Remove map view event handlers
@@ -135,8 +135,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
-	 * Renders the maptalks_CurvedText geometry to the map.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Renders the maptalks_CurvedLabel geometry to the map.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 */
 	render () {
 		if (!this.map || !this.text_string) return; //Internal guard clause
@@ -299,8 +299,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
-	 * Sets coordinates for the maptalks_CurvedText geometry.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Sets coordinates for the maptalks_CurvedLabel geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {Array.<number[]>} arg0_coords
 	 */
@@ -314,8 +314,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
-	 * Sets the font size for the maptalks_CurvedText geometry.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Sets the font size for the maptalks_CurvedLabel geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {number} arg0_size
 	 */
@@ -330,8 +330,8 @@ Geospatiale.maptalks_CurvedText = class {
 	}
 	
 	/**
-	 * Sets the new text for the maptalks_CurvedText geometry.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Sets the new text for the maptalks_CurvedLabel geometry.
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {string} arg0_text
 	 */
@@ -346,7 +346,7 @@ Geospatiale.maptalks_CurvedText = class {
 	
 	/**
 	 * Exports class to JSON.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @returns {Object} 
 	 */
@@ -369,18 +369,18 @@ Geospatiale.maptalks_CurvedText = class {
 	
 	/**
 	 * Internal helper function to refresh zoom.
-	 * - Method of: {@link Geospatiale.maptalks_CurvedText}
+	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 */
 	updateZoom () { this.render(); }
 	
 	/**
-	 * Creates a new maptalks_CurvedText geometry from JSON.
-	 * - Static method of: {@link Geospatiale.maptalks_CurvedText}
+	 * Creates a new maptalks_CurvedLabel geometry from JSON.
+	 * - Static method of: {@link Geospatiale.maptalks_CurvedLabel}
 	 * 
 	 * @param {maptalks.Map} arg0_map
 	 * @param {Object|string} arg1_json
 	 * 
-	 * @returns {Geospatiale.maptalks_CurvedText}
+	 * @returns {Geospatiale.maptalks_CurvedLabel}
 	 */
 	static fromJSON (arg0_map, arg1_json) {
 		//Convert from parameters
@@ -388,6 +388,6 @@ Geospatiale.maptalks_CurvedText = class {
 		let json = (typeof arg1_json === "string") ? JSON.parse(arg1_json) : arg1_json;	
 		
 		//Declare local instance variables
-		return new Geospatiale.maptalks_CurvedText(map, json);
+		return new Geospatiale.maptalks_CurvedLabel(map, json);
 	}
 };
