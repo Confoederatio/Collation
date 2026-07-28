@@ -42,7 +42,7 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	addLabelGeometry (arg0_coords, arg1_options) {
-		//Convert  from parameters
+		//Convert from parameters
 		let coords = arg0_coords;
 		let options = (arg1_options) ? arg1_options : {};
 		
@@ -56,24 +56,52 @@ naissance.GeometryLabelEditor = class {
 		if (!options.type) options.type = "straight";
 		
 		//Declare local instance variables
+		let map_instance = (global.map || window.map || map);
 		let rendered_geometry = this.geometry?.geometry;
-			if (coords === undefined) coords = (rendered_geometry) ? rendered_geometry.getCenter() : map.getCenter();
 		
-		//Initialise new_marker
-		let new_marker = new maptalks.Marker(coords, {
-			symbol: options.symbol_obj
-		});
+		if (options.type === "curved" && !Array.isArray(coords)) {
+			let extent = (rendered_geometry) ? rendered_geometry.getExtent() : map_instance.getExtent();
+			let center = (rendered_geometry) ? rendered_geometry.getCenter() : map_instance.getCenter();
+			
+			coords = [
+				[extent.xmin, extent.ymax],
+				[center.x, center.y],
+				[extent.xmax, extent.ymin]
+			];
+		} else if (coords === undefined) {
+			coords = (rendered_geometry) ? rendered_geometry.getCenter() : map_instance.getCenter();
+		}
 		
-		let json_obj = new_marker.toJSON();
+		let json_obj;
+		if (options.type === "curved") {
+			let temp_curved = new Geospatiale.maptalks_CurvedLabel(coords, {
+				map: map_instance,
+				text_string: options.symbol_obj.textName,
+				base_font_size: Math.returnSafeNumber(options.symbol_obj.textSize, 16),
+				base_zoom: map_instance.getZoom(),
+				style: {
+					fontFamily: options.symbol_obj.textFaceName || "sans-serif",
+					color: options.symbol_obj.textFill || "#ffffff"
+				}
+			});
+			json_obj = temp_curved.toJSON();
+			temp_curved.remove();
+			json_obj.options.symbol_obj = options.symbol_obj;
+		} else {
+			let new_marker = new maptalks.Marker(coords, {
+				symbol: options.symbol_obj
+			});
+			json_obj = new_marker.toJSON();
 			json_obj.options = options;
+		}
 		
 		//Ensure .value[2].label_geometries exists
 		if (!this.geometry.value) this.geometry.value = [];
 		if (!this.geometry.value[2]) this.geometry.value[2] = {};
 		if (!this.geometry.value[2].label_geometries) this.geometry.value[2].label_geometries = [];
 		let label_geometries = this.geometry.value[2].label_geometries;
-			label_geometries.push(json_obj);
-			
+		label_geometries.push(json_obj);
+		
 		//Update keyframe; draw UI
 		this.updateKeyframe();
 	}
@@ -90,24 +118,85 @@ naissance.GeometryLabelEditor = class {
 	}
 	
 	drawSelectedGeometries () {
-		//Clear currently rendered this.selected_geometries
-		for (let i = 0; i < this.selected_geometries.length; i++)
-			this.selected_geometries[i].remove();
-		this.selected_geometries = [];
+		if (!this.selected_geometries) this.selected_geometries = [];
 		
-		if (this.geometry.selected)
-			for (let i = 0; i < this.selected_indexes.length; i++) try {
-				let local_geometry = this.geometry.label_geometries[this.selected_indexes[i]];
-				let local_selected_geometry = local_geometry.copy();
+		let active_selected_objects = [];
+		
+		if (this.geometry?.label_geometries)
+			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
+				let local_geometry = this.geometry.label_geometries[i];
+				let is_selected = this.selected_indexes.includes(i) && this.geometry.selected;
 				
-				local_selected_geometry.setSymbol({
-					...local_geometry.getSymbol(),
-					textHaloFill: `rgba(255, 255, 0, 0.5)`,
-					textHaloRadius: 4
-				});
-				main.layers.selection_layer.addGeometry(local_selected_geometry);
-				this.selected_geometries.push(local_selected_geometry);
-			} catch (e) { console.error(e); }
+				if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
+					//Toggle outline highlight directly on glyph DOM elements
+					for (let x = 0; x < local_geometry.glyph_markers.length; x++) {
+						let dom_el = local_geometry.glyph_markers[x].getDOM();
+						if (dom_el) {
+							let span_el = dom_el.querySelector("span");
+							let target_el = (span_el) ? span_el : dom_el;
+							target_el.style.outline = (is_selected) ? "2px solid yellow" : "none";
+							target_el.style.outlineOffset = "2px";
+						}
+					}
+					
+					if (is_selected) try {
+						let line_coords = local_geometry.coords;
+						let existing_path = this.selected_geometries.find((geom) => geom._label_index === i);
+						
+						if (existing_path) {
+							active_selected_objects.push(existing_path);
+						} else {
+							let path_line = new maptalks.LineString(line_coords, {
+								draggable: true,
+								symbol: {
+									lineColor: "#00bfff",
+									lineWidth: 2,
+									lineDasharray: [4, 4]
+								}
+							});
+							path_line._label_index = i;
+							path_line.addTo(main.layers.selection_layer);
+							path_line.startEdit();
+							
+							let updateCoords = () => {
+								let raw_coords = path_line.getCoordinates();
+								let updated_coords = [];
+								
+								for (let c = 0; c < raw_coords.length; c++)
+									updated_coords.push([raw_coords[c].x, raw_coords[c].y]);
+								
+								local_geometry.setCoordinates(updated_coords);
+								
+								let saved_label_data = this.geometry.value?.[2]?.label_geometries;
+								if (saved_label_data && saved_label_data[i])
+									saved_label_data[i] = local_geometry.toJSON();
+								
+								this.updateKeyframe();
+							};
+							
+							path_line.on("shapechange positionchange editend dragend dragpositionchange", updateCoords);
+							active_selected_objects.push(path_line);
+						}
+					} catch (e) { console.error(e); }
+				} else if (is_selected) try {
+					let local_selected_geometry = local_geometry.copy();
+					local_selected_geometry.setSymbol({
+						...local_geometry.getSymbol(),
+						textHaloFill: `rgba(255, 255, 0, 0.5)`,
+						textHaloRadius: 4
+					});
+					main.layers.selection_layer.addGeometry(local_selected_geometry);
+					active_selected_objects.push(local_selected_geometry);
+				} catch (e) { console.error(e); }
+			}
+		
+		//Clean up old selection overlays that are no longer active
+		for (let i = 0; i < this.selected_geometries.length; i++) {
+			let old_geom = this.selected_geometries[i];
+			if (!active_selected_objects.includes(old_geom))
+				old_geom.remove();
+		}
+		this.selected_geometries = active_selected_objects;
 	}
 	
 	handleEvents () {
@@ -116,13 +205,34 @@ naissance.GeometryLabelEditor = class {
 			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
 				let local_geometry = this.geometry.label_geometries[i];
 				
-				local_geometry.on("click", () => {
-					if (!this.selected_indexes.includes(i)) {
-						this.select(i);
-					} else {
-						this.deselect(i);
+				if (typeof local_geometry.on === "function") {
+					local_geometry.on("click", () => {
+						if (!this.selected_indexes.includes(i)) {
+							this.select(i);
+						} else {
+							this.deselect(i);
+						}
+					});
+				}
+				if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel || local_geometry.glyph_markers) {
+					for (let x = 0; x < local_geometry.glyph_markers.length; x++) {
+						let marker = local_geometry.glyph_markers[x];
+						let dom_el = marker.getDOM();
+						
+						if (dom_el) {
+							dom_el.style.pointerEvents = "auto";
+							dom_el.style.cursor = "pointer";
+							dom_el.onclick = (e) => {
+								if (e) e.stopPropagation();
+								if (!this.selected_indexes.includes(i)) {
+									this.select(i);
+								} else {
+									this.deselect(i);
+								}
+							};
+						}
 					}
-				});
+				}
 			}
 	}
 	
@@ -132,19 +242,35 @@ naissance.GeometryLabelEditor = class {
 			...main.settings.default_label_symbol,
 			...(this.value?.[1]?.label_symbol || {})
 		};
+		let map_instance = (global.map || window.map || map);
 		
 		if (this.window) this.window.close();
 		this.window = veWindow({
 			actions_bar: veInterface({
 				menu: veRawInterface({
 					add_straight_label: veButton(() => {
-						this.addLabelGeometry(map.getCenter(), {
+						this.addLabelGeometry(map_instance.getCenter(), {
 							symbol_obj: {
 								textName: this.geometry.name
 							}
 						});
 					}, { name: "Add Label (Straight)" }),
 					add_curved_label: veButton(() => {
+						let rendered_geometry = this.geometry?.geometry;
+						let extent = (rendered_geometry) ? rendered_geometry.getExtent() : map_instance.getExtent();
+						let center = (rendered_geometry) ? rendered_geometry.getCenter() : map_instance.getCenter();
+						let curve_coords = [
+							[extent.xmin, extent.ymax],
+							[center.x, center.y],
+							[extent.xmax, extent.ymin]
+						];
+						
+						this.addLabelGeometry(curve_coords, {
+							type: "curved",
+							symbol_obj: {
+								textName: this.geometry.name
+							}
+						});
 					}, { name: "Add Label (Curved)" })
 				})
 			}, { name: "Label Actions", open: true }),
@@ -162,16 +288,24 @@ naissance.GeometryLabelEditor = class {
 							let local_json = saved_label_data[local_index];
 							
 							if (local_geometry && local_json) {
-								//Update live geometry
 								let new_symbol = {
-									...local_geometry.getSymbol(),
+									...(local_json.options?.symbol_obj || local_json.symbol || {}),
 									...v
 								};
 								
-								//Update the JSON storage so it persists through draw() calls
 								if (!local_json.options) local_json.options = {};
-									local_json.options.symbol_obj = new_symbol;
-									local_json.symbol = new_symbol;
+								local_json.options.symbol_obj = new_symbol;
+								local_json.symbol = new_symbol;
+								
+								if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
+									if (v.textSize !== undefined) local_geometry.setFontSize(v.textSize);
+									if (v.textName !== undefined) local_geometry.setText(v.textName);
+									if (v.textFill !== undefined) local_geometry.style.color = v.textFill;
+									if (v.textFaceName !== undefined) local_geometry.style.fontFamily = v.textFaceName;
+									local_geometry.render();
+								} else if (typeof local_geometry.setSymbol === "function") {
+									local_geometry.setSymbol(new_symbol);
+								}
 							}
 						}
 						
@@ -182,6 +316,34 @@ naissance.GeometryLabelEditor = class {
 					}
 				}
 			}),
+			
+			edit_curved_label_style: new UI_CurvedLabelSymbol({}, {
+				name: "Curved Label CSS Style",
+				onuserchange: (v) => {
+					let label_geometries = this.geometry.label_geometries;
+					let saved_label_data = this.geometry.value?.[2]?.label_geometries;
+					
+					if (label_geometries && saved_label_data) {
+						for (let i = 0; i < this.selected_indexes.length; i++) {
+							let local_index = this.selected_indexes[i];
+							let local_geometry = label_geometries[local_index];
+							let local_json = saved_label_data[local_index];
+							
+							if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
+								local_geometry.style = {
+									...local_geometry.style,
+									...v
+								};
+								if (!local_json.options) local_json.options = {};
+								local_json.options.style = { ...local_geometry.style };
+								local_geometry.render();
+							}
+						}
+						this.updateKeyframe();
+					}
+				}
+			}),
+			
 			selection: veInterface({
 				menu: veRawInterface({
 					clear_selection: veButton(() => {
@@ -196,20 +358,47 @@ naissance.GeometryLabelEditor = class {
 							this._is_being_moved = true;
 							local_component.name = `Cancel Moving Selection`;
 							
-							map.once("click", (e) => {
+							map_instance.once("click", (e) => {
 								let saved_labels = this.geometry.value?.[2]?.label_geometries;
 								
 								for (let i = 0; i < this.selected_indexes.length; i++) {
-									let local_geometry = this.geometry.label_geometries[this.selected_indexes[i]];
-									let local_json = saved_labels[this.selected_indexes[i]];
+									let local_index = this.selected_indexes[i];
+									let local_geometry = this.geometry.label_geometries[local_index];
+									let local_json = saved_labels[local_index];
 									
-									if (local_geometry && local_json)
-										try {
-											local_json.feature.geometry.coordinates = e.coordinate.toJSON();
-										} catch (e) {}
+									if (local_geometry && local_json) {
+										if (local_json.options?.type === "curved" || local_geometry instanceof Geospatiale.maptalks_CurvedLabel) {
+											let old_coords = local_geometry.coords;
+											let center_x = 0;
+											let center_y = 0;
+											
+											for (let c = 0; c < old_coords.length; c++) {
+												center_x += (old_coords[c].x !== undefined) ? old_coords[c].x : old_coords[c][0];
+												center_y += (old_coords[c].y !== undefined) ? old_coords[c].y : old_coords[c][1];
+											}
+											center_x /= old_coords.length;
+											center_y /= old_coords.length;
+											
+											let dx = e.coordinate.x - center_x;
+											let dy = e.coordinate.y - center_y;
+											let new_coords = [];
+											
+											for (let c = 0; c < old_coords.length; c++) {
+												let cx = (old_coords[c].x !== undefined) ? old_coords[c].x : old_coords[c][0];
+												let cy = (old_coords[c].y !== undefined) ? old_coords[c].y : old_coords[c][1];
+												new_coords.push([cx + dx, cy + dy]);
+											}
+											
+											local_geometry.setCoordinates(new_coords);
+											local_json.coords = new_coords;
+										} else {
+											try {
+												local_json.feature.geometry.coordinates = e.coordinate.toJSON();
+											} catch (err) {}
+										}
+									}
 								}
 								
-								//Finish moving selection
 								delete this._is_being_moved;
 								local_component.name = `Move Selection`;
 								this.updateKeyframe();
@@ -225,7 +414,6 @@ naissance.GeometryLabelEditor = class {
 					delete_selected_labels: veButton(() => {
 						veToast(`Deleted ${String.formatNumber(this.selected_indexes.length)} selected labels.`);
 						
-						//Iterate in reverse and remove label geometries
 						for (let i = this.selected_indexes.length - 1; i >= 0; i--)
 							this.removeLabelGeometry(this.selected_indexes[i]);
 						this.selected_indexes = [];

@@ -218,14 +218,7 @@ naissance.Geometry = class extends naissance.Entity {
 	
 	drawLabels () {
 		try {
-			if (this.label_geometries) {
-				for (let i = this.label_geometries.length - 1; i >= 0; i--) {
-					if (this.label_geometries[i]) this.label_geometries[i].remove();
-				}
-				this.label_geometries = [];
-			} else {
-				this.label_geometries = [];
-			}
+			if (!this.label_geometries) this.label_geometries = [];
 			
 			if (this.value && this.value[2] && this.geometry) {
 				let class_settings = (naissance[this.class_name]?.labelling_options || {});
@@ -240,12 +233,22 @@ naissance.Geometry = class extends naissance.Entity {
 					...default_label_symbol,
 					...(this.value[1]?.label_symbol || {})
 				};
-				if (base_label_symbol.hide_label) return;
+				if (base_label_symbol.hide_label) {
+					for (let i = 0; i < this.label_geometries.length; i++)
+						if (this.label_geometries[i]) this.label_geometries[i].remove();
+					this.label_geometries = [];
+					return;
+				}
 				
 				let target_layer = (is_autolabelled) ?
 					main.layers.label_layer : main.layers.overlay_label_layer;
+				let map_instance = (global.map || window.map || map);
 				
 				if (is_autolabelled) {
+					for (let i = 0; i < this.label_geometries.length; i++)
+						if (this.label_geometries[i]) this.label_geometries[i].remove();
+					this.label_geometries = [];
+					
 					if (class_settings.autolabel_function) class_settings.autolabel_function(this);
 					
 					for (let i = 0; i < this.label_geometries.length; i++) {
@@ -263,9 +266,17 @@ naissance.Geometry = class extends naissance.Entity {
 							local_label_geometry.hide();
 					}
 				} else {
+					//Remove trailing geometries if array size reduced
+					while (this.label_geometries.length > saved_label_geometries.length) {
+						let removed_geom = this.label_geometries.pop();
+						if (removed_geom) removed_geom.remove();
+					}
+					
+					let new_label_geometries = [];
 					for (let i = 0; i < saved_label_geometries.length; i++) {
 						let label_json = saved_label_geometries[i];
-						let local_label_geometry = maptalks.Geometry.fromJSON(label_json);
+						let existing_geom = this.label_geometries[i];
+						let is_curved = (label_json.options?.type === "curved");
 						
 						let stored_symbol = label_json.options?.symbol_obj || label_json.symbol || {};
 						let final_symbol = {
@@ -275,10 +286,53 @@ naissance.Geometry = class extends naissance.Entity {
 						if (!final_symbol.textName)
 							final_symbol.textName = default_label_name || "";
 						
-						local_label_geometry.setSymbol(final_symbol);
-						local_label_geometry.addTo(target_layer);
-						this.label_geometries.push(local_label_geometry);
+						if (is_curved) {
+							if (existing_geom instanceof Geospatiale.maptalks_CurvedLabel) {
+								existing_geom.setCoordinates(label_json.coords);
+								if (label_json.options?.style) existing_geom.style = { ...existing_geom.style, ...label_json.options.style };
+								existing_geom.setText(final_symbol.textName);
+								new_label_geometries.push(existing_geom);
+							} else {
+								if (existing_geom) existing_geom.remove();
+								
+								let curved_json = {
+									coords: label_json.coords,
+									options: {
+										...label_json.options,
+										text_string: final_symbol.textName,
+										base_font_size: Math.returnSafeNumber(final_symbol.textSize, 16),
+										style: {
+											fontFamily: final_symbol.textFaceName || "sans-serif",
+											color: final_symbol.textFill || "#ffffff",
+											...(label_json.options?.style || {})
+										}
+									}
+								};
+								let curved_label = Geospatiale.maptalks_CurvedLabel.fromJSON(map_instance, curved_json);
+								curved_label.addTo(map_instance);
+								new_label_geometries.push(curved_label);
+							}
+						} else {
+							if (existing_geom instanceof Geospatiale.maptalks_CurvedLabel) {
+								existing_geom.remove();
+								existing_geom = null;
+							}
+							
+							if (existing_geom && typeof existing_geom.setSymbol === "function") {
+								existing_geom.setSymbol(final_symbol);
+								if (label_json.feature?.geometry?.coordinates)
+									existing_geom.setCoordinates(label_json.feature.geometry.coordinates);
+								new_label_geometries.push(existing_geom);
+							} else {
+								if (existing_geom) existing_geom.remove();
+								let straight_label = maptalks.Geometry.fromJSON(label_json);
+								straight_label.setSymbol(final_symbol);
+								straight_label.addTo(target_layer);
+								new_label_geometries.push(straight_label);
+							}
+						}
 					}
+					this.label_geometries = new_label_geometries;
 				}
 				
 				if (this.label_editor) {

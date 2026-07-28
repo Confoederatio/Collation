@@ -46,6 +46,15 @@ Geospatiale.maptalks_CurvedLabel = class {
 		this.render();
 	}
 	
+	addTo (arg0_map) {
+		//Convert from parameters
+		let map = (arg0_map) ? arg0_map : this.map;
+		
+		//Iterate over all this.glyph_markers and add it to the map
+		for (let i = 0; i < this.glyph_markers.length; i++)
+			this.glyph_markers[i].addTo(map);
+	}
+	
 	/**
 	 * Returns smoothed points between coords for arc curves.
 	 * - Method of: {@link Geospatiale.maptalks_CurvedLabel}
@@ -276,7 +285,6 @@ Geospatiale.maptalks_CurvedLabel = class {
 					
 					content: dom_el
 				});
-				new_marker.addTo(this.map);
 				this.glyph_markers.push(new_marker);
 			}
 			
@@ -360,6 +368,12 @@ Geospatiale.maptalks_CurvedLabel = class {
 				new_options_obj[local_key] = local_value;
 		});
 		
+		new_options_obj.base_font_size = this.base_font_size;
+		new_options_obj.base_zoom = this.base_zoom;
+		new_options_obj.style = { ...this.style };
+		new_options_obj.text_string = this.text_string;
+		new_options_obj.type = "curved";
+		
 		//Return statement
 		return {
 			coords: this.coords,
@@ -385,9 +399,14 @@ Geospatiale.maptalks_CurvedLabel = class {
 	static fromJSON (arg0_map, arg1_json) {
 		//Convert from parameters
 		let map = arg0_map;
-		let json = (typeof arg1_json === "string") ? JSON.parse(arg1_json) : arg1_json;	
+		let json = (typeof arg1_json === "string") ? JSON.parse(arg1_json) : arg1_json;
 		
-		//Declare local instance variables
-		return new Geospatiale.maptalks_CurvedLabel(map, json);
+		let options_obj = {
+			...(json.options || {}),
+			map: map
+		};
+		
+		//Return statement
+		return new Geospatiale.maptalks_CurvedLabel(json.coords, options_obj);
 	}
 };
