@@ -148,6 +148,7 @@ naissance.GeometryLabelEditor = class {
 						} else {
 							let path_line = new maptalks.LineString(line_coords, {
 								draggable: true,
+								smoothness: 0.5,
 								symbol: {
 									lineColor: "#00bfff",
 									lineWidth: 2,
@@ -205,7 +206,7 @@ naissance.GeometryLabelEditor = class {
 			for (let i = 0; i < this.geometry.label_geometries.length; i++) {
 				let local_geometry = this.geometry.label_geometries[i];
 				
-				if (typeof local_geometry.on === "function") {
+				if (local_geometry instanceof maptalks.Geometry) {
 					local_geometry.on("click", () => {
 						if (!this.selected_indexes.includes(i)) {
 							this.select(i);
@@ -213,16 +214,17 @@ naissance.GeometryLabelEditor = class {
 							this.deselect(i);
 						}
 					});
-				}
-				if (local_geometry instanceof Geospatiale.maptalks_CurvedLabel || local_geometry.glyph_markers) {
+				} else if (local_geometry.glyph_markers) {
 					for (let x = 0; x < local_geometry.glyph_markers.length; x++) {
 						let marker = local_geometry.glyph_markers[x];
 						let dom_el = marker.getDOM();
 						
 						if (dom_el) {
-							dom_el.style.pointerEvents = "auto";
-							dom_el.style.cursor = "pointer";
-							dom_el.onclick = (e) => {
+							let span_el = dom_el.querySelector("span");
+							
+							span_el.style.pointerEvents = "auto";
+							span_el.style.cursor = "help";
+							span_el.onclick = (e) => {
 								if (e) e.stopPropagation();
 								if (!this.selected_indexes.includes(i)) {
 									this.select(i);

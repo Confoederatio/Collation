@@ -277,9 +277,9 @@ Geospatiale.maptalks_CurvedLabel = class {
 				if (!existing_marker.isVisible()) existing_marker.show();
 			} else {
 				let new_marker = new maptalks.ui.UIMarker(target_coord, {
+					animation: false,
 					draggable: false,
 					single: false,
-					eventsPropagation: false,
 					pitchWithMap: true,
 					rotateWithMap: true,
 					
