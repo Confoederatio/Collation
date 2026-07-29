@@ -307,7 +307,7 @@ naissance.Geometry = class extends naissance.Entity {
 							} else {
 								if (existing_geom) existing_geom.remove();
 								
-								let curved_json = {
+								let curved_json = { //[WIP] - Refactor later: this is not good, but we need to press this update out now
 									coords: label_json.coords,
 									options: {
 										...label_json.options,
