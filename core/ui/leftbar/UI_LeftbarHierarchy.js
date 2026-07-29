@@ -43,7 +43,7 @@ global.UI_LeftbarHierarchy = class {
 		UI_LeftbarHierarchy.instances.push(this);
 	}
 	
-	applySelectionClasses () {
+	applyClasses () {
 		let all_hierarchy_els = this.hierarchy.element.querySelectorAll("li[component='ve-hierarchy-datatype']");
 		
 		for (let i = 0; i < all_hierarchy_els.length; i++) {
@@ -337,7 +337,7 @@ global.UI_LeftbarHierarchy = class {
 		};
 		
 		this.drawTopbar(this.hierarchy.element);
-		this.applySelectionClasses();
+		this.applyClasses();
 	}
 	
 	static refresh () {
