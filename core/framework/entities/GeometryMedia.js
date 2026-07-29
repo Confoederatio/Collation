@@ -1,3 +1,5 @@
+if (!global.naissance) global.naissance = {};
+
 naissance.GeometryMedia = class extends naissance.Geometry {
 	static hierarchy_symbol = {
 		icon: "image",
@@ -333,6 +335,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	drawUI () {
 		//Declare local instance variables
 		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+		let current_metadata = symbol_obj.metadata || {};
 		
 		//Initialise elements if not already extant
 		if (!this.points_area) {
@@ -496,6 +499,16 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 									name: "Move Global Date with Video",
 									onuserchange: (v) => this.updateKeyframe({ video_sync_global_date: v }),
 									x: 0, y: 1
+								}),
+								frame_increment: veNumber(Math.returnSafeNumber(current_metadata.frame_increment, 1), {
+									name: "Frame Increment (Frames)",
+									onuserchange: (v) => {
+										let new_metadata = structuredClone(current_metadata);
+										new_metadata.frame_increment = v;
+										this.updateKeyframe({ metadata: new_metadata });
+									},
+									tooltip: `<kbd>Ctrl + Left Arrow</kbd> goes back this many frames, <kbd>Ctrl + Right Arrow</kbd> goes forwards this many frames, but only when the video itself is selected.`,
+									x: 1, y: 1
 								}),
 							}, { name: "Video Settings" }),
 							
@@ -669,6 +682,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		this._onmousedown = (e) => this.handleMouseDown(e);
 		this._onmousemove = (e) => this.handleMouseMove(e);
 		this._onmouseup = (e) => this.handleMouseUp(e);
+		this._onkeydown = (e) => this.handleKeyDown(e);
 		this._oncontextmenu = (e) => {
 			if (this.crop_brush_active) {
 				e.preventDefault();
@@ -691,8 +705,41 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		container.addEventListener("contextmenu", this._oncontextmenu, true);
 		container.addEventListener("wheel", this._onwheel, { capture: true, passive: false });
 		
+		document.addEventListener("keydown", this._onkeydown, true);
+		
 		//Add map refresh call
 		map.on("viewchange mousemove", () => this.render());
+	}
+	
+	handleKeyDown (e) {
+		if (!this.selected || !this.video_el) return;
+		
+		//Ignore if user is typing in an input element
+		if (e.target && ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+
+		if (e.ctrlKey || HTML.ctrl_pressed) {
+			if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+				e.preventDefault();
+				e.stopPropagation();
+
+				let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+				let metadata = symbol_obj.metadata || {};
+				let frames = Math.returnSafeNumber(metadata.frame_increment, 1);
+				
+				//Assuming standard 30fps for generic video frame steps
+				let step = frames * (1 / 30);
+
+				if (e.key === "ArrowLeft") {
+					this.video_el.currentTime = Math.max(0, this.video_el.currentTime - step);
+				} else if (e.key === "ArrowRight") {
+					this.video_el.currentTime = this.video_el.currentTime + step;
+				}
+
+				//Force render and obey sync logic
+				this.render();
+				this.syncGlobalDateToVideo(true);
+			}
+		}
 	}
 	
 	handleMouseDown (e) {
@@ -964,6 +1011,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			if (this._oncontextmenu) container.removeEventListener("contextmenu", this._oncontextmenu, true);
 			if (this._onwheel) container.removeEventListener("wheel", this._onwheel, { capture: true });
 		}
+		if (this._onkeydown) document.removeEventListener("keydown", this._onkeydown, true);
 		
 		super.remove(arg0_do_not_refresh);
 	}
