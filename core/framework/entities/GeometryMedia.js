@@ -503,11 +503,10 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 								frame_increment: veNumber(Math.returnSafeNumber(current_metadata.frame_increment, 1), {
 									name: "Frame Increment (Frames)",
 									onuserchange: (v) => {
-										let new_metadata = structuredClone(current_metadata);
-										new_metadata.frame_increment = v;
-										this.updateKeyframe({ metadata: new_metadata });
+										if (!this.metadata) this.metadata = {};
+										this.metadata.frame_increment = v;
 									},
-									tooltip: `<kbd>Ctrl + Left Arrow</kbd> goes back this many frames, <kbd>Ctrl + Right Arrow</kbd> goes forwards this many frames, but only when the video itself is selected.`,
+									tooltip: `<kbd>Ctrl + Left Arrow</kbd> goes back this many frames, <kbd>Ctrl + Right Arrow</kbd> goes forwards this many frames, but only when the video itself is selected.<br><br>Default assumption is 30FPS`,
 									x: 1, y: 1
 								}),
 							}, { name: "Video Settings" }),
@@ -721,13 +720,12 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
 				e.preventDefault();
 				e.stopPropagation();
-
-				let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
-				let metadata = symbol_obj.metadata || {};
+				
+				let metadata = (this.metadata || {});
 				let frames = Math.returnSafeNumber(metadata.frame_increment, 1);
 				
-				//Assuming standard 30fps for generic video frame steps
-				let step = frames * (1 / 30);
+				//Assuming standard 30FPS for generic video frame steps
+				let step = frames*(1/30);
 
 				if (e.key === "ArrowLeft") {
 					this.video_el.currentTime = Math.max(0, this.video_el.currentTime - step);
