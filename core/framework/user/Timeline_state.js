@@ -147,7 +147,7 @@
 					});
 					
 					if (local_value.id) feature_obj.setID(local_value.id);
-					if (local_value.is_visible === false) feature_obj.hide();
+					if (local_value.is_visible === false) feature_obj._is_visible = false;
 					if (local_value.value) feature_obj.json = local_value.value;
 				}
 			}
@@ -158,6 +158,7 @@
 			local_feature.fromJSON(local_feature.json);
 			try {
 				if (local_feature.draw) local_feature.draw();
+				if (local_feature._is_visible === false) local_feature.hide();
 			} catch (e) { console.warn(e); }
 		});
 		
@@ -206,6 +207,8 @@
 			let local_json = json_obj[local_feature.id];
 			if (!local_feature._is_visible)
 				local_json.is_visible = false;
+			
+			console.log(`Serialised as:`, local_json);
 		});
 		
 		//Return statement
