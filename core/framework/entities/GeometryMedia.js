@@ -506,7 +506,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 										if (!this.metadata) this.metadata = {};
 										this.metadata.frame_increment = v;
 									},
-									tooltip: `<kbd>Ctrl + Left Arrow</kbd> goes back this many frames, <kbd>Ctrl + Right Arrow</kbd> goes forwards this many frames, but only when the video itself is selected.<br><br>Default assumption is 30FPS`,
+									tooltip: `<kbd>Ctrl + Left Arrow</kbd> goes back this many frames, <kbd>Ctrl + Right Arrow</kbd> goes forwards this many frames, but only when the video itself is selected.<br><br>Default assumption is 30FPS.`,
 									x: 1, y: 1
 								}),
 							}, { name: "Video Settings" }),
