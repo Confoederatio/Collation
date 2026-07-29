@@ -696,7 +696,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 	}
 	
 	handleMouseDown (e) {
-		if (!this.selected || this._canvas_hidden || e.button === 1) return; //Internal guard clause
+		if (!this.isPrimarySelected() || this._canvas_hidden || e.button === 1) return; //Internal guard clause
 		
 		if (this.crop_brush_active) {
 			if (e.button === 0 || e.button === 2) {
@@ -779,7 +779,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			return;
 		}
 
-		if (!this.selected || this.selected_point_index === null) return;
+		if (!this.isPrimarySelected() || this.selected_point_index === null) return;
 		this._is_dragging = true;
 		
 		e.stopPropagation();
@@ -858,6 +858,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			mouse_sp.y >= min_y - this.hit_area_padding &&
 			mouse_sp.y <= max_y + this.hit_area_padding);
 	}
+	
+	isPrimarySelected () { return (main.brush?.selected_geometry?.id === this.id); }
 	
 	loadFile (arg0_url, arg1_timestamp) {
 		//Convert from parameters
@@ -1062,7 +1064,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			}
 		}
 		
-		if (this.selected) {
+		if (this.isPrimarySelected()) {
 			let overlay_pts = this.screen_pts.map((p) => ({
 				x: p.screen_x,
 				y: p.screen_y,
