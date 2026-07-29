@@ -136,6 +136,8 @@ naissance.GeometryLine = class extends naissance.Geometry {
 			edit_symbol_ui: veInterface({
 				edit_label: new UI_LabelSymbol(main.settings.default_label_symbol, {
 					name: "Label",
+					enable_custom_labels: true,
+					geometry_obj: this,
 					special_function: (v) => UI_EditSelectedGeometries._makeSetSymbol({ label_symbol: v, _id: this.id })
 				}),
 				edit_stroke: new UI_LineSymbol(main.settings.default_line_symbol, {
