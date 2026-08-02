@@ -80,12 +80,14 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 			let raw_content = fs.readFileSync(file_full_path, 'utf8');
 			let geo_json = JSON.parse(raw_content);
 			let feature_list = geo_json.features ? geo_json.features : [];
+			let current_file_geom_ids = {};
 			
 			for (let j = 0; j < feature_list.length; j++) {
 				let feature_item = feature_list[j];
 				let geom_id = (feature_item.properties && feature_item.properties.state_id !== undefined) ? String(feature_item.properties.state_id) : null;
 				if (geom_id === null) continue;
 				
+				current_file_geom_ids[geom_id] = true;
 				let geom_str = JSON.stringify(feature_item.geometry);
 				let temp_file = path.join(temp_dir, geom_id + '.txt');
 				
@@ -101,23 +103,58 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 					last_geom_map[geom_id] = geom_str;
 				}
 			}
+			
+			for (let m = 0; m < geom_ids.length; m++) {
+				let existing_id = geom_ids[m];
+				if (!current_file_geom_ids[existing_id] && last_geom_map[existing_id] !== null) {
+					let temp_file = path.join(temp_dir, existing_id + '.txt');
+					fs.appendFileSync(temp_file, ',\n      ' + JSON.stringify(date_key) + ': null', 'utf8');
+					last_geom_map[existing_id] = null;
+				}
+			}
 		}
 		
-		console.log('Starting Phase 2: Streaming Assembly into 8 files...');
+		console.log('Starting Phase 2: Calculating file sizes and streaming assembly...');
 		let total_files = options.split_files;
-		let chunk_size = Math.ceil(geom_ids.length / total_files);
+		let total_bytes = 0;
+		let geom_sizes = [];
 		
-		for (let file_idx = 0; file_idx < total_files; file_idx++) {
-			let start_idx = file_idx * chunk_size;
-			let end_idx = Math.min(start_idx + chunk_size, geom_ids.length);
-			if (start_idx >= geom_ids.length) break;
+		for (let k = 0; k < geom_ids.length; k++) {
+			let temp_file = path.join(temp_dir, geom_ids[k] + '.txt');
+			let file_size = fs.statSync(temp_file).size;
+			geom_sizes.push(file_size);
+			total_bytes += file_size;
+		}
+		
+		let target_chunk_size = total_bytes / total_files;
+		let chunks = [];
+		let current_chunk = [];
+		let current_chunk_bytes = 0;
+		
+		for (let k = 0; k < geom_ids.length; k++) {
+			let geom_id = geom_ids[k];
+			let item_size = geom_sizes[k];
 			
+			if (chunks.length < total_files - 1 && current_chunk.length > 0 && (current_chunk_bytes + item_size / 2 > target_chunk_size)) {
+				chunks.push(current_chunk);
+				current_chunk = [];
+				current_chunk_bytes = 0;
+			}
+			
+			current_chunk.push(geom_id);
+			current_chunk_bytes += item_size;
+		}
+		if (current_chunk.length > 0) chunks.push(current_chunk);
+		
+		let streamed_count = 0;
+		for (let file_idx = 0; file_idx < chunks.length; file_idx++) {
+			let chunk_ids = chunks[file_idx];
 			let output_file = path.join(base_dir, 'phersu_' + file_idx + '.json');
 			let write_stream = fs.createWriteStream(output_file);
 			write_stream.write('{\n');
 			
-			for (let k = start_idx; k < end_idx; k++) {
-				let current_id = geom_ids[k];
+			for (let k = 0; k < chunk_ids.length; k++) {
+				let current_id = chunk_ids[k];
 				let props = geom_props[current_id];
 				let temp_file = path.join(temp_dir, current_id + '.txt');
 				
@@ -134,21 +171,46 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 				let keyframes_body = fs.readFileSync(temp_file, 'utf8');
 				write_stream.write(keyframes_body);
 				
-				let is_last_geom = (k === end_idx - 1);
+				let is_last_geom = (k === chunk_ids.length - 1);
 				write_stream.write('\n    }\n  }' + (is_last_geom ? '\n' : ',\n'));
 				
-				if (k % 100 === 0) console.log('Streamed ' + (k + 1) + '/' + geom_ids.length + ' geometries...');
+				streamed_count++;
+				if (streamed_count % 100 === 0) console.log('Streamed ' + streamed_count + '/' + geom_ids.length + ' geometries...');
 				
 				fs.unlinkSync(temp_file);
 			}
 			
 			write_stream.write('}');
 			write_stream.end();
-			console.log('Saved chunk file: ' + output_file);
+			console.log('Saved chunk file: ' + output_file + ' (' + chunk_ids.length + ' geometries)');
 		}
 		
 		if (fs.existsSync(temp_dir)) fs.rmdirSync(temp_dir);
-		console.log('Finished processing all files into 5 chunked JSON outputs.');
+		console.log('Finished processing all files into chunked JSON outputs.');
+	}
+	
+	static compileToNaissance () {
+		//Declare local instance variables
+		let json_files = fs.readdirSync(this.bf).filter((file_name) => file_name.endsWith('.json'));
+		let feature_layer = new naissance.FeatureLayer();
+			feature_layer.name = "Phersu";
+		
+		//Iterate over all .json files in phersu_folder
+		for (let i = 0; i < json_files.length; i++) {
+			console.log(`- Processing ${json_files[i]} (${i}/${json_files.length}) ..`);
+			let json = JSON5.parse(fs.readFileSync(path.join(this.bf, json_files[i]), "utf8"));
+			
+			//Iterate over all keys in json
+			Object.iterate(json, (local_key, local_value) => {
+				console.log(local_value.state);
+				let geometry = new naissance.GeometryPolygon({ is_import: true });
+					geometry.setID(local_key);
+					geometry.moveToFeature(feature_layer);
+					
+				//Import geometry history
+				
+			});
+		}
 	}
 	
 	async execute (arg0_tab, arg1_instance) {
