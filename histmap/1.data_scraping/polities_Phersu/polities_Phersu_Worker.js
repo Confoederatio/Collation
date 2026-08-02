@@ -25,13 +25,19 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 	}
 	
 	//[WIP] - This needs to output valid JSON and chunk it into 16 different JSON files.
-	static async compile () {
+	static async compile (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		options.split_files = Math.returnSafeNumber(options.split_files, 8);
+		
+		//Declare local instance variables
 		let fs = require('fs');
 		let path = require('path');
 		let dir_path = 'F:/scrapes/phersu/geojson/';
 		let base_dir = path.resolve(dir_path, '..');
 		let temp_dir = path.join(base_dir, 'temp_keyframes');
-		let output_file = path.join(base_dir, 'phersu.json');
 		
 		if (!fs.existsSync(temp_dir)) fs.mkdirSync(temp_dir, { recursive: true });
 		
@@ -61,7 +67,6 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 		let last_geom_map = {};
 		let geom_props = {};
 		let geom_ids = [];
-		let first_keyframe_map = {};
 		
 		console.log('Starting Phase 1: Chronological Deduplication...');
 		
@@ -78,7 +83,7 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 			
 			for (let j = 0; j < feature_list.length; j++) {
 				let feature_item = feature_list[j];
-				let geom_id = (feature_item.properties && feature_item.properties.state_id !== undefined) ? feature_item.properties.state_id : null;
+				let geom_id = (feature_item.properties && feature_item.properties.state_id !== undefined) ? String(feature_item.properties.state_id) : null;
 				if (geom_id === null) continue;
 				
 				let geom_str = JSON.stringify(feature_item.geometry);
@@ -98,43 +103,52 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 			}
 		}
 		
-		console.log('Starting Phase 2: Streaming Assembly...');
-		let write_stream = fs.createWriteStream(output_file);
-		write_stream.write('{\n');
+		console.log('Starting Phase 2: Streaming Assembly into 8 files...');
+		let total_files = options.split_files;
+		let chunk_size = Math.ceil(geom_ids.length / total_files);
 		
-		for (let k = 0; k < geom_ids.length; k++) {
-			let current_id = geom_ids[k];
-			let props = geom_props[current_id];
-			let temp_file = path.join(temp_dir, current_id + '.txt');
+		for (let file_idx = 0; file_idx < total_files; file_idx++) {
+			let start_idx = file_idx * chunk_size;
+			let end_idx = Math.min(start_idx + chunk_size, geom_ids.length);
+			if (start_idx >= geom_ids.length) break;
 			
-			let entry_header = '  ' + JSON.stringify(current_id) + ': {\n';
-			let props_keys = Object.keys(props);
-			for (let p = 0; p < props_keys.length; p++) {
-				let key = props_keys[p];
-				entry_header += '    ' + JSON.stringify(key) + ': ' + JSON.stringify(props[key]) + ',\n';
+			let output_file = path.join(base_dir, 'phersu_' + file_idx + '.json');
+			let write_stream = fs.createWriteStream(output_file);
+			write_stream.write('{\n');
+			
+			for (let k = start_idx; k < end_idx; k++) {
+				let current_id = geom_ids[k];
+				let props = geom_props[current_id];
+				let temp_file = path.join(temp_dir, current_id + '.txt');
+				
+				let entry_header = '  ' + JSON.stringify(current_id) + ': {\n';
+				let props_keys = Object.keys(props);
+				for (let p = 0; p < props_keys.length; p++) {
+					let key = props_keys[p];
+					entry_header += '    ' + JSON.stringify(key) + ': ' + JSON.stringify(props[key]) + ',\n';
+				}
+				entry_header += '    "keyframes": {\n      ';
+				
+				write_stream.write(entry_header);
+				
+				let keyframes_body = fs.readFileSync(temp_file, 'utf8');
+				write_stream.write(keyframes_body);
+				
+				let is_last_geom = (k === end_idx - 1);
+				write_stream.write('\n    }\n  }' + (is_last_geom ? '\n' : ',\n'));
+				
+				if (k % 100 === 0) console.log('Streamed ' + (k + 1) + '/' + geom_ids.length + ' geometries...');
+				
+				fs.unlinkSync(temp_file);
 			}
-			entry_header += '    "keyframes": {\n      ';
 			
-			write_stream.write(entry_header);
-			
-			let keyframes_body = fs.readFileSync(temp_file, 'utf8');
-			write_stream.write(keyframes_body);
-			
-			let is_last_geom = (k === geom_ids.length - 1);
-			write_stream.write('\n    }\n  }' + (is_last_geom ? '\n' : ',\n'));
-			
-			if (k % 100 === 0) console.log('Streamed ' + (k + 1) + '/' + geom_ids.length + ' geometries...');
-			
-			fs.unlinkSync(temp_file);
+			write_stream.write('}');
+			write_stream.end();
+			console.log('Saved chunk file: ' + output_file);
 		}
 		
-		write_stream.write('}');
-		write_stream.end();
-		
-		write_stream.on('finish', () => {
-			if (fs.existsSync(temp_dir)) fs.rmdirSync(temp_dir);
-			console.log('Finished processing all files. Merged data saved to: ' + output_file);
-		});
+		if (fs.existsSync(temp_dir)) fs.rmdirSync(temp_dir);
+		console.log('Finished processing all files into 5 chunked JSON outputs.');
 	}
 	
 	async execute (arg0_tab, arg1_instance) {
