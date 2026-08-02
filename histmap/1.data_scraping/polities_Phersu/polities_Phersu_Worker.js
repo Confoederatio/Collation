@@ -198,18 +198,50 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 		//Iterate over all .json files in phersu_folder
 		for (let i = 0; i < json_files.length; i++) {
 			console.log(`- Processing ${json_files[i]} (${i}/${json_files.length}) ..`);
-			let json = JSON5.parse(fs.readFileSync(path.join(this.bf, json_files[i]), "utf8"));
+			let json = JSON.parse(fs.readFileSync(path.join(this.bf, json_files[i]), "utf8"));
+			console.log(`- Finished reading ${json_files[i]} ..`);
 			
 			//Iterate over all keys in json
 			Object.iterate(json, (local_key, local_value) => {
-				console.log(local_value.state);
 				let geometry = new naissance.GeometryPolygon({ is_import: true });
 					geometry.setID(local_key);
 					geometry.moveToFeature(feature_layer);
+				let first_timestamp;
 					
 				//Import geometry history
+				Object.iterate(local_value.keyframes, (local_timestamp, local_keyframe) => {
+					let parse_date = local_timestamp.split(".").map(Number);
+					let timestamp = Date.getTimestamp({ 
+						year: parse_date[0], month: parse_date[1], day: parse_date[2] });
+					if (first_timestamp === undefined) first_timestamp = timestamp;
+					
+					geometry.history.addKeyframe(timestamp, local_keyframe);
+				});
 				
+				//Starting symbol; properties
+				let symbol_obj = {};
+				let properties_obj = {};
+				
+				Object.iterate(local_value, (local_subkey, local_subvalue) => {
+					let is_valid = true;
+					if (local_subvalue === "nan" || local_subvalue === "NaN" || local_subvalue === null)
+						is_valid = false;
+					
+					if (is_valid)
+						if (local_subkey === "colour") {
+							symbol_obj.polygonFill = local_subvalue;
+						} else if (local_subkey === "state") {
+							properties_obj.name = local_subvalue;
+						} else if (local_subkey === "descriptions") { 
+							if (!geometry.metadata) geometry.metadata = {};
+							geometry.metadata.description = local_subvalue;
+						} else {
+							properties_obj[local_subkey] = local_subvalue;
+						}
+				});
+				geometry.history.addKeyframe(first_timestamp, undefined, symbol_obj, properties_obj);
 			});
+			console.log(`Finished adding geometries.`);
 		}
 	}
 	

@@ -95,7 +95,7 @@ global.History = class extends ve.Class {
 	
 	/**
 	 * Checks whether the History has an entry after a given timestamp.
-	 * - Privtae method of: {@link History}
+	 * - Private method of: {@link History}
 	 * 
 	 * @param {number|Object} arg0_timestamp
 	 * 
