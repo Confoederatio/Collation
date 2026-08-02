@@ -4,7 +4,7 @@
   ],
   "disable_autoload": true,
   "autoloading_mode": "disable_autoload",
-  "sort_settings_alphabetically": false,
+  "sort_settings_alphabetically": true,
   "font_registry": [
     "Arial",
     "Barlow",
@@ -42,5 +42,8 @@
   },
   "use_fallback_wiki": false,
   "wiki_service": "obsidian",
-  "load_savefile_as": "file"
+  "load_savefile_as": "file",
+  "default_line_symbol": {
+    "lineJoin": "round"
+  }
 }

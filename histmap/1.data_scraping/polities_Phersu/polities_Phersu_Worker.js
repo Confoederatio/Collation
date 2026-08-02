@@ -215,6 +215,10 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 						year: parse_date[0], month: parse_date[1], day: parse_date[2] });
 					if (first_timestamp === undefined) first_timestamp = timestamp;
 					
+					if (local_keyframe !== null) try {
+						local_keyframe = turf.simplify(local_keyframe, { tolerance: 0.05, mutate: true });
+						local_keyframe = turf.truncate(local_keyframe, { precision: 2, mutate: true });
+					} catch (e) {}
 					geometry.history.addKeyframe(timestamp, local_keyframe);
 				});
 				

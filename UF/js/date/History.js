@@ -387,6 +387,34 @@ global.History = class extends ve.Class {
 		let return_keyframe = {};
 		let timestamp = Date.getTimestamp(options.date);
 		
+		//0. Direct access mode
+		if (History.debug_direct_access) {
+			if (!this.cache_timestamps) this.cache_timestamps = Object.keys(this.keyframes).map(Number);
+			
+			let all_timestamps = this.cache_timestamps;
+			let first_keyframe = this.keyframes[all_timestamps[0]];
+			let keyframe_obj = first_keyframe;
+			
+			if (all_timestamps[0] > main.timestamp) //Internal guard clause if all_timestamps[0] is after main.timestamp
+				return {
+					date: options.date,
+					timestamp: timestamp,
+					value: []
+				};
+			
+			for (let i = 0; i < all_timestamps.length; i++)
+				if (all_timestamps[i] < timestamp) {
+					keyframe_obj = this.keyframes[all_timestamps[i]];
+				} else { break; }
+			
+			//Return statement
+			return {
+				date: options.date,
+				timestamp: timestamp,
+				value: [keyframe_obj.value[0], first_keyframe.value[1], first_keyframe.value[2]]
+			};
+		}
+		
 		//1. If options.absolute_keyframe = true, iterate over all keyframes in this.keyframes, and return the most recent one
 		if (options.absolute_keyframe) {
 			Object.iterate(this.keyframes, (local_key, local_keyframe) => {
