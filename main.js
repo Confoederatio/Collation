@@ -105,7 +105,7 @@ let win;
 {
   app.commandLine.appendSwitch("disable-site-isolation-trials");
   app.commandLine.appendSwitch("enable-features", "SharedArrayBuffer");
-  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=32128 --expose-gc');
+  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=262144 --expose-gc');
   
   //Launch app when ready
   app.whenReady().then(() => {
