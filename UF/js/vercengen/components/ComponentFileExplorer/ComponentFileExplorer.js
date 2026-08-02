@@ -19,6 +19,7 @@
  *   - `.onrefresh`: {@link function}(v:{@link ve.FileExplorer.v}, arg1_e:{@link ve.FileExplorer})
  *   - 
  *   - `.load_function`: {@link function}(arg0_data:{@link string}, arg1_file_path:{@link string}) - Automatically loads the text content of a valid extension into this function.
+ *   - `.manual_save_function`: {@link function}(arg0_save_file_name:{@link string}) - Does not handle saving automatically.
  *   - `.save_extension`: {@link Array}<{@link string}>|{@link string} - The save dot extension that files can be loaded from. `.*` refers to all file extensions.
  *   - `.save_function`: {@link function}(arg0_save_file_name:{@link string}) - Returns the value of the current savedata state.
  *   
@@ -414,7 +415,7 @@ ve.FileExplorer = class extends ve.Component {
 			});
 		
 		//options.save_function
-		if (this.options.save_function) {
+		if (this.options.manual_save_function || this.options.save_function) {
 			hierarchy_obj.save_button = new ve.HierarchyDatatype({
 				save_as_icon: new ve.HTML(`<icon>save_as</icon>`),
 				save_name: new ve.HTML(loc("ve.registry.localisation.FileExplorer_save_file"))
@@ -426,6 +427,8 @@ ve.FileExplorer = class extends ve.Component {
 					confirm_button: new ve.Button((e) => {
 						let save_file_name = path.join(this.v, local_modal.new_file_name.v);
 						
+						if (this.options.manual_save_function)
+							this.options.manual_save_function(save_file_name);
 						if (this.options.save_function)
 							try {
 								let save_string;
