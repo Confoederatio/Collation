@@ -216,8 +216,8 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 					if (first_timestamp === undefined) first_timestamp = timestamp;
 					
 					if (local_keyframe !== null) try {
-						local_keyframe = turf.simplify(local_keyframe, { tolerance: 0.05, mutate: true });
 						local_keyframe = turf.truncate(local_keyframe, { precision: 2, mutate: true });
+						//local_keyframe = turf.simplify(local_keyframe, { tolerance: 0.05, mutate: true });
 						try { local_keyframe = turf.cleanCoords(local_keyframe, { mutate: true }); } catch (e) {}
 					} catch (e) {}
 					geometry.history.addKeyframe(timestamp, local_keyframe);
