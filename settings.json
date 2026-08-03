@@ -1,9 +1,9 @@
 {
   "autoload_file": [
-    "D:\\Project 1509 - SVEA\\saves\\.atlas_test.naissance"
+    "D:\\Project 1509 - SVEA\\saves\\phersu.naissance"
   ],
   "disable_autoload": true,
-  "autoloading_mode": "disable_autoload",
+  "autoloading_mode": "default",
   "sort_settings_alphabetically": true,
   "font_registry": [
     "Arial",
@@ -44,6 +44,7 @@
   "wiki_service": "obsidian",
   "load_savefile_as": "file",
   "default_line_symbol": {
-    "lineJoin": "round"
+    "lineJoin": "round",
+    "lineWidth": 0.5
   }
 }
