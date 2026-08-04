@@ -1,5 +1,5 @@
 //Set ve.registry.localisation defaults
-ve.registry.localisation = {
+ve.registry.localisation = { //[WIP] - FR, DE locales are incomplete
 	//EN-GB (British English, Default)
 	
 	//ve.Component

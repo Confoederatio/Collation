@@ -108,7 +108,7 @@ global.population_Urban = class {
 		return return_obj;
 	}
 	
-	static async processRasters () {
+	static async process () {
 		this.chandler_modelski_obj = await this.A_getChandlerModelskiObject();
 		fs.writeFileSync(this.intermediate_chandler_modelski_json, JSON.stringify(this.chandler_modelski_obj, null, 2), "utf8");
 	}
