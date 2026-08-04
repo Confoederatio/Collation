@@ -8,7 +8,7 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 		"1707.1.1",
 		"1815.1.1",
 		"1914.1.1",
-		"1923.1.1",
+		"1936.1.1",
 		"1946.1.1",
 		"1991.1.1",
 		"2026.1.1"
@@ -202,16 +202,18 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 		if (fs.existsSync(temp_dir)) fs.rmdirSync(temp_dir);
 	}
 	
-	static compileToNaissance (arg0_slice_index) {
+	static compileSliceToNaissance (arg0_slice_index) {
 		//Declare local instance variables
 		let slice_index = (arg0_slice_index !== undefined) ? arg0_slice_index : 0;
 		let file_name = 'phersu_' + slice_index + '.json';
 		let file_path = path.join(this.bf, file_name);
 		
+		let split_date = this.scheduler[slice_index].split(".").map(Number);
+		
 		if (!fs.existsSync(file_path)) return console.log('Slice file not found: ' + file_path);
 		
 		let feature_layer = new naissance.FeatureLayer();
-		feature_layer.name = "Phersu - Slice " + slice_index;
+		feature_layer.name = `Polities #${slice_index}`;
 		
 		console.log(`- Reading ${file_name} ..`);
 		let json = JSON.parse(fs.readFileSync(file_path, "utf8"));
@@ -266,7 +268,17 @@ global.polities_Phersu_Worker = class extends Blacktraffic.Worker {
 			if (geom_count % 100 === 0 || geom_count === geom_keys.length)
 				console.log(`- Added geometry ${geom_count}/${geom_keys.length} to naissance layer..`);
 		});
+		UI_DateMenu.setDate({ year: split_date[0], month: split_date[1], day: split_date[2], hour: 0, minute: 0 });
+		
 		console.log(`Finished processing slice ${slice_index}.`);
+	}
+	
+	static compileToNaissance () {
+		for (let i = 0; i < this.scheduler.length; i++) {
+			DALS.clearMap();
+			this.compileSliceToNaissance(i);
+			fs.writeFileSync(`./saves/phersu/${i}.${this.scheduler[i]}.naissance`, JSON.stringify(DALS.toJSON()), "utf8");
+		}
 	}
 	
 	async execute (arg0_tab, arg1_instance) {

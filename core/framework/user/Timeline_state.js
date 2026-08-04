@@ -101,6 +101,22 @@
 
 //State save/load functions
 {
+	DALS.clearMap = function () {
+		//Clear _layers
+		main._layers.province_layers = [];
+		if (main._layers.provinces)
+			main._layers.provinces.clear();
+		
+		//Clear geometries
+		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) =>
+			local_geometry.remove());
+		
+		//Clear scene
+		scene.map_component.clear();
+		naissance.Feature.instances = {};
+		naissance.Geometry.instances = {};
+	};
+	
 	DALS.fromJSON = function (arg0_json) {
 		//Convert from parameters
 		let json = (arg0_json) ? arg0_json : {};
@@ -108,21 +124,7 @@
 		
 		//0. Clear map
 		console.log(`DALS.fromJSON called.`);
-		{
-			//Clear _layers
-			main._layers.province_layers = [];
-			if (main._layers.provinces)
-				main._layers.provinces.clear();
-			
-			//Clear geometries
-			Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => 
-				local_geometry.remove());
-			
-			//Clear scene
-			scene.map_component.clear();
-			naissance.Feature.instances = {};
-			naissance.Geometry.instances = {};
-		}
+		DALS.clearMap();
 		
 		//1. Handle main map
 		if (json.map_settings)
