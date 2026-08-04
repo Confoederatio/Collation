@@ -183,10 +183,19 @@
 		
 		//Iterate over all naissance.Geometry.instances and serialise them
 		Object.iterate(naissance.Geometry.instances, (local_key, local_geometry) => {
+			let local_history_json = local_geometry.history.toJSON();
+			
+			Object.iterate(local_history_json, (local_timestamp, local_value) => {
+				if (local_value[0] && typeof local_value[0] === "object") {
+					delete local_value[0].options;
+					delete local_value[0].symbol;
+				}
+			});
+			
 			json_obj[local_geometry.id] = {
 				id: local_geometry.id,
 				class_name: local_geometry.class_name,
-				history: local_geometry.history.toJSON(),
+				history: local_history_json,
 				metadata: local_geometry.metadata,
 				type: "geometry"
 			}
@@ -207,8 +216,6 @@
 			let local_json = json_obj[local_feature.id];
 			if (!local_feature._is_visible)
 				local_json.is_visible = false;
-			
-			console.log(`Serialised as:`, local_json);
 		});
 		
 		//Return statement

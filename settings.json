@@ -3,7 +3,7 @@
     "D:\\Project 1509 - SVEA\\saves\\phersu.naissance"
   ],
   "disable_autoload": true,
-  "autoloading_mode": "default",
+  "autoloading_mode": "disable_autoload",
   "sort_settings_alphabetically": true,
   "font_registry": [
     "Arial",
