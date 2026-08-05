@@ -110,7 +110,7 @@ global.UI_DateMenu = class extends ve.Class {
 	}
 	
 	//[QUARANTINE]
-	playTimelapse () { //[WIP] - Refactor this to use UF Date
+	playTimelapse () {
 		// Clean up any existing system-wide loop
 		if (UI_DateMenu.logic_loop) clearTimeout(UI_DateMenu.logic_loop);
 		if (this.end_date === undefined)
@@ -120,10 +120,13 @@ global.UI_DateMenu = class extends ve.Class {
 		
 		UI_DateMenu.setDate(this.start_date);
 		
-		let getDaysInMonth = (month, year) => {
-			let is_leap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-			let month_lengths = [0, 31, is_leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-			return month_lengths[month] || 30;
+		let getDaysInMonth = (arg0_month, arg1_year) => {
+			let month_key = Date.all_months[arg0_month - 1];
+			if (!month_key) return 30;
+			let local_month = Date.months[month_key];
+			
+			//Return statement
+			return (Date.isLeapYear(arg1_year) && local_month.leap_year_days) ? local_month.leap_year_days : local_month.days;
 		};
 		
 		let tick = () => {
@@ -196,25 +199,7 @@ global.UI_DateMenu = class extends ve.Class {
 			
 			// 3. Robust Termination logic
 			if (this.end_date) {
-				let date_1 = next;
-				let date_2 = this.end_date;
-				
-				// Cascading comparison from largest to smallest unit
-				let is_past =
-					date_1.year > date_2.year ||
-					(date_1.year === date_2.year && (date_1.month || 1) > (date_2.month || 1)) ||
-					(date_1.year === date_2.year &&
-						(date_1.month || 1) === (date_2.month || 1) &&
-						(date_1.day || 1) > (date_2.day || 1)) ||
-					(date_1.year === date_2.year &&
-						(date_1.month || 1) === (date_2.month || 1) &&
-						(date_1.day || 1) === (date_2.day || 1) &&
-						(date_1.hour || 0) > (date_2.hour || 0)) ||
-					(date_1.year === date_2.year &&
-						(date_1.month || 1) === (date_2.month || 1) &&
-						(date_1.day || 1) === (date_2.day || 1) &&
-						(date_1.hour || 0) === (date_2.hour || 0) &&
-						(date_1.minute || 0) > (date_2.minute || 0));
+				let is_past = Date.getTimestamp(next) > Date.getTimestamp(this.end_date);
 				
 				if (is_past) {
 					this.is_playing = false;
