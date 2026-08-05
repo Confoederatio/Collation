@@ -5,6 +5,7 @@ global.UI_DateMenu = class extends ve.Class {
 	constructor () {
 		super();
 		
+		//Declare local instance variables
 		let navbar_el = document.querySelector(".ve.navbar");
 		let navbar_height = ((navbar_el) ? navbar_el.offsetHeight : 0);
 		this.is_playing = false;
@@ -109,9 +110,8 @@ global.UI_DateMenu = class extends ve.Class {
 		});
 	}
 	
-	//[QUARANTINE]
 	playTimelapse () {
-		// Clean up any existing system-wide loop
+		//Clean up any existing system-wide loop
 		if (UI_DateMenu.logic_loop) clearTimeout(UI_DateMenu.logic_loop);
 		if (this.end_date === undefined)
 			this.end_date = Date.convertTimestampToDate(JSON.parse(JSON.stringify((main.date))));
@@ -130,20 +130,20 @@ global.UI_DateMenu = class extends ve.Class {
 		};
 		
 		let tick = () => {
-			// Stop if this specific instance is no longer playing
-			if (!this.is_playing) return;
+			if (!this.is_playing) return; //Internal guard clause if this specific instance is no longer playing
 			
+			//Declare local instance variables
 			let next = { ...main.date };
 			let step = this.time_step || { year: 1 };
 			
-			// 1. Apply increments
+			//1. Apply increments
 			next.minute = (next.minute || 0) + (step.minute || 0);
 			next.hour = (next.hour || 0) + (step.hour || 0);
 			next.day = (next.day || 1) + (step.day || 0);
 			next.month = (next.month || 1) + (step.month || 0);
 			next.year = (next.year || 0) + (step.year || 0);
 			
-			// 2. Normalise units
+			//2. Normalise units
 			if (next.minute >= 60) {
 				next.hour += Math.floor(next.minute/60);
 				next.minute %= 60;
@@ -162,7 +162,7 @@ global.UI_DateMenu = class extends ve.Class {
 				next.day -= 1;
 			}
 			
-			// Normalise month and year boundaries before evaluating month length
+			//Normalise month and year boundaries before evaluating month length
 			while (next.month > 12) {
 				next.month -= 12;
 				next.year += 1;
@@ -172,7 +172,7 @@ global.UI_DateMenu = class extends ve.Class {
 				next.year -= 1;
 			}
 			
-			// Normalise days using actual month capacity
+			//Normalise days using actual month capacity
 			let max_days = getDaysInMonth(next.month, next.year);
 			if (step.month && !step.day && next.day > max_days) {
 				next.day = max_days;
@@ -197,7 +197,7 @@ global.UI_DateMenu = class extends ve.Class {
 				}
 			}
 			
-			// 3. Robust Termination logic
+			//3. Robust Termination logic
 			if (this.end_date) {
 				let is_past = Date.getTimestamp(next) > Date.getTimestamp(this.end_date);
 				
@@ -208,9 +208,8 @@ global.UI_DateMenu = class extends ve.Class {
 				}
 			}
 			
-			// Update global state and UI
+			//Update global state and UI; schedule next tick
 			UI_DateMenu.setDate(next);
-			// Schedule next tick
 			UI_DateMenu.logic_loop = setTimeout(tick, this.tick_speed);
 		};
 		
