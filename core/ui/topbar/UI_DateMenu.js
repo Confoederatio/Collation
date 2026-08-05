@@ -110,7 +110,7 @@ global.UI_DateMenu = class extends ve.Class {
 	}
 	
 	//[QUARANTINE]
-	playTimelapse () {
+	playTimelapse () { //[WIP] - Refactor this to use UF Date
 		// Clean up any existing system-wide loop
 		if (UI_DateMenu.logic_loop) clearTimeout(UI_DateMenu.logic_loop);
 		if (this.end_date === undefined)
@@ -142,7 +142,7 @@ global.UI_DateMenu = class extends ve.Class {
 			
 			// 2. Normalise units
 			if (next.minute >= 60) {
-				next.hour += Math.floor(next.minute / 60);
+				next.hour += Math.floor(next.minute/60);
 				next.minute %= 60;
 			}
 			while (next.minute < 0) {
@@ -151,7 +151,7 @@ global.UI_DateMenu = class extends ve.Class {
 			}
 			
 			if (next.hour >= 24) {
-				next.day += Math.floor(next.hour / 24);
+				next.day += Math.floor(next.hour/24);
 				next.hour %= 24;
 			}
 			while (next.hour < 0) {
