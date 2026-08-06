@@ -1133,6 +1133,23 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		let b = arg1_b;
 		let c = arg2_c;
 		let img = arg3_image || this.image;
+		let symbol_obj = (this.value?.[1]) ? this.value[1] : {};
+		
+		//If pitch is disabled, screen mapping for affine triangle is linear; draw directly without subdivision
+		if (symbol_obj.disable_pitch) {
+			Geospatiale.drawTriangle(
+				this.ctx,
+				img,
+				this.img_display_size,
+				{ x: a.src_x, y: a.src_y },
+				{ x: b.src_x, y: b.src_y },
+				{ x: c.src_x, y: c.src_y },
+				{ x: a.screen_x, y: a.screen_y },
+				{ x: b.screen_x, y: b.screen_y },
+				{ x: c.screen_x, y: c.screen_y }
+			);
+			return;
+		}
 		
 		//Declare local instance variables
 		let edge_px = Math.max(
@@ -1142,7 +1159,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		);
 		let n = Math.ceil(edge_px/this.max_edge_screen_px);
 		if (n < 1) n = 1;
-		if (n > this.max_subdivision) n = this.max_subdivision;
+		if (n > 4) n = 4; //Cap maximum subdivision per mesh triangle to prevent frame lag
 		
 		let verts = [];
 		let fallback = { x: a.screen_x, y: a.screen_y };
@@ -1156,12 +1173,9 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				let wy = u*a.y + v*b.y + w*c.y;
 				let sx_src = u*a.src_x + v*b.src_x + w*c.src_x;
 				let sy_src = u*a.src_y + v*b.src_y + w*c.src_y;
-				let sp = (n === 1) ? 
-					(i === 1) ? 
-						{ x: a.screen_x, y: a.screen_y }
-						: (j === 1) ? 
-							{ x: b.screen_x, y: b.screen_y } : { x: c.screen_x, y: c.screen_y }
-						: this.getWorldToScreen(wx, wy, fallback);
+				let sp = (n === 1) ?
+					((i === 1) ? { x: a.screen_x, y: a.screen_y } : (j === 1) ? { x: b.screen_x, y: b.screen_y } : { x: c.screen_x, y: c.screen_y }) :
+					this.getWorldToScreen(wx, wy, fallback);
 				verts.push({ x: sp.x, y: sp.y, src_x: sx_src, src_y: sy_src });
 			}
 		
@@ -1192,7 +1206,10 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 						{ x: v01.src_x, y: v01.src_y },
 						{ x: v11.src_x, y: v11.src_y },
 						{ x: v10.src_x, y: v10.src_y },
-						v01, v11, v10);
+						v01,
+						v11,
+						v10
+					);
 				}
 			}
 	}
