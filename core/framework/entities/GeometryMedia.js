@@ -293,7 +293,14 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					this.updateTriangulation();
 				}
 				
-				if (!this.geometry) {
+				if (map.getContainer() && !map.getContainer().contains(this.canvas))
+					map.getContainer().appendChild(this.canvas);
+				
+				let geom_map = (this.geometry) ? this.geometry.getMap() : null;
+				if (!this.geometry || geom_map !== map || !geom_map || (geom_map.isRemoved && geom_map.isRemoved())) {
+					if (this.geometry) {
+						try { this.geometry.remove(); } catch (e) {}
+					}
 					this.geometry = new maptalks.ui.UIMarker(coords_obj.center, {
 						draggable: false,
 						single: false,
@@ -303,7 +310,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				} else {
 					this.geometry.setCoordinates(new maptalks.Coordinate(coords_obj.center));
 				}
-				if (this.geometry.getMap()) this.geometry.show();
+				if (this.geometry.getMap() && (!this.geometry.getMap().isRemoved || !this.geometry.getMap().isRemoved()))
+					this.geometry.show();
 				
 				this.canvas.style.display = "";
 				this._canvas_hidden = false;
@@ -313,12 +321,12 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					this.loadFile(symbol_obj.url, symbol_obj.timestamp);
 					this._loaded_timestamp = symbol_obj.timestamp;
 				}
-
+				
 				if (this._loaded_crop_mask !== symbol_obj.crop_mask) {
 					this._loaded_crop_mask = symbol_obj.crop_mask;
 					this.loadCropMask(symbol_obj.crop_mask);
 				}
-
+				
 				this.render();
 			} catch (e) { console.error(e); }
 		} else {
@@ -697,6 +705,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				this.render();
 			}
 		};
+		this._onviewchange = () => this.render();
 		
 		container.addEventListener("mousedown", this._onmousedown, true);
 		container.addEventListener("mousemove", this._onmousemove, true);
@@ -707,7 +716,8 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		document.addEventListener("keydown", this._onkeydown, true);
 		
 		//Add map refresh call
-		map.on("viewchange mousemove", () => this.render());
+		this._attached_map = map;
+		map.on("viewchange mousemove", this._onviewchange);
 	}
 	
 	handleKeyDown (e) {
@@ -1001,7 +1011,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		if (this.geometry) this.geometry.remove();
 		
 		if (this.canvas && this.canvas.parentNode) this.canvas.parentNode.removeChild(this.canvas);
-		let container = map.getContainer();
+		let container = (this._attached_map || map)?.getContainer();
 		if (container) {
 			container.removeEventListener("mousedown", this._onmousedown, true);
 			container.removeEventListener("mousemove", this._onmousemove, true);
@@ -1010,6 +1020,9 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			if (this._onwheel) container.removeEventListener("wheel", this._onwheel, { capture: true });
 		}
 		if (this._onkeydown) document.removeEventListener("keydown", this._onkeydown, true);
+		if (this._attached_map && this._onviewchange) {
+			try { this._attached_map.off("viewchange mousemove", this._onviewchange); } catch (e) {}
+		}
 		
 		super.remove(arg0_do_not_refresh);
 	}
@@ -1028,17 +1041,28 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 		
 		if (!map || !map.isLoaded() || !this.geometry || this._canvas_hidden) return;
 		
+		//Ensure viewchange listener is attached to current active map instance
+		if (this._attached_map !== map) {
+			if (this._attached_map && this._onviewchange) {
+				try { this._attached_map.off("viewchange mousemove", this._onviewchange); } catch (e) {}
+			}
+			this._attached_map = map;
+			if (map && this._onviewchange) {
+				map.on("viewchange mousemove", this._onviewchange);
+			}
+		}
+		
 		this.updateBufferSize();
 		if (!this.screen_pts) return;
 		
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.ctx.save();
 		this.ctx.scale(this.canvas_dpr, this.canvas_dpr);
-
+		
 		//Composite high-res image with crop mask if active
 		this.updateMaskCanvasSize();
 		let dim = this.getImageDimensions();
-
+		
 		let active_image = this.image;
 		if (this.has_crop_mask) {
 			this.masked_ctx.clearRect(0, 0, dim.w, dim.h);
@@ -1048,7 +1072,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 			this.masked_ctx.globalCompositeOperation = "source-over";
 			active_image = this.masked_canvas;
 		}
-
+		
 		//Render brush preview onto texture overlay so it passes through identical warp projections
 		if (this.crop_brush_active && this._mouse_screen_pos) {
 			let center_info = this.getImageSourcePosAtScreenPt(this._mouse_screen_pos);
@@ -1057,11 +1081,11 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				let scale_y = dim.h / this.img_display_size;
 				let center_mask_x = center_info.x * scale_x;
 				let center_mask_y = center_info.y * scale_y;
-
+				
 				let R_screen = this.crop_brush_radius;
 				let edge_sp = { x: this._mouse_screen_pos.x + R_screen, y: this._mouse_screen_pos.y };
 				let edge_info = this.getImageSourcePosAtScreenPt(edge_sp);
-
+				
 				let mask_radius;
 				if (edge_info) {
 					let edge_mask_x = edge_info.x * scale_x;
@@ -1080,7 +1104,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 					}
 				}
 				if (mask_radius <= 0) mask_radius = 1;
-
+				
 				this.preview_ctx.clearRect(0, 0, dim.w, dim.h);
 				this.preview_ctx.drawImage(active_image, 0, 0, dim.w, dim.h);
 				this.preview_ctx.save();
@@ -1092,7 +1116,7 @@ naissance.GeometryMedia = class extends naissance.Geometry {
 				this.preview_ctx.fill();
 				this.preview_ctx.stroke();
 				this.preview_ctx.restore();
-
+				
 				active_image = this.preview_canvas;
 			}
 		}
