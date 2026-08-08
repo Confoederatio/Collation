@@ -127,10 +127,10 @@
 				let rgba = `${data[idx]},${data[idx + 1]},${data[idx + 2]},${data[idx + 3]}`;
 				
 				if (!bin_set.has(rgba) && !ignore_set.has(rgba)) {
-					seed_map[width * y + x] = { sx: x, sy: y, dist: 0 };
+					seed_map[width*y + x] = { sx: x, sy: y, dist: 0 };
 					if (!fallback_seed) fallback_seed = { x, y };
 				} else {
-					seed_map[width * y + x] = { sx: -1, sy: -1, dist: Infinity };
+					seed_map[width*y + x] = { sx: -1, sy: -1, dist: Infinity };
 				}
 			}
 		}
