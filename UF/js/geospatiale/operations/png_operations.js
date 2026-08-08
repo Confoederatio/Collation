@@ -31,11 +31,12 @@
 	/**
 	 * Returns the average (assuming an int-formatted GeoPNG) of the Moore neighbourhood surrounding a pixel.
 	 * 
-	 * @param {Array.<number[]>} arg0_geopng_array
+	 * @param {number[]} arg0_geopng_array
 	 * @param {number} arg1_x
 	 * @param {number} arg2_y
 	 * @param {number} arg3_height
 	 * @param {number} arg4_width
+	 * 
 	 * @returns {number}
 	 */
 	GeoPNG.getRasterNeighbourAverage = function (arg0_geopng_array, arg1_x, arg2_y, arg3_height, arg4_width) {
@@ -78,8 +79,8 @@
 	 * @param {string} arg0_input_path
 	 * @param {string} arg1_output_path
 	 * @param {Object} arg2_options
-	 * @param {Array<Array<number>>} arg2_options.bin_colours - Colours to be destroyed.
-	 * @param {Array<Array<number>>} arg2_options.ignore_colours - Colours to leave untouched.
+	 * @param {Array.<number[]>} arg2_options.bin_colours - Colours to be destroyed.
+	 * @param {Array.<number[]>} arg2_options.ignore_colours - Colours to leave untouched.
 	 */
 	GeoPNG.kNNBin = async function (arg0_input_path, arg1_output_path, arg2_options) {
 		//Convert from parameters
