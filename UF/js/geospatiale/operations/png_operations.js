@@ -1,6 +1,13 @@
 {
 	if (!global.GeoPNG) global.GeoPNG = {};
 	
+	/**
+	 * Returns the centroid of a given polygon, given its pixels.
+	 * 
+	 * @param {Array.<number[]>} arg0_pixels
+	 * 
+	 * @returns {number[]|null}
+	 */
 	GeoPNG.getPolygonCentroid = function (arg0_pixels) {
 		//Convert from parameters
 		let pixels = arg0_pixels;
@@ -21,6 +28,16 @@
 		return [sum_x/pixels.length, sum_y/pixels.length];
 	};
 	
+	/**
+	 * Returns the average (assuming an int-formatted GeoPNG) of the Moore neighbourhood surrounding a pixel.
+	 * 
+	 * @param {Array.<number[]>} arg0_geopng_array
+	 * @param {number} arg1_x
+	 * @param {number} arg2_y
+	 * @param {number} arg3_height
+	 * @param {number} arg4_width
+	 * @returns {number}
+	 */
 	GeoPNG.getRasterNeighbourAverage = function (arg0_geopng_array, arg1_x, arg2_y, arg3_height, arg4_width) {
 		//Convert from parameters
 		let geopng_array = arg0_geopng_array;
@@ -55,9 +72,9 @@
 		return (count > 0) ? sum/count : NaN;
 	};
 	
-	//[QUARANTINE]
 	/**
 	 * Robustly eliminates specific colours by binning them to the nearest available non-binned colour.
+	 * 
 	 * @param {string} arg0_input_path
 	 * @param {string} arg1_output_path
 	 * @param {Object} arg2_options
