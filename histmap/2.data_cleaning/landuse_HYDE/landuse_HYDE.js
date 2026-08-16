@@ -69,7 +69,9 @@ global.landuse_HYDE = class {
 				setImmediate(() => {
 					try {
 						console.log(`Global population for ${this._getHYDEYearName(hyde_years[i])}:`, String.formatNumber(
-							GeoPNG.getImageSum(`${this.intermediate_rasters_scaled_to_global}/popc_${hyde_years[i]}.png`)
+							GeoPNG.getImageSum(`${this.intermediate_rasters_scaled_to_global}/popc_${hyde_years[i]}.png`, {
+								format: "float32"
+							})
 						));
 						resolve();
 					} catch (err) {
@@ -98,6 +100,9 @@ global.landuse_HYDE = class {
 		let output_folder = arg1_output_folder;
 		let options = arg2_options ? arg2_options : {};
 		
+		//Initialise options
+		if (!options) options.format = "float32";
+		
 		//Declare local instance variables
 		let all_input_files = await File.getAllFiles(input_folder);
 		
@@ -114,10 +119,10 @@ global.landuse_HYDE = class {
 				//Await the recursive call so the folders are processed in order
 				await this.A_convertToPNGs(current_path, output_folder, options);
 			} else if (current_path.endsWith(".asc")) {
-				let local_suffix = (options.mode === "percentage") ? 
+				let local_suffix = (options.format === "percentage") ? 
 					"_percentage" : "_number";
 				
-				// Extract filename without extension and build output path
+				//Extract filename without extension and build output path
 				let local_file_name = path.basename(current_path, ".asc");
 				let output_path = path.join(
 					output_folder,
@@ -169,8 +174,12 @@ global.landuse_HYDE = class {
 			let local_left_image_path = `${this.intermediate_rasters_equirectangular}${all_hyde_keys[i]}${this._getHYDEYearName(hyde_domain[0])}_number.png`;
 			let local_right_image_path = `${this.intermediate_rasters_equirectangular}${all_hyde_keys[i]}${this._getHYDEYearName(hyde_domain[1])}_number.png`;
 			
-			let local_left_image = GeoPNG.loadNumberRasterImage(local_left_image_path);
-			let local_right_image = GeoPNG.loadNumberRasterImage(local_right_image_path);
+			let local_left_image = GeoPNG.loadNumberRasterImage(local_left_image_path, { 
+				format: "float32" 
+			});
+			let local_right_image = GeoPNG.loadNumberRasterImage(local_right_image_path, {
+				format: "float32"
+			});
 			
 			let local_number_output_file_path = `${this.intermediate_rasters_equirectangular}${all_hyde_keys[i]}${this._getHYDEYearName(year)}_number.png`;
 			let local_percentage_output_file_path = `${this.intermediate_rasters_equirectangular}${all_hyde_keys[i]}${this._getHYDEYearName(year)}_percentage.png`;
@@ -183,6 +192,7 @@ global.landuse_HYDE = class {
 			if (!skip_file)
 				GeoPNG.saveNumberRasterImage({
 					file_path: local_number_output_file_path,
+					format: "float32",
 					width: local_left_image.width,
 					height: local_left_image.height,
 					function: function (arg0_index) {
@@ -200,7 +210,9 @@ global.landuse_HYDE = class {
 						return local_value;
 					}
 				});
-			GeoPNG.savePercentageRasterImage(local_number_output_file_path, local_percentage_output_file_path);
+			GeoPNG.savePercentageRasterImage(local_number_output_file_path, local_percentage_output_file_path, {
+				format: "float32"
+			});
 		}
 	}
 	
@@ -249,6 +261,7 @@ global.landuse_HYDE = class {
 		//2. Process popc to sum up .hyde_population for year and calculate hyde_scalar_obj
 		GeoPNG.operateNumberRasterImage({
 			file_path: hyde_population_file_path,
+			format: "float32",
 			function: (local_index, local_value) => {
 				let local_key = [
 					mcevedy_subdivisions_image.data[local_index],
@@ -285,10 +298,13 @@ global.landuse_HYDE = class {
 		
 		//Iterate over input_output_map and scale by .hyde_scalar
 		for (let i = 0; i < input_output_map.length; i++) {
-			let local_input_png = GeoPNG.loadNumberRasterImage(input_output_map[i][0]);
+			let local_input_png = GeoPNG.loadNumberRasterImage(input_output_map[i][0], {
+				format: "float32"
+			});
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: input_output_map[i][1],
+				format: "float32",
 				width: 4320,
 				height: 2160,
 				function: (local_index) => {
@@ -312,8 +328,8 @@ global.landuse_HYDE = class {
 			});
 			
 			console.log(`Finished processing ${input_output_map[i][1]}`);
-			console.log(`- Input Sum:`, GeoPNG.getImageSum(input_output_map[i][0]));
-			console.log(`- Output Sum:`, GeoPNG.getImageSum(input_output_map[i][1]));
+			console.log(`- Input Sum:`, GeoPNG.getImageSum(input_output_map[i][0], { format: "float32" }));
+			console.log(`- Output Sum:`, GeoPNG.getImageSum(input_output_map[i][1], { format: "float32" }));
 		}
 		
 		//Ensure handle gets released
@@ -403,12 +419,13 @@ global.landuse_HYDE = class {
 				await new Promise((resolve, reject) => {
 					setImmediate(() => {
 						try {
-							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_raster);
+							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_raster, { format: "float32" });
 							let local_input_sum = GeoPNG.getImageSum(local_input_raster);
 							local_scalar = world_pop_obj[hyde_years[i]]/local_input_sum;
 							
 							GeoPNG.saveNumberRasterImage({
 								file_path: `${this.intermediate_rasters_scaled_to_global}/popc_${hyde_years[i]}.png`,
+								format: "float32",
 								width: 4320,
 								height: 2160,
 								function: (local_index) => Math.ceil(local_input_png.data[local_index]*local_scalar)
