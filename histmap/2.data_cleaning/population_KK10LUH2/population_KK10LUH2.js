@@ -42,9 +42,11 @@ global.population_KK10LUH2 = class {
 				let luh2_stocks = this.luh2_variables;
 				
 				for (let x = 0; x < luh2_stocks.length; x++) try {
-					let local_input_path = `${this.input_luh2_folder}${luh2_stocks[x]}/output_folder/LUH2_${luh2_stocks[x]}_${i}.png`;
+					let local_input_path = `${this.input_luh2_folder}${luh2_stocks[x]}/LUH2_${luh2_stocks[x]}_${i}.png`;
 					
-					luh2_images[luh2_stocks[x]] = GeoPNG.loadNumberRasterImage(local_input_path, { format: "greyscale" });
+					luh2_images[luh2_stocks[x]] = GeoPNG.loadNumberRasterImage(local_input_path, { 
+						format: "greyscale" 
+					});
 				} catch (e) { console.error(e); }
 				
 				console.log(`- Averaging LUH2 raster for ${i} ..`);

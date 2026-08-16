@@ -276,7 +276,6 @@ global.population_Substrata_northern_america = class {
 		
 		//Declare local instance variables
 		let hyde_years = (options.hyde_years) ? options.hyde_years : landuse_HYDE.sorted_hyde_years;
-		let land_area_raster = GeoPNG.loadNumberRasterImage(metadata_HYDE.input_raster_land_area); //This is int32
 		let northern_america_obj = await this.A_getNorthernAmericaPopulationObject();
 		let raster_obj = {};
 		
@@ -347,7 +346,7 @@ global.population_Substrata_northern_america = class {
 							let local_raster_area = 0;
 							
 							GeoPNG.operateNumberRasterImage({
-								file_path: land_area_raster,
+								file_path: metadata_HYDE.input_raster_land_area,
 								format: "float32",
 								function: function (arg0_index, arg1_number) {
 									//Convert from parameters
@@ -397,7 +396,7 @@ global.population_Substrata_northern_america = class {
 								let local_raster_population = 0;
 								
 								GeoPNG.operateNumberRasterImage({
-									file_path: local_population_raster,
+									file_path: local_output_file_path,
 									format: "float32",
 									function: function (arg0_index, arg1_number) {
 										//Convert from parameters
@@ -424,7 +423,13 @@ global.population_Substrata_northern_america = class {
 								
 								if (local_raster_population > local_sum) local_sum = local_raster_population;
 							}
-							local_scalar = Math.returnSafeNumber(local_population/local_sum);
+							
+							if (local_sum > 0) {
+								local_scalar = Math.returnSafeNumber(local_population/local_sum, 1);
+							} else {
+								console.warn(`- Warning: local_sum is 0 for ${local_mask.key} in year ${hyde_years[i]}. Skipping scaling.`);
+								continue;
+							}
 							
 							console.log(`- Scaling ${local_output_file_path} for ${local_mask.key} | Area: ${local_area}, Population: ${String.formatNumber(local_population)}, Scalar: ${local_scalar}`);
 							
