@@ -19,7 +19,7 @@
 	 *  @param {boolean} [arg2_options.ceil=true] - Whether to ceiling ASC integers when format is 'int32'.
 	 *  @param {function(local_index, local_value)} [arg2_options.special_function] - Any function to pass to the iterative loop when processing. Must return a {@link number}.
 	 *  
-	 * @returns {{dataframe: Object, max_value: number}}
+	 * @returns {Promise<{dataframe: Object, max_value: number}>}
 	 */
 	GeoASC.convertToPNG = async function (arg0_input_file_path, arg1_output_file_path, arg2_options) {
 		//Convert from parameters
@@ -82,9 +82,16 @@
 				png.data[local_index + 3] = rgba[3];
 			}
 		
-		//Write PNG file
-		png.pack().pipe(fs.createWriteStream(output_file_path))
-			.on("finish", () => console.log(`.PNG output file written to ${output_file_path}`));
+		//Await PNG write completion to prevent race conditions
+		await new Promise((resolve, reject) => {
+			png.pack()
+				.pipe(fs.createWriteStream(output_file_path))
+				.on("finish", () => {
+					console.log(`.PNG output file written to ${output_file_path}`);
+					resolve();
+				})
+				.on("error", (err) => reject(err));
+		});
 		
 		//Return statement
 		return {

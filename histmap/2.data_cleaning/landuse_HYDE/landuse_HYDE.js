@@ -203,7 +203,7 @@ global.landuse_HYDE = class {
 						let left_number = local_left_image.data[local_index];
 						let right_number = local_right_image.data[local_index];
 						
-						let local_value = Math.ceil(Array.linearInterpolation([hyde_domain[0], hyde_domain[1]], [left_number, right_number], year));
+						let local_value = Array.linearInterpolation([hyde_domain[0], hyde_domain[1]], [left_number, right_number], year);
 						if (local_value < 0) local_value = 0;
 						
 						//Return statement
