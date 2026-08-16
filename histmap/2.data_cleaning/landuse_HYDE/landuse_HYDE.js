@@ -101,7 +101,7 @@ global.landuse_HYDE = class {
 		let options = arg2_options ? arg2_options : {};
 		
 		//Initialise options
-		if (!options) options.format = "float32";
+		if (!options.format) options.format = "float32";
 		
 		//Declare local instance variables
 		let all_input_files = await File.getAllFiles(input_folder);
@@ -420,7 +420,7 @@ global.landuse_HYDE = class {
 					setImmediate(() => {
 						try {
 							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_raster, { format: "float32" });
-							let local_input_sum = GeoPNG.getImageSum(local_input_raster);
+							let local_input_sum = GeoPNG.getImageSum(local_input_raster, { format: "float32" });
 							local_scalar = world_pop_obj[hyde_years[i]]/local_input_sum;
 							
 							GeoPNG.saveNumberRasterImage({
@@ -449,7 +449,7 @@ global.landuse_HYDE = class {
 		//1. Convert equirectangular rasters
 		if (!options.exclude.includes("A"))
 			await this.A_convertToPNGs(this.input_rasters_equirectangular, this.intermediate_rasters_equirectangular, {
-				mode: "number"
+				format: "float32"
 			});
 		//2. Interpolate missing years
 		if (!options.exclude.includes("B")) await this.B_interpolateHYDEYearRasters();
