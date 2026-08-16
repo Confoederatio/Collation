@@ -234,5 +234,6 @@ global.UI_DateMenu = class extends ve.Class {
 		main.timestamp = Date.getTimestamp(date);
 		main.interfaces.date_ui.date.v = date;
 		DALS.Timeline.parseAction("load_date", [{ refresh_date: true }], true);
+		UI_LeftbarTimeline.refresh();
 	}
 };

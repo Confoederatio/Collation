@@ -38,7 +38,7 @@
     "textFaceName": "Barlow",
     "textHaloRadius": 2,
     "textHaloFill": "#191919",
-    "hide_label": false
+    "hide_label": true
   },
   "use_fallback_wiki": false,
   "wiki_service": "obsidian",

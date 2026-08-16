@@ -8,7 +8,7 @@ config.mapmodes.stadester = {
 		//Declare local instance variables
 		let all_geometries = [];
 		let config_obj = config.mapmodes.stadester;
-		if (!config_obj.stadester_obj) config_obj.stadester_obj = JSON.parse(fs.readFileSync(`${h6}/stadester/stadester_1.0.json`));
+		if (!config_obj.stadester_obj) config_obj.stadester_obj = JSON.parse(fs.readFileSync(`${h6}/stadester/stadester_1.1.json`));
 		
 		if (config_obj.last_year === undefined || config_obj.last_year !== main.date.year) {
 			config_obj.last_year = main.date.year;
