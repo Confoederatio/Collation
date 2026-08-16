@@ -15,7 +15,7 @@
 	 * @param {string} arg0_input_file_path
 	 * @param {string} arg1_output_file_path
 	 * @param {Object} [arg2_options]
-	 *  @param {string} [arg2_options.mode="number"] - Either 'number'/'percentage'.
+	 *  @param {string} [arg2_options.type="int32"] - Either 'int32'/'percentage'.
 	 *  @param {boolean} [arg2_options.ceil=true] - Whether to ceiling ASC integers.
 	 *  @param {function(local_index, local_value)} [arg2_options.special_function] - Any function to pass to the iterative loop when processing. Must return a {@link number}.
 	 *  
@@ -28,7 +28,7 @@
 		let options = (arg2_options) ? arg2_options : {};
 		
 		//Initialise options
-		if (!options.mode) options.mode = "number";
+		if (!options.type) options.type = "int32";
 		if (options.ceil === undefined) options.ceil = true;
 		
 		//Declare local instance variables
@@ -57,12 +57,12 @@
 					local_value = options.special_function(local_index, local_value);
 				
 				if (local_value !== undefined && local_value !== -9999) {
-					if (options.mode === "number") {
+					if (options.type === "int32") {
 						//Encode full 32-bit integer value into RGBA
 						if (options.ceil)
 							local_value = Math.ceil(local_value);
 						rgba = Colour.encodeNumberAsRGBA(local_value);
-					} else if (options.mode === "percentage") {
+					} else if (options.type === "percentage") {
 						//Scale using percentage mode (0-100 mapped to G channel)
 						let local_g = Math.min(Math.round((local_value/max_value)*255), 255);
 						rgba = [0, local_g, 0, 255];
