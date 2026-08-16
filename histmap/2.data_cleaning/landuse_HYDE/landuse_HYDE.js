@@ -372,7 +372,7 @@ global.landuse_HYDE = class {
 				//Iterate over all hyde_years and set to 0 if first local_country.population year is < 0.0001
 				let first_population_value = local_value.population[years[0]];
 				
-				if (first_population_value < 0.0001)
+				if (first_population_value <= 1)
 					for (let x = 0; x < all_hyde_years.length; x++)
 						if (all_hyde_years[x] <= years[0])
 							local_value.population[all_hyde_years[x]] = 0;
