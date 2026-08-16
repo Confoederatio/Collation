@@ -8,65 +8,63 @@
 		 */
 		global.GeoPNG = {};
 		
-	//[QUARANTINE]
 	/**
 	 * Transforms a PNG raster map to GeoJSON MultiPolygons, ignoring specified colours.
+	 * 
 	 * @param {string} arg0_file_path - Input PNG file path
 	 * @param {string} arg1_file_path - Output GeoJSON file path
 	 * @param {Object} arg2_options - Options object
-	 * @param {Array<Array<number>>} arg2_options.ignore_colours - List of [R,G,B,A] to skip
+	 * @param {Array.<number[]>} arg2_options.ignore_colours - List of [R, G, B, A] colours to skip
 	 */
 	GeoPNG.convertToGeoJSON = async function (arg0_file_path, arg1_file_path, arg2_options) {
-		const yieldToEventLoop = () =>
-			new Promise((resolve) => setImmediate(resolve));
+		//Convert from parameters
+		let input_file_path = arg0_file_path;
+		let output_file_path = arg1_file_path;
 		
-		const input_file_path = arg0_file_path;
-		const output_file_path = arg1_file_path;
+		//Declare local instance variables
+		let ignore_set = new Set((arg2_options?.ignore_colours || [])
+			.map((c) => c.join(",")));
+			ignore_set.add("0,0,0,0");
+		let yieldToEventLoop = () => new Promise((resolve) => setImmediate(resolve));
 		
-		// Initialize ignore set
-		const ignore_set = new Set(
-			(arg2_options?.ignore_colours || []).map((c) => c.join(","))
-		);
-		ignore_set.add("0,0,0,0");
-		
-		// Load and Parse PNG Asynchronously
-		const buffer = await fs.promises.readFile(input_file_path);
-		const png_obj = await new Promise((resolve, reject) => {
+		//Load and Parse PNG Asynchronously
+		let buffer = await fs.promises.readFile(input_file_path);
+		let png_obj = await new Promise((resolve, reject) => {
 			new pngjs.PNG().parse(buffer, (err, data) =>
 				err ? reject(err) : resolve(data)
 			);
 		});
 		
-		const { width, height } = png_obj;
-		const res_x = 360 / width;
-		const res_y = 180 / height;
+		let { width, height } = png_obj;
+		let res_x = 360/width;
+		let res_y = 180/height;
 		
 		function getPixel(x, y) {
 			if (x < 0 || y < 0 || x >= width || y >= height) return "0,0,0,0";
-			const idx = (width * y + x) << 2;
+			let idx = (width * y + x) << 2;
 			return `${png_obj.data[idx]},${png_obj.data[idx + 1]},${png_obj.data[idx + 2]},${png_obj.data[idx + 3]}`;
 		}
 		
-		const edge_maps = new Map();
+		let edge_maps = new Map();
 		
 		function addEdge(rgba, x1, y1, x2, y2) {
 			if (!edge_maps.has(rgba)) edge_maps.set(rgba, new Map());
-			const color_map = edge_maps.get(rgba);
-			const start = `${x1},${y1}`;
-			const end = `${x2},${y2}`;
+			let color_map = edge_maps.get(rgba);
+			let start = `${x1},${y1}`;
+			let end = `${x2},${y2}`;
 			if (!color_map.has(start)) color_map.set(start, []);
 			color_map.get(start).push(end);
 		}
 		
 		
 		for (let y = 0; y <= height; y++) {
-			// Yield every 500 rows to keep the process responsive
+			//Yield every 500 rows to keep the process responsive
 			if (y % 500 === 0) await yieldToEventLoop();
 			
 			for (let x = 0; x <= width; x++) {
-				const current = getPixel(x, y);
-				const left = getPixel(x - 1, y);
-				const up = getPixel(x, y - 1);
+				let current = getPixel(x, y);
+				let left = getPixel(x - 1, y);
+				let up = getPixel(x, y - 1);
 				
 				if (current !== up) {
 					if (!ignore_set.has(current)) addEdge(current, x, y, x + 1, y);
@@ -79,29 +77,29 @@
 			}
 		}
 		
-		const features = [];
+		let features = [];
 		
-		for (const [rgba, node_map] of edge_maps.entries()) {
-			const multi_polygon_coords = [];
+		for (let [rgba, node_map] of edge_maps.entries()) {
+			let multi_polygon_coords = [];
 			
 			while (node_map.size > 0) {
-				const ring = [];
-				const start_node = node_map.keys().next().value;
+				let ring = [];
+				let start_node = node_map.keys().next().value;
 				let current_node = start_node;
 				
 				while (true) {
-					const [px, py] = current_node.split(",").map(Number);
+					let [px, py] = current_node.split(",").map(Number);
 					ring.push([-180 + px * res_x, 90 - py * res_y]);
 					
-					const neighbors = node_map.get(current_node);
+					let neighbors = node_map.get(current_node);
 					if (!neighbors || neighbors.length === 0) break;
 					
-					const next_node = neighbors.pop();
+					let next_node = neighbors.pop();
 					if (neighbors.length === 0) node_map.delete(current_node);
 					
 					current_node = next_node;
 					if (current_node === start_node) {
-						const [sx, sy] = start_node.split(",").map(Number);
+						let [sx, sy] = start_node.split(",").map(Number);
 						ring.push([-180 + sx * res_x, 90 - sy * res_y]);
 						break;
 					}
@@ -112,7 +110,7 @@
 				}
 			}
 			
-			const [r, g, b, a] = rgba.split(",").map(Number);
+			let [r, g, b, a] = rgba.split(",").map(Number);
 			features.push({
 				type: "Feature",
 				properties: {
@@ -126,10 +124,10 @@
 			});
 		}
 		
-		const geojson_obj = { type: "FeatureCollection", features };
+		let geojson_obj = { type: "FeatureCollection", features };
 		
-		// Use a stringify with null/0 indentation to save space
-		const output_data = JSON.stringify(geojson_obj);
+		//Use a stringify with null/0 indentation to save space
+		let output_data = JSON.stringify(geojson_obj);
 		await fs.promises.writeFile(output_file_path, output_data);
 		
 		//Return statement
@@ -138,7 +136,7 @@
 	
 	/**
 	 * Fetches the total sum of all int values within an image.
-	 * @param {String} [arg0_file_path] - The file path to the image to fetch the sum of.
+	 * @param {string} [arg0_file_path] - The file path to the image to fetch the sum of.
 	 *
 	 * @returns {number}
 	 */
@@ -228,8 +226,8 @@
 		let rawdata = fs.readFileSync(file_path);
 		let png = pngjs.PNG.sync.read(rawdata);
 		
-		// PRE-ALLOCATE a Typed Array instead of a standard Array []
-		// Float64Array is safe for your scaling calculations
+		//PRE-ALLOCATE a Typed Array instead of a standard Array []
+		//Float64Array is safe for your scaling calculations
 		let pixel_values = new Float64Array(png.width * png.height);
 		
 		for (let i = 0; i < png.width * png.height; i++) {
@@ -248,7 +246,7 @@
 			}
 		}
 		
-		// Explicitly nullify the heavy PNG buffer so it can be GC'd immediately
+		//Explicitly nullify the heavy PNG buffer so it can be GC'd immediately
 		png = null;
 		
 		return { width: 4320, height: 2160, data: pixel_values };
@@ -257,8 +255,8 @@
 	/**
 	 * operateNumberRasterImage() - Runs an operation on a raster image for a file.
 	 * @param {Object} [arg0_options]
-	 *  @param {String} [arg0_options.file_path] - The file path to load from.
-	 *  @param {Function} [arg0_options.function] - (arg0_index, arg1_number)
+	 *  @param {string} [arg0_options.file_path] - The file path to load from.
+	 *  @param {function} [arg0_options.function] - (arg0_index, arg1_number)
 	 */
 	GeoPNG.operateNumberRasterImage = function (arg0_options) {
 		//Convert from parameters
@@ -320,8 +318,8 @@
 	
 	/**
 	 * savePercentageRasterImage() - Saves a percentage raster image to a file based on a number raster image.
-	 * @param {String} arg0_input_file_path - The file path to the number raster image to save the percentage raster image from.
-	 * @param {String} arg1_output_file_path - The file path to save the percentage raster image to.
+	 * @param {string} arg0_input_file_path - The file path to the number raster image to save the percentage raster image from.
+	 * @param {string} arg1_output_file_path - The file path to save the percentage raster image to.
 	 *
 	 * @returns {Object}
 	 */
