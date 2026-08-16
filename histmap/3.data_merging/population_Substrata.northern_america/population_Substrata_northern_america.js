@@ -276,7 +276,7 @@ global.population_Substrata_northern_america = class {
 		
 		//Declare local instance variables
 		let hyde_years = (options.hyde_years) ? options.hyde_years : landuse_HYDE.sorted_hyde_years;
-		let land_area_raster = GeoPNG.loadNumberRasterImage(metadata_HYDE.input_raster_land_area);
+		let land_area_raster = GeoPNG.loadNumberRasterImage(metadata_HYDE.input_raster_land_area); //This is int32
 		let northern_america_obj = await this.A_getNorthernAmericaPopulationObject();
 		let raster_obj = {};
 		
@@ -348,13 +348,14 @@ global.population_Substrata_northern_america = class {
 							
 							GeoPNG.operateNumberRasterImage({
 								file_path: land_area_raster,
+								format: "float32",
 								function: function (arg0_index, arg1_number) {
 									//Convert from parameters
 									let local_index = arg0_index;
 									let local_number = arg1_number;
 									
 									//Declare local instance variables
-									let byte_index = local_index;
+									let byte_index = local_index*4;
 									
 									//Check if local_raster.data matches the present object
 									if (local_number > 0) {
@@ -383,7 +384,9 @@ global.population_Substrata_northern_america = class {
 					//.population handling; scale to colour code
 					if (local_mask.population)
 						if (local_mask.population[hyde_years[i]]) {
-							let local_population_raster = GeoPNG.loadNumberRasterImage(local_output_file_path);
+							let local_population_raster = GeoPNG.loadNumberRasterImage(local_output_file_path, {
+								format: "float32"
+							});
 							let local_population = local_mask.population[hyde_years[i]];
 							let local_scalar = 1;
 							let local_sum = 0;
@@ -395,13 +398,14 @@ global.population_Substrata_northern_america = class {
 								
 								GeoPNG.operateNumberRasterImage({
 									file_path: local_population_raster,
+									format: "float32",
 									function: function (arg0_index, arg1_number) {
 										//Convert from parameters
 										let local_index = arg0_index;
 										let local_number = arg1_number;
 										
 										//Declare local instance variables
-										let byte_index = local_index;
+										let byte_index = local_index*4;
 										
 										//Check if local_raster.data matches the present object
 										if (local_number > 0) {
@@ -427,6 +431,7 @@ global.population_Substrata_northern_america = class {
 							//Scale local population raster to scalar
 							GeoPNG.saveNumberRasterImage({
 								file_path: local_output_file_path,
+								format: "float32",
 								height: 2160,
 								width: 4320,
 								
@@ -453,8 +458,8 @@ global.population_Substrata_northern_america = class {
 										
 										if (local_area_mask)
 											if (local_area_mask.key === local_mask.key) {
-												total_sum_for_year += Math.ceil(local_value*local_scalar);
-												return Math.ceil(local_value*local_scalar);
+												total_sum_for_year += local_value*local_scalar;
+												return local_value*local_scalar;
 											}
 									}
 									

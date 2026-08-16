@@ -343,14 +343,18 @@ global.population_Substrata_outlier_removal = class {
 		
 		//Declare local instance variables
 		let fallback_file_path = `${population_KK10LUH2.output_kk10_luh2_global_rasters}popc_${year}.png`;
-		let fallback_raster = GeoPNG.loadNumberRasterImage(fallback_file_path);
+		let fallback_raster = GeoPNG.loadNumberRasterImage(fallback_file_path, {
+			format: "float32"
+		});
 		let hyde_input_file_path = `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${year}.png`;
 		let hyde_output_file_path = `${this.intermediate_outliers_removed_rasters}popc_${year}.png`;
 		
 		let hyde_outlier_masks = await this.A_getHYDEOutlierMasksObject();
 		let hyde_outlier_rasters = {};
-		let hyde_pixel_outliers = []; //Indices detected as being outliers
-		let hyde_raster = GeoPNG.loadNumberRasterImage(hyde_input_file_path);
+		let hyde_pixel_outliers = new Set();
+		let hyde_raster = GeoPNG.loadNumberRasterImage(hyde_input_file_path, {
+			format: "float32"
+		});
 		
 		//Iterate over all_hyde_outlier_masks; load hyde_outlier_rasters
 		Object.iterate(hyde_outlier_masks, (local_key, local_value) => {
@@ -365,20 +369,21 @@ global.population_Substrata_outlier_removal = class {
 				let neighbour_average = GeoPNG.getRasterNeighbourAverage(hyde_raster.data, i, x, hyde_raster.height, hyde_raster.width);
 				
 				if (!isNaN(neighbour_average) && neighbour_average > 0 && hyde_raster.data[local_index] > 8*neighbour_average)
-					hyde_pixel_outliers.push(local_index);
+					hyde_pixel_outliers.add(local_index);
 			}
 		
-		console.log(` - Outliers detected:`, hyde_pixel_outliers.length);
+		console.log(` - Outliers detected:`, hyde_pixel_outliers.size);
 		
 		//Save number raster image
 		GeoPNG.saveNumberRasterImage({
 			file_path: hyde_output_file_path,
+			format: "float32",
 			height: hyde_raster.height,
 			width: hyde_raster.width,
 			function: (local_index) => {
 				//Declare local instance variables
 				let byte_index = local_index*4;
-				let is_outlier = (hyde_pixel_outliers.includes(local_index));
+				let is_outlier = (hyde_pixel_outliers.has(local_index));
 				
 				//Check if any of hyde_outlier_rasters contains [0, 0, 0] masking for this pixel
 				if (!is_outlier) {
@@ -498,7 +503,9 @@ global.population_Substrata_outlier_removal = class {
 				
 				console.log(`- Scaling Statista regions for year ${year} ..`);
 				
-				let current_raster = GeoPNG.loadNumberRasterImage(source_path);
+				let current_raster = GeoPNG.loadNumberRasterImage(source_path, {
+					format: "float32"
+				});
 				
 				// Helper to filter active masks for current year
 				let get_active_rasters = (mask_obj) => {
@@ -523,11 +530,11 @@ global.population_Substrata_outlier_removal = class {
 						
 						// Check if pixel is a standard outlier
 						let is_standard_outlier = active_standard_rasters.some(r =>
-							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0 && r.data[byte_index+3] === 255
 						);
 						// Check if pixel is explicitly marked to be scaled
 						let is_scalable_outlier = active_scalable_rasters.some(r =>
-							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0 && r.data[byte_index+3] === 255
 						);
 						
 						// Logic: If it is a standard outlier and NOT explicitly scalable, exclude it from the sum
@@ -561,6 +568,7 @@ global.population_Substrata_outlier_removal = class {
 				// 3. Apply regional scaling
 				GeoPNG.saveNumberRasterImage({
 					file_path: output_path,
+					format: "float32",
 					height: current_raster.height,
 					width: current_raster.width,
 					function: (index) => {
@@ -569,10 +577,10 @@ global.population_Substrata_outlier_removal = class {
 						let byte_index = index * 4;
 						
 						let is_standard_outlier = active_standard_rasters.some(r =>
-							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0 && r.data[byte_index+3] === 255
 						);
 						let is_scalable_outlier = active_scalable_rasters.some(r =>
-							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0
+							r.data[byte_index] === 0 && r.data[byte_index+1] === 0 && r.data[byte_index+2] === 0 && r.data[byte_index+3] === 255
 						);
 						
 						// If it's an outlier that isn't in the "to scale" folder, return original value
@@ -586,7 +594,7 @@ global.population_Substrata_outlier_removal = class {
 						
 						let region_match = regions_map[color_key];
 						if (region_match) {
-							return Math.ceil(val * (regional_scalars[region_match.key] || 1));
+							return val*(regional_scalars[region_match.key] || 1);
 						}
 						
 						return val;
@@ -610,17 +618,22 @@ global.population_Substrata_outlier_removal = class {
 			let local_world_pop = world_pop_obj[hyde_years[i]];
 			
 			if (fs.existsSync(local_hyde_input_path)) {
-				let local_hyde_sum = GeoPNG.getImageSum(local_hyde_input_path);
+				let local_hyde_sum = GeoPNG.getImageSum(local_hyde_input_path, {
+					format: "float32"
+				});
 				let local_scalar = local_world_pop / local_hyde_sum;
 				
 				console.log(`- Final global scaling for ${hyde_years[i]} (x${local_scalar.toFixed(4)}) ..`);
 				
-				let local_hyde_image = GeoPNG.loadNumberRasterImage(local_hyde_input_path);
+				let local_hyde_image = GeoPNG.loadNumberRasterImage(local_hyde_input_path, {
+					format: "float32"
+				});
 				GeoPNG.saveNumberRasterImage({
 					file_path: local_output_path,
+					format: "float32",
 					height: local_hyde_image.height,
 					width: local_hyde_image.width,
-					function: (local_index) => Math.ceil(local_hyde_image.data[local_index] * local_scalar),
+					function: (local_index) => local_hyde_image.data[local_index]*local_scalar,
 				});
 			} else {
 				console.warn(`- ${local_hyde_input_path} could not be found.`);

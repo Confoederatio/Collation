@@ -29,7 +29,7 @@
 	};
 	
 	/**
-	 * Returns the average (assuming an int-formatted GeoPNG) of the Moore neighbourhood surrounding a pixel.
+	 * Returns the average (assuming a number-formatted GeoPNG) of the Moore neighbourhood surrounding a pixel.
 	 * 
 	 * @param {number[]} arg0_geopng_array
 	 * @param {number} arg1_x
