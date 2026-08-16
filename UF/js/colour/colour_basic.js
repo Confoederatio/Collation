@@ -7,6 +7,8 @@
 		 * @namespace Colour
 		 */
 		global.Colour = {};
+		if (!global.Colour._shared_float_buffer) global.Colour._shared_float_buffer = new ArrayBuffer(4);
+		if (!global.Colour._shared_view) global.Colour._shared_view = new DataView(Colour._shared_float_buffer);
 	
 	/**
 	 * Converts a single component to hex.
@@ -169,24 +171,27 @@
 	 */
 	Colour.decodeRGBAAsNumber = function (arg0_rgba, arg1_options) {
 		//Convert from parameters
-		let rgba = arg0_rgba;
-		let options = (arg1_options) ? arg1_options : {};
-		let format = (options.format) ? options.format : "int32";
+		let rgba_input = arg0_rgba;
+		let options_obj = (arg1_options) ? arg1_options : {};
+		let format_str = (options_obj.format) ? options_obj.format : "int32";
 		
-		if (format === "float32") {
-			let buf = new Uint8Array([rgba[0], rgba[1], rgba[2], rgba[3]]).buffer;
-			let view = new DataView(buf);
-			return view.getFloat32(0, false);
+		if (format_str === "float32") {
+			let data_view = Colour._shared_view;
+			data_view.setUint8(0, rgba_input[0]);
+			data_view.setUint8(1, rgba_input[1]);
+			data_view.setUint8(2, rgba_input[2]);
+			data_view.setUint8(3, rgba_input[3]);
+			return data_view.getFloat32(0, false);
 		}
 		
 		//Declare local instance variables
-		let r = rgba[0];
-		let g = rgba[1];
-		let b = rgba[2];
-		let a = rgba[3];
+		let r_val = rgba_input[0];
+		let g_val = rgba_input[1];
+		let b_val = rgba_input[2];
+		let a_val = rgba_input[3];
 		
 		//Return statement (rebuild 32-bit integer)
-		return ((r << 24) | (g << 16) | (b << 8) | a) >>> 0;
+		return ((r_val << 24) | (g_val << 16) | (b_val << 8) | a_val) >>> 0;
 	};
 	
 	/**
@@ -235,26 +240,25 @@
 	 */
 	Colour.encodeNumberAsRGBA = function (arg0_number, arg1_options) {
 		//Convert from parameters
-		let options = (arg1_options) ? arg1_options : {};
-		let format = (options.format) ? options.format : "int32";
+		let options_obj = (arg1_options) ? arg1_options : {};
+		let format_str = (options_obj.format) ? options_obj.format : "int32";
 		
-		if (format === "float32") {
-			let buf = new ArrayBuffer(4);
-			let view = new DataView(buf);
-			view.setFloat32(0, Number(arg0_number), false);
-			return [view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)];
+		if (format_str === "float32") {
+			let data_view = Colour._shared_view;
+			data_view.setFloat32(0, Number(arg0_number), false);
+			return [data_view.getUint8(0), data_view.getUint8(1), data_view.getUint8(2), data_view.getUint8(3)];
 		}
 		
-		let number = Math.returnSafeNumber(Math.ceil(arg0_number));
+		let num_val = Math.returnSafeNumber(Math.ceil(arg0_number));
 		
 		//Declare local instance variables
-		let r = (number >> 24) & 0xFF; //Extract highest 8 bits
-		let g = (number >> 16) & 0xFF; //Extract next 8 bits
-		let b = (number >> 8) & 0xFF;  //Extract next 8 bits
-		let a = number & 0xFF;         //Extract lowest 8 bits
+		let r_val = (num_val >> 24) & 0xFF; //Extract highest 8 bits
+		let g_val = (num_val >> 16) & 0xFF; //Extract next 8 bits
+		let b_val = (num_val >> 8) & 0xFF;  //Extract next 8 bits
+		let a_val = num_val & 0xFF;         //Extract lowest 8 bits
 		
 		//Return statement
-		return [r, g, b, a];
+		return [r_val, g_val, b_val, a_val];
 	};
 	
 	/**
