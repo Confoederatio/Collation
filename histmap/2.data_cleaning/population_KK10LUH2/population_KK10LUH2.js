@@ -44,13 +44,13 @@ global.population_KK10LUH2 = class {
 				for (let x = 0; x < luh2_stocks.length; x++) try {
 					let local_input_path = `${this.input_luh2_folder}${luh2_stocks[x]}/output_folder/LUH2_${luh2_stocks[x]}_${i}.png`;
 					
-					luh2_images[luh2_stocks[x]] = GeoPNG.loadNumberRasterImage(local_input_path, { type: "greyscale" });
+					luh2_images[luh2_stocks[x]] = GeoPNG.loadNumberRasterImage(local_input_path, { format: "greyscale" });
 				} catch (e) { console.error(e); }
 				
 				console.log(`- Averaging LUH2 raster for ${i} ..`);
 				GeoPNG.saveNumberRasterImage({
 					file_path: `${this.intermediate_luh2_rasters}LUH2_${i}.png`,
-					type: "greyscale",
+					format: "greyscale",
 					
 					height: luh2_images[luh2_stocks[0]].height,
 					width: luh2_images[luh2_stocks[1]].width,
@@ -91,13 +91,17 @@ global.population_KK10LUH2 = class {
 				let kk10_file_path = `${this.input_kk10_folder}KK10_${hyde_years[i]}.png`;
 				
 				if (in_luh2_domain && in_kk10_domain) {
-					let luh2_image = GeoPNG.loadNumberRasterImage(luh2_file_path, { type: "greyscale" });
-					let kk10_image = GeoPNG.loadNumberRasterImage(kk10_file_path, { type: "greyscale" });
+					let luh2_image = GeoPNG.loadNumberRasterImage(luh2_file_path, { 
+						format: "greyscale" 
+					});
+					let kk10_image = GeoPNG.loadNumberRasterImage(kk10_file_path, { 
+						format: "greyscale" 
+					});
 					
 					console.log(`- Averaging KK10 and LUH2 for ${hyde_years[i]} ..`);
 					GeoPNG.saveNumberRasterImage({
 						file_path: output_file_path,
-						type: "greyscale",
+						format: "greyscale",
 						
 						height: luh2_image.height,
 						width: luh2_image.width,
@@ -175,6 +179,7 @@ global.population_KK10LUH2 = class {
 				console.log(`- Converting KK10_LUH2 from greyscale to GeoPNG for ${hyde_years[i]} ..`);
 				GeoPNG.saveNumberRasterImage({
 					file_path: output_file_path,
+					format: "float32",
 					height: greyscale_image.height,
 					width: greyscale_image.width,
 					
@@ -212,7 +217,8 @@ global.population_KK10LUH2 = class {
 			
 			//Fetch .HYDE_population for all regions
 			GeoPNG.operateNumberRasterImage({
-				file_path: `${landuse_HYDE.intermediate_rasters_scaled_to_global}/popc_${hyde_years[i]}.png`,
+				file_path: `${landuse_HYDE.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`,
+				format: "float32",
 				function: (local_index, local_value) => {
 					let local_key = [
 						nelson_png.data[local_index],
@@ -229,6 +235,7 @@ global.population_KK10LUH2 = class {
 			//Fetch .KK10LUH2_population for all regions
 			GeoPNG.operateNumberRasterImage({
 				file_path: `${this.intermediate_kk10_luh2_rasters}KK10LUH2_${hyde_years[i]}.png`,
+				format: "float32",
 				function: (local_index, local_value) => {
 					let local_key = [
 						nelson_png.data[local_index],
@@ -248,9 +255,13 @@ global.population_KK10LUH2 = class {
 			});
 			
 			//Apply scalar to resulting raster
-			let local_input_png = GeoPNG.loadNumberRasterImage(`${this.intermediate_kk10_luh2_rasters}KK10LUH2_${hyde_years[i]}.png`);
+			let local_input_png = GeoPNG.loadNumberRasterImage(`${this.intermediate_kk10_luh2_rasters}KK10LUH2_${hyde_years[i]}.png`, {
+				format: "float32"
+			});
+			
 			GeoPNG.saveNumberRasterImage({
 				file_path: `${this.intermediate_kk10_luh2_regional_rasters}popc_${hyde_years[i]}.png`,
+				format: "float32",
 				width: 4320,
 				height: 2160,
 				function: (local_index) => {
@@ -264,7 +275,7 @@ global.population_KK10LUH2 = class {
 					
 					//Return statement
 					if (local_region?.scalar !== undefined)
-						return Math.ceil(local_value*local_region.scalar);
+						return local_value*local_region.scalar;
 					return local_value;
 				}
 			});
@@ -333,7 +344,9 @@ global.population_KK10LUH2 = class {
 			
 			//Adjust raster image to OWID/HYDE
 			let local_input_file_path = `${this.intermediate_kk10_luh2_regional_rasters}popc_${hyde_years[i]}.png`;
-			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path);
+			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, {
+				format: "float32"
+			});
 			
 			console.log(`- Standardising to OWID for ${hyde_years[i]} ..`);
 			if (fs.existsSync(local_input_file_path)) {
@@ -343,6 +356,7 @@ global.population_KK10LUH2 = class {
 				//Populate local_owid_obj
 				GeoPNG.operateNumberRasterImage({
 					file_path: `${this.intermediate_kk10_luh2_regional_rasters}popc_${hyde_years[i]}.png`,
+					format: "float32",
 					function: (local_index, local_value) => {
 						let local_colour_key = [
 							owid_png.data[local_index],
@@ -368,6 +382,7 @@ global.population_KK10LUH2 = class {
 				
 				GeoPNG.saveNumberRasterImage({
 					file_path: `${this.intermediate_kk10_luh2_regional_rasters}popc_${hyde_years[i]}.png`,
+					format: "float32",
 					height: 2160,
 					width: 4320,
 					function: (local_index) => {
@@ -467,7 +482,9 @@ global.population_KK10LUH2 = class {
 				if (year < global_min_year || year > global_max_year) continue;
 				
 				console.log(`- Scaling KK10LUH2 to Statista regions for year ${year} ..`);
-				let current_raster = GeoPNG.loadNumberRasterImage(file_path);
+				let current_raster = GeoPNG.loadNumberRasterImage(file_path, { 
+					format: "float32" 
+				});
 				let regional_sums = {};
 				let regional_scalars = {};
 				
@@ -509,6 +526,7 @@ global.population_KK10LUH2 = class {
 				//Apply regional scaling and overwrite the regional raster
 				GeoPNG.saveNumberRasterImage({
 					file_path: file_path,
+					format: "float32",
 					height: current_raster.height,
 					width: current_raster.width,
 					function: (index) => {
@@ -523,9 +541,8 @@ global.population_KK10LUH2 = class {
 						].join(",");
 						
 						let region_match = regions_map[color_key];
-						if (region_match) {
-							return Math.ceil(val * regional_scalars[region_match.key]);
-						}
+						if (region_match)
+							return val*regional_scalars[region_match.key];
 						
 						return val;
 					},
@@ -552,15 +569,20 @@ global.population_KK10LUH2 = class {
 				await new Promise((resolve, reject) => {
 					setImmediate(() => {
 						try {
-							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_file_path);
-							let local_input_sum = GeoPNG.getImageSum(local_input_file_path);
+							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_file_path, {
+								format: "float32"
+							});
+							let local_input_sum = GeoPNG.getImageSum(local_input_file_path, {
+								format: "float32"
+							});
 							local_scalar = world_pop_obj[hyde_years[i]]/local_input_sum;
 							
 							GeoPNG.saveNumberRasterImage({
 								file_path: `${this.output_kk10_luh2_global_rasters}/popc_${hyde_years[i]}.png`,
+								format: "float32",
 								width: 4320,
 								height: 2160,
-								function: (local_index) => Math.ceil(local_input_png.data[local_index]*local_scalar)
+								function: (local_index) => local_input_png.data[local_index]*local_scalar
 							});
 							
 							console.log(`- ${hyde_years[i]} - Input Population: ${local_input_sum}, Scalar: ${local_scalar}`);

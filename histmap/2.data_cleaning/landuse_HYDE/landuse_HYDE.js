@@ -132,9 +132,9 @@ global.landuse_HYDE = class {
 				
 				//setImmediate wrapper
 				await new Promise((resolve, reject) => {
-					setImmediate(() => {
+					setImmediate(async () => {
 						try {
-							GeoASC.convertToPNG(current_path, output_path, options);
+							await GeoASC.convertToPNG(current_path, output_path, options);
 							resolve();
 						} catch (err) {
 							reject(err);

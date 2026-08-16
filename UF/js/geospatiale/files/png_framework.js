@@ -258,9 +258,12 @@
 		}
 		
 		//Explicitly nullify the heavy PNG buffer so it can be GC'd immediately
+		let height = png.height;
+		let width = png.width;
+		
 		png = null;
 		
-		return { width: 4320, height: 2160, data: pixel_values };
+		return { width: width, height: height, data: pixel_values };
 	};
 	
 	/**
