@@ -5,8 +5,9 @@ global.population_Substrata_outlier_removal = class {
 	static intermediate_outliers_removed_rasters = `${this.bf}rasters_outliers_removed/`;
 	static intermediate_rasters_northern_america = `${this.bf}rasters_1.northern_america/`;
 	static intermediate_rasters_scaled_to_statista = `${this.bf}rasters_2.scaled_to_regions/`;
-	
 	static intermediate_rasters_scaled_to_global = `${this.bf}rasters_3.scaled_to_global/`;
+	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_3.geopng_int32/`;
+	
 	static statista_obj = {
 		asia: {
 			colour: [173, 62, 62],
@@ -641,6 +642,31 @@ global.population_Substrata_outlier_removal = class {
 		}
 	}
 	
+	static async D_convertToGeoPNG_int32 () {
+		//Declare local instance variables
+		let hyde_years = landuse_HYDE.hyde_years;
+		
+		//Iterate over all hyde_years and convert to GeoPNG_int32
+		console.log(`Converting from float32 to int32 for older versions of SVE.`);
+		for (let i = 0; i < hyde_years.length; i++) {
+			let local_input_path = `${this.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
+			let local_output_path = `${this.intermediate_rasters_geopng_int32}popc_${hyde_years[i]}.png`;
+			
+			let current_raster = GeoPNG.loadNumberRasterImage(local_input_path, {
+				format: "float32"
+			});
+			GeoPNG.saveNumberRasterImage({
+				file_path: local_output_path,
+				format: "int32",
+				height: 2160,
+				width: 4320,
+				function: (local_index) => Math.round(current_raster.data[local_index])
+			});
+			console.log(`- (${i}/${hyde_years.length}) Saved int32 version to ${local_output_path}.`);
+			await Blacktraffic.yield();
+		}
+	}
+	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -655,5 +681,7 @@ global.population_Substrata_outlier_removal = class {
 		if (!options.exclude.includes("B2")) await this.B_scaleProcessedHYDEToStatistaRegions();
 		//3. Scale processed outliers to global population
 		if (!options.exclude.includes("C")) await this.C_scaleProcessedHYDEToGlobal();
+		//4. Conversion to int32 for backwards compatibility
+		if (!options.exclude.includes("D")) await this.D_convertToGeoPNG_int32();
 	}
 };
