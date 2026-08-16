@@ -15,8 +15,8 @@
 	 * @param {string} arg0_input_file_path
 	 * @param {string} arg1_output_file_path
 	 * @param {Object} [arg2_options]
-	 *  @param {string} [arg2_options.type="int32"] - Either 'int32'/'percentage'.
-	 *  @param {boolean} [arg2_options.ceil=true] - Whether to ceiling ASC integers.
+	 *  @param {string} [arg2_options.format="int32"] - Either 'int32'/'float32'/'percentage'.
+	 *  @param {boolean} [arg2_options.ceil=true] - Whether to ceiling ASC integers when format is 'int32'.
 	 *  @param {function(local_index, local_value)} [arg2_options.special_function] - Any function to pass to the iterative loop when processing. Must return a {@link number}.
 	 *  
 	 * @returns {{dataframe: Object, max_value: number}}
@@ -28,7 +28,7 @@
 		let options = (arg2_options) ? arg2_options : {};
 		
 		//Initialise options
-		if (!options.type) options.type = "int32";
+		if (!options.format) options.format = "int32";
 		if (options.ceil === undefined) options.ceil = true;
 		
 		//Declare local instance variables
@@ -57,12 +57,15 @@
 					local_value = options.special_function(local_index, local_value);
 				
 				if (local_value !== undefined && local_value !== -9999) {
-					if (options.type === "int32") {
+					if (options.format === "int32") {
 						//Encode full 32-bit integer value into RGBA
 						if (options.ceil)
 							local_value = Math.ceil(local_value);
-						rgba = Colour.encodeNumberAsRGBA(local_value);
-					} else if (options.type === "percentage") {
+						rgba = Colour.encodeNumberAsRGBA(local_value, options);
+					} else if (options.format === "float32") {
+						//Encode 32-bit float value into RGBA
+						rgba = Colour.encodeNumberAsRGBA(local_value, options);
+					} else if (options.format === "percentage") {
 						//Scale using percentage mode (0-100 mapped to G channel)
 						let local_g = Math.min(Math.round((local_value/max_value)*255), 255);
 						rgba = [0, local_g, 0, 255];

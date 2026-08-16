@@ -160,14 +160,24 @@
 	/**
 	 * Decodes an RGBA pixel to a number.
 	 * @alias Colour.decodeRGBAAsNumber
-	 * 
+	 *
 	 * @param {number[]} arg0_rgba
-	 * 
+	 * @param {Object} [arg1_options]
+	 *  @param {string} [arg1_options.format="int32"] - Either 'int32'/'float32'.
+	 *
 	 * @returns {number}
 	 */
-	Colour.decodeRGBAAsNumber = function (arg0_rgba) {
+	Colour.decodeRGBAAsNumber = function (arg0_rgba, arg1_options) {
 		//Convert from parameters
 		let rgba = arg0_rgba;
+		let options = (arg1_options) ? arg1_options : {};
+		let format = (options.format) ? options.format : "int32";
+		
+		if (format === "float32") {
+			let buf = new Uint8Array([rgba[0], rgba[1], rgba[2], rgba[3]]).buffer;
+			let view = new DataView(buf);
+			return view.getFloat32(0, false);
+		}
 		
 		//Declare local instance variables
 		let r = rgba[0];
@@ -211,6 +221,40 @@
 		
 		//Return statement
 		return (i < 0) ? 0 : Math.sqrt(i);
+	};
+	
+	/**
+	 * Encodes a number as an RGBA pixel.
+	 * @alias Colour.encodeNumberAsRGBA
+	 *
+	 * @param {number} arg0_number
+	 * @param {Object} [arg1_options]
+	 *  @param {string} [arg1_options.format="int32"] - Either 'int32'/'float32'.
+	 *
+	 * @returns {number[]}
+	 */
+	Colour.encodeNumberAsRGBA = function (arg0_number, arg1_options) {
+		//Convert from parameters
+		let options = (arg1_options) ? arg1_options : {};
+		let format = (options.format) ? options.format : "int32";
+		
+		if (format === "float32") {
+			let buf = new ArrayBuffer(4);
+			let view = new DataView(buf);
+			view.setFloat32(0, Number(arg0_number), false);
+			return [view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3)];
+		}
+		
+		let number = Math.returnSafeNumber(Math.ceil(arg0_number));
+		
+		//Declare local instance variables
+		let r = (number >> 24) & 0xFF; //Extract highest 8 bits
+		let g = (number >> 16) & 0xFF; //Extract next 8 bits
+		let b = (number >> 8) & 0xFF;  //Extract next 8 bits
+		let a = number & 0xFF;         //Extract lowest 8 bits
+		
+		//Return statement
+		return [r, g, b, a];
 	};
 	
 	/**
@@ -358,27 +402,6 @@
 			if (best_colour === "white") return [255, 255, 255];
 		}
 		return best_colour;
-	};
-	
-	/**
-	 * Encodes a number as an RGBA pixel.
-	 * @alias Colour.encodeNumberAsRGBA
-	 * 
-	 * @param {number} arg0_number
-	 * @returns {number[]}
-	 */
-	Colour.encodeNumberAsRGBA = function (arg0_number) {
-		//Convert from parameters
-		let number = Math.returnSafeNumber(Math.ceil(arg0_number));
-		
-		//Declare local instance variables
-		let r = (number >> 24) & 0xFF; //Extract highest 8 bits
-		let g = (number >> 16) & 0xFF; //Extract next 8 bits
-		let b = (number >> 8) & 0xFF;  //Extract next 8 bits
-		let a = number & 0xFF;         //Extract lowest 8 bits
-		
-		//Return statement
-		return [r, g, b, a];
 	};
 	
 	/**
