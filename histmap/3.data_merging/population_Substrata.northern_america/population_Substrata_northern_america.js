@@ -427,7 +427,7 @@ global.population_Substrata_northern_america = class {
 							if (local_sum > 0) {
 								local_scalar = Math.returnSafeNumber(local_population/local_sum, 1);
 							} else {
-								console.warn(`- Warning: local_sum is 0 for ${local_mask.key} in year ${hyde_years[i]}. Skipping scaling.`);
+								console.log(`- Warning: local_sum is 0 for ${local_mask.key} in year ${hyde_years[i]} (HYDE strikes again!). Skipping scaling.`);
 								continue;
 							}
 							
