@@ -8,18 +8,18 @@ global.population_Substrata_northern_america = class {
 				density: 0.4 //(km^2)
 			},
 			
-			//0.2. Nevle and Bird (https://www.researchgate.net/figure/Selected-features-of-the-Pre-Columbian-American-cultural-landscape-adapted-from-Denevan_fig1_234285204)
+			//0.2. Nevle and Bird
 			nevle_and_bird_agricultural: {
 				colour: `#3cf03c`,
-				density: 0.35 //(km^2) - Estimations from Williams (https://web.archive.org/web/20200922183825/https://twitter.com/RWArchaeology/status/1308447051752103938)
+				density: 0.35 //(km^2)
 			},
 			nevle_and_bird_irrigated: {
 				colour: `#adcb90`,
-				density: 15/2.58999 //(km^2) - Estimations from Williams (https://web.archive.org/web/20200922183825/https://twitter.com/RWArchaeology/status/1308447051752103938)
+				density: 15/2.58999 //(km^2)
 			},
 			
 			//1. Localised Scaling
-			//1.1. Driver and Massey (https://sci-hub.se/https://doi.org/10.2307/1005714)
+			//1.1. Driver and Massey
 			driver_and_massey_zero_to_two: {
 				colour: "#004c6d",
 				density: 1/100 //(km^2)
@@ -45,7 +45,7 @@ global.population_Substrata_northern_america = class {
 				density: 75/100 //(km^2)
 			},
 			
-			//1.2. E. North American Population (Milner and Chaplin), (https://sci-hub.se/https://www.cambridge.org/core/journals/american-antiquity/article/abs/eastern-north-american-population-at-ca-ad-1500/DDC4DF121320C8CBA5BC9A4899C5DF1E
+			//1.2. E. North American Population (Milner and Chaplin)
 			"milner_and_chaplin_0.3": {
 				colour: "#938901",
 				density: 0.3
@@ -64,16 +64,16 @@ global.population_Substrata_northern_america = class {
 			},
 			
 			//2. Regional Scaling
-			hawaiian_islands: { //[WIP] - Fetch scholarly estimates for Hawaii
+			hawaiian_islands: {
 				colour: [170, 154, 88],
-				population: { //(Dye) (https://evols.library.manoa.hawaii.edu/server/api/core/bitstreams/1afaf6ee-abef-4458-9f3e-b1a582675565/content)
+				population: {
 					"1100": 100,
 					"1219": 160,
 					"1450": 135,
 					"1500": 150,
 					"1600": 96,
 					"1700": 250,
-					"1778": 360, //Dye, Swanson (https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3917957) midpoint
+					"1778": 360,
 					"1805": 175,
 					"1819": 144,
 					"1850": 84.165,
@@ -174,13 +174,13 @@ global.population_Substrata_northern_america = class {
 			//3. National Level Scaling
 			canada: {
 				colour: [175, 63, 76],
-				population: { //(Millions)
-					"-10000": 0.10, //McEvedy and Jones (1978) gives a base population of 0,1M
-					"0": 0.12, //Figure taken from HYDE3.3
+				population: {
+					"-10000": 0.10,
+					"0": 0.12,
 					"1000": 0.38,
 					"1500": 0.76,
 					"1600": 0.2,
-					"1800": 0.65 //Figure taken from Statista (https://www.statista.com/statistics/1066836/population-canada-since-1800/)
+					"1800": 0.65
 				},
 				scalar: 1000000,
 				special_domain: true
@@ -188,7 +188,7 @@ global.population_Substrata_northern_america = class {
 			the_continental_usa: {
 				colour: [67, 134, 175],
 				population: {
-					"-10000": 0.233969, //Figures from 10000BC to 1000BC taken from HYDE3.3
+					"-10000": 0.233969,
 					"-9000": 0.259965,
 					"-8000": 0.288850,
 					"-7000": 0.320945,
@@ -198,8 +198,8 @@ global.population_Substrata_northern_america = class {
 					"-3000": 0.489171,
 					"-2000": 0.543523,
 					"-1000": 0.603915,
-					"0": 0.76, //Adjusted McEvedy and Jones (1978)
-					"500": 0.846755, //Figures from 10000BC to 1000BC taken from HYDE3.3
+					"0": 0.76,
+					"500": 0.846755,
 					"1000": 1.52,
 					"1500": 3.04,
 					"1600": 0.8
@@ -207,7 +207,7 @@ global.population_Substrata_northern_america = class {
 				scalar: 1000000
 			}
 		},
-		domain: [-10000, 1600] //Time domain for Project Centaur 0.5b (10000BC - 1600AD)
+		domain: [-10000, 1600]
 	};
 	
 	static bf = `${h3}/population_Substrata.northern_america/`;
@@ -216,17 +216,12 @@ global.population_Substrata_northern_america = class {
 	static output_rasters = `${this.ef}rasters_1.northern_america/`;
 	
 	static async A_getNorthernAmericaPopulationObject () {
-		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let northern_america_obj = JSON.parse(JSON.stringify(this.northern_america_obj));
-		
 		let northern_america_domain = northern_america_obj.domain;
-		
-		//Iterate over all_mask_keys and interpolate over all HYDE years within objects with .population
 		let all_mask_keys = Object.keys(northern_america_obj.areal_masks);
 		
 		Object.iterate(northern_america_obj.areal_masks, (local_key, local_value) => {
-			//Make sure colour is in [R, G, B] format
 			if (typeof local_value.colour === "string")
 				local_value.colour = Colour.convertHexToRGB(local_value.colour);
 			if (local_value.population) {
@@ -235,7 +230,6 @@ global.population_Substrata_northern_america = class {
 				let local_mask_domain = [all_local_years[0], all_local_years[all_local_years.length - 1]];
 				let years_to_interpolate = [];
 				
-				//Iterate over all hyde_years within domain
 				for (let x = 0; x < hyde_years.length; x++)
 					if (hyde_years[x] >= local_mask_domain[0] && hyde_years[x] <= local_mask_domain[1]) {
 						let is_in_domain = false;
@@ -243,12 +237,10 @@ global.population_Substrata_northern_america = class {
 							is_in_domain = true;
 						if (local_value.special_domain) is_in_domain = true;
 						
-						//If the current year is in domain and is not already an entry, try to interpolate for it
 						if (is_in_domain && !local_value.population[hyde_years[x]])
 							years_to_interpolate.push(hyde_years[x]);
 					}
 				
-				//Interpolate for years_to_interpolate; make sure that the object is scaled properly
 				local_value.population = Object.cubicSplineInterpolation(local_value.population, { years: years_to_interpolate });
 				if (local_value.scalar)
 					local_value.population = Object.multiply(local_value.population, local_value.scalar);
@@ -257,7 +249,6 @@ global.population_Substrata_northern_america = class {
 			northern_america_obj.areal_masks[local_key].key = local_key;
 		});
 		
-		//Iterate over all_mask_keys and set their colourmap
 		Object.iterate(northern_america_obj.areal_masks, (local_key, local_value) => {
 			let local_mask = JSON.parse(JSON.stringify(local_value));
 			let actual_key = [local_mask.colour[0], local_mask.colour[1], local_mask.colour[2]].join(",");
@@ -266,24 +257,19 @@ global.population_Substrata_northern_america = class {
 			northern_america_obj.areal_masks[actual_key].is_clone = true;
 		});
 		
-		//Return statement
 		return northern_america_obj;
 	}
 	
 	static async A_generateStadesterNorthernAmericaRasters (arg0_options) {
-		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
-		
-		//Declare local instance variables
 		let hyde_years = (options.hyde_years) ? options.hyde_years : landuse_HYDE.sorted_hyde_years;
 		let northern_america_obj = await this.A_getNorthernAmericaPopulationObject();
 		let raster_obj = {};
 		
 		let northern_america_domain = northern_america_obj.domain;
 		
-		//Iterate over all_png_files in common_defines.input_file_paths.velkscala_northern_america_folder; populate raster_obj
 		let all_png_files = fs.readdirSync(this.input_rasters_regions)
-			.filter((file) => path.extname(file).toLowerCase() === ".png");
+		.filter((file) => path.extname(file).toLowerCase() === ".png");
 		
 		for (let i = 0; i < all_png_files.length; i++)
 			all_png_files[i] = `${this.input_rasters_regions}/${all_png_files[i]}`;
@@ -292,7 +278,6 @@ global.population_Substrata_northern_america = class {
 			raster_obj[all_png_files[i]] = GeoPNG.loadImage(all_png_files[i]);
 		}
 		
-		//Iterate over all hyde_years; all_mask_keys in order
 		let all_mask_keys = Object.keys(northern_america_obj.areal_masks);
 		
 		for (let i = 0; i < hyde_years.length; i++) {
@@ -300,18 +285,15 @@ global.population_Substrata_northern_america = class {
 			let local_output_file_path = `${this.output_rasters}popc_${hyde_years[i]}.png`;
 			let total_sum_for_year = 0;
 			
-			//Copy to local_output_file_path first for handling
-			if (!fs.existsSync(local_input_file_path)) continue; //Internal guard clause if local_input_file_path doesn't exist
+			if (!fs.existsSync(local_input_file_path)) continue;
 			fs.copyFileSync(local_input_file_path, local_output_file_path);
 			
-			//Iterate over all_mask_keys; process local_mask for all_png_files in raster_obj
 			for (let x = 0; x < all_mask_keys.length; x++) {
 				let is_in_domain = false;
 				let local_mask = northern_america_obj.areal_masks[all_mask_keys[x]];
 				
-				//Internal guard clause if local_mask .is_clone
-				console.log(`- Processing local_mask ${local_mask.key}: (is_clone: ${local_mask.is_clone})`);
 				if (local_mask.is_clone) continue;
+				console.log(`- Processing local_mask ${local_mask.key}: (is_clone: ${local_mask.is_clone})`);
 				
 				let all_local_years;
 				if (typeof local_mask.population === "object")
@@ -325,7 +307,6 @@ global.population_Substrata_northern_america = class {
 					local_mask_domain = local_mask.domain;
 				}
 				
-				//Check if local_mask has an applicable domain
 				if (hyde_years[i] >= local_mask_domain[0] && hyde_years[i] <= local_mask_domain[1])
 					if (hyde_years[i] >= northern_america_domain[0] && hyde_years[i] <= northern_america_domain[1]) {
 						is_in_domain = true;
@@ -334,149 +315,124 @@ global.population_Substrata_northern_america = class {
 					}
 				console.log(` - Domain: ${local_mask_domain.join(", ")}`);
 				
-				//If the mask is in domain; iterate over all_png_files in raster_obj to apply it
 				if (is_in_domain) {
-					let local_area = [];
-					total_sum_for_year = 0;
+					total_sum_for_year = 0; // Reset for each mask to track individual totals accurately
 					
-					//.density handling; calculate fetch sum area to set local_mask.population for that year
+					// 1. Calculate Area accurately across all files without double-counting
 					if (local_mask.density) {
+						let local_area = 0;
+						let counted_area_pixels = new Set();
+						
 						for (let y = 0; y < all_png_files.length; y++) {
 							let local_raster = raster_obj[all_png_files[y]];
-							let local_raster_area = 0;
 							
 							GeoPNG.operateNumberRasterImage({
 								file_path: metadata_HYDE.input_raster_land_area,
-								format: "int32",
+								format: "int32", // Explicit int32 per your specification
 								function: function (arg0_index, arg1_number) {
-									//Convert from parameters
-									let local_index = arg0_index;
-									let local_number = arg1_number;
-									
-									//Declare local instance variables
-									let byte_index = local_index*4;
-									
-									//Check if local_raster.data matches the present object
-									if (local_number > 0) {
+									if (arg1_number > 0 && !counted_area_pixels.has(arg0_index)) {
+										let byte_index = arg0_index * 4;
 										let local_area_mask = northern_america_obj.areal_masks[[
 											local_raster.data[byte_index],
 											local_raster.data[byte_index + 1],
 											local_raster.data[byte_index + 2]
 										].join(",")];
 										
-										if (local_area_mask)
-											if (local_area_mask.key === local_mask.key)
-												local_raster_area += local_number;
+										if (local_area_mask && local_area_mask.key === local_mask.key) {
+											local_area += arg1_number;
+											counted_area_pixels.add(arg0_index);
+										}
 									}
 								}
 							});
-							
-							local_area.push(local_raster_area);
 						}
-						local_area = Math.max(...local_area);
 						
 						if (local_mask.population === undefined) local_mask.population = {};
-						local_mask.population[hyde_years[i]] = local_area*local_mask.density;
+						local_mask.population[hyde_years[i]] = local_area * local_mask.density;
 					}
 					console.log(` - Local population:`, local_mask.population[hyde_years[i]]);
 					
-					//.population handling; scale to colour code
-					if (local_mask.population)
-						if (local_mask.population[hyde_years[i]]) {
-							let local_population_raster = GeoPNG.loadNumberRasterImage(local_output_file_path, {
-								format: "float32"
-							});
-							let local_population = local_mask.population[hyde_years[i]];
-							let local_scalar = 1;
-							let local_sum = 0;
+					// 2. Dasymetric Scaling Phase
+					if (local_mask.population && local_mask.population[hyde_years[i]]) {
+						let local_population_raster = GeoPNG.loadNumberRasterImage(local_output_file_path, {
+							format: "float32"
+						});
+						let local_population = local_mask.population[hyde_years[i]];
+						let local_scalar = 1;
+						let local_sum = 0;
+						let mask_pixel_count = 0;
+						let counted_pop_pixels = new Set();
+						
+						// Accumulate true local_sum across all files
+						for (let y = 0; y < all_png_files.length; y++) {
+							let local_raster = raster_obj[all_png_files[y]];
 							
-							//Iterate over all_png_files; compute local_scalar
-							for (let y = 0; y < all_png_files.length; y++) {
-								let local_raster = raster_obj[all_png_files[y]];
-								let local_raster_population = 0;
-								
-								GeoPNG.operateNumberRasterImage({
-									file_path: local_output_file_path,
-									format: "float32",
-									function: function (arg0_index, arg1_number) {
-										//Convert from parameters
-										let local_index = arg0_index;
-										let local_number = arg1_number;
-										
-										//Declare local instance variables
-										let byte_index = local_index*4;
-										
-										//Check if local_raster.data matches the present object
-										if (local_number > 0) {
-											let local_area_mask = northern_america_obj.areal_masks[[
-												local_raster.data[byte_index],
-												local_raster.data[byte_index + 1],
-												local_raster.data[byte_index + 2]
-											].join(",")];
-											
-											if (local_area_mask)
-												if (local_area_mask.key === local_mask.key)
-													local_raster_population += local_number;
-										}
-									}
-								});
-								
-								if (local_raster_population > local_sum) local_sum = local_raster_population;
-							}
-							
-							if (local_sum > 0) {
-								local_scalar = Math.returnSafeNumber(local_population/local_sum, 1);
-							} else {
-								console.log(`- Warning: local_sum is 0 for ${local_mask.key} in year ${hyde_years[i]} (HYDE strikes again!). Skipping scaling.`);
-								continue;
-							}
-							
-							console.log(`- Scaling ${local_output_file_path} for ${local_mask.key} | Area: ${local_area}, Population: ${String.formatNumber(local_population)}, Scalar: ${local_scalar}`);
-							
-							//Scale local population raster to scalar
-							GeoPNG.saveNumberRasterImage({
+							GeoPNG.operateNumberRasterImage({
 								file_path: local_output_file_path,
 								format: "float32",
-								height: 2160,
-								width: 4320,
-								
-								function: function (arg0_index) {
-									let index = arg0_index;
-									
-									//Declare local instance variables
-									let byte_index = arg0_index*4; //Index must be multiplied by 4 since we are using loadImage(), and not loadNumberRasterImage()
-									let local_value = local_population_raster.data[index];
-									
-									//Internal guard clause if local_value is 0
-									if (local_value === 0) return 0;
-									
-									//Iterate over all_png_files to see if their .data at byte_index contains our target key
-									for (let y = 0; y < all_png_files.length; y++) {
-										let local_raster = raster_obj[all_png_files[y]];
-										let local_raster_colour = [
+								function: function (arg0_index, arg1_number) {
+									if (!counted_pop_pixels.has(arg0_index)) {
+										let byte_index = arg0_index * 4;
+										let local_area_mask = northern_america_obj.areal_masks[[
 											local_raster.data[byte_index],
 											local_raster.data[byte_index + 1],
-											local_raster.data[byte_index + 2],
-										].join(",");
+											local_raster.data[byte_index + 2]
+										].join(",")];
 										
-										let local_area_mask = northern_america_obj.areal_masks[local_raster_colour];
-										
-										if (local_area_mask)
-											if (local_area_mask.key === local_mask.key) {
-												total_sum_for_year += local_value*local_scalar;
-												return local_value*local_scalar;
-											}
+										if (local_area_mask && local_area_mask.key === local_mask.key) {
+											if (arg1_number > 0) local_sum += arg1_number;
+											mask_pixel_count++;
+											counted_pop_pixels.add(arg0_index);
+										}
 									}
-									
-									//Return statement; default value otherwise
-									return local_value;
 								}
 							});
-							
-							console.log(`- Finished processing ${local_output_file_path} for ${hyde_years[i]}. Total Northern America sum for category: ${String.formatNumber(total_sum_for_year)}`);
 						}
+						
+						if (local_sum > 0) {
+							local_scalar = Math.returnSafeNumber(local_population / local_sum, 1);
+						} else {
+							console.log(`- Skipping ${local_mask.key} (No valid area or population found).`);
+							continue;
+						}
+						
+						console.log(`- Scaling ${local_output_file_path} for ${local_mask.key} | Population: ${String.formatNumber(local_population)}, Scalar: ${local_scalar}`);
+						
+						GeoPNG.saveNumberRasterImage({
+							file_path: local_output_file_path,
+							format: "float32",
+							height: 2160,
+							width: 4320,
+							
+							function: function (arg0_index) {
+								let index = arg0_index;
+								let byte_index = arg0_index * 4;
+								let local_value = local_population_raster.data[index];
+								
+								for (let y = 0; y < all_png_files.length; y++) {
+									let local_raster = raster_obj[all_png_files[y]];
+									let local_raster_colour = [
+										local_raster.data[byte_index],
+										local_raster.data[byte_index + 1],
+										local_raster.data[byte_index + 2],
+									].join(",");
+									
+									let local_area_mask = northern_america_obj.areal_masks[local_raster_colour];
+									
+									if (local_area_mask && local_area_mask.key === local_mask.key) {
+										// Apply seeding or standard scaling
+										let final_value = local_value * local_scalar;
+										total_sum_for_year += final_value;
+										return final_value;
+									}
+								}
+								return local_value;
+							}
+						});
+						
+						console.log(`- Finished processing ${local_output_file_path} for ${hyde_years[i]}. Total Northern America sum for category: ${String.formatNumber(total_sum_for_year)}`);
+					}
 					
-					//Force a yield, perform GC
 					await new Promise(resolve => setImmediate(resolve));
 					if (global.gc) global.gc();
 				}
@@ -485,7 +441,6 @@ global.population_Substrata_northern_america = class {
 	}
 	
 	static async processRasters () {
-		//1. Process Northern America rasters into main outliers folder
 		await this.A_generateStadesterNorthernAmericaRasters();
 	}
 }
