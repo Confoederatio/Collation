@@ -21,7 +21,9 @@ config.mapmodes.stadester = {
 					let end_year = all_population_keys[all_population_keys.length - 1];
 					let start_year = all_population_keys[0];
 					
-					if ((main.date.year >= start_year && main.date.year <= end_year) || (end_year >= 1975 && main.date.year >= 1975))
+					if ((main.date.year >= start_year && main.date.year <= end_year) || (
+						end_year >= 1975 && main.date.year >= 1975 /*&& !local_city.name.includes("agglomeration")*/
+					))
 						if (local_city.coords) {
 							let local_population = 0;
 							
@@ -31,6 +33,7 @@ config.mapmodes.stadester = {
 									local_population = local_city.population[all_population_keys[i]];
 							if (local_population !== 0) {
 								let city_label = `${String.truncate((local_city.name) ? local_city.name : "Unknown City", 40)} (${String.formatNumber(local_population)})`;
+									//city_label = city_label.replace("(agglomeration)", "").trim();
 								let maptalks_circle = new maptalks.Circle(center.add([
 									Math.returnSafeNumber(local_city.coords[1]),
 									Math.returnSafeNumber(local_city.coords[0])
@@ -43,13 +46,16 @@ config.mapmodes.stadester = {
 									}
 								});
 								all_geometries.push(maptalks_circle);
-									maptalks_circle.on("click", (e) => console.log(local_city));
+									maptalks_circle.on("click", (e) => {
+										console.log(local_city);
+									});
 								
 								let local_label = new maptalks.Label(city_label, [
 									Math.returnSafeNumber(local_city.coords[1]),
 									Math.returnSafeNumber(local_city.coords[0]),
 									0
 								], {
+									interactive: false,
 									textSymbol: {
 										textFaceName: "Karla",
 										textSize: 12,
@@ -58,7 +64,8 @@ config.mapmodes.stadester = {
 										textHaloRadius: 2
 									}
 								});
-								local_label.setZIndexSilently(local_population*-1);
+								maptalks_circle.setZIndexSilently(-local_population);
+								local_label.setZIndexSilently(-local_population);
 								
 								all_geometries.push(local_label);
 							}

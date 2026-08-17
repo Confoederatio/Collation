@@ -20,7 +20,7 @@
   "hierarchy_ordering": "features_at_top",
   "hierarchy_recommended_max_geometries_in_layer": 100,
   "ui_scaling": 1,
-  "disable_mapmode_interactivity": true,
+  "disable_mapmode_interactivity": false,
   "default_label_font_size": 10,
   "hide_labels_under_km2": 100,
   "default_polygon_symbol": {
