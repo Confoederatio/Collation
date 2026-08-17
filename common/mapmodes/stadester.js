@@ -1,7 +1,7 @@
 config.mapmodes.stadester = {
-	name: "Stadestér 1.0",
+	name: "Stadestér 1.1",
 	icon: "location_city",
-	description: "Displays urban locations from Stadestér 1.0.",
+	description: "Displays urban locations from Stadestér 1.1.",
 	tooltip: "Urban data (3000BC-2025AD).",
 	
 	special_function: () => {
@@ -31,18 +31,19 @@ config.mapmodes.stadester = {
 									local_population = local_city.population[all_population_keys[i]];
 							if (local_population !== 0) {
 								let city_label = `${String.truncate((local_city.name) ? local_city.name : "Unknown City", 40)} (${String.formatNumber(local_population)})`;
-								
-								all_geometries.push(new maptalks.Circle(center.add([
+								let maptalks_circle = new maptalks.Circle(center.add([
 									Math.returnSafeNumber(local_city.coords[1]),
 									Math.returnSafeNumber(local_city.coords[0])
 								]), Math.sqrt(Math.abs(local_population*10000)/Math.PI), {
 									symbol: {
 										lineColor: "#34495e",
-										lineWidth: 2,
+										lineWidth: 1,
 										polygonFill: (local_population > 0) ? "#34cc48" : "rgb(240, 60, 60)",
 										polygonOpacity: 0.2,
 									}
-								}));
+								});
+								all_geometries.push(maptalks_circle);
+									maptalks_circle.on("click", (e) => console.log(local_city));
 								
 								let local_label = new maptalks.Label(city_label, [
 									Math.returnSafeNumber(local_city.coords[1]),
@@ -52,8 +53,8 @@ config.mapmodes.stadester = {
 									textSymbol: {
 										textFaceName: "Karla",
 										textSize: 12,
-										textFill: "rgba(255, 255, 255, 0.5)",
-										textHaloFill: "rgba(0, 0, 0, 0.5)",
+										textFill: "rgba(255, 255, 255, 0.75)",
+										textHaloFill: "rgba(0, 0, 0, 0.75)",
 										textHaloRadius: 2
 									}
 								});
