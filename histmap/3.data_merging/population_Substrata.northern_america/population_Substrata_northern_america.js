@@ -347,7 +347,7 @@ global.population_Substrata_northern_america = class {
 							
 							GeoPNG.operateNumberRasterImage({
 								file_path: metadata_HYDE.input_raster_land_area,
-								format: "float32",
+								format: "int32",
 								function: function (arg0_index, arg1_number) {
 									//Convert from parameters
 									let local_index = arg0_index;
