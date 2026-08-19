@@ -18,5 +18,36 @@
 				years: GDP_PPP_SEDAC.years
 			});
 		}
+		
+		//[WIP] - Finish function bodies
+		static async B_loadHYDESEDACYear (arg0_year) {
+			//Convert from parameters
+			let year = arg0_year;
+			
+			//Declare local instance variables
+			let input_file_path = `${this.input_path}/GDP_PPP_${year}.png`;
+			
+			
+		}
+		
+		static async C_trainPotentialEconomicActivityModel (arg0_year, arg1_options) {
+			
+		}
+		
+		static async C_trainPotentialEconomicActivityModels () {
+			
+		}
+		
+		static async D_processPotentialEconomicActivityModel (arg0_options) {
+			
+		}
+		
+		static async E_geomeanPotentialEconomicActivityModel () {
+			
+		}
+		
+		static async processRasters (arg0_options) {
+			
+		}
 	};
 }
