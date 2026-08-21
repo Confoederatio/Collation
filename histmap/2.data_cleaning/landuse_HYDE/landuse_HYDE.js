@@ -442,10 +442,10 @@ global.landuse_HYDE = class {
 	}
 	
 	static async processRasters (arg0_options) {
+		
 		let options = (arg0_options) ? arg0_options : {};
 		
 		if (!options.exclude) options.exclude = [];
-		
 		//1. Convert equirectangular rasters
 		if (!options.exclude.includes("A"))
 			await this.A_convertToPNGs(this.input_rasters_equirectangular, this.intermediate_rasters_equirectangular, {

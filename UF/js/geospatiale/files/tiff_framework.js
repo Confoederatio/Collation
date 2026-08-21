@@ -71,6 +71,7 @@
 	 * @param {String} arg0_input_file_path
 	 * @param {String} arg1_output_base_path - The prefix for the output (e.g., 'map_data_').
 	 * @param {Object} [arg2_options]
+	 *  @param {string} [arg2_options.format="int32"] - Either 'float32'/'int32'
 	 *  @param {number} [arg2_options.scalar=1] - The scalar to multiply or divide by.
 	 *  @param {string[]} [arg2_options.years] - The list of years to use for output file names.
 	 *
@@ -80,9 +81,10 @@
 		//Convert from parameters
 		let input_file_path = arg0_input_file_path;
 		let output_base_path = arg1_output_base_path;
-		let options = arg2_options;
+		let options = (arg2_options) ? arg2_options : {};
 		
 		//Initialise options
+		if (!options.format) options.format = "int32";
 		options.scalar = Math.returnSafeNumber(options.scalar, 1);
 		
 		//Declare local instance variables
@@ -119,7 +121,7 @@
 					local_value *= options.scalar;
 					
 					//Encode the value as RGBA using the provided helper
-					let local_rgba = Colour.encodeNumberAsRGBA(local_value);
+					let local_rgba = Colour.encodeNumberAsRGBA(local_value, { format: options.format });
 					
 					//Write RGBA values into the PNG data
 					let local_png_index = local_index*4;
