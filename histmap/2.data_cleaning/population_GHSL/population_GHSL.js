@@ -1,7 +1,7 @@
-global.population_GHSL = class {
+global.population_GHSL = class { //[WIP] - Finish class body
 	static bf = `${h1}/population_GHSL`;
 	static input_geotiffs_folder = `${this.bf}/population_rasters/1.geotiffs/`;
-	static intermediate_rasters_folder = `${this.bf}/population_rasters/2.intermediate_rasters/`;
+	static intermediate_rasters_folder = `${this.bf}/population_rasters/2.rasters/`;
 	
 	static async A_convertToPNGs () {
 		//Declare local instance variables
@@ -12,11 +12,20 @@ global.population_GHSL = class {
 			
 			if (file_name.startsWith("GHS_POP_E")) {
 				let local_year = parseInt(file_name.replace("GHS_POP_E", "")
-					.replace(".tif", ""));
+				.replace(".tif", ""));
 				
 				let local_output_path = `${this.intermediate_rasters_folder}GHS_POP_${local_year}.png`;
+				let temp_tif_path = `${this.intermediate_rasters_folder}temp_${file_name}`;
 				
-				await GeoTIFF.convertToPNG(all_files[i], local_output_path, { format: "float32" });
+				//Translate 64-bit GeoTIFF to a standard Float32 TIFF to fix the predictor decompression error
+				let command = `gdal_translate -ot Float32 "${all_files[i]}" "${temp_tif_path}"`;
+					child_process.execSync(command, { stdio: "ignore" });
+				
+				await GeoTIFF.convertToPNG(temp_tif_path, local_output_path, { format: "float32" });
+				
+				//Clean up temporary converted TIFF
+				if (fs.existsSync(temp_tif_path)) fs.unlinkSync(temp_tif_path);
+				
 				console.log(`- Finished writing ${all_files[i]} to ${local_output_path}.`);
 			}
 		}
@@ -39,6 +48,14 @@ global.population_GHSL = class {
 	}
 	
 	static async processRasters (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
 		
+		//Initialise options
+		if (!options.exclude) options.exclude = [];
+		
+		//Declare local instance variables
+		if (!options.exclude.includes("A"))
+			await this.A_convertToPNGs();
 	}
 };

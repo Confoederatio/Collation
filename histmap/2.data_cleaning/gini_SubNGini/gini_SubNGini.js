@@ -14,8 +14,10 @@ global.gini_SubNGini = class {
 	}
 	
 	static async processRasters (arg0_options) {
+		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
 		
+		//Initialise options
 		if (!options.exclude) options.exclude = [];
 		
 		//1. Convert to intermediate_subnational_rasters
