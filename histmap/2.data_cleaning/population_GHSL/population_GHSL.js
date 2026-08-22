@@ -8,6 +8,8 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		let all_files = await File.getAllFiles(this.input_geotiffs_folder);
 		
 		//Iterate over all_files, convert them to float32
+		console.log(`- Attempting conversion from source .tif (5-arcmin). Ensure you have GDAL installed in your Anaconda.`);
+		
 		for (let i = 0; i < all_files.length; i++) {
 			let file_name = path.basename(all_files[i]);
 			
