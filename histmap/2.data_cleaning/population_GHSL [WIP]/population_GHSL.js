@@ -1,4 +1,5 @@
 global.population_GHSL = class { //[WIP] - Finish class body
+	//[NOTE] - Láng-Ritter et al. rural pop. underweighting is currently being contested. As of 22 August 2026, it should be waited on to see how the academic debate/response chain around it shakes out before going through with code changes - Kätzchen and Tacitus
 	static bf = `${h1}/population_GHSL [WIP]`;
 	static hf = () => landuse_HYDE.bf;
 	static of = () => population_Substrata_outlier_removal.bf;
