@@ -161,7 +161,8 @@
 	};
 	
 	/**
-	 * getRGBAFromPixel() - Fetches the RGBA value of a pixel based on its index.
+	 * Fetches the RGBA value of a pixel based on its index.
+	 * 
 	 * @param {Object|string} arg0_image_object - Image object or file path.
 	 * @param {number} arg1_index - Pixel index.
 	 * @param {Object} [arg2_options] 
@@ -183,6 +184,53 @@
 			image_obj.data[index + 2],
 			image_obj.data[index + 3]
 		];
+	};
+	
+	/**
+	 * Interpolates between two number raster images based on a fraction.
+	 * 
+	 * @param {string|Object} arg0_from_file_path
+	 * @param {string|Object} arg1_to_file_path
+	 * @param {string} arg2_output_file_path
+	 * @param {Object} [arg3_options]
+	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
+	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
+	 * 
+	 * @returns {Object}
+	 */
+	GeoPNG.linearInterpolation = function (arg0_from_file_path, arg1_to_file_path, arg2_output_file_path, arg3_options) {
+		//Convert from parameters
+		let from_file_path = arg0_from_file_path;
+		let to_file_path = arg1_to_file_path;
+		let output_file_path = arg2_output_file_path; 
+		let options = (arg3_options) ? arg3_options : {};
+		
+		//Initialise options
+		if (!options.format) options.format = "int32";
+		if (options.fraction === undefined) options.fraction = 0.5;
+		
+		//Declare local instance variables
+		let from_image_obj = GeoPNG.loadNumberRasterImage(from_file_path, options);
+		let to_image_obj = GeoPNG.loadNumberRasterImage(to_file_path, options);
+		
+		//Return statement
+		return GeoPNG.saveNumberRasterImage({
+			file_path: output_file_path,
+			format: options.format,
+			height: from_image_obj.height,
+			width: from_image_obj.width,
+			function: function (arg0_index) {
+				//Convert from parameters
+				let index = arg0_index;
+				
+				//Declare local instance variables
+				let from_val = from_image_obj.data[index];
+				let to_val = to_image_obj.data[index];
+				
+				//Return statement
+				return from_val + (to_val - from_val)*options.fraction;
+			}
+		});
 	};
 	
 	/**
