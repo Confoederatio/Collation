@@ -648,7 +648,7 @@ global.population_Substrata_outlier_removal = class {
 		}
 	}
 	
-	static async D_interpolateToGHSL () { //[WIP] - This needs to copy over from GHSL after 1975AD instead of letting Stadestér fallback logic happen
+	static async D_interpolateToGHSL () {
 		//Declare local instance variables
 		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
 		let hyde_years = landuse_HYDE.hyde_years;
