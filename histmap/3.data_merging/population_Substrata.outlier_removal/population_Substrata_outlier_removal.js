@@ -658,11 +658,12 @@ global.population_Substrata_outlier_removal = class {
 		//Iterate over all landuse_HYDE.hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
 			let current_year = hyde_years[i];
+			let local_ghsl_path = `${this.input_GHSL_rasters}GHS_POP_${current_year}.png`;
+			let local_output_path = `${this.intermediate_rasters_interpolated}popc_${current_year}.png`;
 			
 			if (current_year >= GHSL_domain[0] && current_year <= GHSL_domain[1]) {
-				let local_from_path = `${this.intermediate_rasters_scaled_to_global}popc_${current_year}.png`;
-				let local_output_path = `${this.intermediate_rasters_interpolated}popc_${current_year}.png`;
 				let fraction = (current_year - GHSL_domain[0])/year_gap;
+				let local_from_path = `${this.intermediate_rasters_scaled_to_global}popc_${current_year}.png`;
 				
 				GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
 					format: "float32",
@@ -670,12 +671,18 @@ global.population_Substrata_outlier_removal = class {
 					respect_zero_values: true
 				});
 				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
+			} else if (current_year > GHSL_domain[1]) {
+				if (fs.existsSync(local_ghsl_path)) {
+					console.log(`- Copying GHSL for ${current_year}.`);
+					fs.copyFileSync(local_ghsl_path, local_output_path);
+				}
 			}
 		}
 	}
 	
 	static async D_convertToGeoPNG_int32 () {
 		//Declare local instance variables
+		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
 		let hyde_years = landuse_HYDE.hyde_years;
 		
 		//Iterate over all hyde_years and convert to GeoPNG_int32
@@ -696,7 +703,8 @@ global.population_Substrata_outlier_removal = class {
 				format: "int32",
 				height: 2160,
 				width: 4320,
-				function: (local_index) => Math.round(current_raster.data[local_index])
+				function: (local_index) => (hyde_years[i] < GHSL_domain[0]) ? 
+					Math.round(current_raster.data[local_index]) : Math.ceil(current_raster.data[local_index])
 			});
 			console.log(`- (${i}/${hyde_years.length}) Saved int32 version to ${local_output_path}.`);
 			await Blacktraffic.yield();
