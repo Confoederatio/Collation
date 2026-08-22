@@ -7,6 +7,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		//Declare local instance variables
 		let all_files = await File.getAllFiles(this.input_geotiffs_folder);
 		
+		//Iterate over all_files, convert them to float32
 		for (let i = 0; i < all_files.length; i++) {
 			let file_name = path.basename(all_files[i]);
 			
@@ -18,9 +19,8 @@ global.population_GHSL = class { //[WIP] - Finish class body
 				let temp_tif_path = `${this.intermediate_rasters_folder}temp_${file_name}`;
 				
 				//Translate 64-bit GeoTIFF to a standard Float32 TIFF to fix the predictor decompression error
-				let command = `gdal_translate -ot Float32 "${all_files[i]}" "${temp_tif_path}"`;
-					child_process.execSync(command, { stdio: "ignore" });
-				
+				let command = `conda run gdal_translate -ot Float32 "${all_files[i]}" "${temp_tif_path}"`;
+					await child_process.execSync(command, { stdio: "ignore" });
 				await GeoTIFF.convertToPNG(temp_tif_path, local_output_path, { format: "float32" });
 				
 				//Clean up temporary converted TIFF

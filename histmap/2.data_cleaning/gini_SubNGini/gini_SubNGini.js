@@ -13,6 +13,10 @@ global.gini_SubNGini = class {
 		console.log(`- Finished converting Gini GeoTIFFs to rasters.`);
 	}
 	
+	static async B_generateDasymetricMasks () {
+		
+	}
+	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -23,5 +27,7 @@ global.gini_SubNGini = class {
 		//1. Convert to intermediate_subnational_rasters
 		if (!options.exclude.includes("A"))
 			await this.A_convertToPNGs();
+		if (!options.exclude.includes("B"))
+			await this.B_generateDasymetricMasks();
 	}
 };
