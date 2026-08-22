@@ -1,14 +1,9 @@
 global.population_GHSL = class { //[WIP] - Finish class body
 	//[NOTE] - Láng-Ritter et al. rural pop. underweighting is currently being contested. As of 22 August 2026, it should be waited on to see how the academic debate/response chain around it shakes out before going through with code changes - Kätzchen and Tacitus
-	static bf = `${h1}/population_GHSL [WIP]`;
-	static hf = () => landuse_HYDE.bf;
-	static of = () => population_Substrata_outlier_removal.bf;
+	static bf = `${h1}/population_GHSL`;
 	static input_geotiffs_folder = `${this.bf}/population_rasters/1.geotiffs/`;
 	static input_rural_masks_folder = `${this.bf}/population_rasters/1.rural_masks/`;
 	static intermediate_rasters_folder = `${this.bf}/population_rasters/2.rasters/`;
-	static options = {
-		underweight_factor: -0.84 //Alleged to be underweighted by 84% per Láng-Ritter et al. (https://www.nature.com/articles/s41467-025-56906-7)
-	};
 	
 	static async A_convertToPNGs () {
 		//Declare local instance variables
@@ -123,14 +118,6 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		}
 	}
 	
-	static async D_adjustForRuralAreas () {
-		//1. We use rurc_ (hf()) as a mask over Velkscala Substrata to extract rural substrata
-	}
-	
-	static async E_convertToGeoPNG_int32 () {
-		
-	}
-	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -145,9 +132,5 @@ global.population_GHSL = class { //[WIP] - Finish class body
 			await this.B_interpolatePNGs();
 		if (!options.exclude.includes("C"))
 			await this.C_scalePNGsToGlobalPopulation();
-		if (!options.exclude.includes("D"))
-			await this.D_adjustForRuralAreas();
-		if (!options.exclude.includes("E"))
-			await this.E_convertToGeoPNG_int32();
 	}
 };

@@ -1,12 +1,18 @@
 global.population_Substrata_outlier_removal = class {
 	static bf = `${h3}/population_Substrata.outlier_removal/`;
+	static input_GHSL_rasters = `${h1}/population_GHSL/population_rasters/2.rasters/`;
 	static input_outlier_rasters = `${this.bf}rasters_outliers/`;
 	static input_outlier_rasters_to_scale = `${this.bf}rasters_outliers_to_scale/`;
 	static intermediate_outliers_removed_rasters = `${this.bf}rasters_outliers_removed/`;
 	static intermediate_rasters_northern_america = `${this.bf}rasters_1.northern_america/`;
 	static intermediate_rasters_scaled_to_statista = `${this.bf}rasters_2.scaled_to_regions/`;
 	static intermediate_rasters_scaled_to_global = `${this.bf}rasters_3.scaled_to_global/`;
-	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_3.geopng_int32/`;
+	
+	static intermediate_rasters_interpolated = `${this.bf}rasters_4.interpolated_to_GHSL/`;
+	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_4.geopng_int32/`;
+	static options = {
+		interpolate_to_GHSL_domain: [1800, 1975]
+	};
 	
 	static statista_obj = {
 		asia: {
@@ -642,6 +648,32 @@ global.population_Substrata_outlier_removal = class {
 		}
 	}
 	
+	static async D_interpolateToGHSL () { //[WIP] - This needs to copy over from GHSL after 1975AD instead of letting Stadestér fallback logic happen
+		//Declare local instance variables
+		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
+		let hyde_years = landuse_HYDE.hyde_years;
+		let to_path = `${this.input_GHSL_rasters}GHS_POP_${GHSL_domain[1]}.png`;
+		let year_gap = GHSL_domain[1] - GHSL_domain[0];
+		
+		//Iterate over all landuse_HYDE.hyde_years
+		for (let i = 0; i < hyde_years.length; i++) {
+			let current_year = hyde_years[i];
+			
+			if (current_year >= GHSL_domain[0] && current_year <= GHSL_domain[1]) {
+				let local_from_path = `${this.intermediate_rasters_scaled_to_global}popc_${current_year}.png`;
+				let local_output_path = `${this.intermediate_rasters_interpolated}popc_${current_year}.png`;
+				let fraction = (current_year - GHSL_domain[0])/year_gap;
+				
+				GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+					format: "float32",
+					fraction,
+					respect_zero_values: true
+				});
+				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
+			}
+		}
+	}
+	
 	static async D_convertToGeoPNG_int32 () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.hyde_years;
@@ -649,8 +681,12 @@ global.population_Substrata_outlier_removal = class {
 		//Iterate over all hyde_years and convert to GeoPNG_int32
 		console.log(`Converting from float32 to int32 for older versions of SVE.`);
 		for (let i = 0; i < hyde_years.length; i++) {
-			let local_input_path = `${this.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
+			let local_input_path = `${this.intermediate_rasters_interpolated}popc_${hyde_years[i]}.png`;
 			let local_output_path = `${this.intermediate_rasters_geopng_int32}popc_${hyde_years[i]}.png`;
+				if (!fs.existsSync(local_input_path)) {
+					console.log(`- File was outside interpolated range, converting fallback instead.`);
+					local_input_path = `${this.intermediate_rasters_scaled_to_global}popc_${hyde_years[i]}.png`;
+				}
 			
 			let current_raster = GeoPNG.loadNumberRasterImage(local_input_path, {
 				format: "float32"
@@ -682,6 +718,9 @@ global.population_Substrata_outlier_removal = class {
 		//3. Scale processed outliers to global population
 		if (!options.exclude.includes("C")) await this.C_scaleProcessedHYDEToGlobal();
 		//4. Conversion to int32 for backwards compatibility
-		if (!options.exclude.includes("D")) await this.D_convertToGeoPNG_int32();
+		if (!options.exclude.includes("D")) {
+			await this.D_interpolateToGHSL();
+			await this.D_convertToGeoPNG_int32();
+		}
 	}
 };

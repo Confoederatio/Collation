@@ -195,6 +195,7 @@
 	 * @param {Object} [arg3_options]
 	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
 	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
+	 *  @param {boolean} [arg3_options.respect_zero_values=false] - Whether to respect zero values when interpolating.
 	 * 
 	 * @returns {Object}
 	 */
@@ -228,6 +229,8 @@
 				let to_val = to_image_obj.data[index];
 				
 				//Return statement
+				if (options.respect_zero_values && from_val === 0)
+					return 0;
 				return from_val + (to_val - from_val)*options.fraction;
 			}
 		});
