@@ -703,8 +703,7 @@ global.population_Substrata_outlier_removal = class {
 				format: "int32",
 				height: 2160,
 				width: 4320,
-				function: (local_index) => (hyde_years[i] < GHSL_domain[0]) ? 
-					Math.round(current_raster.data[local_index]) : Math.ceil(current_raster.data[local_index])
+				function: (local_index) => Math.round(current_raster.data[local_index])
 			});
 			console.log(`- (${i}/${hyde_years.length}) Saved int32 version to ${local_output_path}.`);
 			await Blacktraffic.yield();
