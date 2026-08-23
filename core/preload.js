@@ -38,7 +38,7 @@ window.discordRPC = {
 				...discordRPC.current_activity,
 				...target_activity
 			};
-			ipcRenderer.send("update-presence", discordRPC.current_activity);
+			ipcRenderer.send("discord-update-presence", discordRPC.current_activity);
 		} catch (e) { console.error(e); }
 	}
 };

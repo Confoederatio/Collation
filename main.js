@@ -187,7 +187,7 @@ let win;
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
   
-  ipcMain.on("update-presence", (_event, activity) => {
+  ipcMain.on("discord-update-presence", (_event, activity) => {
     Discord_setRPCActivity(activity);
   });
 }
