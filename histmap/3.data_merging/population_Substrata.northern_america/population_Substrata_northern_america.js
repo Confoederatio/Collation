@@ -293,7 +293,7 @@ global.population_Substrata_northern_america = class {
 				let local_mask = northern_america_obj.areal_masks[all_mask_keys[x]];
 				
 				if (local_mask.is_clone) continue;
-				console.log(`- Processing local_mask ${local_mask.key}: (is_clone: ${local_mask.is_clone})`);
+				console.log(`- Processing local_mask ${local_mask.key}: (is_clone: ${local_mask.is_clone}) for ${hyde_years[i]}.`);
 				
 				let all_local_years;
 				if (typeof local_mask.population === "object")
