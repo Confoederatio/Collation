@@ -26,6 +26,9 @@ global.UI_SystemManagerWindow = class {
 			width: "80dvw",
 			
 			page_menu_options: {
+				onuserchange: (v, e) => {
+					if (v.close) window.discordRPC.updateActivity({ state: "Working" });
+				},
 				retain: true,
 				starting_page: "script_manager",
 				style: {
@@ -40,6 +43,9 @@ global.UI_SystemManagerWindow = class {
 					}
 				}
 			}
+		});
+		window.discordRPC.updateActivity({
+			state: "Programming with Scriptly IDE"
 		});
 	}
 };
