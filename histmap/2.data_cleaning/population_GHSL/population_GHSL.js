@@ -37,6 +37,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 	
 	static async B_interpolatePNGs () {
 		//Declare local instance variables
+		this.B_is_interpolating = true;
 		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
 		let all_years = [];
 		
@@ -73,9 +74,13 @@ global.population_GHSL = class { //[WIP] - Finish class body
 				}
 			}
 		}
+		this.B_is_interpolating = false;
 	}
 	
 	static async C_scalePNGsToGlobalPopulation () {
+		//Poll until this.B_interpolatePNGs() has finished executing
+		while (this.B_is_interpolating) await new Promise((resolve) => setTimeout(resolve, 100));
+		
 		//Declare local instance variables
 		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
 		let world_pop_obj = population_Global.A_getWorldPopulationObject();
@@ -90,7 +95,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 					setImmediate(() => {
 						try {
 							let local_year = parseInt(path.basename(local_input_file_path)
-								.replace("GHS_POP_", "").replace(".png", ""));
+							.replace("GHS_POP_", "").replace(".png", ""));
 							
 							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_file_path, {
 								format: "float32"
