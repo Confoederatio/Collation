@@ -195,7 +195,8 @@
 	 * @param {Object} [arg3_options]
 	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
 	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
-	 *  @param {boolean} [arg3_options.respect_zero_values=false] - Whether to respect zero values when interpolating.
+	 *  @param {number} [arg3_options.lower_value_threshold] - Lower-bound values that should not be interpolated.
+	 *  @param {number} [arg3_options.upper_value_threshold] - Upper-bound values that should not be interpolated.
 	 * 
 	 * @returns {Object}
 	 */
@@ -229,8 +230,12 @@
 				let to_val = to_image_obj.data[index];
 				
 				//Return statement
-				if (options.respect_zero_values && from_val === 0)
-					return 0;
+				if (options.lower_value_threshold !== undefined)
+					if (from_val <= options.lower_value_threshold)
+						return from_val;
+				if (options.upper_value_threshold !== undefined)
+					if (from_val >= options.upper_value_threshold)
+						return from_val;
 				return from_val + (to_val - from_val)*options.fraction;
 			}
 		});

@@ -35,7 +35,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		}
 	}
 	
-	static B_interpolatePNGs () {
+	static async B_interpolatePNGs () {
 		//Declare local instance variables
 		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
 		let all_years = [];

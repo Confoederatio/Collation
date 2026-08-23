@@ -9,7 +9,7 @@ global.population_Substrata_outlier_removal = class {
 	static intermediate_rasters_scaled_to_global = `${this.bf}rasters_3.scaled_to_global/`;
 	
 	static intermediate_rasters_interpolated = `${this.bf}rasters_4.interpolated_to_GHSL/`;
-	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_4.geopng_int32/`;
+	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_5.geopng_int32/`;
 	static options = {
 		interpolate_to_GHSL_domain: [1800, 1975]
 	};
@@ -651,7 +651,7 @@ global.population_Substrata_outlier_removal = class {
 	static async D_interpolateToGHSL () {
 		//Declare local instance variables
 		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
-		let hyde_years = landuse_HYDE.hyde_years;
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let to_path = `${this.input_GHSL_rasters}GHS_POP_${GHSL_domain[1]}.png`;
 		let year_gap = GHSL_domain[1] - GHSL_domain[0];
 		
@@ -668,7 +668,8 @@ global.population_Substrata_outlier_removal = class {
 				GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
 					format: "float32",
 					fraction,
-					respect_zero_values: true
+					lower_value_threshold: 0,
+					upper_value_threshold: 10,
 				});
 				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
 			} else if (current_year > GHSL_domain[1]) {
@@ -682,8 +683,7 @@ global.population_Substrata_outlier_removal = class {
 	
 	static async D_convertToGeoPNG_int32 () {
 		//Declare local instance variables
-		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
-		let hyde_years = landuse_HYDE.hyde_years;
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		
 		//Iterate over all hyde_years and convert to GeoPNG_int32
 		console.log(`Converting from float32 to int32 for older versions of SVE.`);
