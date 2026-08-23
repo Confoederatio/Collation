@@ -2,8 +2,8 @@
 {
 	if (!global.GDP_PPP_SEDAC) global.GDP_PPP_SEDAC = {};
 	
-	global.GDP_PPP_SEDAC = class {
-		static input_path = "./core/1.data_scraping/GDP_PPP_SEDAC/";
+	global.GDP_PPP_SEDAC = class { //[WIP] - Finish function
+		static input_path = `${h1}/GDP_PPP_SEDAC/`;
 		static years = Array.getFilledDomain(1990, 2022);
 		
 		/**
@@ -14,7 +14,7 @@
 		static async A_convertToPNGs () {
 			//Return statement
 			return GeoTIFF.convertToPNGs(`${GDP_PPP_SEDAC.input_path}/GDP_PPP_1990_2022.tif`, `${GDP_PPP_SEDAC.input_path}/GDP_PPP`, {
-				scalar: 0.01, //Make sure that GeoPNG is in $100s
+				format: "float32",
 				years: GDP_PPP_SEDAC.years
 			});
 		}
@@ -47,7 +47,15 @@
 		}
 		
 		static async processRasters (arg0_options) {
+			//Convert from parameters
+			let options = (arg0_options) ? arg0_options : {};
 			
+			//Initialise options
+			if (!options.exclude) options.exclude = [];
+			
+			//1. Convert to PNGs
+			if (!options.exclude.includes("A"))
+				await this.A_convertToPNGs();
 		}
 	};
 }
