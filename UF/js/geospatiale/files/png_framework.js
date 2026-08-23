@@ -231,10 +231,10 @@
 				
 				//Return statement
 				if (options.lower_value_threshold !== undefined)
-					if (from_val <= options.lower_value_threshold && to_val <= options.lower_value_threshold)
+					if (from_val <= options.lower_value_threshold)
 						return from_val; //Take base value
 				if (options.upper_value_threshold !== undefined)
-					if (from_val >= options.upper_value_threshold && to_val >= options.upper_value_threshold)
+					if (from_val >= options.upper_value_threshold || to_val >= options.upper_value_threshold)
 						return from_val; //Take base value
 				return from_val + (to_val - from_val)*options.fraction;
 			}

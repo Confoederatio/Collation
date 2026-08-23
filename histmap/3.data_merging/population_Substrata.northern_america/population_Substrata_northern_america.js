@@ -216,11 +216,12 @@ global.population_Substrata_northern_america = class {
 	static output_rasters = `${this.ef}rasters_1.northern_america/`;
 	
 	static async A_getNorthernAmericaPopulationObject () {
+		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let northern_america_obj = JSON.parse(JSON.stringify(this.northern_america_obj));
 		let northern_america_domain = northern_america_obj.domain;
-		let all_mask_keys = Object.keys(northern_america_obj.areal_masks);
 		
+		//Iterate over all areal_masks in northern_america_obj
 		Object.iterate(northern_america_obj.areal_masks, (local_key, local_value) => {
 			if (typeof local_value.colour === "string")
 				local_value.colour = Colour.convertHexToRGB(local_value.colour);
@@ -249,6 +250,7 @@ global.population_Substrata_northern_america = class {
 			northern_america_obj.areal_masks[local_key].key = local_key;
 		});
 		
+		//Iterate over all areal_masks in northern_america_obj
 		Object.iterate(northern_america_obj.areal_masks, (local_key, local_value) => {
 			let local_mask = JSON.parse(JSON.stringify(local_value));
 			let actual_key = [local_mask.colour[0], local_mask.colour[1], local_mask.colour[2]].join(",");
@@ -257,6 +259,7 @@ global.population_Substrata_northern_america = class {
 			northern_america_obj.areal_masks[actual_key].is_clone = true;
 		});
 		
+		//Return statement
 		return northern_america_obj;
 	}
 	
