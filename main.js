@@ -1,10 +1,16 @@
 //Import libraries
 let { app, BrowserWindow, dialog, ipcMain, session, shell } = require("electron");
+let discord = require("@xhayper/discord-rpc");
 let fs = require("fs");
 let path = require("path");
 let readline = require("readline");
 let remote_main = require("@electron/remote/main");
 let { performance } = require("perf_hooks");
+
+//Metadata - Social Media
+let client_id = "1541118076932722698"; //Application ID for Naissance in Discord Developer Portal
+let is_rpc_ready = false;
+let rpc = new discord.Client({ clientId: client_id });
 
 //Metadata - Title
 let latest_fps = 0;
@@ -20,6 +26,8 @@ let win;
       width: 3840,
       height: 2160,
       webPreferences: {
+        preload: path.join(__dirname, "core/preload.js"),
+        
         contextIsolation: false,
         enableRemoteModule: false,
         nodeIntegration: true,
@@ -101,6 +109,29 @@ let win;
   }
 }
 
+//Initialise social media functions - [WIP] - Modularise this
+async function initRPC () {
+  try {
+    await rpc.login();
+    is_rpc_ready = true;
+    
+    //Set initial activity
+    setRPCActivity({
+      details: "Default Savefile",
+      state: "Idling",
+      startTimestamp: Date.now()
+    });
+  } catch (e) { console.warn(`Failed to connect to Discord RPC:`, e); }
+}
+
+function setRPCActivity (arg0_activity) {
+  //Convert from parameters
+  let activity = arg0_activity;
+  
+  if (!is_rpc_ready) return;
+  rpc.user?.setActivity(activity);
+}
+
 //App handling
 {
   app.commandLine.appendSwitch("disable-site-isolation-trials");
@@ -111,9 +142,10 @@ let win;
   app.whenReady().then(() => {
     remote_main.initialize();
     
-    //Create the window and instantiate it
+    //Create the window and instantiate it; initialise social media
     let win = createWindow();
-    remote_main.enable(win.webContents);
+      remote_main.enable(win.webContents);
+      initRPC();
     
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -136,6 +168,9 @@ let win;
   });
   
   //Window lifecycle defaults
+  app.on("before-quit", async () => {
+    if (is_rpc_ready) await rpc.destroy();
+  })
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
@@ -145,4 +180,8 @@ let win;
 {
   let ve = require("./UF/js/vercengen/engine/vercengen_electron");
   ve.initialiseIPC();
+  
+  ipcMain.on("update-presence", (_event, activity) => {
+    setRPCActivity(activity);
+  });
 }

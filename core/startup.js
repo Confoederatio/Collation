@@ -196,6 +196,7 @@ global.l4p = "./livemap/4.view/politics/";
 		//Accepts wildcards (*), exclusionary patterns (!), and folders/file paths
 		load_files: [
 			"common",
+			"!core/preload.js",
 			"!core/startup.js",
 			"!core/archives",
 			"core",
