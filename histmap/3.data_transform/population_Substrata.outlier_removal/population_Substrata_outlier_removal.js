@@ -661,7 +661,7 @@ global.population_Substrata_outlier_removal = class {
 			let local_ghsl_path = `${this.input_GHSL_rasters}GHS_POP_${current_year}.png`;
 			let local_output_path = `${this.intermediate_rasters_interpolated}popc_${current_year}.png`;
 			
-			if (current_year >= GHSL_domain[0] && current_year <= GHSL_domain[1]) {
+			if (current_year >= GHSL_domain[0] && current_year < GHSL_domain[1]) {
 				let fraction = (current_year - GHSL_domain[0])/year_gap;
 				let local_from_path = `${this.intermediate_rasters_scaled_to_global}popc_${current_year}.png`;
 				
@@ -672,7 +672,7 @@ global.population_Substrata_outlier_removal = class {
 					upper_value_threshold: 255, //RGBA limit
 				});
 				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
-			} else if (current_year > GHSL_domain[1]) {
+			} else if (current_year >= GHSL_domain[1]) {
 				if (fs.existsSync(local_ghsl_path)) {
 					console.log(`- Copying GHSL for ${current_year}.`);
 					fs.copyFileSync(local_ghsl_path, local_output_path);
@@ -699,7 +699,7 @@ global.population_Substrata_outlier_removal = class {
 				format: "float32"
 			});
 			let rounding_method = "round";
-				if (hyde_years[i] < 1800) rounding_method = "ceil"; //Helps with sparse regions
+				if (hyde_years[i] < 1600) rounding_method = "ceil"; //Helps with sparse regions; prior to 1600AD due to Great Dying/Siberian colonisation effects
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: local_output_path,
