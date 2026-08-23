@@ -1,0 +1,30 @@
+{
+  "default_activity": {
+    "buttons": [{
+      "label": "🗺️ Download Naissance",
+      "url": "https://projects.confoederatio.org/c/Naissance"
+    }, {
+      "label": "💬 Join Confoederatio",
+      "url": "https://discord.gg/4DcuaBKpuS"
+    }]
+  },
+  "onlaunch_activity": {
+    "details": "Launching Naissance"
+  },
+  "onload_activity": {
+    "details": "Default Savefile",
+    "state": "Idling"
+  },
+  
+  "advanced_tools_activity": {
+    "state": "Programming with Scriptly IDE"
+  },
+  "editing_default": {
+    "details": "Editing a Map",
+    "state": "Working"
+  },
+  "editing_savefile": {
+    "details": "Editing: £0£",
+    "state": "Working"
+  }
+}

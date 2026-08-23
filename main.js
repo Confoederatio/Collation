@@ -9,6 +9,7 @@ let { performance } = require("perf_hooks");
 
 //Metadata - Social Media
 let client_id = "1541118076932722698"; //Application ID for Naissance in Discord Developer Portal
+let discord_config_path = "./common/defines/social_media/discord.json";
 let is_rpc_ready = false;
 let rpc = new discord.Client({ clientId: client_id });
 
@@ -109,34 +110,32 @@ let win;
   }
 }
 
-//Initialise social media functions - [WIP] - Modularise this
-async function initRPC () {
-  try {
-    await rpc.login();
-    is_rpc_ready = true;
-    
-    //Set initial activity
-    setRPCActivity({
-      details: "Launching Naissance",
-      startTimestamp: Date.now(),
+//Initialise social media functions
+{
+  Discord_initRPC = async function () {
+    try {
+      await rpc.login();
+      is_rpc_ready = true;
       
-      buttons: [{
-        label: "🗺️ Download Naissance",
-        url: "https://projects.confoederatio.org/c/Naissance"
-      }, {
-        label: "💬 Join Confoederatio",
-        url: "https://discord.gg/4DcuaBKpuS"
-      }]
-    });
-  } catch (e) { console.warn(`Failed to connect to Discord RPC:`, e); }
-}
-
-function setRPCActivity (arg0_activity) {
-  //Convert from parameters
-  let activity = arg0_activity;
+      //Set initial activity
+      let discord_config_obj = JSON.parse(fs.readFileSync(discord_config_path, "utf8"));
+      
+      Discord_setRPCActivity({
+        startTimestamp: Date.now(),
+        
+        ...discord_config_obj.default_activity,
+        ...discord_config_obj.onlaunch_activity
+      });
+    } catch (e) { console.warn(`Failed to connect to Discord RPC:`, e); }
+  }
   
-  if (!is_rpc_ready) return;
-  rpc.user?.setActivity(activity);
+  Discord_setRPCActivity = function (arg0_activity) {
+    //Convert from parameters
+    let activity = arg0_activity;
+    
+    if (!is_rpc_ready) return;
+    rpc.user?.setActivity(activity);
+  }
 }
 
 //App handling
@@ -152,7 +151,7 @@ function setRPCActivity (arg0_activity) {
     //Create the window and instantiate it; initialise social media
     let win = createWindow();
       remote_main.enable(win.webContents);
-      initRPC();
+    Discord_initRPC();
     
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -189,6 +188,6 @@ function setRPCActivity (arg0_activity) {
   ve.initialiseIPC();
   
   ipcMain.on("update-presence", (_event, activity) => {
-    setRPCActivity(activity);
+    Discord_setRPCActivity(activity);
   });
 }

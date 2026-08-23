@@ -156,16 +156,7 @@ global.l4p = "./livemap/4.view/politics/";
 		{
 			discordRPC.updateActivity({
 				details: "Default Savefile",
-				state: "Idling",
-				startTimestamp: Date.now(),
-				
-				buttons: [{
-					label: "🗺️ Download Naissance",
-					url: "https://projects.confoederatio.org/c/Naissance"
-				}, {
-					label: "💬 Join Confoederatio",
-					url: "https://discord.gg/4DcuaBKpuS"
-				}]
+				state: "Idling"
 			});
 		}
 	};

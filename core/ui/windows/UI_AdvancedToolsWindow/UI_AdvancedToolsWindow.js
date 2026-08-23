@@ -1,9 +1,9 @@
-global.UI_SystemManagerWindow = class {
+global.UI_AdvancedToolsWindow = class {
 	static instance;
 	
 	constructor () {
-		if (UI_SystemManagerWindow.instance) UI_SystemManagerWindow.instance.close();
-		UI_SystemManagerWindow.instance = vePageMenuWindow({
+		if (UI_AdvancedToolsWindow.instance) UI_AdvancedToolsWindow.instance.close();
+		UI_AdvancedToolsWindow.instance = vePageMenuWindow({
 			datavis_suite: {
 				name: "Datavis Suite",
 				components_obj: {
@@ -44,8 +44,6 @@ global.UI_SystemManagerWindow = class {
 				}
 			}
 		});
-		window.discordRPC.updateActivity({
-			state: "Programming with Scriptly IDE"
-		});
+		window.discordRPC.updateActivity("advanced_tools_activity");
 	}
 };

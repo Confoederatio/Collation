@@ -41,7 +41,7 @@ global.UI_Leftbar = class extends ve.Class {
 							style: { "#name": { alignItems: "center", display: "flex" } }
 						}),
 						script_manager: veButton(() => {
-							new UI_SystemManagerWindow();
+							new UI_AdvancedToolsWindow();
 						}, {
 							name: `<icon>handyman</icon><span style = "padding-left: 0.25rem; padding-right: 0.5rem;">Advanced Tools</span>`,
 							tooltip: `Advanced tools for modelling, scraping, and extending Naissance.`,

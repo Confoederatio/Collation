@@ -66,17 +66,11 @@
 				if (json[i].load_save || json[i].load_savefile) {
 					if (json[i].load_save) {
 						DALS.fromJSON(json[i].load_save);
-						window.discordRPC.updateActivity({
-							details: "Editing a Map",
-							state: "Working"
-						});
+						window.discordRPC.updateActivity("editing_default");
 					}
 					if (json[i].load_savefile) {
 						DALS.load(json[i].load_savefile);
-						window.discordRPC.updateActivity({
-							details: `Editing: ${path.basename(json[i].load_savefile)}`,
-							state: "Working"
-						});
+						window.discordRPC.updateActivity("editing_savefile", path.basename(json[i].load_savefile));
 					}
 				}
 				if (json[i].set_date) {
