@@ -261,16 +261,19 @@ global.population_Substrata_northern_america = class {
 	}
 	
 	static async A_generateStadesterNorthernAmericaRasters (arg0_options) {
+		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
+		
+		//Declare local instance variables
 		let hyde_years = (options.hyde_years) ? options.hyde_years : landuse_HYDE.sorted_hyde_years;
 		let northern_america_obj = await this.A_getNorthernAmericaPopulationObject();
+			let northern_america_domain = northern_america_obj.domain;
 		let raster_obj = {};
-		
-		let northern_america_domain = northern_america_obj.domain;
 		
 		let all_png_files = fs.readdirSync(this.input_rasters_regions)
 		.filter((file) => path.extname(file).toLowerCase() === ".png");
 		
+		//Iterate over all_png_files and populate raster_obj
 		for (let i = 0; i < all_png_files.length; i++)
 			all_png_files[i] = `${this.input_rasters_regions}/${all_png_files[i]}`;
 		for (let i = 0; i < all_png_files.length; i++) {
@@ -278,165 +281,133 @@ global.population_Substrata_northern_america = class {
 			raster_obj[all_png_files[i]] = GeoPNG.loadImage(all_png_files[i]);
 		}
 		
+		//1. Load Land Area Raster (1:1 pixel array)
+		let land_area_raster = GeoPNG.loadNumberRasterImage(metadata_HYDE.input_raster_land_area, {
+			format: "int32"
+		});
+		let raster_height = land_area_raster.height;
+		let raster_width = land_area_raster.width;
+		let total_pixel_count = raster_width * raster_height;
+		let land_area_data = land_area_raster.data;
+		
 		let all_mask_keys = Object.keys(northern_america_obj.areal_masks);
 		
-		for (let i = 0; i < hyde_years.length; i++) {
-			let local_input_file_path = `${population_Substrata_outlier_removal.intermediate_outliers_removed_rasters}popc_${hyde_years[i]}.png`;
-			let local_output_file_path = `${this.output_rasters}popc_${hyde_years[i]}.png`;
-			let total_sum_for_year = 0;
+		//2. Pre-index all mask pixel indices and calculate total mask land areas dynamically
+		let mask_pixel_indices = {};
+		let mask_areas = {};
+		
+		//Iterate over all_mask_keys
+		for (let x = 0; x < all_mask_keys.length; x++) {
+			let mask_key = all_mask_keys[x];
+			if (!northern_america_obj.areal_masks[mask_key].is_clone) {
+				mask_pixel_indices[mask_key] = [];
+				mask_areas[mask_key] = 0;
+			}
+		}
+		
+		//Iterate over all_pixel_count per mask
+		for (let idx = 0; idx < total_pixel_count; idx++) {
+			let cell_area = land_area_data[idx];
+			if (cell_area <= 0) continue;
 			
-			if (!fs.existsSync(local_input_file_path)) continue;
-			fs.copyFileSync(local_input_file_path, local_output_file_path);
+			let byte_index = idx * 4;
+			let seen_keys = new Set();
 			
-			for (let x = 0; x < all_mask_keys.length; x++) {
-				let is_in_domain = false;
-				let local_mask = northern_america_obj.areal_masks[all_mask_keys[x]];
+			for (let y = 0; y < all_png_files.length; y++) {
+				let local_raster = raster_obj[all_png_files[y]];
+				let color_key = [
+					local_raster.data[byte_index],
+					local_raster.data[byte_index + 1],
+					local_raster.data[byte_index + 2]
+				].join(",");
 				
-				if (local_mask.is_clone) continue;
-				console.log(`- Processing local_mask ${local_mask.key}: (is_clone: ${local_mask.is_clone}) for ${hyde_years[i]}.`);
-				
-				let all_local_years;
-				if (typeof local_mask.population === "object")
-					all_local_years = Object.keys(local_mask.population)
-					.map(Number).sort((a, b) => a - b);
-				let local_mask_domain = (all_local_years) ?
-					[all_local_years[0], all_local_years[all_local_years.length - 1]] : northern_america_domain;
-				if (!local_mask.domain) {
-					local_mask.domain = local_mask_domain;
-				} else {
-					local_mask_domain = local_mask.domain;
-				}
-				
-				if (hyde_years[i] >= local_mask_domain[0] && hyde_years[i] <= local_mask_domain[1])
-					if (hyde_years[i] >= northern_america_domain[0] && hyde_years[i] <= northern_america_domain[1]) {
-						is_in_domain = true;
-					} else if (local_mask.special_domain) {
-						is_in_domain = true;
-					}
-				console.log(` - Domain: ${local_mask_domain.join(", ")}`);
-				
-				if (is_in_domain) {
-					total_sum_for_year = 0; // Reset for each mask to track individual totals accurately
-					
-					// 1. Calculate Area accurately across all files without double-counting
-					if (local_mask.density) {
-						let local_area = 0;
-						let counted_area_pixels = new Set();
-						
-						for (let y = 0; y < all_png_files.length; y++) {
-							let local_raster = raster_obj[all_png_files[y]];
-							
-							GeoPNG.operateNumberRasterImage({
-								file_path: metadata_HYDE.input_raster_land_area,
-								format: "int32", // Explicit int32 per your specification
-								function: function (arg0_index, arg1_number) {
-									if (arg1_number > 0 && !counted_area_pixels.has(arg0_index)) {
-										let byte_index = arg0_index * 4;
-										let local_area_mask = northern_america_obj.areal_masks[[
-											local_raster.data[byte_index],
-											local_raster.data[byte_index + 1],
-											local_raster.data[byte_index + 2]
-										].join(",")];
-										
-										if (local_area_mask && local_area_mask.key === local_mask.key) {
-											local_area += arg1_number;
-											counted_area_pixels.add(arg0_index);
-										}
-									}
-								}
-							});
-						}
-						
-						if (local_mask.population === undefined) local_mask.population = {};
-						local_mask.population[hyde_years[i]] = local_area * local_mask.density;
-					}
-					console.log(` - Local population:`, local_mask.population[hyde_years[i]]);
-					
-					// 2. Dasymetric Scaling Phase
-					if (local_mask.population && local_mask.population[hyde_years[i]]) {
-						let local_population_raster = GeoPNG.loadNumberRasterImage(local_output_file_path, {
-							format: "float32"
-						});
-						let local_population = local_mask.population[hyde_years[i]];
-						let local_scalar = 1;
-						let local_sum = 0;
-						let mask_pixel_count = 0;
-						let counted_pop_pixels = new Set();
-						
-						// Accumulate true local_sum across all files
-						for (let y = 0; y < all_png_files.length; y++) {
-							let local_raster = raster_obj[all_png_files[y]];
-							
-							GeoPNG.operateNumberRasterImage({
-								file_path: local_output_file_path,
-								format: "float32",
-								function: function (arg0_index, arg1_number) {
-									if (!counted_pop_pixels.has(arg0_index)) {
-										let byte_index = arg0_index * 4;
-										let local_area_mask = northern_america_obj.areal_masks[[
-											local_raster.data[byte_index],
-											local_raster.data[byte_index + 1],
-											local_raster.data[byte_index + 2]
-										].join(",")];
-										
-										if (local_area_mask && local_area_mask.key === local_mask.key) {
-											if (arg1_number > 0) local_sum += arg1_number;
-											mask_pixel_count++;
-											counted_pop_pixels.add(arg0_index);
-										}
-									}
-								}
-							});
-						}
-						
-						if (local_sum > 0) {
-							local_scalar = Math.returnSafeNumber(local_population / local_sum, 1);
-						} else {
-							console.log(`- Skipping ${local_mask.key} (No valid area or population found).`);
-							continue;
-						}
-						
-						console.log(`- Scaling ${local_output_file_path} for ${local_mask.key} | Population: ${String.formatNumber(local_population)}, Scalar: ${local_scalar}`);
-						
-						GeoPNG.saveNumberRasterImage({
-							file_path: local_output_file_path,
-							format: "float32",
-							height: 2160,
-							width: 4320,
-							
-							function: function (arg0_index) {
-								let index = arg0_index;
-								let byte_index = arg0_index * 4;
-								let local_value = local_population_raster.data[index];
-								
-								for (let y = 0; y < all_png_files.length; y++) {
-									let local_raster = raster_obj[all_png_files[y]];
-									let local_raster_colour = [
-										local_raster.data[byte_index],
-										local_raster.data[byte_index + 1],
-										local_raster.data[byte_index + 2],
-									].join(",");
-									
-									let local_area_mask = northern_america_obj.areal_masks[local_raster_colour];
-									
-									if (local_area_mask && local_area_mask.key === local_mask.key) {
-										// Apply seeding or standard scaling
-										let final_value = local_value * local_scalar;
-										total_sum_for_year += final_value;
-										return final_value;
-									}
-								}
-								return local_value;
-							}
-						});
-						
-						console.log(`- Finished processing ${local_output_file_path} for ${hyde_years[i]}. Total Northern America sum for category: ${String.formatNumber(total_sum_for_year)}`);
-					}
-					
-					await new Promise(resolve => setImmediate(resolve));
-					if (global.gc) global.gc();
+				let local_area_mask = northern_america_obj.areal_masks[color_key];
+				if (local_area_mask && mask_pixel_indices[local_area_mask.key] && !seen_keys.has(local_area_mask.key)) {
+					mask_pixel_indices[local_area_mask.key].push(idx);
+					mask_areas[local_area_mask.key] += cell_area;
+					seen_keys.add(local_area_mask.key);
 				}
 			}
+		}
+		
+		let checkMaskDomain = function (arg0_mask, arg1_year) {
+			let mask_domain = northern_america_domain;
+			if (arg0_mask.domain) {
+				mask_domain = arg0_mask.domain;
+			} else if (arg0_mask.population && typeof arg0_mask.population === "object") {
+				let all_years = Object.keys(arg0_mask.population).map(Number).sort((a, b) => a - b);
+				if (all_years.length > 0) mask_domain = [all_years[0], all_years[all_years.length - 1]];
+			}
+			
+			let is_in_global_domain = (arg1_year >= northern_america_domain[0] && arg1_year <= northern_america_domain[1]);
+			if (arg1_year >= mask_domain[0] && arg1_year <= mask_domain[1]) {
+				if (is_in_global_domain || arg0_mask.special_domain) return true;
+			}
+			return false;
+		};
+		
+		//Iterate over all hyde_years
+		for (let i = 0; i < hyde_years.length; i++) {
+			let current_year = hyde_years[i];
+			let local_input_file_path = `${population_Substrata_outlier_removal.intermediate_outliers_removed_rasters}popc_${current_year}.png`;
+			let local_output_file_path = `${this.output_rasters}popc_${current_year}.png`;
+			
+			if (!fs.existsSync(local_input_file_path)) continue;
+			
+			// Load underlying HYDE population raster directly into memory
+			let base_pop_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, { format: "float32" });
+			let pop_buffer = new Float64Array(base_pop_raster.data);
+			
+			// Iterate through all masks generically in their defined order
+			for (let x = 0; x < all_mask_keys.length; x++) {
+				let mask_key = all_mask_keys[x];
+				let local_mask = northern_america_obj.areal_masks[mask_key];
+				if (local_mask.is_clone) continue;
+				
+				if (!checkMaskDomain(local_mask, current_year)) continue;
+				
+				let indices = mask_pixel_indices[local_mask.key] || [];
+				let total_area = mask_areas[local_mask.key] || 0;
+				if (indices.length === 0 || total_area <= 0) continue;
+				
+				let target_pop = undefined;
+				if (local_mask.density !== undefined) {
+					target_pop = total_area * local_mask.density;
+				} else if (local_mask.population && local_mask.population[current_year] !== undefined) {
+					target_pop = local_mask.population[current_year];
+				}
+				
+				if (target_pop === undefined || target_pop <= 0) continue;
+				
+				let current_sum = 0;
+				for (let k = 0; k < indices.length; k++)
+					current_sum += pop_buffer[indices[k]];
+				
+				if (current_sum > 0) {
+					let local_scalar = target_pop / current_sum;
+					console.log(`- Dasymetric scaling ${local_mask.key} for ${current_year} | Target: ${String.formatNumber(target_pop)}, Current Sum: ${String.formatNumber(current_sum)}, Scalar: ${local_scalar}`);
+					
+					for (let k = 0; k < indices.length; k++) {
+						let target_idx = indices[k];
+						pop_buffer[target_idx] = pop_buffer[target_idx] * local_scalar;
+					}
+				}
+			}
+			
+			//4. Save cleanly
+			GeoPNG.saveNumberRasterImage({
+				file_path: local_output_file_path,
+				format: "float32",
+				height: raster_height,
+				width: raster_width,
+				function: function (arg0_index) {
+					return pop_buffer[arg0_index];
+				}
+			});
+			
+			console.log(`- Finished processing year ${current_year}.`);
+			await new Promise(resolve => setImmediate(resolve));
+			if (global.gc) global.gc();
 		}
 	}
 	
