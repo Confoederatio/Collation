@@ -287,7 +287,7 @@ global.population_Substrata_northern_america = class {
 		});
 		let raster_height = land_area_raster.height;
 		let raster_width = land_area_raster.width;
-		let total_pixel_count = raster_width * raster_height;
+		let total_pixel_count = raster_width*raster_height;
 		let land_area_data = land_area_raster.data;
 		
 		let all_mask_keys = Object.keys(northern_america_obj.areal_masks);
@@ -310,7 +310,7 @@ global.population_Substrata_northern_america = class {
 			let cell_area = land_area_data[idx];
 			if (cell_area <= 0) continue;
 			
-			let byte_index = idx * 4;
+			let byte_index = idx*4;
 			let seen_keys = new Set();
 			
 			for (let y = 0; y < all_png_files.length; y++) {
@@ -354,11 +354,11 @@ global.population_Substrata_northern_america = class {
 			
 			if (!fs.existsSync(local_input_file_path)) continue;
 			
-			// Load underlying HYDE population raster directly into memory
+			//Load underlying HYDE population raster directly into memory
 			let base_pop_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, { format: "float32" });
 			let pop_buffer = new Float64Array(base_pop_raster.data);
 			
-			// Iterate through all masks generically in their defined order
+			//Iterate through all masks generically in their defined order
 			for (let x = 0; x < all_mask_keys.length; x++) {
 				let mask_key = all_mask_keys[x];
 				let local_mask = northern_america_obj.areal_masks[mask_key];
@@ -372,7 +372,7 @@ global.population_Substrata_northern_america = class {
 				
 				let target_pop = undefined;
 				if (local_mask.density !== undefined) {
-					target_pop = total_area * local_mask.density;
+					target_pop = total_area*local_mask.density;
 				} else if (local_mask.population && local_mask.population[current_year] !== undefined) {
 					target_pop = local_mask.population[current_year];
 				}
@@ -384,12 +384,12 @@ global.population_Substrata_northern_america = class {
 					current_sum += pop_buffer[indices[k]];
 				
 				if (current_sum > 0) {
-					let local_scalar = target_pop / current_sum;
+					let local_scalar = target_pop/current_sum;
 					console.log(`- Dasymetric scaling ${local_mask.key} for ${current_year} | Target: ${String.formatNumber(target_pop)}, Current Sum: ${String.formatNumber(current_sum)}, Scalar: ${local_scalar}`);
 					
 					for (let k = 0; k < indices.length; k++) {
 						let target_idx = indices[k];
-						pop_buffer[target_idx] = pop_buffer[target_idx] * local_scalar;
+						pop_buffer[target_idx] = pop_buffer[target_idx]*local_scalar;
 					}
 				}
 			}
