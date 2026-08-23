@@ -8,24 +8,21 @@ svea_settings.json
 .ve-sm
 
 # Handle CDS
-histmap/1.data_scraping/**/*
-!histmap/1.data_scraping/**/
-!histmap/1.data_scraping/**/*.js
+histmap/1.data_raw/**/*
+!histmap/1.data_raw/**/
+!histmap/1.data_raw/**/*.js
 histmap/2.data_cleaning/**/*
 !histmap/2.data_cleaning/**/
 !histmap/2.data_cleaning/**/*.js
-histmap/3.data_merging/**/*
-!histmap/3.data_merging/**/
-!histmap/3.data_merging/**/*.js
-histmap/4.data_processing/**/*
-!histmap/4.data_processing/**/
-!histmap/4.data_processing/**/*.js
-histmap/5.data_post_processing/**/*
-!histmap/5.data_post_processing/**/
-!histmap/5.data_post_processing/**/*.js
-histmap/6.data_visualisation/**/*
-!histmap/6.data_visualisation/**/
-!histmap/6.data_visualisation/**/*.js
+histmap/3.data_transform/**/*
+!histmap/3.data_transform/**/
+!histmap/3.data_transform/**/*.js
+histmap/4.data_exports/**/*
+!histmap/4.data_exports/**/
+!histmap/4.data_exports/**/*.js
+histmap/5.data_visualisation/**/*
+!histmap/5.data_visualisation/**/
+!histmap/5.data_visualisation/**/*.js
 
 temp_jobs
 

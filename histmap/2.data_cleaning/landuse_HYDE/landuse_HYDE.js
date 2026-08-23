@@ -1,5 +1,6 @@
 global.landuse_HYDE = class {
 	static _cache_mcevedy_obj;
+	static bf = `${h2}/landuse_HYDE/`;
 	static hyde_dictionary = {
 		//LU (Land Use)
 		"conv_rangeland": "Converted Rangeland (km^2/cell)",
