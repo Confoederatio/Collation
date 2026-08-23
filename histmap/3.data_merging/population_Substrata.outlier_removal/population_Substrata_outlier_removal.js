@@ -669,7 +669,7 @@ global.population_Substrata_outlier_removal = class {
 					format: "float32",
 					fraction,
 					lower_value_threshold: 0,
-					upper_value_threshold: 10,
+					upper_value_threshold: 255, //RGBA limit
 				});
 				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
 			} else if (current_year > GHSL_domain[1]) {
@@ -698,12 +698,15 @@ global.population_Substrata_outlier_removal = class {
 			let current_raster = GeoPNG.loadNumberRasterImage(local_input_path, {
 				format: "float32"
 			});
+			let rounding_method = "round";
+				if (hyde_years[i] < 1800) rounding_method = "ceil"; //Helps with sparse regions
+			
 			GeoPNG.saveNumberRasterImage({
 				file_path: local_output_path,
 				format: "int32",
 				height: 2160,
 				width: 4320,
-				function: (local_index) => Math.round(current_raster.data[local_index])
+				function: (local_index) => Math[rounding_method](current_raster.data[local_index])
 			});
 			console.log(`- (${i}/${hyde_years.length}) Saved int32 version to ${local_output_path}.`);
 			await Blacktraffic.yield();
