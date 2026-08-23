@@ -195,8 +195,8 @@
 	 * @param {Object} [arg3_options]
 	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
 	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
-	 *  @param {number} [arg3_options.lower_value_threshold] - Lower-bound values that should not be interpolated.
-	 *  @param {number} [arg3_options.upper_value_threshold] - Upper-bound values that should not be interpolated.
+	 *  @param {number} [arg3_options.lower_value_threshold] - Lower-bound values that should not be interpolated (from raster).
+	 *  @param {number} [arg3_options.upper_value_threshold] - Upper-bound values that should not be interpolated (from raster, to raster).
 	 * 
 	 * @returns {Object}
 	 */
@@ -242,7 +242,8 @@
 	};
 	
 	/**
-	 * loadImage() - Loads an image into the assigned variable.
+	 * Loads an image into the assigned variable.
+	 * 
 	 * @param {String} arg0_file_path - Input PNG file path.
 	 * @param {Object} [arg1_options] 
 	 *
@@ -258,7 +259,8 @@
 	};
 	
 	/**
-	 * loadNumberFromPixel() - Loads an int or float value from a pixel based on its index.
+	 * Loads an int or float value from a pixel based on its index.
+	 * 
 	 * @param {Object|string} arg0_image_object - Image object or file path.
 	 * @param {number} arg1_index - Pixel index.
 	 * @param {Object} [arg2_options] 
@@ -277,7 +279,8 @@
 	};
 	
 	/**
-	 * loadNumberRasterImage() - Loads a number raster image into the assigned variable.
+	 * Loads a number raster image into the assigned variable.
+	 * 
 	 * @param {string|Object} arg0_file_path - The file path to load or image object.
 	 * @param {Object} [arg1_options] 
 	 *  @param {string} [arg1_options.format="int32"] - Either 'int32'/'float32'/'greyscale'.
@@ -323,7 +326,8 @@
 	};
 	
 	/**
-	 * operateNumberRasterImage() - Runs an operation on a raster image for a file.
+	 * Runs an operation on a raster image for a file.
+	 * 
 	 * @param {Object} [arg0_options] 
 	 *  @param {string} [arg0_options.file_path] - The file path to load from.
 	 *  @param {string} [arg0_options.format="int32"] - Either 'int32'/'float32'/'greyscale'.
@@ -342,7 +346,8 @@
 	};
 	
 	/**
-	 * saveNumberRasterImage() - Saves a number raster image to a file.
+	 * Saves a number raster image to a file.
+	 * 
 	 * @param {Object} [arg0_options] 
 	 *  @param {string} [arg0_options.file_path] - The file path to save the image to.
 	 *  @param {string} [arg0_options.format="int32"] - How to save colours to the end image. Either 'int32'/'float32'/'greyscale'.
@@ -387,7 +392,8 @@
 	};
 	
 	/**
-	 * savePercentageRasterImage() - Saves a percentage raster image to a file based on a number raster image.
+	 * Saves a percentage raster image to a file based on a number raster image.
+	 * 
 	 * @param {string} arg0_input_file_path - The file path to the number raster image to save the percentage raster image from.
 	 * @param {string} arg1_output_file_path - The file path to save the percentage raster image to.
 	 * @param {Object} [arg2_options] 
@@ -458,7 +464,8 @@
 	};
 	
 	/**
-	 * saveNumberToPixel() - Saves an int/float value to a pixel based on the corresponding index.
+	 * Saves an int/float value to a pixel based on the corresponding index.
+	 * 
 	 * @param {string|Object} arg0_image_object - The image object to use.
 	 * @param {number} arg1_index - The index of the pixel to save the number to.
 	 * @param {number|string} arg2_number - The number to save to the pixel.
