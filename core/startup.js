@@ -151,6 +151,23 @@ global.l4p = "./livemap/4.view/politics/";
 		
 		//3. Set date
 		UI_DateMenu.setDate(Date.getCurrentDate());
+		
+		//4. Set social media activity
+		{
+			discordRPC.updateActivity({
+				details: "Default Savefile",
+				state: "Idling",
+				startTimestamp: Date.now(),
+				
+				buttons: [{
+					label: "🗺️ Download Naissance",
+					url: "https://projects.confoederatio.org/c/Naissance"
+				}, {
+					label: "💬 Join Confoederatio",
+					url: "https://discord.gg/4DcuaBKpuS"
+				}]
+			});
+		}
 	};
 	
 	global.loadSettings = function () {

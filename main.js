@@ -117,9 +117,16 @@ async function initRPC () {
     
     //Set initial activity
     setRPCActivity({
-      details: "Default Savefile",
-      state: "Idling",
-      startTimestamp: Date.now()
+      details: "Launching Naissance",
+      startTimestamp: Date.now(),
+      
+      buttons: [{
+        label: "🗺️ Download Naissance",
+        url: "https://projects.confoederatio.org/c/Naissance"
+      }, {
+        label: "💬 Join Confoederatio",
+        url: "https://discord.gg/4DcuaBKpuS"
+      }]
     });
   } catch (e) { console.warn(`Failed to connect to Discord RPC:`, e); }
 }

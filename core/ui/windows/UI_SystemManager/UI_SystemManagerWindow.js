@@ -24,11 +24,11 @@ global.UI_SystemManagerWindow = class {
 			name: "Advanced Tools",
 			height: "80dvh",
 			width: "80dvw",
+			onuserchange: (v, e) => {
+				if (v.close) window.discordRPC.updateActivity({ state: "Working" });
+			},
 			
 			page_menu_options: {
-				onuserchange: (v, e) => {
-					if (v.close) window.discordRPC.updateActivity({ state: "Working" });
-				},
 				retain: true,
 				starting_page: "script_manager",
 				style: {
