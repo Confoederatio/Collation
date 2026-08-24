@@ -195,9 +195,10 @@
 	 * @param {Object} [arg3_options]
 	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
 	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
-	 *  @param {number} [arg3_options.threshold_fraction=0] - The fraction to interpolate for values exceeding thresholds.
 	 *  @param {number} [arg3_options.lower_value_threshold] - Lower-bound values that should not be interpolated (from raster).
 	 *  @param {number} [arg3_options.upper_value_threshold] - Upper-bound values that should not be interpolated (to raster).
+	 *  
+	 *  @param {number} [arg3_options.threshold_fraction=0] - 2nd-order fraction to interpolate for values exceeding thresholds.
 	 *
 	 * @returns {Object}
 	 */
