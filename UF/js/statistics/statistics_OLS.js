@@ -3,26 +3,65 @@
 	if (!global.Statistics)
 		/**
 		 * The namespace for all UF/Statistics utility functions, typically for static methods.
-		 * 
+		 *
 		 * @namespace Statistics
 		 */
 		global.Statistics = {};
 	
 	/**
+	 * Computes the X^T * X matrix manually to save memory.
+	 * @alias Statistics._computeXT_X
+	 *
+	 * @param {Array<Array<number>>} arg0_X
+	 *
+	 * @returns {Array<Array<number>>}
+	 */
+	Statistics._computeXT_X = function (arg0_X) {
+		let X = arg0_X;
+		let N = X.length;
+		let K = X[0].length;
+		
+		let XT_X = new Array(K).fill(0).map(() => new Array(K).fill(0));
+		
+		//Optimisation: Halved loop multiplications taking advantage of reflectional symmetry
+		for (let i = 0; i < N; i++) {
+			let rowX = X[i];
+			for (let j = 0; j < K; j++) {
+				let x_j = rowX[j];
+				for (let k = j; k < K; k++) {
+					XT_X[j][k] += x_j * rowX[k];
+				}
+			}
+		}
+		
+		//Mirror the computed lower half logic to the upper half logic
+		for (let j = 0; j < K; j++) {
+			for (let k = 0; k < j; k++) {
+				XT_X[j][k] = XT_X[k][j];
+			}
+		}
+		
+		return XT_X;
+	};
+	
+	/**
 	 * Computes the VIF of a given matrix.
 	 * @alias Statistics.computeVIF
-	 * 
-	 * @param {Matrix} arg0_X
-	 * 
-	 * @returns {Matrix}
+	 *
+	 * @param {Matrix|Array} arg0_X
+	 *
+	 * @returns {Array<number>}
 	 */
 	Statistics.computeVIF = function (arg0_X) {
 		//Convert from parameters
 		let X = arg0_X;
+		try { X = X._data || X; } catch (e) {}
 		
 		//Declare local instance variables
-		let XT_X = mathjs.multiply(mathjs.transpose(X), X);
+		let XT_X = Statistics._computeXT_X(X);
 		let XT_X_inv = mathjs.inv(XT_X);
+		try { XT_X_inv = XT_X_inv._data || XT_X_inv; } catch(e) {}
+		
 		let vif = XT_X_inv.map((row, i) => row[i]);
 		
 		//Return statement
@@ -32,24 +71,23 @@
 	/**
 	 * Returns the condition number of a given matrix.
 	 * @alias Statistics.conditionNumber
-	 * 
-	 * @param {Matrix} arg0_X
+	 *
+	 * @param {Matrix|Array} arg0_X
 	 * @param {number} [arg1_epsilon=1e-12]
-	 * 
+	 *
 	 * @returns {number}
 	 */
 	Statistics.conditionNumber = function (arg0_X, arg1_epsilon) {
 		//Convert from parameters
 		let X = arg0_X;
 		let epsilon = Math.returnSafeNumber(arg1_epsilon, 1e-12);
+		try { X = X._data || X; } catch (e) {}
 		
 		//Declare local instance variables
-		try {
-			X = X._data;
-		} catch (e) {}
+		let XT_X = Statistics._computeXT_X(X);
 		
-		let matrix = new ml_matrix.SVD(X, { autoTranspose: true });
-		let singular_values = matrix.diagonal;
+		let matrix = new ml_matrix.SVD(XT_X, { autoTranspose: true });
+		let singular_values = matrix.diagonal.map(v => Math.sqrt(Math.max(0, v)));
 		
 		//Find max and min singular values
 		let max_s = Math.max(...singular_values);
@@ -62,16 +100,17 @@
 	/**
 	 * Removes high VIF features for a given matrix.
 	 * @alias Statistics.removeHighVIFFeatures
-	 * 
-	 * @param {Matrix} arg0_X
+	 *
+	 * @param {Matrix|Array} arg0_X
 	 * @param {number} [arg1_threshold=10]
-	 * 
-	 * @returns {Matrix}
+	 *
+	 * @returns {Array<Array<number>>}
 	 */
 	Statistics.removeHighVIFFeatures = function (arg0_X, arg1_threshold) {
 		//Convert from parameters
 		let X = arg0_X;
 		let threshold = Math.returnSafeNumber(arg1_threshold, 10);
+		try { X = X._data || X; } catch(e) {}
 		
 		//Declare local instance variables
 		let vif_scores = Statistics.computeVIF(X);
@@ -84,12 +123,12 @@
 	/**
 	 * Performs Ridge Regression on two matrices.
 	 * @alias Statistics.ridgeRegression
-	 * 
-	 * @param {Matrix} arg0_X
-	 * @param {Matrix} arg1_Y
+	 *
+	 * @param {Matrix|Array} arg0_X
+	 * @param {Matrix|Array} arg1_Y
 	 * @param {number} [arg2_lambda=1e-3]
-	 * 
-	 * @returns {Matrix}
+	 *
+	 * @returns {Matrix|Array}
 	 */
 	Statistics.ridgeRegression = function (arg0_X, arg1_Y, arg2_lambda) {
 		//Convert from parameters
@@ -97,32 +136,59 @@
 		let Y = arg1_Y;
 		let lambda = Math.returnSafeNumber(arg2_lambda, 1e-3);
 		
-		//Declare local instance variables
-		let XT = mathjs.transpose(X);
-		let XT_X = mathjs.multiply(XT, X);
-		let identity = mathjs.identity(XT_X.size()[0]);
+		try { X = X._data || X; } catch (e) {}
+		try { Y = Y._data || Y; } catch (e) {}
 		
-		let XT_X_reg = mathjs.add(XT_X, mathjs.multiply(identity, lambda)); //Ridge term
-		let XT_Y = mathjs.multiply(XT, Y);
+		//Declare local instance variables
+		let N = X.length;
+		let K = X[0].length;
+		
+		let XT_X = new Array(K).fill(0).map(() => new Array(K).fill(0));
+		let XT_Y = new Array(K).fill(0).map(() => [0]);
+		
+		for (let i = 0; i < N; i++) {
+			let rowX = X[i];
+			let yVal = Y[i][0];
+			for (let j = 0; j < K; j++) {
+				let x_j = rowX[j];
+				XT_Y[j][0] += x_j * yVal;
+				for (let k = j; k < K; k++) {
+					XT_X[j][k] += x_j * rowX[k];
+				}
+			}
+		}
+		
+		for (let j = 0; j < K; j++) {
+			for (let k = 0; k < j; k++) {
+				XT_X[j][k] = XT_X[k][j];
+			}
+		}
+		
+		let XT_X_mat = mathjs.matrix(XT_X);
+		let XT_Y_mat = mathjs.matrix(XT_Y);
+		let identity = mathjs.identity(K);
+		
+		let XT_X_reg = mathjs.add(XT_X_mat, mathjs.multiply(identity, lambda)); //Ridge term
 		
 		//Return statement; return beta
-		return mathjs.multiply(mathjs.inv(XT_X_reg), XT_Y);
+		return mathjs.multiply(mathjs.inv(XT_X_reg), XT_Y_mat);
 	};
 	
 	/**
 	 * Trains a raster-based OLS model given a fitted covariates object { X, Y, keys }.
 	 * @alias Statistics.trainOLSModel
-	 * 
+	 *
 	 * @param {string} arg0_output_file_path
 	 * @param {Object} arg1_covariates_obj
 	 * @param {Object} [arg2_options]
 	 *  @param {boolean} [arg2_options.dynamic_lambda=false] - Condition numbers are dynamically selected if true.
+	 *  @param {number} [arg2_options.lambda=1e9]
 	 *  @param {boolean} [arg2_options.remove_high_vif_features=false] - Whether to remove high VIF features.
 	 *  @param {string} [arg2_options.key]
-	 *  
+	 *
 	 * @returns {Promise<Object>}
 	 */
-	Statistics.trainOLSModel = async function (arg0_output_file_path, arg1_covariates_obj, arg2_options) { //[WIP] - Finish function body
+	Statistics.trainOLSModel = async function (arg0_output_file_path, arg1_covariates_obj, arg2_options) {
 		//Convert from parameters
 		let output_file_path = path.resolve(arg0_output_file_path);
 		let covariates_obj = arg1_covariates_obj;
@@ -144,29 +210,28 @@
 		}
 		
 		//2. Apply Ridge Regression to stabilise coefficients
-		let selected_lambda = 1e9;
-		let X_matrix = mathjs.matrix(X);
-		let Y_matrix = mathjs.matrix(Y);
+		let selected_lambda = Math.returnSafeNumber(options.lambda, 1e9);
 		console.log(`- Computed preliminary matrices.`);
 		
 		if (options.dynamic_lambda) {
-			let condition_number = Statistics.conditionNumber(X_matrix);
-				if (condition_number > 1e6) { selected_lambda = 1e9; } 
-				else if (condition_number > 1e4) { selected_lambda = 1e7; }
-				else if (condition_number > 1e2) { selected_lambda = 1e5; }
-				else { selected_lambda = 1e3; }
-			log.info(`- Condition Number: ${condition_number}, using Lambda = ${selected_lambda}`);
+			let condition_number = Statistics.conditionNumber(X);
+			if (condition_number > 1e6) { selected_lambda = 1e9; }
+			else if (condition_number > 1e4) { selected_lambda = 1e7; }
+			else if (condition_number > 1e2) { selected_lambda = 1e5; }
+			else { selected_lambda = 1e3; }
+			console.log(`- Condition Number: ${condition_number}, using Lambda = ${selected_lambda}`);
 		}
 		
-		let beta = Statistics.ridgeRegression(X_matrix, Y_matrix, selected_lambda);
+		let beta = Statistics.ridgeRegression(X, Y, selected_lambda);
 		console.log(`- Applied Ridge Regression to stabilise coefficients.`);
 		
-		//3. Covert coefficients to JSON
-		let coefficients = beta.toArray().flat();
+		//3. Convert coefficients to JSON
+		let beta_arr = beta._data || (beta.toArray ? beta.toArray() : beta);
+		let coefficients = beta_arr.flat();
 		console.log(`- Computed coefficients.`);
 		
 		//Save model to JSON
-		let model_data_obj = { 
+		let model_data_obj = {
 			key: options.key,
 			coefficients: Object.fromEntries(
 				keys.map((key, i) => [key, coefficients[i]])
