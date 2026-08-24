@@ -188,28 +188,30 @@
 	
 	/**
 	 * Interpolates between two number raster images based on a fraction.
-	 * 
+	 *
 	 * @param {string|Object} arg0_from_file_path
 	 * @param {string|Object} arg1_to_file_path
 	 * @param {string} arg2_output_file_path
 	 * @param {Object} [arg3_options]
 	 *  @param {string} [arg3_options.format="int32"] - Either 'int32'/'float32'.
 	 *  @param {number} [arg3_options.fraction=0.5] - The fraction to interpolate between the two images.
+	 *  @param {number} [arg3_options.threshold_fraction=0] - The fraction to interpolate for values exceeding thresholds.
 	 *  @param {number} [arg3_options.lower_value_threshold] - Lower-bound values that should not be interpolated (from raster).
 	 *  @param {number} [arg3_options.upper_value_threshold] - Upper-bound values that should not be interpolated (to raster).
-	 * 
+	 *
 	 * @returns {Object}
 	 */
 	GeoPNG.linearInterpolation = function (arg0_from_file_path, arg1_to_file_path, arg2_output_file_path, arg3_options) {
 		//Convert from parameters
 		let from_file_path = arg0_from_file_path;
 		let to_file_path = arg1_to_file_path;
-		let output_file_path = arg2_output_file_path; 
-		let options = (arg3_options) ? arg3_options : {};
+		let output_file_path = arg2_output_file_path;
+		let options = arg3_options ? arg3_options : {};
 		
 		//Initialise options
 		if (!options.format) options.format = "int32";
 		if (options.fraction === undefined) options.fraction = 0.5;
+		if (options.threshold_fraction === undefined) options.threshold_fraction = 0;
 		
 		//Declare local instance variables
 		let from_image_obj = GeoPNG.loadNumberRasterImage(from_file_path, options);
@@ -232,10 +234,10 @@
 				//Return statement
 				if (options.lower_value_threshold !== undefined)
 					if (from_val <= options.lower_value_threshold)
-						return from_val; //Take base value
+						return from_val + (to_val - from_val)*options.threshold_fraction;
 				if (options.upper_value_threshold !== undefined)
 					if (to_val >= options.upper_value_threshold)
-						return from_val; //Take base value
+						return from_val + (to_val - from_val)*options.threshold_fraction;
 				return from_val + (to_val - from_val)*options.fraction;
 			}
 		});

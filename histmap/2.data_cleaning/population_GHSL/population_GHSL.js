@@ -155,25 +155,31 @@ global.population_GHSL = class { //[WIP] - Finish class body
 				await new Promise((resolve, reject) => {
 					setImmediate(() => {
 						try {
-							let local_year = parseInt(path.basename(local_input_file_path)
-							.replace("GHS_POP_", "").replace(".png", ""));
+							let file_name = path.basename(local_input_file_path);
 							
-							let local_input_png = GeoPNG.loadNumberRasterImage(local_input_file_path, {
-								format: "float32"
-							});
-							let local_input_sum = GeoPNG.getImageSum(local_input_file_path, {
-								format: "float32"
-							});
-							local_scalar = world_pop_obj[local_year]/local_input_sum;
-							
-							GeoPNG.saveNumberRasterImage({
-								file_path: local_input_file_path,
-								format: "float32",
-								width: 4320,
-								height: 2160,
-								function: (local_index) => local_input_png.data[local_index]*local_scalar
-							});
-							console.log(`- ${local_year} - Input Population: ${local_input_sum}, Scalar: ${local_scalar}`);
+							if (file_name.startsWith("GHS_POP_") && file_name.endsWith(".png")) {
+								let local_year = parseInt(file_name.replace("GHS_POP_", "").replace(".png", ""));
+								
+								//Only scale if world pop target explicitly exists for this year
+								if (world_pop_obj[local_year]) {
+									let local_input_png = GeoPNG.loadNumberRasterImage(local_input_file_path, {
+										format: "float32"
+									});
+									let local_input_sum = GeoPNG.getImageSum(local_input_file_path, {
+										format: "float32"
+									});
+									local_scalar = world_pop_obj[local_year]/local_input_sum;
+									
+									GeoPNG.saveNumberRasterImage({
+										file_path: local_input_file_path,
+										format: "float32",
+										width: 4320,
+										height: 2160,
+										function: (local_index) => local_input_png.data[local_index]*local_scalar
+									});
+									console.log(`- ${local_year} - Input Population: ${local_input_sum}, Scalar: ${local_scalar}`);
+								}
+							}
 							
 							resolve();
 						} catch (e) {
@@ -230,10 +236,19 @@ global.population_GHSL = class { //[WIP] - Finish class body
 			await this.A_convertToPNGs();
 			await this.A_fixCorruptPixels();
 		}
-		if (!options.exclude.includes("B"))
-			await this.B_interpolatePNGs();
+		
+		//1st Pass C: Normalise raw anchor rasters to their real global population totals first
 		if (!options.exclude.includes("C"))
 			await this.C_scalePNGsToGlobalPopulation();
+		
+		//Interpolate spatial distribution linearly using the now properly scaled anchors
+		if (!options.exclude.includes("B"))
+			await this.B_interpolatePNGs();
+		
+		//2nd Pass C: Re-scale the newly interpolated frames to map them onto the true non-linear exponential population curve
+		if (!options.exclude.includes("C"))
+			await this.C_scalePNGsToGlobalPopulation();
+		
 		if (!options.exclude.includes("D"))
 			await this.D_printPopulation();
 	}

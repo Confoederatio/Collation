@@ -309,6 +309,19 @@ global.population_Substrata_outlier_removal = class {
 	};
 	static statista_regions_raster = `${this.bf}/config/statista_regions.png`;
 	
+	static async _printPopulation () {
+		//Declare local instance variables
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		
+		for (let i  = 0; i < hyde_years.length; i++) {
+			let local_input_path = `${this.intermediate_rasters_geopng_int32}popc_${hyde_years[i]}.png`;
+			let local_sum = GeoPNG.getImageSum(local_input_path, { format: "int32" });
+			
+			console.log(`- Year: ${hyde_years[i]}, Sum: ${local_sum}`);
+			await Blacktraffic.yield();
+		}
+	}
+	
 	static async A_getHYDEOutlierMasksObject (arg0_folder) {
 		//Declare local instance variables
 		let input_folder = (arg0_folder) ? 
@@ -658,6 +671,7 @@ global.population_Substrata_outlier_removal = class {
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let to_path = `${this.input_GHSL_rasters}GHS_POP_${GHSL_domain[1]}.png`;
 		let year_gap = GHSL_domain[1] - GHSL_domain[0];
+		let year_gap2 = GHSL2_domain[1] - GHSL2_domain[0];
 		
 		//Iterate over all landuse_HYDE.hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
@@ -673,13 +687,17 @@ global.population_Substrata_outlier_removal = class {
 					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
 						format: "float32",
 						fraction,
-						upper_value_threshold: 256 //RGBA limit
+						upper_value_threshold: 256, //RGBA limit
 					});
 					console.log(`- (1st-pass) Finished interpolating ${local_from_path} to GHSL.`);
 				} else if (current_year >= GHSL2_domain[0] && current_year < GHSL2_domain[1]) {
+					let threshold_fraction = (current_year - GHSL2_domain[0])/year_gap2;
+					
 					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
 						format: "float32",
-						fraction
+						fraction,
+						upper_value_threshold: 256, //RGBA limit
+						threshold_fraction
 					});
 					console.log(`- (2nd-pass) Finished interpolating ${local_from_path} to GHSL.`);
 				} else {
