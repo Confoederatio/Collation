@@ -118,14 +118,18 @@
 	 * @param {Object} [arg2_options]
 	 *  @param {boolean} [arg2_options.dynamic_lambda=false] - Condition numbers are dynamically selected if true.
 	 *  @param {boolean} [arg2_options.remove_high_vif_features=false] - Whether to remove high VIF features.
+	 *  @param {string} [arg2_options.key]
 	 *  
 	 * @returns {Promise<Object>}
 	 */
-	Statistics.trainOLSModel = async function (arg0_output_file_path, arg1_covariates_obj, arg2_options) {
+	Statistics.trainOLSModel = async function (arg0_output_file_path, arg1_covariates_obj, arg2_options) { //[WIP] - Finish function body
 		//Convert from parameters
-		let output_file_path = arg0_output_file_path;
+		let output_file_path = path.resolve(arg0_output_file_path);
 		let covariates_obj = arg1_covariates_obj;
 		let options = (arg2_options) ? arg2_options : {};
+		
+		//Initialise options
+		if (!options.key) options.key = output_file_path;
 		
 		//Declare local instance variables
 		let basename = path.basename(output_file_path);
@@ -140,5 +144,39 @@
 		}
 		
 		//2. Apply Ridge Regression to stabilise coefficients
+		let selected_lambda = 1e9;
+		let X_matrix = mathjs.matrix(X);
+		let Y_matrix = mathjs.matrix(Y);
+		console.log(`- Computed preliminary matrices.`);
+		
+		if (options.dynamic_lambda) {
+			let condition_number = Statistics.conditionNumber(X_matrix);
+				if (condition_number > 1e6) { selected_lambda = 1e9; } 
+				else if (condition_number > 1e4) { selected_lambda = 1e7; }
+				else if (condition_number > 1e2) { selected_lambda = 1e5; }
+				else { selected_lambda = 1e3; }
+			log.info(`- Condition Number: ${condition_number}, using Lambda = ${selected_lambda}`);
+		}
+		
+		let beta = Statistics.ridgeRegression(X_matrix, Y_matrix, selected_lambda);
+		console.log(`- Applied Ridge Regression to stabilise coefficients.`);
+		
+		//3. Covert coefficients to JSON
+		let coefficients = beta.toArray().flat();
+		console.log(`- Computed coefficients.`);
+		
+		//Save model to JSON
+		let model_data_obj = { 
+			key: options.key,
+			coefficients: Object.fromEntries(
+				keys.map((key, i) => [key, coefficients[i]])
+			)
+		};
+		
+		fs.writeFileSync(output_file_path, JSON.stringify(model_data_obj, null, 2));
+		console.log(`OLS model data for ${options.key} saved successfully in ${output_file_path}.`);
+		
+		//Return statement
+		return model_data_obj;
 	};
 }
