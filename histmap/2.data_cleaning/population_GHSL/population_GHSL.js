@@ -2,7 +2,6 @@ global.population_GHSL = class { //[WIP] - Finish class body
 	//[NOTE] - Láng-Ritter et al. rural pop. underweighting is currently being contested. As of 22 August 2026, it should be waited on to see how the academic debate/response chain around it shakes out before going through with code changes - Kätzchen and Tacitus
 	static bf = `${h1}/population_GHSL`;
 	static input_geotiffs_folder = `${this.bf}/population_rasters/1.geotiffs/`;
-	static input_rural_masks_folder = `${this.bf}/population_rasters/1.rural_masks/`;
 	static intermediate_rasters_folder = `${this.bf}/population_rasters/2.rasters/`;
 	
 	static async A_convertToPNGs () {
@@ -15,7 +14,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		for (let i = 0; i < all_files.length; i++) {
 			let file_name = path.basename(all_files[i]);
 			
-			if (file_name.startsWith("GHS_POP_E")) {
+			if (file_name.startsWith("GHS_POP_E") && file_name.endsWith(".tif")) {
 				let local_year = parseInt(file_name.replace("GHS_POP_E", "")
 				.replace(".tif", ""));
 				
@@ -31,6 +30,68 @@ global.population_GHSL = class { //[WIP] - Finish class body
 				if (fs.existsSync(temp_tif_path)) fs.unlinkSync(temp_tif_path);
 				
 				console.log(`- Finished writing ${all_files[i]} to ${local_output_path}.`);
+			}
+		}
+	}
+	
+	static async A_fixCorruptPixels () {
+		//Declare local instance variables
+		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
+		let corrupt_floats = [];
+		let corrupt_raw_bytes = [
+			[57, 13, 4, 233],
+			[58, 165, 73, 10],
+			[58, 7, 249, 128],
+			[59, 15, 12, 72],
+			[59, 83, 37, 167],
+			[59, 6, 253, 177],
+			[58, 19, 101, 94],
+			[58, 26, 67, 72],
+			[58, 166, 243, 123]
+		];
+		let image_height = 2160;
+		let image_width = 4320;
+		
+		//Convert corrupt RGBA byte sets to both Little-Endian and Big-Endian float values for exact matching
+		for (let i = 0; i < corrupt_raw_bytes.length; i++) {
+			let buffer = new ArrayBuffer(4);
+			let view = new DataView(buffer);
+			
+			for (let j = 0; j < 4; j++) view.setUint8(j, corrupt_raw_bytes[i][j]);
+			
+			corrupt_floats.push(view.getFloat32(0, true));  //Little-endian
+			corrupt_floats.push(view.getFloat32(0, false)); //Big-endian
+		}
+		
+		//Iterate over all_files and zero corrupt pixels
+		for (let i = 0; i < all_files.length; i++) {
+			let file_name = path.basename(all_files[i]);
+			
+			if (file_name.startsWith("GHS_POP_") && file_name.endsWith(".png")) {
+				let local_file_path = all_files[i];
+				let local_png = GeoPNG.loadNumberRasterImage(local_file_path, { format: "float32" });
+				
+				//1. Zero the 1x264 vertical strip at x: 0, y: 1283 to 1546
+				for (let y = 1283; y < 1283 + 264; y++) {
+					let pixel_index = y*image_width + 0;
+					local_png.data[pixel_index] = 0;
+				}
+				
+				//2. Zero matching corrupted float values across the raster
+				for (let p = 0; p < local_png.data.length; p++)
+					if (corrupt_floats.includes(local_png.data[p]))
+						local_png.data[p] = 0;
+				
+				//Save the cleaned raster
+				GeoPNG.saveNumberRasterImage({
+					file_path: local_file_path,
+					format: "float32",
+					width: image_width,
+					height: image_height,
+					function: (local_index) => local_png.data[local_index]
+				});
+				
+				console.log(`- Cleaned corrupt pixels for ${local_file_path}.`);
 			}
 		}
 	}
@@ -123,6 +184,40 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		}
 	}
 	
+	static async D_printPopulation () {
+		//Declare local instance variables
+		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
+		let world_pop_obj = population_Global.A_getWorldPopulationObject();
+		let year_files = [];
+		
+		//Iterate over all_files and filter GHS_POP rasters
+		for (let i = 0; i < all_files.length; i++) {
+			let file_name = path.basename(all_files[i]);
+			
+			if (file_name.startsWith("GHS_POP_") && file_name.endsWith(".png")) {
+				let local_year = parseInt(file_name.replace("GHS_POP_", "").replace(".png", ""));
+				
+				if (!isNaN(local_year))
+					year_files.push({
+						file_path: all_files[i],
+						year: local_year
+					});
+			}
+		}
+		
+		//Sort in chronological order
+		year_files.sort((a, b) => a.year - b.year);
+		
+		console.log(`- GHSL Population Series Summary:`);
+		for (let i = 0; i < year_files.length; i++) {
+			let local_entry = year_files[i];
+			let local_sum = GeoPNG.getImageSum(local_entry.file_path, { format: "float32" });
+			let target_pop = (world_pop_obj && world_pop_obj[local_entry.year]) ? world_pop_obj[local_entry.year] : "N/A";
+			
+			console.log(` - Year ${local_entry.year}: ${local_sum} (Target: ${target_pop})`);
+		}
+	}
+	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -131,11 +226,15 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		if (!options.exclude) options.exclude = [];
 		
 		//Declare local instance variables
-		if (!options.exclude.includes("A"))
+		if (!options.exclude.includes("A")) {
 			await this.A_convertToPNGs();
+			await this.A_fixCorruptPixels();
+		}
 		if (!options.exclude.includes("B"))
-			this.B_interpolatePNGs();
+			await this.B_interpolatePNGs();
 		if (!options.exclude.includes("C"))
 			await this.C_scalePNGsToGlobalPopulation();
+		if (!options.exclude.includes("D"))
+			await this.D_printPopulation();
 	}
 };
