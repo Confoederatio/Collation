@@ -108,4 +108,37 @@
 		//Return statement; return beta
 		return mathjs.multiply(mathjs.inv(XT_X_reg), XT_Y);
 	};
+	
+	/**
+	 * Trains a raster-based OLS model given a fitted covariates object { X, Y, keys }.
+	 * @alias Statistics.trainOLSModel
+	 * 
+	 * @param {string} arg0_output_file_path
+	 * @param {Object} arg1_covariates_obj
+	 * @param {Object} [arg2_options]
+	 *  @param {boolean} [arg2_options.dynamic_lambda=false] - Condition numbers are dynamically selected if true.
+	 *  @param {boolean} [arg2_options.remove_high_vif_features=false] - Whether to remove high VIF features.
+	 *  
+	 * @returns {Promise<Object>}
+	 */
+	Statistics.trainOLSModel = async function (arg0_output_file_path, arg1_covariates_obj, arg2_options) {
+		//Convert from parameters
+		let output_file_path = arg0_output_file_path;
+		let covariates_obj = arg1_covariates_obj;
+		let options = (arg2_options) ? arg2_options : {};
+		
+		//Declare local instance variables
+		let basename = path.basename(output_file_path);
+		let { keys, X, Y } = covariates_obj;
+		
+		console.log(`- Performing OLS for ${basename}.`);
+		
+		//1. Remove multicollinear features using VIF selection if specified
+		if (options.remove_high_vif_features) {
+			X = Statistics.removeHighVIFFeatures(X, 10);
+			console.log(` - Removed high VIF features.`);
+		}
+		
+		//2. Apply Ridge Regression to stabilise coefficients
+	};
 }

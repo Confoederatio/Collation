@@ -11,7 +11,9 @@ global.population_Substrata_outlier_removal = class {
 	static intermediate_rasters_interpolated = `${this.bf}rasters_4.interpolated_to_GHSL/`;
 	static intermediate_rasters_geopng_int32 = `${this.bf}rasters_5.geopng_int32/`;
 	static options = {
-		interpolate_to_GHSL_domain: [1800, 1975]
+		interpolate_to_GHSL_domain: [1800, 1975],
+		interpolate_to_GHSL1_domain: [1800, 1950],
+		interpolate_to_GHSL2_domain: [1950, 1975]
 	};
 	
 	static statista_obj = {
@@ -651,6 +653,8 @@ global.population_Substrata_outlier_removal = class {
 	static async D_interpolateToGHSL () {
 		//Declare local instance variables
 		let GHSL_domain = this.options.interpolate_to_GHSL_domain;
+		let GHSL1_domain = this.options.interpolate_to_GHSL1_domain;
+		let GHSL2_domain = this.options.interpolate_to_GHSL2_domain;
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let to_path = `${this.input_GHSL_rasters}GHS_POP_${GHSL_domain[1]}.png`;
 		let year_gap = GHSL_domain[1] - GHSL_domain[0];
@@ -661,21 +665,28 @@ global.population_Substrata_outlier_removal = class {
 			let local_ghsl_path = `${this.input_GHSL_rasters}GHS_POP_${current_year}.png`;
 			let local_output_path = `${this.intermediate_rasters_interpolated}popc_${current_year}.png`;
 			
-			if (current_year >= GHSL_domain[0] && current_year < GHSL_domain[1]) {
+			if (current_year >= GHSL_domain[0]) {
 				let fraction = (current_year - GHSL_domain[0])/year_gap;
 				let local_from_path = `${this.intermediate_rasters_scaled_to_global}popc_${current_year}.png`;
 				
-				GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
-					format: "float32",
-					fraction,
-					lower_value_threshold: 0,
-					upper_value_threshold: 255, //RGBA limit
-				});
-				console.log(`- Finished interpolating ${local_from_path} to GHSL.`);
-			} else if (current_year >= GHSL_domain[1]) {
-				if (fs.existsSync(local_ghsl_path)) {
-					console.log(`- Copying GHSL for ${current_year}.`);
-					fs.copyFileSync(local_ghsl_path, local_output_path);
+				if (current_year < GHSL1_domain[1]) {
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction,
+						upper_value_threshold: 256 //RGBA limit
+					});
+					console.log(`- (1st-pass) Finished interpolating ${local_from_path} to GHSL.`);
+				} else if (current_year >= GHSL2_domain[0] && current_year < GHSL2_domain[1]) {
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction
+					});
+					console.log(`- (2nd-pass) Finished interpolating ${local_from_path} to GHSL.`);
+				} else {
+					if (fs.existsSync(local_ghsl_path)) {
+						console.log(`- Copying GHSL for ${current_year}.`);
+						fs.copyFileSync(local_ghsl_path, local_output_path);
+					}
 				}
 			}
 		}
