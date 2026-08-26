@@ -98,20 +98,85 @@
 	};
 	
 	/**
+	 * Loads a stack of covariates for a specific utility file path for OLS training.
 	 * 
-	 * @param {string} arg0_input_file_path
+	 * @param {string} arg0_utility_file_path
 	 * @param {Object} [arg1_options]
 	 *  @param {Object} arg1_options.covariates_obj
-	 *  @param {string} [arg1_options.format="int32"]
+	 *  @param {Array} [arg1_options.formatting_parameters]
+	 *  @param {string} [arg1_options.utility_format="int32"]
 	 */
-	Statistics.loadOLSCovariates = async function (arg0_input_file_path, arg1_options) {
+	Statistics.loadOLSCovariates = async function (arg0_utility_file_path, arg1_options) {
 		//Convert from parameters
-		let input_file_path = path.resolve(arg0_input_file_path);
+		let utility_file_path = path.resolve(arg0_utility_file_path);
 		let options = (arg1_options) ? arg1_options : {};
 		
-		//Declare local instance variables
-		let covariates_data = [];
+		//Initialise options
+		if (!options.formatting_parameters) options.formatting_parameters = [];
 		
+		//Declare local instance variables
+		let input_data = [];
+		let utility_image = GeoPNG.loadNumberRasterImage(utility_file_path, { 
+			format: options.utility_format 
+		});
+			let utility_data = utility_image.data;
+		
+		//Iterate over all input stocks; load each input variable as a predictor
+		Object.iterate(options.covariates_obj, (local_key, local_value) => {
+			let local_file_path = local_value(...options.formatting_parameters);
+			let local_format = "int32";
+			
+			//Destructure if array is returned
+			if (Array.isArray(local_file_path)) {
+				local_format = local_file_path[1];
+				local_file_path = local_file_path[0];
+			}
+			
+			let local_rawdata = GeoPNG.loadNumberRasterImage(local_file_path, {
+				format: local_format
+			}).data;
+			input_data.push(local_rawdata);
+		});
+		
+		//Transpose input data to match format [samples, features], discarding zeroes and NaNs safely
+		let feature_count = input_data.length;
+		let sample_count = utility_data.length;
+		let X = [];
+		let Y = [];
+		
+		//Iterate over sample_count
+		for (let i = 0; i < sample_count; i++) {
+			let has_data = false;
+			let is_valid = true;
+			let utility_value = utility_data[i];
+			
+			if (isNaN(utility_value)) {
+				is_valid = false;
+			} else if (utility_value !== 0) {
+				has_data = true;
+			}
+			
+			//Iterate over feature_count
+			let local_row = new Array(feature_count);
+			
+			for (let x = 0; x < feature_count; x++) {
+				let local_value = input_data[x][i];
+				if (isNaN(local_value)) {
+					is_valid = false;
+					break;
+				}
+				local_row[x] = local_value;
+				if (local_value !== 0) has_data = true;
+			}
+			
+			if (has_data && is_valid) {
+				X.push(local_row);
+				Y.push([utility_value]);
+			}
+		}
+		
+		//Return statement
+		return { keys: Object.keys(options.covariates_obj), X, Y };
 	};
 	
 	/**

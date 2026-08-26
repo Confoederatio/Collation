@@ -13,26 +13,26 @@
 		static hf1 = (y) => landuse_HYDE._getHYDEYearName(y);
 		static covariates_obj = {
 			//LU (Land Use)
-			"conv_rangeland": (y) => `${this.hf()}/conv_rangeland${this.hf1(y)}_number.png`,
-			"cropland": (y) => `${this.hf()}/cropland${this.hf1(y)}_number.png`,
-			"grazing": (y) => `${this.hf()}/grazing${this.hf1(y)}_number.png`,
-			"ir_norice": (y) => `${this.hf()}/ir_norice${this.hf1(y)}_number.png`,
-			"ir_rice": (y) => `${this.hf()}/ir_rice${this.hf1(y)}_number.png`,
-			"pasture": (y) => `${this.hf()}/pasture${this.hf1(y)}_number.png`,
-			"rangeland": (y) => `${this.hf()}/rangeland${this.hf1(y)}_number.png`,
-			"rf_norice": (y) => `${this.hf()}/rf_norice${this.hf1(y)}_number.png`,
-			"rf_rice": (y) => `${this.hf()}/rf_rice${this.hf1(y)}_number.png`,
-			"shifting": (y) => `${this.hf()}/shifting${this.hf1(y)}_number.png`,
-			"tot_irri": (y) => `${this.hf()}/tot_irri${this.hf1(y)}_number.png`,
-			"tot_rainfed": (y) => `${this.hf()}/tot_rainfed${this.hf1(y)}_number.png`,
-			"tot_rice": (y) => `${this.hf()}/tot_rice${this.hf1(y)}_number.png`,
+			"conv_rangeland": (y) => [`${this.hf()}/conv_rangeland${this.hf1(y)}_number.png`, "float32"],
+			"cropland": (y) => [`${this.hf()}/cropland${this.hf1(y)}_number.png`, "float32"],
+			"grazing": (y) => [`${this.hf()}/grazing${this.hf1(y)}_number.png`, "float32"],
+			"ir_norice": (y) => [`${this.hf()}/ir_norice${this.hf1(y)}_number.png`, "float32"],
+			"ir_rice": (y) => [`${this.hf()}/ir_rice${this.hf1(y)}_number.png`, "float32"],
+			"pasture": (y) => [`${this.hf()}/pasture${this.hf1(y)}_number.png`, "float32"],
+			"rangeland": (y) => [`${this.hf()}/rangeland${this.hf1(y)}_number.png`, "float32"],
+			"rf_norice": (y) => [`${this.hf()}/rf_norice${this.hf1(y)}_number.png`, "float32"],
+			"rf_rice": (y) => [`${this.hf()}/rf_rice${this.hf1(y)}_number.png`, "float32"],
+			"shifting": (y) => [`${this.hf()}/shifting${this.hf1(y)}_number.png`, "float32"],
+			"tot_irri": (y) => [`${this.hf()}/tot_irri${this.hf1(y)}_number.png`, "float32"],
+			"tot_rainfed": (y) => [`${this.hf()}/tot_rainfed${this.hf1(y)}_number.png`, "float32"],
+			"tot_rice": (y) => [`${this.hf()}/tot_rice${this.hf1(y)}_number.png`, "float32"],
 			
 			//POP (Demographics)
-			"popc_": (y) => `${this.hf()}/popc_${this.hf1(y)}_number.png`,
-			"popd_": (y) => `${this.hf()}/popd_${this.hf1(y)}_number.png`,
-			"rurc_": (y) => `${this.hf()}/rurc_${this.hf1(y)}_number.png`,
-			"uopp_": (y) => `${this.hf()}/uopp_${this.hf1(y)}_number.png`,
-			"urbc_": (y) => `${this.hf()}/urbc_${this.hf1(y)}_number.png`
+			"popc_": (y) => [`${this.hf()}/popc_${this.hf1(y)}_number.png`, "float32"],
+			"popd_": (y) => [`${this.hf()}/popd_${this.hf1(y)}_number.png`, "float32"],
+			"rurc_": (y) => [`${this.hf()}/rurc_${this.hf1(y)}_number.png`, "float32"],
+			"uopp_": (y) => [`${this.hf()}/uopp_${this.hf1(y)}_number.png`, "float32"],
+			"urbc_": (y) => [`${this.hf()}/urbc_${this.hf1(y)}_number.png`, "float32"]
 		};
 		
 		/**
@@ -53,56 +53,15 @@
 			let year = arg0_year;
 			
 			//Declare local instance variables
-			let input_data = [];
 			let input_file_path = `${this.bf}/GDP_PPP_${year}.png`;
-			let output_image = GeoPNG.loadNumberRasterImage(input_file_path, {
-				format: "float32"
-			});
-			let output_data = output_image.data;
-			
-			//Iterate over all input stocks; load each input variable as a predictor
-			Object.iterate(this.covariates_obj, (local_key, local_value) => {
-				let local_file_path = local_value(year);
-				let local_rawdata = GeoPNG.loadNumberRasterImage(local_file_path, {
-					format: "float32"
-				}).data;
-				input_data.push(local_rawdata);
-			});
-			
-			//Transpose input data to match format [samples, features], discarding zeroes and NaNs safely
-			let feature_count = input_data.length;
-			let sample_count = output_data.length;
-			let X = [];
-			let Y = [];
-			
-			for (let i = 0; i < sample_count; i++) {
-				let has_data = false;
-				let is_valid = true;
-				let output_value = output_data[i];
-				
-				if (isNaN(output_value)) is_valid = false;
-				else if (output_value !== 0) has_data = true;
-				
-				let local_row = new Array(feature_count);
-				
-				for (let x = 0; x < feature_count; x++) {
-					let val = input_data[x][i];
-					if (isNaN(val)) {
-						is_valid = false;
-						break;
-					}
-					local_row[x] = val;
-					if (val !== 0) has_data = true;
-				}
-				
-				if (has_data && is_valid) {
-					X.push(local_row);
-					Y.push([output_value]);
-				}
-			}
 			
 			//Return statement
-			return { keys: Object.keys(this.covariates_obj), X, Y };
+			return Statistics.loadOLSCovariates(input_file_path, {
+				utility_format: "float32",
+				
+				covariates_obj: this.covariates_obj,
+				formatting_parameters: [year]
+			});
 		}
 		
 		static async C_trainGDP_PPPModel (arg0_year, arg1_options) {
