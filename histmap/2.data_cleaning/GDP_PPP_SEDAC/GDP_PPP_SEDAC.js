@@ -64,7 +64,7 @@
 			});
 		}
 		
-		static async C_trainGDP_PPPModel (arg0_year, arg1_options) {
+		static async B_trainGDP_PPPModel (arg0_year, arg1_options) {
 			//Convert from parameters
 			let year = parseInt(arg0_year);
 			let options = (arg1_options) ? arg1_options : {};
@@ -81,19 +81,19 @@
 			return Statistics.trainOLSModel(output_file_path, covariates_obj, options);
 		}
 		
-		static async C_trainGDP_PPPModels (arg0_options) {
+		static async B_trainGDP_PPPModels (arg0_options) {
 			//Convert from parameters
 			let options = (arg0_options) ? arg0_options : {};
 			
 			//Iterate over all years
 			for (let i = 0; i < this.years.length; i++)
-				await this.C_trainGDP_PPPModel(this.years[i], {
+				await this.B_trainGDP_PPPModel(this.years[i], {
 					...options,
 					key: this.years[i]
 				});
 		}
 		
-		static async D_geomeanGDP_PPPModel (arg0_prefix) {
+		static async C_geomeanGDP_PPPModel (arg0_prefix) {
 			//Convert from parameters
 			let prefix = (arg0_prefix) ? arg0_prefix : "OLS_GDP_PPP_";
 			
@@ -101,12 +101,9 @@
 			return Statistics.geomeanOLSModels(this.intermediate_ols_folder, prefix);
 		}
 		
-		static async E_processGDP_PPPModel (arg0_options) {
+		static async D_processGDP_PPPModel (arg0_options) {
 			//Convert from parameters
 			let options = (arg0_options) ? arg0_options : {};
-			
-			//Calculate geomean base model
-			try { await this.D_geomeanGDP_PPPModel("OLS_GDP_PPP_"); } catch (e) { console.error(e); }
 			
 			//Declare local instance variables
 			let model_file_path = `${this.intermediate_ols_folder}/geomean_OLS_GDP_PPP.json`;
@@ -134,10 +131,15 @@
 			if (!options.exclude.includes("A")) await this.A_convertToPNGs();
 			
 			//2. Train individual yearly OLS models
-			if (!options.exclude.includes("C")) await this.C_trainGDP_PPPModels(options);
+			if (!options.exclude.includes("B")) await this.B_trainGDP_PPPModels(options);
 			
-			//3. Compute geomean & adjust weights across full domain
-			if (!options.exclude.includes("E")) await this.E_processGDP_PPPModel(options);
+			//3. Compute geomean
+			if (!options.exclude.includes("C")) try {
+				await this.C_geomeanGDP_PPPModel("OLS_GDP_PPP_");
+			} catch (e) { console.error(e); }
+			
+			//4. Bidirectionally adjust weights
+			if (!options.exclude.includes("D")) await this.D_processGDP_PPPModel(options);
 		}
 	};
 }
