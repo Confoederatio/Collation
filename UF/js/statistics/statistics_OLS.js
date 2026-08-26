@@ -98,6 +98,64 @@
 	};
 	
 	/**
+	 * Geometrically average OLS models across a folder path, with base OLS prefixes.
+	 * @alias Statistics.geomeanOLSModels
+	 * 
+	 * @param {string} arg0_input_folder_path
+	 * @param {string} arg1_ols_prefix
+	 * @returns {Promise<{coefficients: {}, raw_coefficients: {}}>}
+	 */
+	Statistics.geomeanOLSModels = async function (arg0_input_folder_path, arg1_ols_prefix) { 
+		let input_folder_path = arg0_input_folder_path;
+		let ols_prefix = arg1_ols_prefix;
+		
+		//Declare local instance variables
+		let all_coefficients = {};
+		let raw_coefficients = {};
+		
+		//Iterate over all_input_files matching ols_prefix
+		let all_input_files = await File.getAllFiles(input_folder_path);
+		
+		for (let i = 0; i < all_input_files.length; i++)
+			if (all_input_files[i].endsWith(".json")) {
+				let local_split_path = all_input_files[i].split(/[/\\]/);
+				let local_file_name = local_split_path[local_split_path.length - 1];
+				
+				if (local_file_name.startsWith(ols_prefix)) {
+					let rawdata = JSON.parse(fs.readFileSync(all_input_files[i], "utf8"));
+					let { coefficients } = rawdata;
+					
+					//Aggregate coefficients for geometric mean calculation
+					for (let key in coefficients) {
+						if (!all_coefficients[key]) all_coefficients[key] = [];
+						if (!raw_coefficients[key]) raw_coefficients[key] = [];
+						all_coefficients[key].push(coefficients[key]);
+						raw_coefficients[key].push(coefficients[key]);
+					}
+				}
+			}
+		
+		//Iterate over all_coefficients; compute geometric mean for each coefficient
+		let format_slug = ols_prefix.split("_").join(" ").trim().split(" ").join("_");
+		let hybrid_coefficients = {};
+		
+		for (let key in all_coefficients)
+			hybrid_coefficients[key] = Math.weightedGeometricMean(all_coefficients[key]);
+		
+		let output_data = {
+			coefficients: hybrid_coefficients,
+			raw_coefficients
+		};
+		let output_path = `${input_folder_path}/geomean_${format_slug}.json`;
+		
+		fs.writeFileSync(output_path, JSON.stringify(output_data, null, 2));
+		console.log(`OLS weighted geometric mean calculated and saved to ${output_path}.`);
+		
+		//Return statement
+		return output_data;
+	};
+	
+	/**
 	 * Loads a stack of covariates for a specific utility file path for OLS training.
 	 * 
 	 * @param {string} arg0_utility_file_path
@@ -177,6 +235,162 @@
 		
 		//Return statement
 		return { keys: Object.keys(options.covariates_obj), X, Y };
+	};
+	
+	/**
+	 * Processes and adjusts OLS model coefficients against target and covariate rasters via bidirectional weighted average adjustment.
+	 * @alias Statistics.processOLSModel
+	 *
+	 * @param {string|Object} arg0_model - JSON model object or file path to JSON model.
+	 * @param {Object} [arg1_options]
+	 *  @param {Object} [arg1_options.covariates_obj] - Map of covariate keys to functions or file paths.
+	 *  @param {boolean} [arg1_options.debug=false]
+	 *  @param {string} [arg1_options.output_file_path] - Path to save the adjusted model JSON.
+	 *  @param {Array<any>|any} [arg1_options.steps] - Array of steps or parameter sets (e.g., years) passed into target and covariate functions.
+	 *  @param {string|Function} [arg1_options.target] - File path or function returning file path for target raster.
+	 *  @param {string} [arg1_options.target_format="float32"]
+	 *
+	 * @returns {Promise<Object>}
+	 */
+	Statistics.processOLSModel = async function (arg0_model, arg1_options) {
+		//Convert from parameters
+		let processed_model = (typeof arg0_model === "string") ? JSON.parse(fs.readFileSync(path.resolve(arg0_model), "utf8")) : arg0_model;
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Initialise options
+		let covariates_obj = (options.covariates_obj) ? options.covariates_obj : {};
+		let target_entry = (options.target) ? options.target : options.target_raster;
+		let steps = (options.steps) ? (Array.isArray(options.steps) ? options.steps : [options.steps]) : [[]];
+		
+		//Ensure all coefficients are positive
+		let all_coefficients = Object.keys(processed_model.coefficients);
+		
+		for (let i = 0; i < all_coefficients.length; i++)
+			processed_model.coefficients[all_coefficients[i]] = Math.abs(processed_model.coefficients[all_coefficients[i]]);
+		
+		//Iterate over formatting parameters steps
+		for (let i = 0; i < steps.length; i++) try {
+			let current_params = Array.isArray(steps[i]) ? steps[i] : [steps[i]];
+			console.log(`Processing OLS model adjustment for step [${current_params.join(", ")}] ..`);
+			
+			let local_target_file_path = (typeof target_entry === "function") ? target_entry(...current_params) : target_entry;
+			let local_target_format = options.target_format || "float32";
+			
+			if (Array.isArray(local_target_file_path)) {
+				local_target_format = local_target_file_path[1];
+				local_target_file_path = local_target_file_path[0];
+			}
+			
+			let local_covariate_images = {};
+			let total_logs = {};
+			let valid_covariate_keys = [];
+			
+			for (let key in covariates_obj) {
+				let covariate_entry = covariates_obj[key];
+				let local_file_path = (typeof covariate_entry === "function") ? covariate_entry(...current_params) : covariate_entry;
+				let local_format = "float32";
+				
+				if (Array.isArray(local_file_path)) {
+					local_format = local_file_path[1];
+					local_file_path = local_file_path[0];
+				}
+				
+				try {
+					local_covariate_images[key] = GeoPNG.loadNumberRasterImage(local_file_path, {
+						format: local_format
+					});
+					valid_covariate_keys.push(key);
+				} catch (e) {
+					console.warn(`- [WARN] Missing covariate raster for ${key} at ${local_file_path}. Filtering out key.`);
+				}
+			}
+			
+			let local_target_image = GeoPNG.loadNumberRasterImage(local_target_file_path, {
+				format: local_target_format
+			});
+			
+			//Guard clause if no valid_covariate_keys present
+			if (valid_covariate_keys.length === 0) {
+				console.warn(`- [WARN] No covariate keys for step [${current_params.join(", ")}]! Skipping iteration.`);
+				continue;
+			}
+			
+			//Iterate over all pixels
+			console.log(`- Processing weights (bidirectional weighted average adjustment) ..`);
+			let pixel_count = local_target_image.width * local_target_image.height;
+			
+			for (let x = 0; x < pixel_count; x++) {
+				//Compute predicted_value based on covariate stocks
+				let predicted_value = 0;
+				let total_weight = 0;
+				
+				for (let k = 0; k < valid_covariate_keys.length; k++) {
+					let key = valid_covariate_keys[k];
+					let covariate_value = local_covariate_images[key].data[x] || 0;
+					if (isNaN(covariate_value)) covariate_value = 0;
+					
+					let coefficient = processed_model.coefficients[key] ?? 1;
+					if (isNaN(coefficient)) coefficient = 1;
+					
+					let weighted_contribution = covariate_value * coefficient;
+					
+					predicted_value += weighted_contribution;
+					total_weight += covariate_value;
+					
+					if (options.debug && covariate_value > 0) {
+						total_logs[key] = total_logs[key] || 0;
+						if (total_logs[key] < 100)
+							console.log(`- Covariate: Pixel ${x}: ${key}: Value: ${covariate_value}, Coefficient: ${coefficient}, Weighted contribution: ${weighted_contribution}`);
+					}
+				}
+				
+				let observed_value = local_target_image.data[x] || 0;
+				if (isNaN(observed_value)) observed_value = 0;
+				
+				let residual = observed_value - predicted_value;
+				let correction_factor = predicted_value !== 0 ? residual / predicted_value : 0;
+				
+				//Adjust coefficients proportionally based on each category's weight in that pixel
+				if (total_weight > 0)
+					for (let k = 0; k < valid_covariate_keys.length; k++) {
+						let key = valid_covariate_keys[k];
+						let covariate_value = local_covariate_images[key].data[x] || 0;
+						if (isNaN(covariate_value)) covariate_value = 0;
+						
+						if (covariate_value === 0) continue;
+						
+						let local_coefficient = processed_model.coefficients[key];
+						let weight_fraction = covariate_value / total_weight;
+						let update_amount = local_coefficient * correction_factor * weight_fraction;
+						
+						if (!(correction_factor < 0 && local_coefficient < 1)) {
+							if (options.debug) {
+								total_logs[key] = total_logs[key] || 0;
+								if (total_logs[key] < 100) {
+									total_logs[key]++;
+									console.log(`- Target Adj: Pixel ${x}: ${key}, Update Amount: ${update_amount}, Weight Fraction: ${weight_fraction}, Residual: ${residual}, Correction Factor: ${correction_factor}`);
+								}
+							}
+							processed_model.coefficients[key] += (isNaN(update_amount) ? 0 : update_amount);
+						}
+					}
+			}
+			
+			console.log(`- New coefficients:`, processed_model.coefficients);
+		} catch (e) {
+			console.error(`Statistics.processOLSModel(): Error when processing step:`);
+			console.error(e);
+		}
+		
+		//Save adjusted coefficients if output_file_path is provided
+		if (options.output_file_path) {
+			let output_file_path = path.resolve(options.output_file_path);
+			fs.writeFileSync(output_file_path, JSON.stringify(processed_model, null, 2));
+			console.log(`Processed model data saved successfully in ${output_file_path}.`);
+		}
+		
+		//Return statement
+		return processed_model;
 	};
 	
 	/**
