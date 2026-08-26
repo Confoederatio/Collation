@@ -98,6 +98,23 @@
 	};
 	
 	/**
+	 * 
+	 * @param {string} arg0_input_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {Object} arg1_options.covariates_obj
+	 *  @param {string} [arg1_options.format="int32"]
+	 */
+	Statistics.loadOLSCovariates = async function (arg0_input_file_path, arg1_options) {
+		//Convert from parameters
+		let input_file_path = path.resolve(arg0_input_file_path);
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Declare local instance variables
+		let covariates_data = [];
+		
+	};
+	
+	/**
 	 * Removes high VIF features for a given matrix.
 	 * @alias Statistics.removeHighVIFFeatures
 	 *

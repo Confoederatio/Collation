@@ -8,6 +8,33 @@
 		static intermediate_ols_folder = `${h2}/GDP_PPP_SEDAC/OLS/`;
 		static years = Array.getFilledDomain(1990, 2022);
 		
+		//Hyde formatters
+		static hf = () => `${landuse_HYDE.bf}/rasters/`;
+		static hf1 = (y) => landuse_HYDE._getHYDEYearName(y);
+		static covariates_obj = {
+			//LU (Land Use)
+			"conv_rangeland": (y) => `${this.hf()}/conv_rangeland${this.hf1(y)}_number.png`,
+			"cropland": (y) => `${this.hf()}/cropland${this.hf1(y)}_number.png`,
+			"grazing": (y) => `${this.hf()}/grazing${this.hf1(y)}_number.png`,
+			"ir_norice": (y) => `${this.hf()}/ir_norice${this.hf1(y)}_number.png`,
+			"ir_rice": (y) => `${this.hf()}/ir_rice${this.hf1(y)}_number.png`,
+			"pasture": (y) => `${this.hf()}/pasture${this.hf1(y)}_number.png`,
+			"rangeland": (y) => `${this.hf()}/rangeland${this.hf1(y)}_number.png`,
+			"rf_norice": (y) => `${this.hf()}/rf_norice${this.hf1(y)}_number.png`,
+			"rf_rice": (y) => `${this.hf()}/rf_rice${this.hf1(y)}_number.png`,
+			"shifting": (y) => `${this.hf()}/shifting${this.hf1(y)}_number.png`,
+			"tot_irri": (y) => `${this.hf()}/tot_irri${this.hf1(y)}_number.png`,
+			"tot_rainfed": (y) => `${this.hf()}/tot_rainfed${this.hf1(y)}_number.png`,
+			"tot_rice": (y) => `${this.hf()}/tot_rice${this.hf1(y)}_number.png`,
+			
+			//POP (Demographics)
+			"popc_": (y) => `${this.hf()}/popc_${this.hf1(y)}_number.png`,
+			"popd_": (y) => `${this.hf()}/popd_${this.hf1(y)}_number.png`,
+			"rurc_": (y) => `${this.hf()}/rurc_${this.hf1(y)}_number.png`,
+			"uopp_": (y) => `${this.hf()}/uopp_${this.hf1(y)}_number.png`,
+			"urbc_": (y) => `${this.hf()}/urbc_${this.hf1(y)}_number.png`
+		};
+		
 		/**
 		 * Returns a PNG array after converting GDP (PPP) 2017$100s from .geotiff to .png.
 		 *
@@ -26,44 +53,40 @@
 			let year = arg0_year;
 			
 			//Declare local instance variables
-			let all_hyde_keys = Object.keys(landuse_HYDE.hyde_dictionary);
-			let hyde_data = [];
-			let hyde_folder = `${landuse_HYDE.bf}/rasters/`;
+			let input_data = [];
 			let input_file_path = `${this.bf}/GDP_PPP_${year}.png`;
-			let sedac_image = GeoPNG.loadNumberRasterImage(input_file_path, {
+			let output_image = GeoPNG.loadNumberRasterImage(input_file_path, {
 				format: "float32"
 			});
-			let sedac_data = sedac_image.data;
+			let output_data = output_image.data;
 			
-			//Iterate over all HYDE stocks; load each HYDE variable as a predictor
-			for (let i = 0; i < all_hyde_keys.length; i++) {
-				let local_year_string = landuse_HYDE._getHYDEYearName(year);
-				
-				let local_file_path = `${hyde_folder}/${all_hyde_keys[i]}${local_year_string}_number.png`;
+			//Iterate over all input stocks; load each input variable as a predictor
+			Object.iterate(this.covariates_obj, (local_key, local_value) => {
+				let local_file_path = local_value(year);
 				let local_rawdata = GeoPNG.loadNumberRasterImage(local_file_path, {
 					format: "float32"
 				}).data;
-				hyde_data.push(local_rawdata);
-			}
+				input_data.push(local_rawdata);
+			});
 			
-			//Transpose HYDE data to match format [samples, features], discarding zeroes and NaNs safely
-			let feature_count = hyde_data.length;
-			let sample_count = sedac_data.length;
+			//Transpose input data to match format [samples, features], discarding zeroes and NaNs safely
+			let feature_count = input_data.length;
+			let sample_count = output_data.length;
 			let X = [];
 			let Y = [];
 			
 			for (let i = 0; i < sample_count; i++) {
-				let sedac_val = sedac_data[i];
 				let has_data = false;
 				let is_valid = true;
+				let output_value = output_data[i];
 				
-				if (isNaN(sedac_val)) is_valid = false;
-				else if (sedac_val !== 0) has_data = true;
+				if (isNaN(output_value)) is_valid = false;
+				else if (output_value !== 0) has_data = true;
 				
 				let local_row = new Array(feature_count);
 				
 				for (let x = 0; x < feature_count; x++) {
-					let val = hyde_data[x][i];
+					let val = input_data[x][i];
 					if (isNaN(val)) {
 						is_valid = false;
 						break;
@@ -74,12 +97,12 @@
 				
 				if (has_data && is_valid) {
 					X.push(local_row);
-					Y.push([sedac_val]);
+					Y.push([output_value]);
 				}
 			}
 			
 			//Return statement
-			return { keys: all_hyde_keys, X, Y };
+			return { keys: Object.keys(this.covariates_obj), X, Y };
 		}
 		
 		static async C_trainGDP_PPPModel (arg0_year, arg1_options) {
@@ -105,7 +128,10 @@
 			
 			//Iterate over all years
 			for (let i = 0; i < this.years.length; i++)
-				await this.C_trainGDP_PPPModel(this.years[i], options);
+				await this.C_trainGDP_PPPModel(this.years[i], {
+					...options,
+					key: this.years[i]
+				});
 		}
 		
 		static async D_geomeanGDP_PPPModel (arg0_prefix) {
