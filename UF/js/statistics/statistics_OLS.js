@@ -157,7 +157,8 @@
 	
 	/**
 	 * Loads a stack of covariates for a specific utility file path for OLS training.
-	 * 
+	 * @alias Statistics.loadOLSCovariates
+	 *
 	 * @param {string} arg0_utility_file_path
 	 * @param {Object} [arg1_options]
 	 *  @param {Object} arg1_options.covariates_obj
@@ -174,10 +175,11 @@
 		
 		//Declare local instance variables
 		let input_data = [];
-		let utility_image = GeoPNG.loadNumberRasterImage(utility_file_path, { 
-			format: options.utility_format 
+		let utility_image = GeoPNG.loadNumberRasterImage(utility_file_path, {
+			format: options.utility_format
 		});
-			let utility_data = utility_image.data;
+		let utility_data = utility_image.data;
+		let valid_keys = [];
 		
 		//Iterate over all input stocks; load each input variable as a predictor
 		Object.iterate(options.covariates_obj, (local_key, local_value) => {
@@ -190,10 +192,17 @@
 				local_file_path = local_file_path[0];
 			}
 			
-			let local_rawdata = GeoPNG.loadNumberRasterImage(local_file_path, {
-				format: local_format
-			}).data;
-			input_data.push(local_rawdata);
+			//Attempt to load the covariate raster; drop it on failure
+			try {
+				let local_rawdata = GeoPNG.loadNumberRasterImage(local_file_path, {
+					format: local_format
+				}).data;
+				
+				input_data.push(local_rawdata);
+				valid_keys.push(local_key);
+			} catch (e) {
+				console.log(`- Missing covariate raster for ${local_key} at ${local_file_path}. Dropping coefficient for this run.`);
+			}
 		});
 		
 		//Transpose input data to match format [samples, features], discarding zeroes and NaNs safely
@@ -234,7 +243,7 @@
 		}
 		
 		//Return statement
-		return { keys: Object.keys(options.covariates_obj), X, Y };
+		return { keys: valid_keys, X, Y };
 	};
 	
 	/**

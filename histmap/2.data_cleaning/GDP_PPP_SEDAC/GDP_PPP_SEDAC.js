@@ -8,9 +8,10 @@
 		static intermediate_ols_folder = `${h2}/GDP_PPP_SEDAC/OLS/`;
 		static years = Array.getFilledDomain(1990, 2022);
 		
-		//Hyde formatters
+		//Hyde; Stadestér formatters
 		static hf = () => `${landuse_HYDE.bf}/rasters/`;
 		static hf1 = (y) => landuse_HYDE._getHYDEYearName(y);
+		static sf = () => population_Stadester_Legacy;
 		static covariates_obj = {
 			//LU (Land Use)
 			"conv_rangeland": (y) => [`${this.hf()}/conv_rangeland${this.hf1(y)}_number.png`, "float32"],
@@ -28,11 +29,11 @@
 			"tot_rice": (y) => [`${this.hf()}/tot_rice${this.hf1(y)}_number.png`, "float32"],
 			
 			//POP (Demographics)
-			"popc_": (y) => [`${this.hf()}/popc_${this.hf1(y)}_number.png`, "float32"],
-			"popd_": (y) => [`${this.hf()}/popd_${this.hf1(y)}_number.png`, "float32"],
-			"rurc_": (y) => [`${this.hf()}/rurc_${this.hf1(y)}_number.png`, "float32"],
+			"popc_": (y) => [`${this.sf().input_popc_folder}/stadester_population_${y}.png`, "int32"],
+			"popd_": (y) => [`${this.sf().intermediate_popd_folder}/stadester_density_${y}.png`, "float32"],
+			"rurc_": (y) => [`${this.sf().input_rurc_folder}/stadester_rural_${y}.png`, "int32"],
 			"uopp_": (y) => [`${this.hf()}/uopp_${this.hf1(y)}_number.png`, "float32"],
-			"urbc_": (y) => [`${this.hf()}/urbc_${this.hf1(y)}_number.png`, "float32"]
+			"urbc_": (y) => [`${this.sf().input_urbc_folder}/stadester_urban_${y}.png`, "int32"]
 		};
 		
 		/**
@@ -128,7 +129,10 @@
 			if (!options.exclude) options.exclude = [];
 			
 			//1. Convert to PNGs
-			if (!options.exclude.includes("A")) await this.A_convertToPNGs();
+			if (!options.exclude.includes("A")) {
+				await this.A_convertToPNGs();
+				await population_Stadester_Legacy.processRasters();
+			}
 			
 			//2. Train individual yearly OLS models
 			if (!options.exclude.includes("B")) await this.B_trainGDP_PPPModels(options);

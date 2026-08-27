@@ -299,8 +299,7 @@
 		let rawdata = fs.readFileSync(file_path);
 		let png = pngjs.PNG.sync.read(rawdata);
 		
-		//PRE-ALLOCATE a Typed Array instead of a standard Array []
-		//Float64Array is safe for your scaling calculations
+		//Float64Array is  safe for scaling calculations
 		let pixel_values = new Float64Array(png.width * png.height);
 		
 		for (let i = 0; i < png.width * png.height; i++) {
@@ -313,7 +312,7 @@
 			];
 			
 			if (options.format === "greyscale") {
-				pixel_values[i] = local_rgba[0] / 255;
+				pixel_values[i] = local_rgba[0]/255;
 			} else {
 				pixel_values[i] = Colour.decodeRGBAAsNumber(local_rgba, options);
 			}
