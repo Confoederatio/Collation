@@ -156,6 +156,92 @@
 	};
 	
 	/**
+	 * Generates an OLS raster from a stack of coefficients.
+	 * @alias Statistics.generateOLSRaster
+	 * 
+	 * @param {string} arg0_output_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {Object} arg1_options.covariates_obj
+	 *  @param {string} [arg1_options.format="int32"]
+	 *  @param {Array} [arg1_options.formatting_parameters]
+	 *  @param {function} [arg1_options.guard_clause] - (local_index:{@link number}, rasters_obj:{@link Object}) - `false` skips pixel processing.
+	 *  @param {Object|string} [arg1_options.model_obj] - File path or JSON object.
+	 *  @param {string} [arg1_options.utility_format="int32"]
+	 *  
+	 *  @param {number} [arg1_options.height=2160]
+	 *  @param {number} [arg1_options.width=4320]
+	 * 
+	 * @returns {Promise<void>}
+	 */
+	Statistics.generateOLSRaster = async function (arg0_output_file_path, arg1_options) {
+		//Convert from parameters
+		let output_file_path = arg0_output_file_path;
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Initialise options
+		if (!options.format) options.format = "float32";
+		if (!options.formatting_parameters) options.formatting_parameters = [];
+		options.height = Math.returnSafeNumber(options.height, 2160);
+		options.width = Math.returnSafeNumber(options.width, 4320);
+		
+		//Declare local instance variables
+		let covariates_obj = options.covariates_obj;
+		let model_obj = (typeof options.model_obj === "string") ? 
+			JSON.parse(fs.readFileSync(path.resolve(options.model_obj), "utf8")) : options.model_obj;
+		let coefficients_obj = model_obj.coefficients;
+		let rasters_obj = {};
+		
+		//Iterate over covariates_obj and load rasters
+		Object.iterate(covariates_obj, (local_key, local_value) => {
+			let local_file_path = (typeof local_value === "function") ? 
+				local_value(...options.formatting_parameters) : local_value;
+			let local_format = "int32";
+			
+			//Destructure if array is returned
+			if (Array.isArray(local_file_path)) {
+				local_format = local_file_path[1];
+				local_file_path = local_file_path[0];
+			}
+			
+			//Load existing rasters into rasters_obj
+			if (fs.existsSync(local_file_path))
+				rasters_obj[local_key] = GeoPNG.loadNumberRasterImage(local_file_path, {
+					format: local_format
+				});
+		});
+		
+		//Write output file from rasters_obj
+		GeoPNG.saveNumberRasterImage({
+			file_path: output_file_path,
+			format: options.format,
+			width: options.width,
+			height: options.height,
+			function: (local_index) => {
+				//Evaluate guard function if present
+				if (options.guard_clause) {
+					let should_process = options.guard_clause(local_index, rasters_obj);
+					if (!should_process) return 0;
+				}
+				
+				//Declare local instance variables
+				let local_sum = 0;
+				
+				Object.iterate(rasters_obj, (local_key, local_value) => {
+					let local_coefficient = Math.returnSafeNumber(coefficients_obj[local_key]);
+					
+					local_sum += (local_value?.data) ? 
+						(local_value.data[local_index]*local_coefficient) : 0;
+				});
+				
+				//Return statement
+				return local_sum;
+			}
+		});
+		
+		console.log(`Saved OLS for ${output_file_path}.`);
+	};
+	
+	/**
 	 * Loads a stack of covariates for a specific utility file path for OLS training.
 	 * @alias Statistics.loadOLSCovariates
 	 *
@@ -164,6 +250,8 @@
 	 *  @param {Object} arg1_options.covariates_obj
 	 *  @param {Array} [arg1_options.formatting_parameters]
 	 *  @param {string} [arg1_options.utility_format="int32"]
+	 *  
+	 * @returns {Promise<void>}
 	 */
 	Statistics.loadOLSCovariates = async function (arg0_utility_file_path, arg1_options) {
 		//Convert from parameters
