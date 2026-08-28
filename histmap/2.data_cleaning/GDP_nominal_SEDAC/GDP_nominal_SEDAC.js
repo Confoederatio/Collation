@@ -1,5 +1,6 @@
-global.GDP_nominal_SEDAC = class { //[WIP] - Finish class body
+global.GDP_nominal_SEDAC = class {
 	static bf = `${h1}/GDP_nominal_SEDAC/`;
+	static intermediate_ols_folder = `${h2}/GDP_nominal_SEDAC/OLS/`;
 	
 	static async A_normaliseSEDACRastersToNominal () {
 		//Declare local instance variables
@@ -117,23 +118,79 @@ global.GDP_nominal_SEDAC = class { //[WIP] - Finish class body
 	}
 	
 	static async B_loadCovariates (arg0_year) {
+		//Convert from parameters
+		let year = arg0_year;
 		
+		//Declare local instance variables
+		let input_file_path = `${this.bf}/GDP_${year}.png`;
+		
+		//Return statement
+		return Statistics.loadOLSCovariates(input_file_path, {
+			utility_format: "float32",
+			
+			covariates_obj: GDP_PPP_SEDAC.covariates_obj,
+			formatting_parameters: [year]
+		});
 	}
 	
 	static async B_trainGDPModel (arg0_year, arg1_options) {
+		//Convert from parameters
+		let year = arg0_year;
+		let options = (arg1_options) ? arg1_options : {};
 		
+		//Initialise options
+		if (!options.lambda) options.lambda = 1e11; //x100 from Eoscala 1.3, since it is no longer $100s.
+		if (!options.key) options.key = year.toString();
+		
+		//Declare local instance variables
+		let covariates_obj = await this.B_loadCovariates(year);
+		let output_file_path = `${this.intermediate_ols_folder}OLS_GDP_${year}.json`;
+		
+		//Return statement
+		return Statistics.trainOLSModel(output_file_path, covariates_obj, options);
 	}
 	
 	static async B_trainGDPModels (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
 		
+		//Declare local instance variables
+		let years = GDP_PPP_SEDAC.years;
+		
+		//Iterate over all years
+		for (let i = 0; i < years.length; i++)
+			await this.B_trainGDPModel(years[i], {
+				...options,
+				key: years[i]
+			});
 	}
 	
 	static async C_geomeanGDPModel (arg0_prefix) {
+		//Convert from parameters
+		let prefix = (arg0_prefix) ? arg0_prefix : "OLS_GDP_";
 		
+		//Return statement
+		return Statistics.geomeanOLSModels(this.intermediate_ols_folder, prefix);
 	}
 	
 	static async D_processGDPModel (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
 		
+		//Declare local instance variables
+		let model_file_path = `${this.intermediate_ols_folder}/geomean_OLS_GDP.json`;
+		let output_file_path = `${this.bf}/processed_base_model.png`;
+		let years = GDP_PPP_SEDAC.years;
+		
+		//Return statement
+		return Statistics.processOLSModel(model_file_path, {
+			...options,
+			output_file_path,
+			
+			covariates_obj: GDP_PPP_SEDAC.covariates_obj,
+			target: (y) => [`${this.bf}/GDP_${y}.png`, "float32"],
+			steps: years
+		});
 	}
 	
 	static async processRasters (arg0_options) {
@@ -145,5 +202,12 @@ global.GDP_nominal_SEDAC = class { //[WIP] - Finish class body
 		
 		//1. Normalise SEDAC rasters to nominal GDP
 		if (!options.exclude.includes("A")) await this.A_normaliseSEDACRastersToNominal();
+		
+		//2. OLS processing pipeline
+		if (!options.exclude.includes("B")) await this.B_trainGDPModels(options);
+		if (!options.exclude.includes("C")) try {
+			await this.C_geomeanGDPModel("OLS_GDP_");
+		} catch (e) { console.error(e); }
+		if (!options.exclude.includes("D")) await this.D_processGDPModel(options);
 	}
 };
