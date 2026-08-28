@@ -72,7 +72,7 @@ global.GDP_nominal_SEDAC = class {
 				}
 			});
 			Object.iterate(local_gdp_sums, (local_key, local_value) => {
-				let local_actual_gdp = gdp_obj[local_key][years[i]];
+				let local_actual_gdp = gdp_obj[local_key]?.[years[i]];
 				
 				if (local_actual_gdp) {
 					local_gdp_scalars[local_key] = local_actual_gdp/local_value;
@@ -102,7 +102,7 @@ global.GDP_nominal_SEDAC = class {
 					//Iterate over local_geocodes
 					if (local_geocodes)
 						for (let x = 0; x < local_geocodes.length; x++) {
-							let local_gdp = gdp_obj[local_geocodes[x]][years[i]];
+							let local_gdp = gdp_obj[local_geocodes[x]]?.[years[i]];
 							
 							//Return statement
 							if (local_gdp)
