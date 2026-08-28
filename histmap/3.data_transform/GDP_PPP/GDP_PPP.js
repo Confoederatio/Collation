@@ -139,19 +139,22 @@ global.GDP_PPP = class {
 						geocode_raster.data[byte_index + 2]
 					].join(",");
 					let local_geocodes = geocode_obj[local_colour_key];
+					let local_value = local_ols_raster.data[local_index];
 					
 					//Iterate over local_geocodes
 					if (local_geocodes)
 						for (let x = 0; x < local_geocodes.length; x++) {
-							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]][hyde_years[x]];
+							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]][hyde_years[i]];
 							
 							//Return statement
 							if (local_gdp_ppp)
-								return local_ols_raster.data[local_index]*local_gdp_ppp_scalars[local_geocodes[x]];
+								return local_value*local_gdp_ppp_scalars[local_geocodes[x]];
 						}
+					return local_value;
 				}
 			});
 			console.log(`Processed ${local_output_file}.`);
+			await Blacktraffic.yield();
 		}
 	}
 	
@@ -199,11 +202,11 @@ global.GDP_PPP = class {
 		if (!options.exclude) options.exclude = [];
 		
 		//Process intermediates
-		if (!options.exclude.includes("B"))
+		if (!options.exclude.includes("B1"))
 			await this.B_scaleGDP_PPPRastersToGlobal(`${GDP_PPP_OLS.output_ols_folder}OLS_`, this.intermediate_normalised_to_global);
 		if (!options.exclude.includes("A"))
 			await this.A_scaleGDP_PPPRastersToNational();
-		if (!options.exclude.includes("B"))
+		if (!options.exclude.includes("B2"))
 			await this.B_scaleGDP_PPPRastersToGlobal(this.intermediate_scaled_to_national, this.intermediate_scaled_to_global);
 	}
 };
