@@ -1,6 +1,7 @@
 global.gini_SubNGini = class { //[WIP] - Finish class body
 	static bf = `${h1}/gini_SubNGini`;
 	static input_subnational_raster = `${this.bf}/rast_adm1_gini_disp_1990_2023.tif`;
+	static intermediate_subnational_masks_folder = `${h2}/gini_SubNGini/subnational_gini_masks/`;
 	static intermediate_subnational_rasters = `${h2}/gini_SubNGini/subnational_gini_rasters/`;
 	static years = Array.getFilledDomain(1990, 2023);
 	
@@ -27,7 +28,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 		
 		//Iterate over all years
 		for (let i = 0; i < years.length; i++) {
-			let local_path = `${this.intermediate_subnational_rasters}gini_${years[i]}.png`;
+			let local_path = `${this.intermediate_subnational_masks_folder}gini_${years[i]}.png`;
 			
 			if (fs.existsSync(local_path)) {
 				let local_raster = GeoPNG.loadNumberRasterImage(local_path, {
@@ -64,6 +65,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 					mask_data[x] = transition_map.get(transition_key);
 				}
 				console.log(`- Processed ${years[i]}. Current unique region count: ${next_region_id - 1}`);
+				await Blacktraffic.yield();
 			}
 		}
 		
@@ -92,12 +94,12 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 						local_pointer = 0;
 					}
 				}
-				final_metadata[local_id] = local_history;
+				final_metadata[Colour.encodeNumberAsRGBA(Number(local_id)).join(",")] = local_history;
 			}
 			
 			//3. Save the areal mask PNG (int32 encoding)
 			GeoPNG.saveNumberRasterImage({
-				file_path: `${this.intermediate_subnational_rasters}areal_masks.png`,
+				file_path: `${this.intermediate_subnational_masks_folder}areal_masks.png`,
 				format: "int32",
 				width,
 				height,
@@ -108,7 +110,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 			});
 			
 			//4. Save areal metadata JSON
-			fs.writeFileSync(`${this.intermediate_subnational_rasters}areal_metadata.json`, JSON.stringify(final_metadata));
+			fs.writeFileSync(`${this.intermediate_subnational_masks_folder}areal_metadata.json`, JSON.stringify(final_metadata));
 			console.log(`- Finished generating areal masks. Final unique regions: ${final_ids.size}.`);
 			
 			//Return statement
