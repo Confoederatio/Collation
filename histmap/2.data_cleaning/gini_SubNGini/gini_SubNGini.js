@@ -77,7 +77,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 			for (let i = 0; i < mask_data.length; i++)
 				final_ids.add(mask_data[i]);
 			
-			//2. Reconstruct temporal metadata  by walking back up the lineage tree
+			//2. Reconstruct temporal metadata by walking back up the lineage tree
 			let final_metadata = {};
 			
 			for (let local_id of final_ids) {
