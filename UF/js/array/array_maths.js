@@ -205,27 +205,29 @@
 	 * 
 	 * @returns {number}
 	 */
-	//[QUARANTINE]
 	Array.cubicSplineInterpolation = function (arg0_x_values, arg1_y_values, arg2_x_to_interpolate) {
+		//Convert from parameters
 		let x_values = Array.toArray(arg0_x_values);
-		let y_values = Array.toArray(arg1_y_values).map(y => (y > 0 ? Math.log(y) : Math.log(1e-6)));
+		let y_values = Array.toArray(arg1_y_values).map(y =>
+			(y > 0 ? Math.log(y) : Math.log(1e-6)));
 		let x_to_interpolate = parseInt(arg2_x_to_interpolate);
 		
-		//1. Calculate the Spline in log-space
+		//Declare local instance variables
 		let interpolation = new cubic_spline(x_values, y_values);
 		let interpolated_value = Math.exp(interpolation.at(x_to_interpolate));
-		
-		//2. Find bounds only for clamping
 		let prev_val = -Infinity, next_val = Infinity;
+		
+		//Iterate over all x_values
 		for (let i = 0; i < x_values.length; i++) {
 			if (x_values[i] <= x_to_interpolate) prev_val = Math.exp(y_values[i]);
 			if (x_values[i] >= x_to_interpolate) { next_val = Math.exp(y_values[i]); break; }
 		}
 		
-		//3. Clamp the spline value, don't overwrite it with a linear one
+		//Clamp the spline value, don't overwrite it with a linear one
 		let lower = Math.min(prev_val, next_val);
 		let upper = Math.max(prev_val, next_val);
 		
+		//Return statement
 		return Math.max(lower, Math.min(interpolated_value, upper));
 	};
 	

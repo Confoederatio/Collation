@@ -2,7 +2,7 @@
 {
 	if (!global.GDP_PPP_OLS) global.GDP_PPP_OLS = {};
 	
-	global.GDP_PPP_OLS = class { //[WIP] - Finish function body
+	global.GDP_PPP_OLS = class {
 		static bf = `${h2}/GDP_PPP_OLS/`;
 		static input_coefficients_json = () => `${GDP_PPP_SEDAC.intermediate_ols_folder}processed_base_model.json`;
 		static input_covariates_obj = () => GDP_PPP_SEDAC.covariates_obj;
@@ -31,10 +31,10 @@
 				model_obj: this.input_coefficients_json(),
 				
 				guard_clause: (local_index, rasters_obj) => {
-					let local_population = (rasters_obj["popc_"] && rasters_obj["popc_"].data) ? 
-						rasters_obj["popc_"].data[local_index] : 0;
+					//Declare local instance variables
+					let local_population = Math.returnSafeNumber(rasters_obj["popc_"]?.data[local_index], 0);
 					
-					//Internal guard clauses for uninhabited pixels and HYDE clamping
+					//Return statement; guard clause for uninhabited pixels and HYDE clamping
 					return !(local_population === 0 || landarea_raster.data[local_index] === 0);
 				}
 			});

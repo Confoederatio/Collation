@@ -282,12 +282,25 @@
 	};
 	
 	//[QUARANTINE]
+	
+	/**
+	 * Loads a CSV file as JSON.
+	 * @alias File.loadCSVAsJSON
+	 * 
+	 * @param {string} arg0_file_path
+	 * @param {Object} [arg1_options]
+	 *  @param {string} [arg1_options.delimiter=","]
+	 *  @param {string} [arg1_options.mode="vertical"] - Either 'vertical'/'horizontal'. Whether the header is horizontal or vertical.
+	 * 
+	 * @returns {Object}
+	 */
 	File.loadCSVAsJSON = function (arg0_file_path, arg1_options) {
 		//Convert from parameters
 		let file_path = arg0_file_path;
 		let options = arg1_options ? arg1_options : {};
 		
 		//Intialise options
+		if (!options.delimiter) options.delimiter = ",";
 		if (!options.mode) options.mode = "vertical";
 		
 		//Declare local instance variables
@@ -316,19 +329,19 @@
 			// In horizontal mode, each column after the first is a key
 			let property_names = parsed_rows[0];
 			for (let col = 1; col < property_names.length; col++) {
-				var key = property_names[col];
+				let key = property_names[col];
 				if (!key) continue;
 				if (!return_obj[key]) {
 					return_obj[key] = {};
-					// Initialize arrays for each row label (excluding the first row)
+					// Initialise arrays for each row label (excluding the first row)
 					for (let row = 1; row < parsed_rows.length; row++) {
-						var row_label = parsed_rows[row][0];
+						let row_label = parsed_rows[row][0];
 						return_obj[key][row_label] = [];
 					}
 				}
 				for (let row = 1; row < parsed_rows.length; row++) {
-					var row_label = parsed_rows[row][0];
-					var value = parsed_rows[row][col] !== undefined ? parsed_rows[row][col] : null;
+					let row_label = parsed_rows[row][0];
+					let value = parsed_rows[row][col] !== undefined ? parsed_rows[row][col] : null;
 					return_obj[key][row_label].push(value);
 				}
 			}
@@ -341,7 +354,7 @@
 			for (let i = 0; i < line.length; i++) {
 				if (line[i] === '"' && (i === 0 || line[i - 1] !== "\\")) {
 					in_quotes = !in_quotes;
-				} else if (line[i] === "," && !in_quotes) {
+				} else if (line[i] === options.delimiter && !in_quotes) {
 					result.push(current.trim().replace(/^"|"$/g, "").replace(/""/g, '"'));
 					current = "";
 				} else {

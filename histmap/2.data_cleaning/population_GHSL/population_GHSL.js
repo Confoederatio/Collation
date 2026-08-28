@@ -38,7 +38,7 @@ global.population_GHSL = class { //[WIP] - Finish class body
 		//Declare local instance variables
 		let all_files = await File.getAllFiles(this.intermediate_rasters_folder);
 		let corrupt_floats = [];
-		let corrupt_raw_bytes = [
+		let corrupt_raw_bytes = [ //[WIP] - Are these the only corrupt_raw_bytes? Set it as a mask for subsequent rasters
 			[57, 13, 4, 233],
 			[58, 165, 73, 10],
 			[58, 7, 249, 128],

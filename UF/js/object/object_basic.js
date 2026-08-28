@@ -225,12 +225,12 @@
 	/**
 	 * Performs a cubic spline interpolation operation on an object.
 	 * @alias Object.cubicSplineInterpolation
-	 * 
+	 *
 	 * @param {Object} arg0_object
 	 * @param {Object} [arg1_options]
 	 *  @param {boolean} [arg1_options.all_years=false] - Whether to interpolate for every single year in the domain.
 	 *  @param {Array<number>} [arg1_options.years] - The years to interpolate over if possible.
-	 * 
+	 *
 	 * @returns {Object}
 	 */
 	Object.cubicSplineInterpolation = function (arg0_object, arg1_options) {
@@ -241,31 +241,52 @@
 		//Declare local instance variables
 		let sorted_indices = Object.sortYearValues(object);
 		let values = sorted_indices.values;
-		let years = sorted_indices.years;
+		let extant_years = sorted_indices.years;
 		
 		//Guard clause if there are less than 2 years
-		if (years.length < 2) return object;
+		if (extant_years.length < 2) return object;
 		
 		//Initialise options post-local instance variables
-		options.years = (options.years) ?
-			Array.toArray(options.years) : years;
+		let target_years = (options.years) ?
+			Array.toArray(options.years) : extant_years;
+		
 		if (options.all_years) {
 			let object_domain = Object.getDomain(object);
-			years = [];
+			target_years = [];
 			
 			//Iterate between object_domain[0] and object_domain[1]
 			for (let i = object_domain[0]; i <= object_domain[1]; i++)
-				years.push(i);
+				target_years.push(i);
 		}
 		
+		//Pre-calculate the Spline in log-space once per object to avoid O(N) recalculations
+		let y_values = values.map(y => (y > 0 ? Math.log(y) : Math.log(1e-6)));
+		
+		let interpolation = new cubic_spline(extant_years, y_values);
+		let start_year = Math.returnSafeNumber(extant_years[0]);
+		let end_year = Math.returnSafeNumber(extant_years[extant_years.length - 1]);
+		
 		//Iterate over all years in domain
-		for (let i = 0; i < options.years.length; i++)
-			if (options.years[i] >= Math.returnSafeNumber(years[0]) && options.years[i] <= Math.returnSafeNumber(years[years.length - 1])) {
-				let current_year = options.years[i];
+		for (let i = 0; i < target_years.length; i++) {
+			let current_year = target_years[i];
+			
+			if (current_year >= start_year && current_year <= end_year) {
+				let interpolated_value = Math.exp(interpolation.at(current_year));
 				
-				if (current_year <= Math.returnSafeNumber(years[years.length - 1]))
-					object[current_year] = Array.cubicSplineInterpolation(years, values, current_year);
+				//Iterate over extant_years; find bounds only for clamping
+				let prev_val = -Infinity, next_val = Infinity;
+				for (let x = 0; x < extant_years.length; x++) {
+					if (extant_years[x] <= current_year) prev_val = Math.exp(y_values[x]);
+					if (extant_years[x] >= current_year) { next_val = Math.exp(y_values[x]); break; }
+				}
+				
+				//Clamp the spline value, don't overwrite it with a linear one
+				let lower = Math.min(prev_val, next_val);
+				let upper = Math.max(prev_val, next_val);
+				
+				object[current_year] = Math.max(lower, Math.min(interpolated_value, upper));
 			}
+		}
 		
 		//Return statement
 		return object;
