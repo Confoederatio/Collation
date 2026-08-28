@@ -1,4 +1,4 @@
-global.GDP_nominal_SEDAC = class {
+global.GDP_nominal_SEDAC = class { //[WIP] - Finish class body
 	static bf = `${h1}/GDP_nominal_SEDAC/`;
 	
 	static async A_normaliseSEDACRastersToNominal () {
@@ -114,6 +114,26 @@ global.GDP_nominal_SEDAC = class {
 			console.log(`- Processed ${local_file_path}.`);
 			await Blacktraffic.yield();
 		}
+	}
+	
+	static async B_loadCovariates (arg0_year) {
+		
+	}
+	
+	static async B_trainGDPModel (arg0_year, arg1_options) {
+		
+	}
+	
+	static async B_trainGDPModels (arg0_options) {
+		
+	}
+	
+	static async C_geomeanGDPModel (arg0_prefix) {
+		
+	}
+	
+	static async D_processGDPModel (arg0_options) {
+		
 	}
 	
 	static async processRasters (arg0_options) {
