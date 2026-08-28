@@ -179,7 +179,7 @@ global.GDP_nominal_SEDAC = class {
 		
 		//Declare local instance variables
 		let model_file_path = `${this.intermediate_ols_folder}/geomean_OLS_GDP.json`;
-		let output_file_path = `${this.bf}/processed_base_model.png`;
+		let output_file_path = `${this.intermediate_ols_folder}/processed_base_model.json`;
 		let years = GDP_PPP_SEDAC.years;
 		
 		//Return statement
