@@ -7,7 +7,7 @@ global.GDP_PPP = class {
 	static intermediate_scaled_to_global = `${h3}GDP_PPP/3.scaled_to_global/`;
 	
 	/**
-	 * Fetches a year: {@link number} map per geocode for GDP PPP.
+	 * Fetches a {"<year>": {@link number}} map per geocode for GDP PPP.
 	 * 
 	 * @returns {Object}
 	 */
@@ -52,8 +52,8 @@ global.GDP_PPP = class {
 	 */
 	static getWorldGDP_PPPObject () {
 		//Declare local instance variables
-		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let gdp_ppp_obj = {};
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let raw_gdp_ppp_obj = JSON5.parse(fs.readFileSync(this.input_gdp_ppp_world_json));
 		
 		//Iterate over raw_gdp_ppp_obj; populate raw figures
