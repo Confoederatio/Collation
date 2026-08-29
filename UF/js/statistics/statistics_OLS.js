@@ -103,11 +103,15 @@
 	 * 
 	 * @param {string} arg0_input_folder_path
 	 * @param {string} arg1_ols_prefix
+	 * @param {Object} [arg2_options]
+	 *  @param {function} [arg2_options.weighting_function] - (arg0_coefficient:{@link number}) | {@link number}
+	 *  
 	 * @returns {Promise<{coefficients: {}, raw_coefficients: {}}>}
 	 */
-	Statistics.geomeanOLSModels = async function (arg0_input_folder_path, arg1_ols_prefix) { 
+	Statistics.geomeanOLSModels = async function (arg0_input_folder_path, arg1_ols_prefix, arg2_options) { 
 		let input_folder_path = arg0_input_folder_path;
 		let ols_prefix = arg1_ols_prefix;
+		let options = (arg2_options) ? arg2_options : {};
 		
 		//Declare local instance variables
 		let all_coefficients = {};
@@ -139,8 +143,11 @@
 		let format_slug = ols_prefix.split("_").join(" ").trim().split(" ").join("_");
 		let hybrid_coefficients = {};
 		
-		for (let key in all_coefficients)
+		for (let key in all_coefficients) {
 			hybrid_coefficients[key] = Math.weightedGeometricMean(all_coefficients[key]);
+			if (options.weighting_function)
+				hybrid_coefficients[key] = options.weighting_function(hybrid_coefficients[key]);
+		}
 		
 		let output_data = {
 			coefficients: hybrid_coefficients,
@@ -335,7 +342,7 @@
 	};
 	
 	/**
-	 * Processes and adjusts OLS model coefficients against target and covariate rasters via bidirectional weighted average adjustment.
+	 * Processes and adjusts OLS model coefficients against target and covariate rasters using Multiplicative Update Rules (NMF).
 	 * @alias Statistics.processOLSModel
 	 *
 	 * @param {string|Object} arg0_model - JSON model object or file path to JSON model.
@@ -379,7 +386,6 @@
 			}
 			
 			let local_covariate_images = {};
-			let total_logs = {};
 			let valid_covariate_keys = [];
 			
 			for (let key in covariates_obj) {
@@ -412,67 +418,68 @@
 				continue;
 			}
 			
+			//Initialise accumulators for Multiplicative Update Rule
+			let numerators = {};
+			let denominators = {};
+			for (let k = 0; k < valid_covariate_keys.length; k++) {
+				numerators[valid_covariate_keys[k]] = 0;
+				denominators[valid_covariate_keys[k]] = 0;
+			}
+			
 			//Iterate over all pixels
-			console.log(`- Processing weights (bidirectional weighted average adjustment) ..`);
+			console.log(`- Aggregating global gradients (Multiplicative Update) ..`);
 			let pixel_count = local_target_image.width * local_target_image.height;
 			
 			for (let x = 0; x < pixel_count; x++) {
-				//Compute predicted_value based on covariate stocks
-				let predicted_value = 0;
-				let total_weight = 0;
+				let observed_value = local_target_image.data[x] || 0;
+				if (isNaN(observed_value)) observed_value = 0;
 				
+				//Compute total predicted_value for this pixel
+				let predicted_value = 0;
 				for (let k = 0; k < valid_covariate_keys.length; k++) {
 					let key = valid_covariate_keys[k];
 					let covariate_value = local_covariate_images[key].data[x] || 0;
 					if (isNaN(covariate_value)) covariate_value = 0;
 					
-					let coefficient = processed_model.coefficients[key] ?? 1;
-					if (isNaN(coefficient)) coefficient = 1;
-					
-					let weighted_contribution = covariate_value * coefficient;
-					
-					predicted_value += weighted_contribution;
-					total_weight += covariate_value;
-					
-					if (options.debug && covariate_value > 0) {
-						total_logs[key] = total_logs[key] || 0;
-						if (total_logs[key] < 100)
-							console.log(`- Covariate: Pixel ${x}: ${key}: Value: ${covariate_value}, Coefficient: ${coefficient}, Weighted contribution: ${weighted_contribution}`);
-					}
+					let coefficient = processed_model.coefficients[key] || 0;
+					predicted_value += covariate_value * coefficient;
 				}
 				
-				let observed_value = local_target_image.data[x] || 0;
-				if (isNaN(observed_value)) observed_value = 0;
-				
-				let residual = observed_value - predicted_value;
-				let correction_factor = predicted_value !== 0 ? residual / predicted_value : 0;
-				
-				//Adjust coefficients proportionally based on each category's weight in that pixel
-				if (total_weight > 0)
+				//If there is data interaction in this pixel, accumulate global sums
+				if (predicted_value > 0 || observed_value > 0) {
 					for (let k = 0; k < valid_covariate_keys.length; k++) {
 						let key = valid_covariate_keys[k];
 						let covariate_value = local_covariate_images[key].data[x] || 0;
-						if (isNaN(covariate_value)) covariate_value = 0;
 						
-						if (covariate_value === 0) continue;
+						if (isNaN(covariate_value) || covariate_value === 0) continue;
 						
-						let local_coefficient = processed_model.coefficients[key];
-						let weight_fraction = covariate_value / total_weight;
-						let update_amount = local_coefficient * correction_factor * weight_fraction;
-						
-						if (!(correction_factor < 0 && local_coefficient < 1)) {
-							if (options.debug) {
-								total_logs[key] = total_logs[key] || 0;
-								if (total_logs[key] < 100) {
-									total_logs[key]++;
-									console.log(`- Target Adj: Pixel ${x}: ${key}, Update Amount: ${update_amount}, Weight Fraction: ${weight_fraction}, Residual: ${residual}, Correction Factor: ${correction_factor}`);
-								}
-							}
-							processed_model.coefficients[key] += (isNaN(update_amount) ? 0 : update_amount);
-						}
+						numerators[key] += observed_value * covariate_value;
+						denominators[key] += predicted_value * covariate_value;
 					}
+				}
 			}
 			
+			//Apply exact multiplicative updates
+			console.log(`- Applying global scaling multipliers ..`);
+			for (let k = 0; k < valid_covariate_keys.length; k++) {
+				let key = valid_covariate_keys[k];
+				
+				if (denominators[key] > 0) {
+					// Mathematically optimal ratio for this step
+					let multiplier = numerators[key] / denominators[key];
+					processed_model.coefficients[key] *= multiplier;
+					
+					if (options.debug) {
+						console.log(`  - ${key}: Numerator: ${numerators[key].toExponential(2)}, Denominator: ${denominators[key].toExponential(2)} -> Multiplier: ${multiplier.toFixed(5)}`);
+					}
+				} else if (denominators[key] === 0 && numerators[key] > 0) {
+					// Edge case: Model predicted 0, but target exists. 
+					// (Very rare if initial OLS coefficients > 0)
+					if (options.debug) console.log(`  - ${key}: Missed prediction. Numerator > 0 but Denominator is 0.`);
+				}
+			}
+			
+			await Blacktraffic.yield();
 			console.log(`- New coefficients:`, processed_model.coefficients);
 		} catch (e) {
 			console.error(`Statistics.processOLSModel(): Error when processing step:`);

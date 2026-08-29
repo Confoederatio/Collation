@@ -8,8 +8,8 @@ global.GDP_PPP_SEDAC = class {
 	static hf = () => `${landuse_HYDE.bf}/rasters/`;
 	static hf1 = (y) => landuse_HYDE._getHYDEYearName(y);
 	static sf = () => population_Stadester_Legacy;
-	
-	static lu_covariates_obj = {
+	static covariates_obj = {
+		//LU (Land Use)
 		"conv_rangeland": (y) => [`${this.hf()}/conv_rangeland${this.hf1(y)}_number.png`, "float32"],
 		"cropland": (y) => [`${this.hf()}/cropland${this.hf1(y)}_number.png`, "float32"],
 		"grazing": (y) => [`${this.hf()}/grazing${this.hf1(y)}_number.png`, "float32"],
@@ -23,11 +23,11 @@ global.GDP_PPP_SEDAC = class {
 		"tot_irri": (y) => [`${this.hf()}/tot_irri${this.hf1(y)}_number.png`, "float32"],
 		"tot_rainfed": (y) => [`${this.hf()}/tot_rainfed${this.hf1(y)}_number.png`, "float32"],
 		"tot_rice": (y) => [`${this.hf()}/tot_rice${this.hf1(y)}_number.png`, "float32"],
-		"uopp_": (y) => [`${this.hf()}/uopp_${this.hf1(y)}_number.png`, "float32"]
-	};
-	
-	static pop_covariates_obj = {
-		"popc_": (y) => [`${this.sf().input_popc_folder}/stadester_population_${y}.png`, "int32"],
+		"uopp_": (y) => [`${this.hf()}/uopp_${this.hf1(y)}_number.png`, "float32"],
+		
+		//POP (Demographics)
+		//"popc_": (y) => [`${this.sf().input_popc_folder}/stadester_population_${y}.png`, "int32"],
+		//We only include popd_, rurc_, urbc_ to prevent double-counting pops
 		"popd_": (y) => [`${this.sf().intermediate_popd_folder}/stadester_density_${y}.png`, "float32"],
 		"rurc_": (y) => [`${this.sf().input_rurc_folder}/stadester_rural_${y}.png`, "int32"],
 		"urbc_": (y) => [`${this.sf().input_urbc_folder}/stadester_urban_${y}.png`, "int32"]
@@ -46,10 +46,9 @@ global.GDP_PPP_SEDAC = class {
 		});
 	}
 	
-	static async B_loadCovariates (arg0_year, arg1_covariates_obj) {
+	static async B_loadCovariates (arg0_year) {
 		//Convert from parameters
 		let year = arg0_year;
-		let local_covariates_obj = arg1_covariates_obj;
 		
 		//Declare local instance variables
 		let input_file_path = `${this.bf}/GDP_PPP_${year}.png`;
@@ -58,56 +57,48 @@ global.GDP_PPP_SEDAC = class {
 		return Statistics.loadOLSCovariates(input_file_path, {
 			utility_format: "float32",
 			
-			covariates_obj: local_covariates_obj,
+			covariates_obj: this.covariates_obj,
 			formatting_parameters: [year]
 		});
 	}
 	
-	static async B_trainGDP_PPPModel (arg0_year, arg1_covariates_obj, arg2_prefix, arg3_options) {
+	static async B_trainGDP_PPPModel (arg0_year, arg1_options) {
 		//Convert from parameters
 		let year = parseInt(arg0_year);
-		let local_covariates_obj = arg1_covariates_obj;
-		let local_prefix = arg2_prefix;
-		let options = (arg3_options) ? arg3_options : {};
+		let options = (arg1_options) ? arg1_options : {};
 		
 		//Initialise options
-		if (!options.lambda) options.lambda = 1e11;
-		if (!options.key) options.key = `${local_prefix}${year}`;
+		if (!options.lambda) options.lambda = 1e11; //x100 from Eoscala 1.3, since it is no longer $100s.
+		if (!options.key) options.key = year.toString();
 		
 		//Declare local instance variables
-		let covariates_data = await this.B_loadCovariates(year, local_covariates_obj);
-		let output_file_path = `${this.intermediate_ols_folder}/${local_prefix}${year}.json`;
+		let covariates_obj = await this.B_loadCovariates(year);
+		let output_file_path =  `${this.intermediate_ols_folder}/OLS_GDP_PPP_${year}.json`;
 		
 		//Return statement
-		return Statistics.trainOLSModel(output_file_path, covariates_data, options);
+		return Statistics.trainOLSModel(output_file_path, covariates_obj, options);
 	}
 	
 	static async B_trainGDP_PPPModels (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
 		
-		//Iterate over all years for both LU and POP models
-		for (let i = 0; i < this.years.length; i++) {
-			let local_year = this.years[i];
-			
-			//Train LU model
-			await this.B_trainGDP_PPPModel(local_year, this.lu_covariates_obj, "OLS_LU_GDP_PPP_", {
+		//Iterate over all years
+		for (let i = 0; i < this.years.length; i++)
+			await this.B_trainGDP_PPPModel(this.years[i], {
 				...options,
-				key: `LU_${local_year}`
+				key: this.years[i]
 			});
-			
-			//Train POP model
-			await this.B_trainGDP_PPPModel(local_year, this.pop_covariates_obj, "OLS_POP_GDP_PPP_", {
-				...options,
-				key: `POP_${local_year}`
-			});
-		}
 	}
 	
-	static async C_geomeanGDP_PPPModels () {
-		//Compute geometric means for LU and POP separately
-		await Statistics.geomeanOLSModels(this.intermediate_ols_folder, "OLS_LU_GDP_PPP_");
-		await Statistics.geomeanOLSModels(this.intermediate_ols_folder, "OLS_POP_GDP_PPP_");
+	static async C_geomeanGDP_PPPModel (arg0_prefix) {
+		//Convert from parameters
+		let prefix = (arg0_prefix) ? arg0_prefix : "OLS_GDP_PPP_";
+		
+		//Return statement
+		return Statistics.geomeanOLSModels(this.intermediate_ols_folder, prefix, {
+			weighting_function: (value) => Math.abs(value) //Flip positive to adjust for collinearity
+		});
 	}
 	
 	static async D_processGDP_PPPModel (arg0_options) {
@@ -115,43 +106,18 @@ global.GDP_PPP_SEDAC = class {
 		let options = (arg0_options) ? arg0_options : {};
 		
 		//Declare local instance variables
-		let lu_model_path = `${this.intermediate_ols_folder}/geomean_OLS_LU_GDP_PPP.json`;
-		let pop_model_path = `${this.intermediate_ols_folder}/geomean_OLS_POP_GDP_PPP.json`;
-		
-		//Process and adjust the LU model
-		let processed_lu_model = await Statistics.processOLSModel(lu_model_path, {
-			...options,
-			covariates_obj: this.lu_covariates_obj,
-			target: (y) => [`${this.bf}/GDP_PPP_${y}.png`, "float32"],
-			steps: this.years,
-		});
-		
-		//Process and adjust the POP model
-		let processed_pop_model = await Statistics.processOLSModel(pop_model_path, {
-			...options,
-			covariates_obj: this.pop_covariates_obj,
-			target: (y) => [`${this.bf}/GDP_PPP_${y}.png`, "float32"],
-			steps: this.years,
-		});
-		
-		//Combine the two models into one final model
-		let final_coefficients = {
-			...processed_lu_model.coefficients,
-			...processed_pop_model.coefficients
-		};
-		
-		let merged_model = {
-			key: "processed_base_model",
-			coefficients: final_coefficients
-		};
-		
-		//Save the combined model
+		let model_file_path = `${this.intermediate_ols_folder}/geomean_OLS_GDP_PPP.json`;
 		let output_file_path = `${this.intermediate_ols_folder}/processed_base_model.json`;
-		fs.writeFileSync(output_file_path, JSON.stringify(merged_model, null, 2));
-		console.log(`Merged OLS base model saved to ${output_file_path}.`);
 		
 		//Return statement
-		return merged_model;
+		return Statistics.processOLSModel(model_file_path, {
+			...options,
+			output_file_path,
+			
+			covariates_obj: this.covariates_obj,
+			target: (y) => [`${this.bf}/GDP_PPP_${y}.png`, "float32"],
+			steps: this.years,
+		});
 	}
 	
 	static async processRasters (arg0_options) {
@@ -167,15 +133,15 @@ global.GDP_PPP_SEDAC = class {
 			await population_Stadester_Legacy.processRasters();
 		}
 		
-		//2. Train individual yearly OLS models (LU and POP separately)
+		//2. Train individual yearly OLS models
 		if (!options.exclude.includes("B")) await this.B_trainGDP_PPPModels(options);
 		
-		//3. Compute geomeans for both model types
+		//3. Compute geomean
 		if (!options.exclude.includes("C")) try {
-			await this.C_geomeanGDP_PPPModels();
+			await this.C_geomeanGDP_PPPModel("OLS_GDP_PPP_");
 		} catch (e) { console.error(e); }
 		
-		//4. Bidirectionally adjust weights and merge models
-		if (!options.exclude.includes("D")) await this.D_processGDP_PPPModel(options);
+		//4. Bidirectionally adjust weights
+		//if (!options.exclude.includes("D")) await this.D_processGDP_PPPModel(options);
 	}
 };

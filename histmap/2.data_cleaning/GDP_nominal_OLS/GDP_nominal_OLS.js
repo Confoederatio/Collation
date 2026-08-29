@@ -1,6 +1,6 @@
 global.GDP_nominal_OLS = class {
 	static bf = `${h2}/GDP_nominal_OLS/`;
-	static input_coefficients_json = () => `${GDP_nominal_SEDAC.intermediate_ols_folder}processed_base_model.json`;
+	static input_coefficients_json = () => `${GDP_nominal_SEDAC.intermediate_ols_folder}geomean_OLS_GDP.json`;
 	static input_covariates_obj = () => GDP_PPP_SEDAC.covariates_obj;
 	static output_ols_folder = `${this.bf}rasters/`;
 	
