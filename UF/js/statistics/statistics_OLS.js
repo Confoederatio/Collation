@@ -248,7 +248,7 @@
 	 * @param {string} arg0_utility_file_path
 	 * @param {Object} [arg1_options]
 	 *  @param {Object} arg1_options.covariates_obj
-	 *  @param {Array} [arg1_options.formatting_parameters]
+	 *  @param {any[]} [arg1_options.formatting_parameters]
 	 *  @param {string} [arg1_options.utility_format="int32"]
 	 *  
 	 * @returns {Promise<void>}

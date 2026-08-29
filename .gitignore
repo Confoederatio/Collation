@@ -166,3 +166,4 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 svea_settings.json
+.Rproj.user
