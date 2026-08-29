@@ -23,6 +23,7 @@ histmap/4.data_exports/**/*
 histmap/5.data_visualisation/**/*
 !histmap/5.data_visualisation/**/
 !histmap/5.data_visualisation/**/*.js
+!histmap/5.data_visualisation/**/*.R
 
 temp_jobs
 
