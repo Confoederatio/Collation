@@ -177,7 +177,7 @@ global.GDP_nominal_SEDAC = class {
 		let pop_model_path = `${this.intermediate_ols_folder}/geomean_OLS_POP_GDP.json`;
 		let years = GDP_PPP_SEDAC.years;
 		
-		//Process LU model
+		//Process and adjust the LU model spatially
 		let processed_lu_model = await Statistics.processOLSModel(lu_model_path, {
 			...options,
 			covariates_obj: GDP_PPP_SEDAC.lu_covariates_obj,
@@ -185,7 +185,7 @@ global.GDP_nominal_SEDAC = class {
 			steps: years
 		});
 		
-		//Process POP model
+		//Process and adjust the POP model spatially
 		let processed_pop_model = await Statistics.processOLSModel(pop_model_path, {
 			...options,
 			covariates_obj: GDP_PPP_SEDAC.pop_covariates_obj,
@@ -193,21 +193,34 @@ global.GDP_nominal_SEDAC = class {
 			steps: years
 		});
 		
-		//Combine the two models
-		let final_coefficients = {
-			...processed_lu_model.coefficients,
-			...processed_pop_model.coefficients
-		};
+		//Calculate sums of processed absolute magnitudes
+		let lu_sum = 0;
+		let pop_sum = 0;
+		
+		Object.keys(processed_lu_model.coefficients).forEach(k => lu_sum += Math.abs(processed_lu_model.coefficients[k]));
+		Object.keys(processed_pop_model.coefficients).forEach(k => pop_sum += Math.abs(processed_pop_model.coefficients[k]));
+		
+		//Calculate balancing scalars (50/50 magnitude)
+		let total_mag = lu_sum + pop_sum;
+		let target_mag = total_mag*0.5;
+		let lu_scalar = (lu_sum > 0) ? target_mag/lu_sum : 1;
+		let pop_scalar = (pop_sum > 0) ? target_mag/pop_sum : 1;
+		
+		//Combine the two models into one final model with balanced weights
+		let final_coefficients = {};
+		
+		Object.keys(processed_lu_model.coefficients).forEach(k => final_coefficients[k] = processed_lu_model.coefficients[k] * lu_scalar);
+		Object.keys(processed_pop_model.coefficients).forEach(k => final_coefficients[k] = processed_pop_model.coefficients[k] * pop_scalar);
 		
 		let merged_model = {
 			key: "processed_base_model",
 			coefficients: final_coefficients
 		};
 		
-		//Save merged model
+		//Save the combined model
 		let output_file_path = `${this.intermediate_ols_folder}/processed_base_model.json`;
 		fs.writeFileSync(output_file_path, JSON.stringify(merged_model, null, 2));
-		console.log(`Merged Nominal GDP OLS base model saved to ${output_file_path}.`);
+		console.log(`Merged and balanced Nominal OLS base model saved to ${output_file_path}.`);
 		
 		//Return statement
 		return merged_model;
