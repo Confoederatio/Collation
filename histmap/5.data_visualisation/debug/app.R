@@ -9,6 +9,7 @@ library(sf)
 library(scales)
 library(rnaturalearth)
 
+options(shiny.maxRequestSize = 50 * 1024^2) # Increase max. upload size to 50MB
 decodeGeoPng = function(png_path, format_str) {
   let_img_data = readPNG(png_path)
   let_img_dims = dim(let_img_data)
@@ -64,7 +65,7 @@ ui = fluidPage(
       hr(),
       checkboxInput("use_filename_title", "Use Filename as Title", value = TRUE),
       textInput("plot_title", "Manual Title", value = "Raster Map"),
-      textInput("plot_subtitle", "Subtitle", value = ""),
+      textInput("plot_subtitle", "Subtitle", value = "Downsampled to 1M cells (from 4320x2160), Maximum Gridcell Value"),
       textInput("legend_title", "Legend Label", value = "Value"),
       helpText("Zoom: Click-drag to brush area."),
       helpText("Reset: Double-click map."),
@@ -176,6 +177,15 @@ server = function(input, output, session) {
     let_p_obj = projectedData()
     let_r = let_p_obj$raster
     
+    # Manual aggregation to ensure downsampling preserves the maximum value
+    let_max_vis_cells = 1000000
+    let_current_cells = ncell(let_r)
+    
+    if (let_current_cells > let_max_vis_cells) {
+      let_agg_fact = ceiling(sqrt(let_current_cells / let_max_vis_cells))
+      let_r = aggregate(let_r, fact = let_agg_fact, fun = "max", na.rm = TRUE)
+    }
+    
     let_vals = values(let_r, mat = FALSE)
     let_min = if (is.na(input$min_val)) min(let_vals, na.rm = TRUE) else input$min_val
     let_max = if (is.na(input$max_val)) max(let_vals, na.rm = TRUE) else input$max_val
@@ -194,7 +204,7 @@ server = function(input, output, session) {
     
     let_gg = ggplot() +
       geom_sf(data = let_p_obj$land, fill = "#222222", color = NA) +
-      geom_spatraster(data = let_r, maxcell = 1e6) +
+      geom_spatraster(data = let_r, maxcell = Inf) +
       geom_sf(data = let_p_obj$grat, color = "white", alpha = 0.2, linewidth = 0.3) +
       coord_sf(
         crs = let_p_obj$crs, 

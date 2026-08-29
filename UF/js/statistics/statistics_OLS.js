@@ -608,10 +608,7 @@
 		
 		if (options.dynamic_lambda) {
 			let condition_number = Statistics.conditionNumber(X);
-			if (condition_number > 1e6) { selected_lambda = 1e9; }
-			else if (condition_number > 1e4) { selected_lambda = 1e7; }
-			else if (condition_number > 1e2) { selected_lambda = 1e5; }
-			else { selected_lambda = 1e3; }
+				condition_number *= 1e3;
 			console.log(`- Condition Number: ${condition_number}, using Lambda = ${selected_lambda}`);
 		}
 		
