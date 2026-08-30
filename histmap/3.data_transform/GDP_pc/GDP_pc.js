@@ -1,8 +1,13 @@
 global.GDP_pc = class {
 	static cf = `${h3}/GDP_pc/`;
 	static input_covariates_obj = () => {
-		let covariates_obj = { ...GDP_PPP_SEDAC.covariates_obj };
-		delete covariates_obj["popd_"];
+		let covariates_obj = {
+			...GDP_PPP_SEDAC.covariates_obj
+		};
+		
+		//Delete covariates which double count pops
+		delete covariates_obj["rurc_"];
+		delete covariates_obj["urbc_"];
 		
 		//Return statement
 		return covariates_obj;
@@ -13,8 +18,9 @@ global.GDP_pc = class {
 	static intermediate_pc_estimates_folder = `${this.cf}3.pc_estimates/`;
 	static intermediate_gdp_folder = `${this.cf}/4.GDP_rasters/`;
 	static intermediate_gdp_scaled_to_global = `${this.cf}/5.scaled_to_global/`;
-	static intermediate_gdp_scaled_to_national = `${this.cf}/6.scaled_to_national/`;
-	static output_gdp_pc_folder = `${this.cf}/7.GDP_nominal_pc_rasters/`;
+	static intermediate_gdp_interpolated = `${this.cf}/6.interpolated/`;
+	static intermediate_gdp_scaled_to_national = `${this.cf}/7.scaled_to_national/`;
+	static output_gdp_pc_folder = `${this.cf}/8.GDP_nominal_pc_rasters/`;
 	
 	//HYDE; Stadestér formatters
 	static hf = () => `${landuse_HYDE.bf}/rasters/`;
@@ -86,7 +92,7 @@ global.GDP_pc = class {
 		
 		//Declare local instance variables
 		let covariates_obj = await this.B_loadCovariates(year);
-		let output_file_path = `${this.intermediate_ols_folder}/OLS_GDP_pc_${year}.json`;
+		let output_file_path =  `${this.intermediate_ols_folder}/OLS_GDP_pc_${year}.json`;
 		
 		//Return statement
 		return Statistics.trainOLSModel(output_file_path, covariates_obj, options);
@@ -132,11 +138,10 @@ global.GDP_pc = class {
 				
 				guard_clause: (local_index, rasters_obj) => {
 					//Declare local instance variables
-					let local_rural_population = Math.returnSafeNumber(rasters_obj["rurc_"]?.data[local_index], 0);
-					let local_urban_population = Math.returnSafeNumber(rasters_obj["urbc_"]?.data[local_index], 0);
+					let local_population = Math.returnSafeNumber(rasters_obj["popd_"]?.data[local_index], 0);
 					
 					//Return statement; guard clause for uninhabited pixels and HYDE clamping
-					return !(local_rural_population + local_urban_population === 0 || landarea_raster.data[local_index] === 0);
+					return !(local_population === 0 || landarea_raster.data[local_index] === 0);
 				}
 			});
 			await Blacktraffic.yield();
@@ -195,7 +200,8 @@ global.GDP_pc = class {
 					let second_pass_value = second_pass_raster.data[local_index];
 					
 					//Calculate the percentile of the second pass value. Ensure we don't divide by zero if the range is 0
-					let second_pass_fraction = (second_pass_range !== 0) ? second_pass_value/second_pass_range : 0;
+					let second_pass_fraction = (second_pass_range !== 0) ?
+						second_pass_value/second_pass_range : 0;
 					
 					return first_pass_value + (first_pass_range*second_pass_fraction);
 				}
@@ -233,14 +239,88 @@ global.GDP_pc = class {
 	}
 	
 	static async F_scaleGDPRastersToGlobal () {
-		//Return statement; utilizing nominal scaling core function
+		//Return statement; Reusing logic from GDP_nominal core class
 		return GDP_nominal.A_scaleGDPRastersToGlobal(
 			this.intermediate_gdp_folder,
 			this.intermediate_gdp_scaled_to_global
 		);
 	}
 	
-	static async G_scaleGDPRastersToNational () {
+	static async G_interpolateToSEDAC () {
+		//Declare local instance variables
+		let sedac_domain = [1800, 1990];
+		let sedac1_domain = [1800, 1950];
+		let sedac2_domain = [1950, 1990];
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		let to_path = `${GDP_nominal_SEDAC.bf}GDP_1990.png`;
+		let year_gap = sedac_domain[1] - sedac_domain[0];
+		let year_gap2 = sedac2_domain[1] - sedac2_domain[0];
+		let world_gdp_obj = GDP_nominal.getWorldGDPObject();
+		
+		if (!fs.existsSync(this.intermediate_gdp_interpolated))
+			fs.mkdirSync(this.intermediate_gdp_interpolated, { recursive: true });
+		
+		//Iterate over all landuse_HYDE.hyde_years
+		for (let i = 0; i < hyde_years.length; i++) {
+			let current_year = hyde_years[i];
+			let local_from_path = `${this.intermediate_gdp_scaled_to_global}GDP_${current_year}.png`;
+			let local_output_path = `${this.intermediate_gdp_interpolated}GDP_${current_year}.png`;
+			
+			if (current_year < sedac_domain[0]) {
+				if (fs.existsSync(local_from_path)) {
+					fs.copyFileSync(local_from_path, local_output_path);
+					console.log(`- Copying global scaled GDP directly for year ${current_year}.`);
+				}
+			} else if (current_year >= sedac_domain[0] && current_year < sedac_domain[1]) {
+				let fraction = (current_year - sedac_domain[0])/year_gap;
+				
+				if (current_year < sedac1_domain[1]) {
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction,
+						upper_value_threshold: 256
+					});
+					console.log(`- (1st-pass) Finished interpolating ${local_from_path} to SEDAC nominal 1990.`);
+				} else {
+					let threshold_fraction = (current_year - sedac2_domain[0])/year_gap2;
+					
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction,
+						threshold_fraction
+					});
+					console.log(`- (2nd-pass) Finished interpolating ${local_from_path} to SEDAC nominal 1990.`);
+				}
+			} else if (current_year >= 1990 && current_year <= 2022) {
+				let local_sedac_path = `${GDP_nominal_SEDAC.bf}GDP_${current_year}.png`;
+				if (fs.existsSync(local_sedac_path)) {
+					fs.copyFileSync(local_sedac_path, local_output_path);
+					console.log(`- Copying SEDAC template directly for year ${current_year}.`);
+				}
+			} else {
+				let template_path = `${GDP_nominal_SEDAC.bf}GDP_2022.png`;
+				
+				if (fs.existsSync(template_path)) {
+					let template_raster = GeoPNG.loadNumberRasterImage(template_path, { format: "float32" });
+					let template_sum = GeoPNG.getImageSum(template_path, { format: "float32" });
+					let target_global = Math.returnSafeNumber(world_gdp_obj[current_year], template_sum);
+					let global_scalar = target_global/template_sum;
+					
+					GeoPNG.saveNumberRasterImage({
+						file_path: local_output_path,
+						format: "float32",
+						width: 4320,
+						height: 2160,
+						function: (local_index) => template_raster.data[local_index] * global_scalar
+					});
+					console.log(`- Created post-2022 global scaled template from SEDAC nominal 2022 for year ${current_year}.`);
+				}
+			}
+			await Blacktraffic.yield();
+		}
+	}
+	
+	static async H_scaleGDPRastersToNational () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let gdp_obj = GDP_nominal.getGDPObject();
@@ -249,7 +329,7 @@ global.GDP_pc = class {
 		
 		//Iterate over all hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
-			let local_input_file_path = `${this.intermediate_gdp_scaled_to_global}GDP_${hyde_years[i]}.png`;
+			let local_input_file_path = `${this.intermediate_gdp_interpolated}GDP_${hyde_years[i]}.png`;
 			if (!fs.existsSync(local_input_file_path)) continue; //Guard clause if nonexistent
 			
 			//Load in local input raster
@@ -322,7 +402,7 @@ global.GDP_pc = class {
 		}
 	}
 	
-	static async H_recalculateGDP_pcRasters () {
+	static async I_recalculateGDP_pcRasters () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		
@@ -370,9 +450,10 @@ global.GDP_pc = class {
 		//3. Ensemble regeneration and scaling
 		if (!options.exclude.includes("E")) await this.E_generateGDPRasters();
 		if (!options.exclude.includes("F")) await this.F_scaleGDPRastersToGlobal();
-		if (!options.exclude.includes("G")) await this.G_scaleGDPRastersToNational();
+		if (!options.exclude.includes("G")) await this.G_interpolateToSEDAC();
+		if (!options.exclude.includes("H")) await this.H_scaleGDPRastersToNational();
 		
 		//4. Final top-down constraint recalculation
-		if (!options.exclude.includes("H")) await this.H_recalculateGDP_pcRasters();
+		if (!options.exclude.includes("I")) await this.I_recalculateGDP_pcRasters();
 	}
 };

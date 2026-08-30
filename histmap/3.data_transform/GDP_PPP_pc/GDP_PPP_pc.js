@@ -1,8 +1,13 @@
 global.GDP_PPP_pc = class {
 	static cf = `${h3}/GDP_PPP_pc/`;
 	static input_covariates_obj = () => {
-		let covariates_obj = { ...GDP_PPP_SEDAC.covariates_obj };
-		delete covariates_obj["popd_"];
+		let covariates_obj = {
+			...GDP_PPP_SEDAC.covariates_obj
+		};
+		
+		//Delete covariates which double count pops
+		delete covariates_obj["rurc_"];
+		delete covariates_obj["urbc_"];
 		
 		//Return statement
 		return covariates_obj;
@@ -13,8 +18,9 @@ global.GDP_PPP_pc = class {
 	static intermediate_pc_estimates_folder = `${this.cf}3.PPP_pc_estimates/`;
 	static intermediate_gdp_ppp_folder = `${this.cf}/4.PPP_rasters/`;
 	static intermediate_gdp_ppp_scaled_to_global = `${this.cf}/5.scaled_to_global/`;
-	static intermediate_gdp_ppp_scaled_to_national = `${this.cf}/6.scaled_to_national/`;
-	static output_gdp_ppp_pc_folder = `${this.cf}/7.GDP_PPP_pc_rasters/`;
+	static intermediate_gdp_ppp_interpolated = `${this.cf}/6.interpolated/`;
+	static intermediate_gdp_ppp_scaled_to_national = `${this.cf}/7.scaled_to_national/`;
+	static output_gdp_ppp_pc_folder = `${this.cf}/8.GDP_PPP_pc_rasters/`;
 	
 	//HYDE; Stadestér formatters
 	static hf = () => `${landuse_HYDE.bf}/rasters/`;
@@ -117,10 +123,10 @@ global.GDP_PPP_pc = class {
 		//Iterate over all years
 		for (let i = 0; i < years.length; i++) {
 			let local_input_path = `${this.intermediate_ols_folder}OLS_GDP_PPP_pc_${years[i]}.json`;
-				if (!fs.existsSync(local_input_path)) {
-					console.warn(`- Could not load OLS for ${local_input_path}.`);
-					continue;
-				}
+			if (!fs.existsSync(local_input_path)) {
+				console.warn(`- Could not load OLS for ${local_input_path}.`);
+				continue;
+			}
 			let local_output_path = `${this.intermediate_ols_rasters_folder}OLS_GDP_PPP_pc_${years[i]}.png`;
 			
 			//Return statement
@@ -132,11 +138,10 @@ global.GDP_PPP_pc = class {
 				
 				guard_clause: (local_index, rasters_obj) => {
 					//Declare local instance variables
-					let local_rural_population = Math.returnSafeNumber(rasters_obj["rurc_"]?.data[local_index], 0);
-					let local_urban_population = Math.returnSafeNumber(rasters_obj["urbc_"]?.data[local_index], 0);
+					let local_population = Math.returnSafeNumber(rasters_obj["popd_"]?.data[local_index], 0);
 					
 					//Return statement; guard clause for uninhabited pixels and HYDE clamping
-					return !(local_rural_population + local_urban_population === 0 || landarea_raster.data[local_index] === 0);
+					return !(local_population === 0 || landarea_raster.data[local_index] === 0);
 				}
 			});
 			await Blacktraffic.yield();
@@ -195,7 +200,7 @@ global.GDP_PPP_pc = class {
 					let second_pass_value = second_pass_raster.data[local_index];
 					
 					//Calculate the percentile of the second pass value. Ensure we don't divide by zero if the range is 0
-					let second_pass_fraction = (second_pass_range !== 0) ? 
+					let second_pass_fraction = (second_pass_range !== 0) ?
 						second_pass_value/second_pass_range : 0;
 					
 					return first_pass_value + (first_pass_range*second_pass_fraction);
@@ -241,7 +246,81 @@ global.GDP_PPP_pc = class {
 		);
 	}
 	
-	static async G_scaleGDP_PPPRastersToNational () {
+	static async G_interpolateToSEDAC () {
+		//Declare local instance variables
+		let sedac_domain = [1800, 1990];
+		let sedac1_domain = [1800, 1950];
+		let sedac2_domain = [1950, 1990];
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		let to_path = `${GDP_PPP_SEDAC.bf}GDP_PPP_1990.png`;
+		let year_gap = sedac_domain[1] - sedac_domain[0];
+		let year_gap2 = sedac2_domain[1] - sedac2_domain[0];
+		let world_gdp_obj = GDP_PPP.getWorldGDP_PPPObject();
+		
+		if (!fs.existsSync(this.intermediate_gdp_ppp_interpolated))
+			fs.mkdirSync(this.intermediate_gdp_ppp_interpolated, { recursive: true });
+		
+		//Iterate over all landuse_HYDE.hyde_years
+		for (let i = 0; i < hyde_years.length; i++) {
+			let current_year = hyde_years[i];
+			let local_from_path = `${this.intermediate_gdp_ppp_scaled_to_global}GDP_PPP_${current_year}.png`;
+			let local_output_path = `${this.intermediate_gdp_ppp_interpolated}GDP_PPP_${current_year}.png`;
+			
+			if (current_year < sedac_domain[0]) {
+				if (fs.existsSync(local_from_path)) {
+					fs.copyFileSync(local_from_path, local_output_path);
+					console.log(`- Copying global scaled GDP PPP directly for year ${current_year}.`);
+				}
+			} else if (current_year >= sedac_domain[0] && current_year < sedac_domain[1]) {
+				let fraction = (current_year - sedac_domain[0])/year_gap;
+				
+				if (current_year < sedac1_domain[1]) {
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction,
+						upper_value_threshold: 256
+					});
+					console.log(`- (1st-pass) Finished interpolating ${local_from_path} to SEDAC 1990.`);
+				} else {
+					let threshold_fraction = (current_year - sedac2_domain[0])/year_gap2;
+					
+					GeoPNG.linearInterpolation(local_from_path, to_path, local_output_path, {
+						format: "float32",
+						fraction,
+						threshold_fraction
+					});
+					console.log(`- (2nd-pass) Finished interpolating ${local_from_path} to SEDAC 1990.`);
+				}
+			} else if (current_year >= 1990 && current_year <= 2022) {
+				let local_sedac_path = `${GDP_PPP_SEDAC.bf}GDP_PPP_${current_year}.png`;
+				if (fs.existsSync(local_sedac_path)) {
+					fs.copyFileSync(local_sedac_path, local_output_path);
+					console.log(`- Copying SEDAC template directly for year ${current_year}.`);
+				}
+			} else {
+				let template_path = `${GDP_PPP_SEDAC.bf}GDP_PPP_2022.png`;
+				
+				if (fs.existsSync(template_path)) {
+					let template_raster = GeoPNG.loadNumberRasterImage(template_path, { format: "float32" });
+					let template_sum = GeoPNG.getImageSum(template_path, { format: "float32" });
+					let target_global = Math.returnSafeNumber(world_gdp_obj[current_year], template_sum);
+					let global_scalar = target_global/template_sum;
+					
+					GeoPNG.saveNumberRasterImage({
+						file_path: local_output_path,
+						format: "float32",
+						width: 4320,
+						height: 2160,
+						function: (local_index) => template_raster.data[local_index] * global_scalar
+					});
+					console.log(`- Created post-2022 global scaled template from SEDAC 2022 for year ${current_year}.`);
+				}
+			}
+			await Blacktraffic.yield();
+		}
+	}
+	
+	static async H_scaleGDP_PPPRastersToNational () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let gdp_ppp_obj = GDP_PPP.getGDP_PPPObject();
@@ -250,7 +329,7 @@ global.GDP_PPP_pc = class {
 		
 		//Iterate over all hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
-			let local_input_file_path = `${this.intermediate_gdp_ppp_scaled_to_global}GDP_PPP_${hyde_years[i]}.png`;
+			let local_input_file_path = `${this.intermediate_gdp_ppp_interpolated}GDP_PPP_${hyde_years[i]}.png`;
 			if (!fs.existsSync(local_input_file_path)) continue; //Guard clause if nonexistent
 			
 			//Load in local input raster
@@ -279,7 +358,7 @@ global.GDP_PPP_pc = class {
 				}
 			});
 			Object.iterate(local_gdp_ppp_sums, (local_key, local_value) => {
-				let local_actual_gdp_ppp = gdp_ppp_obj[local_key][hyde_years[i]];
+				let local_actual_gdp_ppp = gdp_ppp_obj[local_key]?.[hyde_years[i]];
 				
 				if (local_actual_gdp_ppp) {
 					local_gdp_ppp_scalars[local_key] = local_actual_gdp_ppp/local_value;
@@ -309,7 +388,7 @@ global.GDP_PPP_pc = class {
 					//Iterate over local_geocodes
 					if (local_geocodes)
 						for (let x = 0; x < local_geocodes.length; x++) {
-							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]][hyde_years[i]];
+							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]]?.[hyde_years[i]];
 							
 							//Return statement
 							if (local_gdp_ppp)
@@ -323,7 +402,7 @@ global.GDP_PPP_pc = class {
 		}
 	}
 	
-	static async H_recalculateGDP_PPP_pcRasters () {
+	static async I_recalculateGDP_PPP_pcRasters () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		
@@ -371,9 +450,10 @@ global.GDP_PPP_pc = class {
 		//3. Ensemble regeneration and scaling
 		if (!options.exclude.includes("E")) await this.E_generateGDP_PPPRasters();
 		if (!options.exclude.includes("F")) await this.F_scaleGDP_PPPRastersToGlobal();
-		if (!options.exclude.includes("G")) await this.G_scaleGDP_PPPRastersToNational();
+		if (!options.exclude.includes("G")) await this.G_interpolateToSEDAC();
+		if (!options.exclude.includes("H")) await this.H_scaleGDP_PPPRastersToNational();
 		
 		//4. Final top-down constraint recalculation
-		if (!options.exclude.includes("H")) await this.H_recalculateGDP_PPP_pcRasters();
+		if (!options.exclude.includes("I")) await this.I_recalculateGDP_PPP_pcRasters();
 	}
 };
