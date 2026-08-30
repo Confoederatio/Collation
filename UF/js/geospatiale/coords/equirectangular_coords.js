@@ -34,6 +34,8 @@
 	 * @param {number} arg0_latitude
 	 * @param {number} arg1_longitude
 	 * @param {Object} [arg2_options]
+	 *  @param {number} [arg2_options.height=2160] - The height of the image in pixels.
+	 *  @param {number} [arg2_options.width=4320] - The width of the image in pixels.
 	 *  @param {boolean} [arg2_options.return_object=false] - Whether to return a structured object instead.
 	 *
 	 * @returns {Array<number, number>|{x_coord: number, y_coord: number}}
