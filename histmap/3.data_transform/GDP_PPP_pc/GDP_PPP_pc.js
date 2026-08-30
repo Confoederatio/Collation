@@ -16,6 +16,10 @@ global.GDP_PPP_pc = class {
 	static intermediate_ols_folder = `${this.cf}1.OLS/`;
 	static intermediate_ols_rasters_folder = `${this.cf}2.OLS_PPP_pc_rasters/`;
 	static intermediate_pc_estimates_folder = `${this.cf}3.PPP_pc_estimates/`;
+	static intermediate_gdp_ppp_folder = `${this.cf}/4.PPP_rasters/`;
+	static intermediate_gdp_ppp_scaled_to_global = `${this.cf}/5.scaled_to_global/`;
+	static intermediate_gdp_ppp_scaled_to_national = `${this.cf}/6.scaled_to_national/`;
+	static output_gdp_ppp_pc_folder = `${this.cf}/7.GDP_PPP_pc_rasters/`;
 	
 	//HYDE; Stadestér formatters
 	static hf = () => `${landuse_HYDE.bf}/rasters/`;
@@ -206,32 +210,153 @@ global.GDP_PPP_pc = class {
 		}
 	}
 	
-	/*static async D_generateOLS_GDP_PPPRasters () {
+	static async E_generateGDP_PPPRasters () {
 		//Declare local instance variables
 		let years = landuse_HYDE.sorted_hyde_years;
 		
 		//Iterate over all years
 		for (let i = 0; i < years.length; i++) {
-			let local_output_path = `${this.intermediate_ols_totals_folder}OLS_GDP_PPP_${years[i]}.png`;
+			let pc_path = `${this.intermediate_pc_estimates_folder}GDP_PPP_pc_${years[i]}.png`;
+			let pop_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${years[i]}.png`;
+			let output_path = `${this.intermediate_gdp_ppp_folder}GDP_PPP_${years[i]}.png`;
 			
-			let local_pc_raster = GeoPNG.loadNumberRasterImage(`${this.intermediate_ols_rasters_folder}OLS_GDP_PPP_pc_${years[i]}.png`, {
+			if (fs.existsSync(pc_path) && fs.existsSync(pop_path)) {
+				let pc_raster = GeoPNG.loadNumberRasterImage(pc_path, { format: "float32" });
+				let pop_raster = GeoPNG.loadNumberRasterImage(pop_path, { format: "int32" });
+				
+				GeoPNG.saveNumberRasterImage({
+					file_path: output_path,
+					format: "float32",
+					width: 4320,
+					height: 2160,
+					function: (local_index) => pc_raster.data[local_index]*pop_raster.data[local_index]
+				});
+				console.log(`- Saved total GDP PPP: ${output_path}`);
+				await Blacktraffic.yield();
+			}
+		}
+	}
+	
+	static async F_scaleGDP_PPPRastersToGlobal () {
+		//Return statement; Reusing logic from GDP_PPP core class
+		return GDP_PPP.B_scaleGDP_PPPRastersToGlobal(
+			this.intermediate_gdp_ppp_folder,
+			this.intermediate_gdp_ppp_scaled_to_global
+		);
+	}
+	
+	static async G_scaleGDP_PPPRastersToNational () {
+		//Declare local instance variables
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		let gdp_ppp_obj = GDP_PPP.getGDP_PPPObject();
+		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
+		
+		//Iterate over all hyde_years
+		for (let i = 0; i < hyde_years.length; i++) {
+			let local_input_file_path = `${this.intermediate_gdp_ppp_scaled_to_global}GDP_PPP_${hyde_years[i]}.png`;
+			if (!fs.existsSync(local_input_file_path)) continue; //Guard clause if nonexistent
+			
+			//Load in local input raster
+			let local_gdp_ppp_scalars = {};
+			let local_gdp_ppp_sums = {};
+			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, {
 				format: "float32"
 			});
-			let local_popc_raster = GeoPNG.loadNumberRasterImage(`${this.sf().input_popc_folder}stadester_population_${years[i]}.png`, {
-				format: "int32"
-			});
+			let local_output_file = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${hyde_years[i]}.png`;
 			
-			//Save image
+			//1. Operate over file; populate local_gdp_ppp_sums; calculate local_gdp_ppp_scalars
+			GeoPNG.operateNumberRasterImage({
+				file_path: local_input_file_path,
+				format: "float32",
+				function: (local_index, local_value) => {
+					let local_colour_key = [
+						geocode_raster.data[local_index],
+						geocode_raster.data[local_index + 1],
+						geocode_raster.data[local_index + 2]
+					].join(",");
+					let local_geocodes = geocode_obj[local_colour_key];
+					
+					if (local_geocodes)
+						for (let x = 0; x < local_geocodes.length; x++)
+							Object.modifyValue(local_gdp_ppp_sums, local_geocodes[x], local_value);
+				}
+			});
+			Object.iterate(local_gdp_ppp_sums, (local_key, local_value) => {
+				let local_actual_gdp_ppp = gdp_ppp_obj[local_key][hyde_years[i]];
+				
+				if (local_actual_gdp_ppp) {
+					local_gdp_ppp_scalars[local_key] = local_actual_gdp_ppp/local_value;
+				} else {
+					local_gdp_ppp_scalars[local_key] = 1;
+				}
+			});
+			console.log(`- Local GDP PPP object:`, local_gdp_ppp_sums);
+			console.log(`- Local GDP PPP scalars:`, local_gdp_ppp_scalars);
+			
+			//2. Scale by local_gdp_ppp_scalars
 			GeoPNG.saveNumberRasterImage({
-				file_path: local_output_path,
+				file_path: local_output_file,
 				format: "float32",
 				height: 2160,
 				width: 4320,
-				function: (local_index) => local_pc_raster.data[local_index]*local_popc_raster.data[local_index]
+				function: (local_index) => {
+					let byte_index = local_index*4;
+					let local_colour_key = [
+						geocode_raster.data[byte_index],
+						geocode_raster.data[byte_index + 1],
+						geocode_raster.data[byte_index + 2]
+					].join(",");
+					let local_geocodes = geocode_obj[local_colour_key];
+					let local_value = local_input_raster.data[local_index];
+					
+					//Iterate over local_geocodes
+					if (local_geocodes)
+						for (let x = 0; x < local_geocodes.length; x++) {
+							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]][hyde_years[i]];
+							
+							//Return statement
+							if (local_gdp_ppp)
+								return local_value*local_gdp_ppp_scalars[local_geocodes[x]];
+						}
+					return local_value;
+				}
 			});
-			console.log(`- Saved ${local_output_path}.`);
+			console.log(`Processed ${local_output_file}.`);
+			await Blacktraffic.yield();
 		}
-	}*/
+	}
+	
+	static async H_recalculateGDP_PPP_pcRasters () {
+		//Declare local instance variables
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		
+		for (let i = 0; i < hyde_years.length; i++) {
+			let total_file_path = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${hyde_years[i]}.png`;
+			let popc_file_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${hyde_years[i]}.png`;
+			let output_file_path = `${this.output_gdp_ppp_pc_folder}GDP_PPP_pc_${hyde_years[i]}.png`;
+			
+			if (fs.existsSync(total_file_path) && fs.existsSync(popc_file_path)) {
+				let total_raster = GeoPNG.loadNumberRasterImage(total_file_path, { format: "float32" });
+				let popc_raster = GeoPNG.loadNumberRasterImage(popc_file_path, { format: "int32" });
+				
+				GeoPNG.saveNumberRasterImage({
+					file_path: output_file_path,
+					format: "float32",
+					width: 4320,
+					height: 2160,
+					function: (local_index) => {
+						let local_pop = popc_raster.data[local_index];
+						let local_val = (local_pop > 0) ? total_raster.data[local_index] / local_pop : 0;
+						
+						return (isNaN(local_val)) ? 0 : local_val;
+					}
+				});
+				console.log(`- Finalized top-down GDP PPP pc: ${output_file_path}`);
+				await Blacktraffic.yield();
+			}
+		}
+	}
 	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
@@ -246,5 +371,13 @@ global.GDP_PPP_pc = class {
 		if (!options.exclude.includes("B")) await this.B_trainGDP_PPP_pcModels(options);
 		if (!options.exclude.includes("C")) await this.C_generateOLS_GDP_PPP_pcRasters();
 		if (!options.exclude.includes("D")) await this.D_normaliseGDP_PPP_pcRasters();
+		
+		//3. Ensemble regeneration and scaling
+		if (!options.exclude.includes("E")) await this.E_generateGDP_PPPRasters();
+		if (!options.exclude.includes("F")) await this.F_scaleGDP_PPPRastersToGlobal();
+		if (!options.exclude.includes("G")) await this.G_scaleGDP_PPPRastersToNational();
+		
+		//4. Final top-down constraint recalculation
+		if (!options.exclude.includes("H")) await this.H_recalculateGDP_PPP_pcRasters();
 	}
 };
