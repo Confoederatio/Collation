@@ -1,6 +1,26 @@
 global.GDP_PPP_pc = class {
 	static cf = `${h3}/GDP_PPP_pc/`;
-	static output_gdp_pc_folder = `${this.cf}rasters/`;
+	static input_covariates_obj = () => {
+		let covariates_obj = {
+			...GDP_PPP_SEDAC.covariates_obj
+		};
+		
+		//Delete covariates which double count pops
+		delete covariates_obj["rurc_"];
+		delete covariates_obj["urbc_"];
+		
+		//Return statement
+		return covariates_obj;
+	};
+	static input_gdp_pc_folder = `${this.cf}rasters/`;
+	static intermediate_ols_folder = `${this.cf}1.OLS/`;
+	static intermediate_ols_rasters_folder = `${this.cf}2.OLS_PPP_pc_rasters/`;
+	static intermediate_pc_estimates_folder = `${this.cf}3.PPP_pc_estimates/`;
+	
+	//HYDE; Stadestér formatters
+	static hf = () => `${landuse_HYDE.bf}/rasters/`;
+	static hf1 = (y) => landuse_HYDE._getHYDEYearName(y);
+	static sf = () => population_Stadester_Legacy;
 	
 	static async A_generateGDP_pcRasters () {
 		//Declare local instance variables
@@ -17,7 +37,7 @@ global.GDP_PPP_pc = class {
 				let local_popc_raster = GeoPNG.loadNumberRasterImage(local_popc_file_path, {
 					format: "int32"
 				});
-				let local_output_file_path = `${this.output_gdp_pc_folder}GDP_PPP_pc_${hyde_years[i]}.png`;
+				let local_output_file_path = `${this.input_gdp_pc_folder}GDP_PPP_pc_${hyde_years[i]}.png`;
 				
 				GeoPNG.saveNumberRasterImage({
 					file_path: local_output_file_path,
@@ -39,6 +59,180 @@ global.GDP_PPP_pc = class {
 		}
 	}
 	
+	static async B_loadCovariates (arg0_year) {
+		//Convert from parameters
+		let year = arg0_year;
+		
+		//Declare local instance variables
+		let input_file_path = `${this.input_gdp_pc_folder}/GDP_PPP_pc_${year}.png`;
+		
+		//Return statement
+		return Statistics.loadOLSCovariates(input_file_path, {
+			utility_format: "float32",
+			
+			covariates_obj: this.input_covariates_obj(),
+			formatting_parameters: [year]
+		});
+	}
+	
+	static async B_trainGDP_PPP_pcModel (arg0_year, arg1_options) {
+		//Convert from parameters
+		let year = parseInt(arg0_year);
+		let options = (arg1_options) ? arg1_options : {};
+		
+		//Initialise options
+		if (!options.lambda) options.lambda = 1e6;
+		if (!options.key) options.key = year.toString();
+		if (!options.weighting_function) options.weighting_function = (value) => Math.abs(value);
+		
+		//Declare local instance variables
+		let covariates_obj = await this.B_loadCovariates(year);
+		let output_file_path =  `${this.intermediate_ols_folder}/OLS_GDP_PPP_pc_${year}.json`;
+		
+		//Return statement
+		return Statistics.trainOLSModel(output_file_path, covariates_obj, options);
+	}
+	
+	static async B_trainGDP_PPP_pcModels (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Declare local instance variables
+		let years = landuse_HYDE.sorted_hyde_years;
+		
+		//Iterate over all years
+		for (let i = 0; i < years.length; i++)
+			await this.B_trainGDP_PPP_pcModel(years[i], {
+				...options,
+				key: years[i]
+			});
+	}
+	
+	static async C_generateOLS_GDP_PPP_pcRasters () {
+		//Declare local instance variables
+		let landarea_raster = GeoPNG.loadNumberRasterImage(metadata_HYDE.input_raster_land_area, {
+			format: "int32"
+		});
+		let years = landuse_HYDE.sorted_hyde_years;
+		
+		//Iterate over all years
+		for (let i = 0; i < years.length; i++) {
+			let local_input_path = `${this.intermediate_ols_folder}OLS_GDP_PPP_pc_${years[i]}.json`;
+				if (!fs.existsSync(local_input_path)) {
+					console.warn(`- Could not load OLS for ${local_input_path}.`);
+					continue;
+				}
+			let local_output_path = `${this.intermediate_ols_rasters_folder}OLS_GDP_PPP_pc_${years[i]}.png`;
+			
+			//Return statement
+			await Statistics.generateOLSRaster(local_output_path, {
+				covariates_obj: this.input_covariates_obj(),
+				format: "float32",
+				formatting_parameters: [years[i]],
+				model_obj: JSON.parse(fs.readFileSync(local_input_path, "utf8")),
+				
+				guard_clause: (local_index, rasters_obj) => {
+					//Declare local instance variables
+					let local_population = Math.returnSafeNumber(rasters_obj["popd_"]?.data[local_index], 0);
+					
+					//Return statement; guard clause for uninhabited pixels and HYDE clamping
+					return !(local_population === 0 || landarea_raster.data[local_index] === 0);
+				}
+			});
+			await Blacktraffic.yield();
+		}
+	}
+	
+	static async D_normaliseGDP_PPP_pcRasters () {
+		//Declare local instance variables
+		let years = landuse_HYDE.sorted_hyde_years;
+		
+		//Iterate over all years
+		for (let i = 0; i < years.length; i++) {
+			let first_pass_domain = [Infinity, -Infinity];
+			let first_pass_path = `${this.input_gdp_pc_folder}GDP_PPP_pc_${years[i]}.png`;
+			let first_pass_raster = GeoPNG.loadNumberRasterImage(first_pass_path, {
+				format: "float32"
+			});
+			let second_pass_domain = [Infinity, -Infinity];
+			let second_pass_path = `${this.intermediate_ols_rasters_folder}OLS_GDP_PPP_pc_${years[i]}.png`;
+			let second_pass_raster = GeoPNG.loadNumberRasterImage(second_pass_path, {
+				format: "float32"
+			});
+			
+			let output_path = `${this.intermediate_pc_estimates_folder}GDP_PPP_pc_${years[i]}.png`;
+			
+			//Fetch first_pass_domain, second_pass_domain
+			for (let x = 0; x < first_pass_raster.data.length; x++) {
+				let local_value = first_pass_raster.data[x];
+				
+				if (local_value > first_pass_domain[1]) first_pass_domain[1] = local_value;
+				if (local_value < first_pass_domain[0]) first_pass_domain[0] = local_value;
+			}
+			for (let x = 0; x < second_pass_raster.data.length; x++) {
+				let local_value = second_pass_raster.data[x];
+				
+				if (local_value > second_pass_domain[1]) second_pass_domain[1] = local_value;
+				if (local_value < second_pass_domain[0]) second_pass_domain[0] = local_value;
+			}
+			
+			let first_pass_min = first_pass_domain[0];
+			let first_pass_max = first_pass_domain[1];
+			let second_pass_min = second_pass_domain[0];
+			let second_pass_max = second_pass_domain[1];
+			
+			let first_pass_range = first_pass_max - first_pass_min;
+			let second_pass_range = second_pass_max - second_pass_min;
+			
+			GeoPNG.saveNumberRasterImage({
+				file_path: output_path,
+				format: "float32",
+				height: 2160,
+				width: 4320,
+				function: (local_index) => {
+					//Declare local instance variables
+					let first_pass_value = first_pass_raster.data[local_index];
+					let second_pass_value = second_pass_raster.data[local_index];
+					
+					//Calculate the percentile of the second pass value. Ensure we don't divide by zero if the range is 0
+					let second_pass_fraction = (second_pass_range !== 0) ? 
+						second_pass_value/second_pass_range : 0;
+					
+					return first_pass_value + (first_pass_range*second_pass_fraction);
+				}
+			});
+			console.log(`- Saved ${output_path}.`);
+			await Blacktraffic.yield();
+		}
+	}
+	
+	/*static async D_generateOLS_GDP_PPPRasters () {
+		//Declare local instance variables
+		let years = landuse_HYDE.sorted_hyde_years;
+		
+		//Iterate over all years
+		for (let i = 0; i < years.length; i++) {
+			let local_output_path = `${this.intermediate_ols_totals_folder}OLS_GDP_PPP_${years[i]}.png`;
+			
+			let local_pc_raster = GeoPNG.loadNumberRasterImage(`${this.intermediate_ols_rasters_folder}OLS_GDP_PPP_pc_${years[i]}.png`, {
+				format: "float32"
+			});
+			let local_popc_raster = GeoPNG.loadNumberRasterImage(`${this.sf().input_popc_folder}stadester_population_${years[i]}.png`, {
+				format: "int32"
+			});
+			
+			//Save image
+			GeoPNG.saveNumberRasterImage({
+				file_path: local_output_path,
+				format: "float32",
+				height: 2160,
+				width: 4320,
+				function: (local_index) => local_pc_raster.data[local_index]*local_popc_raster.data[local_index]
+			});
+			console.log(`- Saved ${local_output_path}.`);
+		}
+	}*/
+	
 	static async processRasters (arg0_options) {
 		//Convert from parameters
 		let options = (arg0_options) ? arg0_options : {};
@@ -48,5 +242,9 @@ global.GDP_PPP_pc = class {
 		
 		//1. Generate GDP_pc rasters
 		if (!options.exclude.includes("A")) await this.A_generateGDP_pcRasters();
+		//2. 2nd-pass OLS training
+		if (!options.exclude.includes("B")) await this.B_trainGDP_PPP_pcModels(options);
+		if (!options.exclude.includes("C")) await this.C_generateOLS_GDP_PPP_pcRasters();
+		if (!options.exclude.includes("D")) await this.D_normaliseGDP_PPP_pcRasters();
 	}
 };

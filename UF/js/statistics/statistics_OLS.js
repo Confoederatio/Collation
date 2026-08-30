@@ -211,10 +211,13 @@
 			}
 			
 			//Load existing rasters into rasters_obj
-			if (fs.existsSync(local_file_path))
+			if (fs.existsSync(local_file_path)) {
 				rasters_obj[local_key] = GeoPNG.loadNumberRasterImage(local_file_path, {
 					format: local_format
 				});
+			} else {
+				console.warn(`- ${local_file_path} could not be found.`);
+			}
 		});
 		
 		//Write output file from rasters_obj
@@ -585,6 +588,7 @@
 	 *  @param {number} [arg2_options.lambda=1e9]
 	 *  @param {boolean} [arg2_options.remove_high_vif_features=false] - Whether to remove high VIF features.
 	 *  @param {string} [arg2_options.key]
+	 *  @param {function} [arg2_options.weighting_function] - (arg0_coefficient:{@link number}) | {@link number}
 	 *
 	 * @returns {Promise<Object>}
 	 */
@@ -631,7 +635,11 @@
 		let model_data_obj = {
 			key: options.key,
 			coefficients: Object.fromEntries(
-				keys.map((key, i) => [key, coefficients[i]])
+				keys.map((key, i) => [
+					key, 
+					(options.weighting_function) ? 
+						options.weighting_function(coefficients[i]) : coefficients[i]]
+				)
 			)
 		};
 		

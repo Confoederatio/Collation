@@ -28,7 +28,7 @@ global.GDP_nominal_OLS = class {
 			
 			guard_clause: (local_index, rasters_obj) => {
 				//Declare local instance variables
-				let local_population = Math.returnSafeNumber(rasters_obj["popc_"]?.data[local_index], 0);
+				let local_population = Math.returnSafeNumber(rasters_obj["popd_"]?.data[local_index], 0);
 				
 				//Return statement; guard clause for uninhabited pixels and HYDE clamping
 				return !(local_population === 0 || landarea_raster.data[local_index] === 0);

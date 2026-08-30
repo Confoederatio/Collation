@@ -19,14 +19,12 @@ global.GDP_PPP_SEDAC = class {
 		"rangeland": (y) => [`${this.hf()}/rangeland${this.hf1(y)}_number.png`, "float32"],
 		"rf_norice": (y) => [`${this.hf()}/rf_norice${this.hf1(y)}_number.png`, "float32"],
 		"rf_rice": (y) => [`${this.hf()}/rf_rice${this.hf1(y)}_number.png`, "float32"],
-		"shifting": (y) => [`${this.hf()}/shifting${this.hf1(y)}_number.png`, "float32"],
 		"tot_irri": (y) => [`${this.hf()}/tot_irri${this.hf1(y)}_number.png`, "float32"],
 		"tot_rainfed": (y) => [`${this.hf()}/tot_rainfed${this.hf1(y)}_number.png`, "float32"],
 		"tot_rice": (y) => [`${this.hf()}/tot_rice${this.hf1(y)}_number.png`, "float32"],
 		"uopp_": (y) => [`${this.hf()}/uopp_${this.hf1(y)}_number.png`, "float32"],
 		
 		//POP (Demographics)
-		//"popc_": (y) => [`${this.sf().input_popc_folder}/stadester_population_${y}.png`, "int32"],
 		//We only include popd_, rurc_, urbc_ to prevent double-counting pops
 		"popd_": (y) => [`${this.sf().intermediate_popd_folder}/stadester_density_${y}.png`, "float32"],
 		"rurc_": (y) => [`${this.sf().input_rurc_folder}/stadester_rural_${y}.png`, "int32"],
