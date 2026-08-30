@@ -63,9 +63,10 @@ ui = fluidPage(
       numericInput("min_val", "Min Value Override", value = NA),
       numericInput("max_val", "Max Value Override", value = NA),
       hr(),
+      selectInput("downsample_method", "Downsampling Method", choices = c("maximum", "minimum", "average", "near"), selected = "maximum"),
       checkboxInput("use_filename_title", "Use Filename as Title", value = TRUE),
       textInput("plot_title", "Manual Title", value = "Raster Map"),
-      textInput("plot_subtitle", "Subtitle", value = "Downsampled to 1M cells (from 4320x2160), Maximum Gridcell Value"),
+      textInput("plot_subtitle", "Subtitle", value = "Downsampled to 1M cells (from 4320x2160)"),
       textInput("legend_title", "Legend Label", value = "Value"),
       helpText("Zoom: Click-drag to brush area."),
       helpText("Reset: Double-click map."),
@@ -177,24 +178,28 @@ server = function(input, output, session) {
     let_p_obj = projectedData()
     let_r = let_p_obj$raster
     
-    # Manual aggregation to ensure downsampling preserves the maximum value
     let_max_vis_cells = 1000000
     let_current_cells = ncell(let_r)
     
     if (let_current_cells > let_max_vis_cells) {
       let_agg_fact = ceiling(sqrt(let_current_cells / let_max_vis_cells))
-      let_r = aggregate(let_r, fact = let_agg_fact, fun = "max", na.rm = TRUE)
+      
+      let_agg_fun = switch(
+        input$downsample_method,
+        "maximum" = "max",
+        "minimum" = "min",
+        "average" = "mean",
+        "near" = function(x, na.rm = TRUE) x[1]
+      )
+      
+      let_r = aggregate(let_r, fact = let_agg_fact, fun = let_agg_fun, na.rm = TRUE)
     }
     
     let_vals = values(let_r, mat = FALSE)
     let_min = if (is.na(input$min_val)) min(let_vals, na.rm = TRUE) else input$min_val
     let_max = if (is.na(input$max_val)) max(let_vals, na.rm = TRUE) else input$max_val
     
-    let_trans = if (input$scale_type == "pseudo-log") {
-      pseudo_log_trans(sigma = input$log_sigma)
-    } else {
-      identity_trans()
-    }
+    let_trans = if (input$scale_type == "pseudo-log") pseudo_log_trans(sigma = input$log_sigma) else identity_trans()
     
     let_brk_low = let_trans$transform(let_min)
     let_brk_high = let_trans$transform(let_max)
