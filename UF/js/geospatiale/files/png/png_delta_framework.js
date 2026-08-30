@@ -26,6 +26,7 @@
 		
 		//Initialise options
 		if (!options.input_format) options.input_format = "int32";
+		if (!options.prefix) options.prefix = "delta_";
 		if (!options.years) options.years = [];
 		
 		//Iterate over years to calculate yearly rate of change between steps
@@ -47,7 +48,7 @@
 				format: options.input_format
 			});
 			
-			let output_file_path = `${output_folder_path}/delta_${current_year}.png`;
+			let output_file_path = `${output_folder_path}/${options.prefix}${current_year}.png`;
 			
 			//Save the delta raster; the function calculates the slope (rate of change)
 			GeoPNG.saveNumberRasterImage({
@@ -65,6 +66,7 @@
 			});
 			
 			console.log(`- Saved delta raster to ${output_file_path}.`);
+			await Blacktraffic.yield();
 		}
 	};
 }

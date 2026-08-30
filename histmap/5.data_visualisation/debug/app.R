@@ -126,6 +126,10 @@ server = function(input, output, session) {
                      "Mercator" = "EPSG:3857",
                      "Equal Earth" = "+proj=eqearth +datum=WGS84 +wktext")
     
+    if (let_p_choice == "Mercator") {
+      let_r = crop(let_r, ext(-180, 180, -85.05113, 85.05113))
+    }
+    
     let_warped = project(let_r, let_crs, method = "near")
     
     let_world = ne_countries(scale = "medium", returnclass = "sf")
@@ -136,6 +140,10 @@ server = function(input, output, session) {
     
     if (let_p_choice == "Equal Earth") {
       let_clip = st_bbox(c(xmin = -17253333, xmax = 17253333, ymin = -9024409, ymax = 9024409), crs = st_crs(let_crs)) %>% st_as_sfc()
+      let_world_p = st_intersection(st_make_valid(let_world_p), let_clip)
+      let_g_p = st_intersection(let_g_p, let_clip)
+    } else if (let_p_choice == "Mercator") {
+      let_clip = st_bbox(c(xmin = -20037508, xmax = 20037508, ymin = -20037508, ymax = 20037508), crs = st_crs(let_crs)) %>% st_as_sfc()
       let_world_p = st_intersection(st_make_valid(let_world_p), let_clip)
       let_g_p = st_intersection(let_g_p, let_clip)
     }
