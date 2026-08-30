@@ -1,13 +1,8 @@
 global.GDP_PPP_pc = class {
 	static cf = `${h3}/GDP_PPP_pc/`;
 	static input_covariates_obj = () => {
-		let covariates_obj = {
-			...GDP_PPP_SEDAC.covariates_obj
-		};
-		
-		//Delete covariates which double count pops
-		delete covariates_obj["rurc_"];
-		delete covariates_obj["urbc_"];
+		let covariates_obj = { ...GDP_PPP_SEDAC.covariates_obj };
+		delete covariates_obj["popd_"];
 		
 		//Return statement
 		return covariates_obj;
@@ -137,10 +132,11 @@ global.GDP_PPP_pc = class {
 				
 				guard_clause: (local_index, rasters_obj) => {
 					//Declare local instance variables
-					let local_population = Math.returnSafeNumber(rasters_obj["popd_"]?.data[local_index], 0);
+					let local_rural_population = Math.returnSafeNumber(rasters_obj["rurc_"]?.data[local_index], 0);
+					let local_urban_population = Math.returnSafeNumber(rasters_obj["urbc_"]?.data[local_index], 0);
 					
 					//Return statement; guard clause for uninhabited pixels and HYDE clamping
-					return !(local_population === 0 || landarea_raster.data[local_index] === 0);
+					return !(local_rural_population + local_urban_population === 0 || landarea_raster.data[local_index] === 0);
 				}
 			});
 			await Blacktraffic.yield();

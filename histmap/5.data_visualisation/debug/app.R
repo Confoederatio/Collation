@@ -9,7 +9,8 @@ library(sf)
 library(scales)
 library(rnaturalearth)
 
-options(shiny.maxRequestSize = 50 * 1024^2) # Increase max. upload size to 50MB
+options(shiny.maxRequestSize = 50 * 1024^2)
+
 decodeGeoPng = function(png_path, format_str) {
   let_img_data = readPNG(png_path)
   let_img_dims = dim(let_img_data)
@@ -66,7 +67,7 @@ ui = fluidPage(
       selectInput("downsample_method", "Downsampling Method", choices = c("maximum", "minimum", "average", "near"), selected = "maximum"),
       checkboxInput("use_filename_title", "Use Filename as Title", value = TRUE),
       textInput("plot_title", "Manual Title", value = "Raster Map"),
-      textInput("plot_subtitle", "Subtitle", value = "Downsampled to 1M cells (from 4320x2160)"),
+      textInput("plot_subtitle", "Subtitle", value = "Downsampled to 1M cells"),
       textInput("legend_title", "Legend Label", value = "Value"),
       helpText("Zoom: Click-drag to brush area."),
       helpText("Reset: Double-click map."),
@@ -148,16 +149,13 @@ server = function(input, output, session) {
     let_proj = projectedData()
     let_orig_r = baseRaster()
     
-    # Convert click coordinates from the projected CRS back to WGS84
     let_v_pt = vect(cbind(let_ev$x, let_ev$y), crs = let_proj$crs)
     let_wgs_pt = project(let_v_pt, "EPSG:4326")
     let_wgs_c = crds(let_wgs_pt)
     
-    # Extract the true value from the original, un-projected raster
     let_val_raw = terra::extract(let_orig_r, let_wgs_pt)
     let_val = if (nrow(let_val_raw) > 0) let_val_raw[1, 2] else NA
     
-    # Determine the original pixel (cell) indices
     let_cell = cellFromXY(let_orig_r, let_wgs_c)
     let_px = rowColFromCell(let_orig_r, let_cell)
     
@@ -182,30 +180,53 @@ server = function(input, output, session) {
     let_current_cells = ncell(let_r)
     
     if (let_current_cells > let_max_vis_cells) {
-      let_agg_fact = ceiling(sqrt(let_current_cells / let_max_vis_cells))
-      
-      let_agg_fun = switch(
-        input$downsample_method,
-        "maximum" = "max",
-        "minimum" = "min",
-        "average" = "mean",
-        "near" = function(x, na.rm = TRUE) x[1]
-      )
-      
-      let_r = aggregate(let_r, fact = let_agg_fact, fun = let_agg_fun, na.rm = TRUE)
+      if (input$downsample_method == "near") {
+        let_r = spatSample(let_r, size = let_max_vis_cells, method = "regular", as.raster = TRUE)
+      } else {
+        let_agg_fact = ceiling(sqrt(let_current_cells / let_max_vis_cells))
+        let_agg_fun = switch(
+          input$downsample_method,
+          "maximum" = "max",
+          "minimum" = "min",
+          "average" = "mean"
+        )
+        let_r = aggregate(let_r, fact = let_agg_fact, fun = let_agg_fun, na.rm = TRUE)
+      }
     }
     
     let_vals = values(let_r, mat = FALSE)
-    let_min = if (is.na(input$min_val)) min(let_vals, na.rm = TRUE) else input$min_val
-    let_max = if (is.na(input$max_val)) max(let_vals, na.rm = TRUE) else input$max_val
+    let_vals = let_vals[is.finite(let_vals)]
     
-    let_trans = if (input$scale_type == "pseudo-log") pseudo_log_trans(sigma = input$log_sigma) else identity_trans()
+    if (is.na(input$min_val)) {
+      let_min = min(let_vals, na.rm = TRUE)
+    } else {
+      let_min = input$min_val
+    }
+    
+    if (is.na(input$max_val)) {
+      let_max = max(let_vals, na.rm = TRUE)
+    } else {
+      let_max = input$max_val
+    }
+    
+    if (input$scale_type == "pseudo-log") {
+      let_trans = pseudo_log_trans(sigma = input$log_sigma)
+    } else {
+      let_trans = identity_trans()
+    }
     
     let_brk_low = let_trans$transform(let_min)
     let_brk_high = let_trans$transform(let_max)
     let_brks = let_trans$inverse(seq(let_brk_low, let_brk_high, length.out = 8))
     
-    let_display_title = if (input$use_filename_title && !is.null(input$geo_file)) input$geo_file$name else input$plot_title
+    if (input$use_filename_title && !is.null(input$geo_file)) {
+      let_display_title = input$geo_file$name
+    } else {
+      let_display_title = input$plot_title
+    }
+    
+    let_legend_label = paste0(input$legend_title, "\n[", tools::toTitleCase(input$downsample_method), "]")
+    let_subtitle_label = paste0(input$plot_subtitle, " (", input$downsample_method, ")")
     
     let_gg = ggplot() +
       geom_sf(data = let_p_obj$land, fill = "#222222", color = NA) +
@@ -218,7 +239,7 @@ server = function(input, output, session) {
         expand = FALSE,
         datum = NA
       ) +
-      labs(title = let_display_title, subtitle = input$plot_subtitle, fill = input$legend_title) +
+      labs(title = let_display_title, subtitle = let_subtitle_label, fill = let_legend_label) +
       theme_minimal() +
       theme(
         panel.background = element_rect(fill = "#eef2f5", color = NA),
@@ -238,9 +259,15 @@ server = function(input, output, session) {
         guide = guide_colorbar(frame.colour = "black", ticks.colour = "black")
       )
     } else {
-      let_pal = if (input$color_palette == "Spectral") "Spectral" else "YlOrRd"
+      if (input$color_palette == "Spectral") {
+        let_pal = "Spectral"
+        let_dir = -1
+      } else {
+        let_pal = "YlOrRd"
+        let_dir = 1
+      }
       let_gg = let_gg + scale_fill_distiller(
-        palette = let_pal, direction = if (let_pal == "Spectral") -1 else 1,
+        palette = let_pal, direction = let_dir,
         trans = let_trans, na.value = NA,
         limits = c(let_min, let_max), oob = squish, 
         labels = label_comma(accuracy = let_acc), breaks = let_brks,
