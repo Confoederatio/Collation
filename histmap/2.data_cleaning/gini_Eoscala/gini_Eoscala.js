@@ -303,7 +303,7 @@ global.gini_Eoscala = class {
 			let gdp_format = gdp_info[1];
 			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_file, { format: gdp_format });
 			
-			// Load population as a fallback for zero-GDP but populated pixels (e.g. subsistence)
+			// Load population as a fallback for zero-GDP but populated pixels
 			let popc_info = this.input_covariates_obj()["popc_"](year);
 			let popc_file = popc_info[0];
 			let popc_format = popc_info[1];
@@ -357,7 +357,7 @@ global.gini_Eoscala = class {
 			let valid_max = -Infinity;
 			for (let j = 0; j < normalised_raster.data.length; j++) {
 				let val = normalised_raster.data[j];
-				if (val > 0) { // Ignore ocean/uninhabited mask (0)
+				if (val > 0) {
 					if (val < valid_min) valid_min = val;
 					if (val > valid_max) valid_max = val;
 				}
@@ -371,10 +371,9 @@ global.gini_Eoscala = class {
 			
 			if (valid_min === Infinity) valid_min = 0;
 			if (valid_max === -Infinity) valid_max = 1;
-			
 			let valid_range = valid_max - valid_min;
 			
-			// 2. Group pixels by region and map them to Logit (-∞, ∞) space
+			// 2. Group pixels by region and compute initial properties
 			let region_pixels = {};
 			let total_pixels = normalised_raster.data.length;
 			
@@ -390,10 +389,10 @@ global.gini_Eoscala = class {
 					let weight = (gdp > 0) ? gdp : (pop > 0 ? pop * 0.001 : 0);
 					if (weight > 0) {
 						if (!region_pixels[colour_key]) {
-							region_pixels[colour_key] = { total_weight: 0, pixels: [] };
+							region_pixels[colour_key] = { total_weight: 0, weighted_sum_unit: 0, pixels: [] };
 						}
 						
-						// Convert to 0-1 Unit scale, avoiding absolute 0 or 1 for Logit math
+						// Convert to 0-1 Unit scale
 						let unit_gini = (valid_range > 0) ? ((norm_gini - valid_min) / valid_range) : 0.5;
 						unit_gini = Math.max(0.0001, Math.min(0.9999, unit_gini));
 						
@@ -402,41 +401,55 @@ global.gini_Eoscala = class {
 						
 						region_pixels[colour_key].pixels.push({ index, weight, logit_val });
 						region_pixels[colour_key].total_weight += weight;
+						region_pixels[colour_key].weighted_sum_unit += (weight * unit_gini);
 					}
 				}
 			}
 			
-			// 3. Binary Search for the perfect Logit Shift (+/-) factor per region
-			let shift_map = {};
+			// 3. Compute Amplitude Multiplier (Alpha) & Shift (Beta)
+			let transform_map = {};
 			
 			Object.iterate(region_pixels, (colour_key, data) => {
 				let target = target_gini_map[colour_key];
 				let target_unit = (valid_range > 0) ? ((target - valid_min) / valid_range) : 0.5;
 				target_unit = Math.max(0.0001, Math.min(0.9999, target_unit));
 				
-				if (data.total_weight === 0) {
-					shift_map[colour_key] = 0;
-					return;
-				}
+				if (data.total_weight === 0) return;
 				
-				let low = -20; // Extreme shift left
-				let high = 20; // Extreme shift right
+				let current_unit = data.weighted_sum_unit / data.total_weight;
+				current_unit = Math.max(0.0001, Math.min(0.9999, current_unit));
+				
+				// Variance matching: Counteract Sigmoid edge compression
+				let var_old = current_unit * (1 - current_unit);
+				let var_target = target_unit * (1 - target_unit);
+				
+				let alpha = var_old / var_target;
+				
+				// STRICT RULE: Never compress the Logit variance (min 1.0).
+				// We only use Alpha to EXPAND variance when pushing into the high/low tails.
+				// This guarantees countries will never flat-line.
+				alpha = Math.max(1.0, Math.min(10.0, alpha));
+				
+				let low = -20;
+				let high = 20;
 				let best_shift = 0;
 				
+				// Binary search for Beta (the required shift to hit the exact target)
 				for (let iter = 0; iter < 50; iter++) {
 					let mid = (low + high) / 2;
 					let weighted_sum = 0;
 					
 					for (let i = 0; i < data.pixels.length; i++) {
-						let shifted_logit = data.pixels[i].logit_val + mid;
-						// Sigmoid transform back to unit space: 1 / (1 + e^-L)
+						let scaled_logit = data.pixels[i].logit_val * alpha;
+						let shifted_logit = scaled_logit + mid;
+						
+						// Sigmoid transform back to unit space
 						let sigmoid_val = 1 / (1 + Math.exp(-shifted_logit));
 						weighted_sum += data.pixels[i].weight * sigmoid_val;
 					}
 					
 					let current_mean = weighted_sum / data.total_weight;
 					
-					// If mean is too low, we need a larger positive shift
 					if (current_mean < target_unit) {
 						low = mid;
 					} else {
@@ -445,10 +458,10 @@ global.gini_Eoscala = class {
 					best_shift = mid;
 				}
 				
-				shift_map[colour_key] = best_shift;
+				transform_map[colour_key] = { alpha: alpha, shift: best_shift };
 			});
 			
-			console.log(`Clamping year ${year} using Logit (Log-Odds) adjustment. Variance preserved and asymptotically bounded to [${valid_min.toFixed(3)}, ${valid_max.toFixed(3)}]`);
+			console.log(`Clamping year ${year} using Strict Variance-Preserving Logit adjustment. Amplitude guaranteed >= original.`);
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -457,23 +470,24 @@ global.gini_Eoscala = class {
 				height: 2160,
 				function: (local_index) => {
 					let norm_gini = normalised_raster.data[local_index];
-					if (norm_gini === 0) return 0; // Skip empty ocean/uninhabited land directly
+					if (norm_gini === 0) return 0;
 					
 					let colour_key = getColourKeyForPixel(local_index);
-					let shift = shift_map[colour_key];
+					let transform = transform_map[colour_key];
 					
-					if (shift !== undefined) {
+					if (transform !== undefined) {
 						let unit_gini = (valid_range > 0) ? ((norm_gini - valid_min) / valid_range) : 0.5;
 						unit_gini = Math.max(0.0001, Math.min(0.9999, unit_gini));
 						
 						let logit_val = Math.log(unit_gini / (1 - unit_gini));
-						let shifted_logit = logit_val + shift;
+						
+						// Apply Alpha (Variance Expansion) and Beta (Mean Shift)
+						let shifted_logit = (logit_val * transform.alpha) + transform.shift;
 						let new_unit = 1 / (1 + Math.exp(-shifted_logit));
 						
 						return valid_min + (new_unit * valid_range);
 					}
 					
-					// Fallback to original if out of target mapping
 					return Math.min(valid_max, Math.max(valid_min, norm_gini));
 				}
 			});
