@@ -104,6 +104,10 @@ global.gini_Eoscala = class {
 		let subngini_global_min = (subngini_global_ginis.length > 0) ? Math.min(...subngini_global_ginis) : 0;
 		let subngini_global_max = (subngini_global_ginis.length > 0) ? Math.max(...subngini_global_ginis) : 1;
 		
+		// Determine the absolute bounds of human inequality across all datasets to use as a fallback anchor
+		let absolute_global_min = Math.min(eoscala_global_min, gapminder_global_min, subngini_global_min);
+		let absolute_global_max = Math.max(eoscala_global_max, gapminder_global_max, subngini_global_max);
+		
 		let gapminder_domain = this.options.gapminder_domain;
 		let subngini_domain = this.options.subngini_domain;
 		
@@ -118,31 +122,43 @@ global.gini_Eoscala = class {
 			}
 			
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
+			
+			// Load population data to mask out uninhabited areas from Gini bounds
+			let popc_info = this.input_covariates_obj()["popc_"](local_year);
+			let popc_file = popc_info[0];
+			let popc_format = popc_info[1];
+			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
+			
 			let raw_min = Infinity;
 			let raw_max = -Infinity;
-			let has_land_pixels = false;
+			let has_valid_pixels = false;
 			
 			for (let j = 0; j < raw_raster.data.length; j++) {
-				if (landarea_raster.data[j] > 0) {
-					has_land_pixels = true;
+				let is_land = (landarea_raster.data[j] > 0);
+				let has_pop = (popc_raster.data[j] > 0); // Exclude 0 population
+				
+				if (is_land && has_pop) {
+					has_valid_pixels = true;
 					let val = raw_raster.data[j];
 					if (val < raw_min) raw_min = val;
 					if (val > raw_max) raw_max = val;
 				}
 			}
 			
-			// Resolve target min/max based on the domain of the current year, specific to that year
+			// Resolve target min/max based on the domain of the current year
 			let target_min = 0;
 			let target_max = 1;
 			let domain_name = "Global";
+			let sample_size = 0;
 			
 			if (local_year < gapminder_domain[0]) {
 				domain_name = "Eoscala";
 				let year_points = eoscala_points.filter(p => parseInt(p.year) === local_year);
 				let year_ginis = year_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
+				sample_size = year_ginis.length;
 				
-				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : eoscala_global_min;
-				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : eoscala_global_max;
+				target_min = (sample_size > 0) ? Math.min(...year_ginis) : eoscala_global_min;
+				target_max = (sample_size > 0) ? Math.max(...year_ginis) : eoscala_global_max;
 				
 				if (target_min === target_max) {
 					target_min = eoscala_global_min;
@@ -155,9 +171,10 @@ global.gini_Eoscala = class {
 					let val = years_obj[local_year];
 					if (val !== undefined && !isNaN(val)) year_ginis.push(val);
 				});
+				sample_size = year_ginis.length;
 				
-				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : gapminder_global_min;
-				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : gapminder_global_max;
+				target_min = (sample_size > 0) ? Math.min(...year_ginis) : gapminder_global_min;
+				target_max = (sample_size > 0) ? Math.max(...year_ginis) : gapminder_global_max;
 				
 				if (target_min === target_max) {
 					target_min = gapminder_global_min;
@@ -170,9 +187,10 @@ global.gini_Eoscala = class {
 					let val = parseFloat(years_obj[local_year]);
 					if (val !== 0 && !isNaN(val)) year_ginis.push(val);
 				});
+				sample_size = year_ginis.length;
 				
-				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : subngini_global_min;
-				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : subngini_global_max;
+				target_min = (sample_size > 0) ? Math.min(...year_ginis) : subngini_global_min;
+				target_max = (sample_size > 0) ? Math.max(...year_ginis) : subngini_global_max;
 				
 				if (target_min === target_max) {
 					target_min = subngini_global_min;
@@ -180,11 +198,22 @@ global.gini_Eoscala = class {
 				}
 			}
 			
-			if (target_max < 0.75) target_max = 0.75; //Ensure that Gini clamping is not artificially low
+			// Dynamic bounds expansion based on statistical confidence (sample size).
+			// Uses an exponential decay (e^-N/15). 
+			// If N is very low (e.g., Eoscala pre-history), bounds heavily expand towards absolute global extremes.
+			// If N is high (e.g., modern Gapminder ~150 points), the bounds lock strictly to observed data.
+			let uncertainty_weight = Math.exp(-sample_size / 15);
+			
+			target_min = target_min - ((target_min - absolute_global_min) * uncertainty_weight);
+			target_max = target_max + ((absolute_global_max - target_max) * uncertainty_weight);
+			
+			// Sanity clamp to mathematical boundaries of Gini
+			target_min = Math.max(0, target_min);
+			target_max = Math.min(1, target_max);
 			
 			let normalised_map = new Float32Array(raw_raster.data.length);
 			
-			if (has_land_pixels) {
+			if (has_valid_pixels) {
 				// Shift the dataset so that the minimum raw value maps strictly to 1.
 				// This allows us to safely use natural log, expanding the lower density cluster 
 				// while smoothly mapping extreme outliers without hard clamping.
@@ -195,7 +224,10 @@ global.gini_Eoscala = class {
 				let target_range = target_max - target_min;
 				
 				for (let j = 0; j < raw_raster.data.length; j++) {
-					if (landarea_raster.data[j] > 0) {
+					let is_land = (landarea_raster.data[j] > 0);
+					let has_pop = (popc_raster.data[j] > 0);
+					
+					if (is_land && has_pop) {
 						let raw_val = raw_raster.data[j];
 						
 						if (log_range === 0) {
@@ -205,12 +237,14 @@ global.gini_Eoscala = class {
 							let fraction = (log_val - log_min) / log_range;
 							normalised_map[j] = target_min + (fraction * target_range);
 						}
+					} else {
+						normalised_map[j] = 0; // Uninhabited land / ocean
 					}
 				}
 				
-				console.log(`Normalising year ${local_year} (${domain_name}) using Logarithmic Min-Max mapped to parent bounds [${target_min}, ${target_max}]`);
+				console.log(`Normalising year ${local_year} (${domain_name}) using Logarithmic Min-Max. Limits expanded to [${target_min.toFixed(3)}, ${target_max.toFixed(3)}] (Sample size: ${sample_size})`);
 			} else {
-				console.log(`Skipping normalisation for year ${local_year} (no valid land pixels found)`);
+				console.log(`Skipping normalisation for year ${local_year} (no inhabited land pixels found)`);
 			}
 			
 			GeoPNG.saveNumberRasterImage({
@@ -219,8 +253,7 @@ global.gini_Eoscala = class {
 				width: 4320,
 				height: 2160,
 				function: (local_index) => {
-					let is_land = (landarea_raster.data[local_index] > 0);
-					if (!is_land) return 0; // Ocean is always 0
+					// Both ocean and zero-pop land have already been zeroed in normalised_map
 					return normalised_map[local_index];
 				}
 			});
@@ -257,16 +290,18 @@ global.gini_Eoscala = class {
 			
 			let normalised_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Load population data for weighting
+			// Load population and economic data for dasymetric weighting
 			let popc_info = this.input_covariates_obj()["popc_"](year);
-			let popc_file = popc_info[0];
-			let popc_format = popc_info[1];
-			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
+			let popc_raster = GeoPNG.loadNumberRasterImage(popc_info[0], { format: popc_info[1] });
+			
+			let gdp_info = this.input_covariates_obj()["gdp_ppp"](year);
+			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_info[0], { format: gdp_info[1] });
 			
 			let target_gini_map = {};
 			let getColourKeyForPixel = null;
 			
 			if (year < this.options.gapminder_domain[0]) {
+				
 				// Pre-modern domain: clamp purely between 0 and 1
 				console.log(`Clamping pre-modern year ${year} directly to [0, 1]`);
 				GeoPNG.saveNumberRasterImage({
@@ -321,7 +356,7 @@ global.gini_Eoscala = class {
 				};
 			}
 			
-			// Accumulate regional totals to weight OLS Gini by population
+			// Accumulate regional totals to weight OLS Gini by Economic Mass (GDP PPP)
 			let region_stats = {};
 			let total_pixels = normalised_raster.data.length;
 			
@@ -329,13 +364,20 @@ global.gini_Eoscala = class {
 				let colour_key = getColourKeyForPixel(index);
 				if (target_gini_map[colour_key] !== undefined) {
 					let pop = Math.max(0, popc_raster.data[index]);
+					let gdp = Math.max(0, gdp_raster.data[index]);
 					let norm_gini = normalised_raster.data[index];
 					
-					if (!region_stats[colour_key]) {
-						region_stats[colour_key] = { weighted_sum: 0, total_pop: 0 };
+					// Use GDP PPP as the primary weight for an economic indicator like Gini.
+					// Fall back to Population only if the cell has people but 0 registered GDP.
+					let weight = (gdp > 0) ? gdp : pop;
+					
+					if (weight > 0) {
+						if (!region_stats[colour_key]) {
+							region_stats[colour_key] = { weighted_sum: 0, total_weight: 0 };
+						}
+						region_stats[colour_key].weighted_sum += weight * norm_gini;
+						region_stats[colour_key].total_weight += weight;
 					}
-					region_stats[colour_key].weighted_sum += pop * norm_gini;
-					region_stats[colour_key].total_pop += pop;
 				}
 			}
 			
@@ -343,11 +385,11 @@ global.gini_Eoscala = class {
 			let scale_factors = {};
 			Object.iterate(region_stats, (colour_key, stats) => {
 				let target = target_gini_map[colour_key];
-				scale_factors[colour_key] = (stats.total_pop > 0 && stats.weighted_sum > 0) ?
-					target / (stats.weighted_sum / stats.total_pop) : 1;
+				scale_factors[colour_key] = (stats.total_weight > 0 && stats.weighted_sum > 0) ?
+					target / (stats.weighted_sum / stats.total_weight) : 1;
 			});
 			
-			console.log(`Clamping year ${year} using regional population-weighted target clamping`);
+			console.log(`Clamping year ${year} using regional GDP-PPP-weighted target clamping`);
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -364,6 +406,7 @@ global.gini_Eoscala = class {
 						scaled_gini = (factor !== undefined) ? norm_gini * factor : target_gini_map[colour_key];
 					}
 					
+					// Hard boundary sanity check to prevent impossible Gini coefficients
 					return Math.min(1, Math.max(0, scaled_gini));
 				}
 			});
