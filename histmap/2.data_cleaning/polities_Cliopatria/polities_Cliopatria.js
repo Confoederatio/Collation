@@ -249,7 +249,7 @@ global.polities_Cliopatria = class {
 			let local_properties = geojson_obj.features[i].properties;
 			
 			let local_midpoint = Array.getMidpoint([local_properties.FromYear, local_properties.ToYear]);
-			let local_poi_coord = Geospatiale.getEquirectangularCoordsPixel(local_properties.poi[0], local_properties.poi[1]);
+			let local_poi_coord = Geospatiale.getEquirectangularCoordsPixel(local_properties.poi[1], local_properties.poi[0]);
 			let local_selected_year = Array.getClosest(colourmap_years, local_midpoint);
 			
 			let local_selected_colourmap = `${this.intermediate_rasters_colourmaps}${local_selected_year}.png`;

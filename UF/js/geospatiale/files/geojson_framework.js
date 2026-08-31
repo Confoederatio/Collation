@@ -57,8 +57,8 @@
 				const [lon1, lat1] = ring[i];
 				const [lon2, lat2] = ring[i + 1];
 				
-				const { x_coord: x1, y_coord: y1 } = Geospatiale.getEquirectangularCoordsPixel(lat1, lon1, { return_object: true, width: options.width, height: options.height });
-				const { x_coord: x2, y_coord: y2 } = Geospatiale.getEquirectangularCoordsPixel(lat2, lon2, { return_object: true, width: options.width, height: options.height });
+				const { x_coord: x1, y_coord: y1 } = Geospatiale.getEquirectangularCoordsPixel(lon1, lat1, { return_object: true, width: options.width, height: options.height });
+				const { x_coord: x2, y_coord: y2 } = Geospatiale.getEquirectangularCoordsPixel(lon2, lat2, { return_object: true, width: options.width, height: options.height });
 				
 				if ((y1 <= y && y2 > y) || (y2 <= y && y1 > y)) {
 					const x_intersection = Math.round(x1 + ((y - y1) * (x2 - x1)) / (y2 - y1));
@@ -172,8 +172,8 @@
 						//Write centroid pixel
 						let [lon, lat] = GeoJSON.getCentroid(local_geometry);
 						let { x_coord, y_coord } = GeoPNG.getEquirectangularCoordsPixel(
-							lat,
 							lon,
+							lat,
 							{
 								width: options.width,
 								height: options.height,
@@ -205,8 +205,8 @@
 								coordinates: polygon,
 							});
 							let { x_coord, y_coord } = GeoPNG.getEquirectangularCoordsPixel(
-								lat,
 								lon,
+								lat,
 								{
 									width: options.width,
 									height: options.height,
