@@ -34,7 +34,6 @@ global.gini_Eoscala = class {
 			}
 			
 			let output_file_path = `${base_dir}gini_OLS_${year}.png`;
-			if (fs.existsSync(output_file_path)) continue;
 			
 			// Load and parse the model to filter invalid coefficients
 			let model_obj = JSON.parse(fs.readFileSync(model_path, "utf8"));
@@ -64,22 +63,94 @@ global.gini_Eoscala = class {
 		}
 	}
 	
+	static async A2_healOLSRasters () {
+		let years = this.years();
+		let src_dir = this.intermediate_ols_rasters;
+		
+		let landarea_file = metadata_HYDE.input_raster_land_area;
+		let landarea_raster = GeoPNG.loadNumberRasterImage(landarea_file, { format: "int32" });
+		
+		let last_good_year = null;
+		let last_good_std = 0;
+		let last_good_path = null;
+		
+		for (let i = 0; i < years.length; i++) {
+			if (years[i] < 1950) continue; //Only kick in after 1950AD
+			
+			let year = years[i];
+			let current_path = `${src_dir}gini_OLS_${year}.png`;
+			
+			if (!fs.existsSync(current_path)) continue;
+			
+			let raster = GeoPNG.loadNumberRasterImage(current_path, { format: "float32" });
+			
+			// Calculate standard deviation of valid land pixels to determine variance health
+			let sum = 0;
+			let count = 0;
+			
+			for (let j = 0; j < raster.data.length; j++) {
+				if (landarea_raster.data[j] > 0) {
+					sum += raster.data[j];
+					count++;
+				}
+			}
+			
+			if (count === 0) continue;
+			
+			let mean = sum / count;
+			let sq_sum = 0;
+			
+			for (let j = 0; j < raster.data.length; j++) {
+				if (landarea_raster.data[j] > 0) {
+					sq_sum += Math.pow(raster.data[j] - mean, 2);
+				}
+			}
+			
+			let std_dev = Math.sqrt(sq_sum / count);
+			console.log(`Year ${year} OLS Spatial StdDev: ${std_dev.toFixed(5)}`);
+			
+			let is_bad = false;
+			if (last_good_path !== null) {
+				// Flag anomaly if variance drops below a critical threshold (e.g. 0.015) 
+				// OR collapses by more than 50% relative to the last known good year.
+				if (std_dev < 0.015 || std_dev < (last_good_std * 0.5)) {
+					is_bad = true;
+				}
+			}
+			
+			if (is_bad) {
+				console.log(`- Anomalously low variance detected in ${year}. Healing via interpolation from ${last_good_year}...`);
+				
+				// Interpolate: heavily weight the last good year's texture (0.9) and lightly weight the current flat year (0.1)
+				GeoPNG.linearInterpolation(last_good_path, current_path, current_path, {
+					format: "float32",
+					fraction: 0.1
+				});
+				
+				// Do NOT update last_good_year variables, so if the next year is also flat, it continues to draw from the original good year.
+			} else {
+				last_good_year = year;
+				last_good_std = std_dev;
+				last_good_path = current_path;
+			}
+			
+			await Blacktraffic.yield();
+		}
+	}
+	
 	static async B_normaliseOLSRasters () {
 		let target_years = this.years();
 		let src_dir = this.intermediate_ols_rasters;
 		let dest_dir = this.intermediate_normalised_rasters;
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
-		// Load parent data sources
 		let eoscala_points = gini_OLS.getEoscalaGiniObject();
 		let gapminder_data = gini_OLS.getGapminderGiniObject();
 		let subngini_data = gini_OLS.getSubNGiniObject();
 		
-		// Load land area mask to properly isolate land pixels from ocean
 		let landarea_file = metadata_HYDE.input_raster_land_area;
 		let landarea_raster = GeoPNG.loadNumberRasterImage(landarea_file, { format: "int32" });
 		
-		// Calculate global fallbacks in case a specific year has no direct data points
 		let eoscala_global_ginis = eoscala_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
 		let eoscala_global_min = (eoscala_global_ginis.length > 0) ? Math.min(...eoscala_global_ginis) : 0;
 		let eoscala_global_max = (eoscala_global_ginis.length > 0) ? Math.max(...eoscala_global_ginis) : 1;
@@ -104,7 +175,6 @@ global.gini_Eoscala = class {
 		let subngini_global_min = (subngini_global_ginis.length > 0) ? Math.min(...subngini_global_ginis) : 0;
 		let subngini_global_max = (subngini_global_ginis.length > 0) ? Math.max(...subngini_global_ginis) : 1;
 		
-		// Determine the absolute bounds of human inequality across all datasets to use as a fallback anchor
 		let absolute_global_min = Math.min(eoscala_global_min, gapminder_global_min, subngini_global_min);
 		let absolute_global_max = Math.max(eoscala_global_max, gapminder_global_max, subngini_global_max);
 		
@@ -116,14 +186,10 @@ global.gini_Eoscala = class {
 			let source_path = `${src_dir}gini_OLS_${local_year}.png`;
 			let output_path = `${dest_dir}gini_OLS_normalised_${local_year}.png`;
 			
-			if (!fs.existsSync(source_path)) {
-				console.warn(`Source OLS raster not found: ${source_path}`);
-				continue;
-			}
+			if (!fs.existsSync(source_path)) continue;
 			
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Load population data to mask out uninhabited areas from Gini bounds
 			let popc_info = this.input_covariates_obj()["popc_"](local_year);
 			let popc_file = popc_info[0];
 			let popc_format = popc_info[1];
@@ -135,7 +201,7 @@ global.gini_Eoscala = class {
 			
 			for (let j = 0; j < raw_raster.data.length; j++) {
 				let is_land = (landarea_raster.data[j] > 0);
-				let has_pop = (popc_raster.data[j] > 0); // Exclude 0 population
+				let has_pop = (popc_raster.data[j] > 0);
 				
 				if (is_land && has_pop) {
 					has_valid_pixels = true;
@@ -145,7 +211,6 @@ global.gini_Eoscala = class {
 				}
 			}
 			
-			// Resolve target min/max based on the domain of the current year
 			let target_min = 0;
 			let target_max = 1;
 			let domain_name = "Global";
@@ -198,27 +263,18 @@ global.gini_Eoscala = class {
 				}
 			}
 			
-			// Dynamic bounds expansion based on statistical confidence (sample size).
-			// Uses an exponential decay (e^-N/15). 
-			// If N is very low (e.g., Eoscala pre-history), bounds heavily expand towards absolute global extremes.
-			// If N is high (e.g., modern Gapminder ~150 points), the bounds lock strictly to observed data.
 			let uncertainty_weight = Math.exp(-sample_size / 15);
-			
 			target_min = target_min - ((target_min - absolute_global_min) * uncertainty_weight);
 			target_max = target_max + ((absolute_global_max - target_max) * uncertainty_weight);
 			
-			// Sanity clamp to mathematical boundaries of Gini
 			target_min = Math.max(0, target_min);
 			target_max = Math.min(1, target_max);
 			
 			let normalised_map = new Float32Array(raw_raster.data.length);
 			
 			if (has_valid_pixels) {
-				// Shift the dataset so that the minimum raw value maps strictly to 1.
-				// This allows us to safely use natural log, expanding the lower density cluster 
-				// while smoothly mapping extreme outliers without hard clamping.
 				let shift = 1 - raw_min;
-				let log_min = 0; // Math.log(raw_min + shift) is exactly Math.log(1) which is 0
+				let log_min = 0;
 				let log_max = Math.log(raw_max + shift);
 				let log_range = log_max - log_min;
 				let target_range = target_max - target_min;
@@ -238,7 +294,7 @@ global.gini_Eoscala = class {
 							normalised_map[j] = target_min + (fraction * target_range);
 						}
 					} else {
-						normalised_map[j] = 0; // Uninhabited land / ocean
+						normalised_map[j] = 0;
 					}
 				}
 				
@@ -253,7 +309,6 @@ global.gini_Eoscala = class {
 				width: 4320,
 				height: 2160,
 				function: (local_index) => {
-					// Both ocean and zero-pop land have already been zeroed in normalised_map
 					return normalised_map[local_index];
 				}
 			});
@@ -268,12 +323,10 @@ global.gini_Eoscala = class {
 		let dest_dir = this.output_clamped_rasters;
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
-		// Load Gapminder metadata
 		let gapminder_obj = gini_OLS.getGapminderGiniObject();
 		let geocode_obj = admin_modern.getColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
-		// Load SubNGini metadata
 		let subngini_obj = gini_OLS.getSubNGiniObject();
 		let areal_raster_path = gini_SubNGini.output_areal_raster;
 		let areal_raster = GeoPNG.loadImage(areal_raster_path);
@@ -283,13 +336,9 @@ global.gini_Eoscala = class {
 			let source_path = `${src_dir}gini_OLS_normalised_${year}.png`;
 			let output_path = `${dest_dir}gini_clamped_${year}.png`;
 			
-			if (!fs.existsSync(source_path)) {
-				console.warn(`Source normalised raster not found: ${source_path}`);
-				continue;
-			}
+			if (!fs.existsSync(source_path)) continue;
 			
 			if (year < this.options.gapminder_domain[0]) {
-				// Pre-modern domain: Already mathematically bounded by normalisation. No regional targets exist.
 				console.log(`Pre-modern year ${year} already bounded. Copying directly...`);
 				fs.copyFileSync(source_path, output_path);
 				continue;
@@ -297,13 +346,11 @@ global.gini_Eoscala = class {
 			
 			let normalised_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Load GDP PPP data for correct income-based Gini weighting
 			let gdp_info = this.input_covariates_obj()["gdp_ppp"](year);
 			let gdp_file = gdp_info[0];
 			let gdp_format = gdp_info[1];
 			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_file, { format: gdp_format });
 			
-			// Load population as a fallback for zero-GDP but populated pixels
 			let popc_info = this.input_covariates_obj()["popc_"](year);
 			let popc_file = popc_info[0];
 			let popc_format = popc_info[1];
@@ -313,7 +360,6 @@ global.gini_Eoscala = class {
 			let getColourKeyForPixel = null;
 			
 			if (year >= this.options.gapminder_domain[0] && year < this.options.subngini_domain[0]) {
-				// Gapminder Domain
 				Object.iterate(geocode_obj, (colour_key, local_geocodes) => {
 					if (local_geocodes) {
 						for (let x = 0; x < local_geocodes.length; x++) {
@@ -334,7 +380,6 @@ global.gini_Eoscala = class {
 					return `${r},${g},${b}`;
 				};
 			} else {
-				// SubNGini Domain
 				Object.iterate(subngini_obj, (colour_key, local_value) => {
 					let region_gini = local_value?.[year];
 					if (region_gini !== undefined && !isNaN(region_gini)) {
@@ -352,7 +397,6 @@ global.gini_Eoscala = class {
 				};
 			}
 			
-			// 1. Extract valid absolute bounds from the normalised raster
 			let valid_min = Infinity;
 			let valid_max = -Infinity;
 			for (let j = 0; j < normalised_raster.data.length; j++) {
@@ -363,7 +407,6 @@ global.gini_Eoscala = class {
 				}
 			}
 			
-			// Expand valid bounds if any specific target somehow exceeds them
 			Object.iterate(target_gini_map, (k, target_val) => {
 				if (target_val < valid_min) valid_min = target_val;
 				if (target_val > valid_max) valid_max = target_val;
@@ -373,13 +416,12 @@ global.gini_Eoscala = class {
 			if (valid_max === -Infinity) valid_max = 1;
 			let valid_range = valid_max - valid_min;
 			
-			// 2. Group pixels by region and compute initial properties
 			let region_pixels = {};
 			let total_pixels = normalised_raster.data.length;
 			
 			for (let index = 0; index < total_pixels; index++) {
 				let norm_gini = normalised_raster.data[index];
-				if (norm_gini === 0) continue; // Skip ocean
+				if (norm_gini === 0) continue;
 				
 				let colour_key = getColourKeyForPixel(index);
 				if (target_gini_map[colour_key] !== undefined) {
@@ -392,11 +434,9 @@ global.gini_Eoscala = class {
 							region_pixels[colour_key] = { total_weight: 0, weighted_sum_unit: 0, pixels: [] };
 						}
 						
-						// Convert to 0-1 Unit scale
 						let unit_gini = (valid_range > 0) ? ((norm_gini - valid_min) / valid_range) : 0.5;
 						unit_gini = Math.max(0.0001, Math.min(0.9999, unit_gini));
 						
-						// Logit transform: ln( p / (1-p) )
 						let logit_val = Math.log(unit_gini / (1 - unit_gini));
 						
 						region_pixels[colour_key].pixels.push({ index, weight, logit_val });
@@ -406,7 +446,6 @@ global.gini_Eoscala = class {
 				}
 			}
 			
-			// 3. Compute Amplitude Multiplier (Alpha) & Shift (Beta)
 			let transform_map = {};
 			
 			Object.iterate(region_pixels, (colour_key, data) => {
@@ -419,22 +458,16 @@ global.gini_Eoscala = class {
 				let current_unit = data.weighted_sum_unit / data.total_weight;
 				current_unit = Math.max(0.0001, Math.min(0.9999, current_unit));
 				
-				// Variance matching: Counteract Sigmoid edge compression
 				let var_old = current_unit * (1 - current_unit);
 				let var_target = target_unit * (1 - target_unit);
 				
 				let alpha = var_old / var_target;
-				
-				// STRICT RULE: Never compress the Logit variance (min 1.0).
-				// We only use Alpha to EXPAND variance when pushing into the high/low tails.
-				// This guarantees countries will never flat-line.
-				alpha = Math.max(1.0, Math.min(10.0, alpha));
+				alpha = Math.max(1.0, Math.min(10.0, alpha)); // Strict Non-Compression Rule
 				
 				let low = -20;
 				let high = 20;
 				let best_shift = 0;
 				
-				// Binary search for Beta (the required shift to hit the exact target)
 				for (let iter = 0; iter < 50; iter++) {
 					let mid = (low + high) / 2;
 					let weighted_sum = 0;
@@ -443,7 +476,6 @@ global.gini_Eoscala = class {
 						let scaled_logit = data.pixels[i].logit_val * alpha;
 						let shifted_logit = scaled_logit + mid;
 						
-						// Sigmoid transform back to unit space
 						let sigmoid_val = 1 / (1 + Math.exp(-shifted_logit));
 						weighted_sum += data.pixels[i].weight * sigmoid_val;
 					}
@@ -481,7 +513,6 @@ global.gini_Eoscala = class {
 						
 						let logit_val = Math.log(unit_gini / (1 - unit_gini));
 						
-						// Apply Alpha (Variance Expansion) and Beta (Mean Shift)
 						let shifted_logit = (logit_val * transform.alpha) + transform.shift;
 						let new_unit = 1 / (1 + Math.exp(-shifted_logit));
 						
@@ -501,6 +532,7 @@ global.gini_Eoscala = class {
 		if (!options.exclude) options.exclude = [];
 		
 		if (!options.exclude.includes("A")) await this.A_generateOLSRasters();
+		if (!options.exclude.includes("A2")) await this.A2_healOLSRasters();
 		if (!options.exclude.includes("B")) await this.B_normaliseOLSRasters();
 		if (!options.exclude.includes("C")) await this.C_clampOLSRasters();
 	}
