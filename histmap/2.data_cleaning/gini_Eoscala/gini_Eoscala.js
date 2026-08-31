@@ -297,21 +297,6 @@ global.gini_Eoscala = class {
 			
 			let normalised_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Extract the valid bounds that were carefully established in Step B
-			let valid_min = Infinity;
-			let valid_max = -Infinity;
-			for (let j = 0; j < normalised_raster.data.length; j++) {
-				let val = normalised_raster.data[j];
-				if (val > 0) { // Ignore ocean/uninhabited mask (0)
-					if (val < valid_min) valid_min = val;
-					if (val > valid_max) valid_max = val;
-				}
-			}
-			
-			// Fallback just in case something went wrong
-			if (valid_min === Infinity) valid_min = 0;
-			if (valid_max === -Infinity) valid_max = 1;
-			
 			// Load GDP PPP data for correct income-based Gini weighting
 			let gdp_info = this.input_covariates_obj()["gdp_ppp"](year);
 			let gdp_file = gdp_info[0];
@@ -367,37 +352,103 @@ global.gini_Eoscala = class {
 				};
 			}
 			
-			// Accumulate regional totals to weight OLS Gini by GDP PPP (income) instead of just population
-			let region_stats = {};
+			// 1. Extract valid absolute bounds from the normalised raster
+			let valid_min = Infinity;
+			let valid_max = -Infinity;
+			for (let j = 0; j < normalised_raster.data.length; j++) {
+				let val = normalised_raster.data[j];
+				if (val > 0) { // Ignore ocean/uninhabited mask (0)
+					if (val < valid_min) valid_min = val;
+					if (val > valid_max) valid_max = val;
+				}
+			}
+			
+			// Expand valid bounds if any specific target somehow exceeds them
+			Object.iterate(target_gini_map, (k, target_val) => {
+				if (target_val < valid_min) valid_min = target_val;
+				if (target_val > valid_max) valid_max = target_val;
+			});
+			
+			if (valid_min === Infinity) valid_min = 0;
+			if (valid_max === -Infinity) valid_max = 1;
+			
+			let valid_range = valid_max - valid_min;
+			
+			// 2. Group pixels by region and map them to Logit (-∞, ∞) space
+			let region_pixels = {};
 			let total_pixels = normalised_raster.data.length;
 			
 			for (let index = 0; index < total_pixels; index++) {
+				let norm_gini = normalised_raster.data[index];
+				if (norm_gini === 0) continue; // Skip ocean
+				
 				let colour_key = getColourKeyForPixel(index);
 				if (target_gini_map[colour_key] !== undefined) {
 					let gdp = Math.max(0, gdp_raster.data[index]);
 					let pop = Math.max(0, popc_raster.data[index]);
 					
-					// If GDP is 0 but people live there, give a tiny minimal weight so it doesn't break math
 					let weight = (gdp > 0) ? gdp : (pop > 0 ? pop * 0.001 : 0);
-					let norm_gini = normalised_raster.data[index];
-					
-					if (!region_stats[colour_key]) {
-						region_stats[colour_key] = { weighted_sum: 0, total_weight: 0 };
+					if (weight > 0) {
+						if (!region_pixels[colour_key]) {
+							region_pixels[colour_key] = { total_weight: 0, pixels: [] };
+						}
+						
+						// Convert to 0-1 Unit scale, avoiding absolute 0 or 1 for Logit math
+						let unit_gini = (valid_range > 0) ? ((norm_gini - valid_min) / valid_range) : 0.5;
+						unit_gini = Math.max(0.0001, Math.min(0.9999, unit_gini));
+						
+						// Logit transform: ln( p / (1-p) )
+						let logit_val = Math.log(unit_gini / (1 - unit_gini));
+						
+						region_pixels[colour_key].pixels.push({ index, weight, logit_val });
+						region_pixels[colour_key].total_weight += weight;
 					}
-					region_stats[colour_key].weighted_sum += weight * norm_gini;
-					region_stats[colour_key].total_weight += weight;
 				}
 			}
 			
-			// Calculate dasymetric scaling factors
-			let scale_factors = {};
-			Object.iterate(region_stats, (colour_key, stats) => {
+			// 3. Binary Search for the perfect Logit Shift (+/-) factor per region
+			let shift_map = {};
+			
+			Object.iterate(region_pixels, (colour_key, data) => {
 				let target = target_gini_map[colour_key];
-				scale_factors[colour_key] = (stats.total_weight > 0 && stats.weighted_sum > 0) ?
-					target / (stats.weighted_sum / stats.total_weight) : 1;
+				let target_unit = (valid_range > 0) ? ((target - valid_min) / valid_range) : 0.5;
+				target_unit = Math.max(0.0001, Math.min(0.9999, target_unit));
+				
+				if (data.total_weight === 0) {
+					shift_map[colour_key] = 0;
+					return;
+				}
+				
+				let low = -20; // Extreme shift left
+				let high = 20; // Extreme shift right
+				let best_shift = 0;
+				
+				for (let iter = 0; iter < 50; iter++) {
+					let mid = (low + high) / 2;
+					let weighted_sum = 0;
+					
+					for (let i = 0; i < data.pixels.length; i++) {
+						let shifted_logit = data.pixels[i].logit_val + mid;
+						// Sigmoid transform back to unit space: 1 / (1 + e^-L)
+						let sigmoid_val = 1 / (1 + Math.exp(-shifted_logit));
+						weighted_sum += data.pixels[i].weight * sigmoid_val;
+					}
+					
+					let current_mean = weighted_sum / data.total_weight;
+					
+					// If mean is too low, we need a larger positive shift
+					if (current_mean < target_unit) {
+						low = mid;
+					} else {
+						high = mid;
+					}
+					best_shift = mid;
+				}
+				
+				shift_map[colour_key] = best_shift;
 			});
 			
-			console.log(`Clamping year ${year} using regional GDP-PPP-weighted scaling, strictly bounded to historical domain [${valid_min.toFixed(3)}, ${valid_max.toFixed(3)}]`);
+			console.log(`Clamping year ${year} using Logit (Log-Odds) adjustment. Variance preserved and asymptotically bounded to [${valid_min.toFixed(3)}, ${valid_max.toFixed(3)}]`);
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -409,15 +460,21 @@ global.gini_Eoscala = class {
 					if (norm_gini === 0) return 0; // Skip empty ocean/uninhabited land directly
 					
 					let colour_key = getColourKeyForPixel(local_index);
-					let scaled_gini = norm_gini;
+					let shift = shift_map[colour_key];
 					
-					if (target_gini_map[colour_key] !== undefined) {
-						let factor = scale_factors[colour_key];
-						scaled_gini = (factor !== undefined) ? norm_gini * factor : target_gini_map[colour_key];
+					if (shift !== undefined) {
+						let unit_gini = (valid_range > 0) ? ((norm_gini - valid_min) / valid_range) : 0.5;
+						unit_gini = Math.max(0.0001, Math.min(0.9999, unit_gini));
+						
+						let logit_val = Math.log(unit_gini / (1 - unit_gini));
+						let shifted_logit = logit_val + shift;
+						let new_unit = 1 / (1 + Math.exp(-shifted_logit));
+						
+						return valid_min + (new_unit * valid_range);
 					}
 					
-					// Enforce the valid bounds retrieved from Step B
-					return Math.min(valid_max, Math.max(valid_min, scaled_gini));
+					// Fallback to original if out of target mapping
+					return Math.min(valid_max, Math.max(valid_min, norm_gini));
 				}
 			});
 			
