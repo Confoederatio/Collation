@@ -69,9 +69,6 @@ global.gini_Eoscala = class {
 		
 		let landarea_file = metadata_HYDE.input_raster_land_area;
 		let landarea_raster = GeoPNG.loadNumberRasterImage(landarea_file, { format: "int32" });
-		
-		let last_good_year = null;
-		let last_good_std = 0;
 		let last_good_path = null;
 		
 		for (let i = 0; i < years.length; i++) {
