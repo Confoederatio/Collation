@@ -288,35 +288,46 @@ global.gini_Eoscala = class {
 				continue;
 			}
 			
+			if (year < this.options.gapminder_domain[0]) {
+				// Pre-modern domain: Already mathematically bounded by normalisation. No regional targets exist.
+				console.log(`Pre-modern year ${year} already bounded. Copying directly...`);
+				fs.copyFileSync(source_path, output_path);
+				continue;
+			}
+			
 			let normalised_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Load population and economic data for dasymetric weighting
-			let popc_info = this.input_covariates_obj()["popc_"](year);
-			let popc_raster = GeoPNG.loadNumberRasterImage(popc_info[0], { format: popc_info[1] });
+			// Extract the valid bounds that were carefully established in Step B
+			let valid_min = Infinity;
+			let valid_max = -Infinity;
+			for (let j = 0; j < normalised_raster.data.length; j++) {
+				let val = normalised_raster.data[j];
+				if (val > 0) { // Ignore ocean/uninhabited mask (0)
+					if (val < valid_min) valid_min = val;
+					if (val > valid_max) valid_max = val;
+				}
+			}
 			
+			// Fallback just in case something went wrong
+			if (valid_min === Infinity) valid_min = 0;
+			if (valid_max === -Infinity) valid_max = 1;
+			
+			// Load GDP PPP data for correct income-based Gini weighting
 			let gdp_info = this.input_covariates_obj()["gdp_ppp"](year);
-			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_info[0], { format: gdp_info[1] });
+			let gdp_file = gdp_info[0];
+			let gdp_format = gdp_info[1];
+			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_file, { format: gdp_format });
+			
+			// Load population as a fallback for zero-GDP but populated pixels (e.g. subsistence)
+			let popc_info = this.input_covariates_obj()["popc_"](year);
+			let popc_file = popc_info[0];
+			let popc_format = popc_info[1];
+			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
 			
 			let target_gini_map = {};
 			let getColourKeyForPixel = null;
 			
-			if (year < this.options.gapminder_domain[0]) {
-				
-				// Pre-modern domain: clamp purely between 0 and 1
-				console.log(`Clamping pre-modern year ${year} directly to [0, 1]`);
-				GeoPNG.saveNumberRasterImage({
-					file_path: output_path,
-					format: "float32",
-					width: 4320,
-					height: 2160,
-					function: (local_index) => {
-						let val = normalised_raster.data[local_index];
-						return Math.min(1, Math.max(0, val));
-					}
-				});
-				await Blacktraffic.yield();
-				continue;
-			} else if (year >= this.options.gapminder_domain[0] && year < this.options.subngini_domain[0]) {
+			if (year >= this.options.gapminder_domain[0] && year < this.options.subngini_domain[0]) {
 				// Gapminder Domain
 				Object.iterate(geocode_obj, (colour_key, local_geocodes) => {
 					if (local_geocodes) {
@@ -356,28 +367,25 @@ global.gini_Eoscala = class {
 				};
 			}
 			
-			// Accumulate regional totals to weight OLS Gini by Economic Mass (GDP PPP)
+			// Accumulate regional totals to weight OLS Gini by GDP PPP (income) instead of just population
 			let region_stats = {};
 			let total_pixels = normalised_raster.data.length;
 			
 			for (let index = 0; index < total_pixels; index++) {
 				let colour_key = getColourKeyForPixel(index);
 				if (target_gini_map[colour_key] !== undefined) {
-					let pop = Math.max(0, popc_raster.data[index]);
 					let gdp = Math.max(0, gdp_raster.data[index]);
+					let pop = Math.max(0, popc_raster.data[index]);
+					
+					// If GDP is 0 but people live there, give a tiny minimal weight so it doesn't break math
+					let weight = (gdp > 0) ? gdp : (pop > 0 ? pop * 0.001 : 0);
 					let norm_gini = normalised_raster.data[index];
 					
-					// Use GDP PPP as the primary weight for an economic indicator like Gini.
-					// Fall back to Population only if the cell has people but 0 registered GDP.
-					let weight = (gdp > 0) ? gdp : pop;
-					
-					if (weight > 0) {
-						if (!region_stats[colour_key]) {
-							region_stats[colour_key] = { weighted_sum: 0, total_weight: 0 };
-						}
-						region_stats[colour_key].weighted_sum += weight * norm_gini;
-						region_stats[colour_key].total_weight += weight;
+					if (!region_stats[colour_key]) {
+						region_stats[colour_key] = { weighted_sum: 0, total_weight: 0 };
 					}
+					region_stats[colour_key].weighted_sum += weight * norm_gini;
+					region_stats[colour_key].total_weight += weight;
 				}
 			}
 			
@@ -389,7 +397,7 @@ global.gini_Eoscala = class {
 					target / (stats.weighted_sum / stats.total_weight) : 1;
 			});
 			
-			console.log(`Clamping year ${year} using regional GDP-PPP-weighted target clamping`);
+			console.log(`Clamping year ${year} using regional GDP-PPP-weighted scaling, strictly bounded to historical domain [${valid_min.toFixed(3)}, ${valid_max.toFixed(3)}]`);
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -398,6 +406,8 @@ global.gini_Eoscala = class {
 				height: 2160,
 				function: (local_index) => {
 					let norm_gini = normalised_raster.data[local_index];
+					if (norm_gini === 0) return 0; // Skip empty ocean/uninhabited land directly
+					
 					let colour_key = getColourKeyForPixel(local_index);
 					let scaled_gini = norm_gini;
 					
@@ -406,8 +416,8 @@ global.gini_Eoscala = class {
 						scaled_gini = (factor !== undefined) ? norm_gini * factor : target_gini_map[colour_key];
 					}
 					
-					// Hard boundary sanity check to prevent impossible Gini coefficients
-					return Math.min(1, Math.max(0, scaled_gini));
+					// Enforce the valid bounds retrieved from Step B
+					return Math.min(valid_max, Math.max(valid_min, scaled_gini));
 				}
 			});
 			
