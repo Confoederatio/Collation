@@ -16,7 +16,7 @@ global.GDP_Eoscala_transform = class {
 			years: hyde_years
 		});
 		console.log(`Generating delta series for ${this.delta_GDP_pc_folder} ..`);
-		await GeoPNG.generateDeltaSeries(this.delta_GDP_nominal_folder, {
+		await GeoPNG.generateDeltaSeries(this.delta_GDP_pc_folder, {
 			input_format: "float32",
 			input_format_function: (y) => `${GDP_pc.output_gdp_pc_folder}GDP_pc_${y}.png`,
 			prefix: "delta_GDP_pc_",

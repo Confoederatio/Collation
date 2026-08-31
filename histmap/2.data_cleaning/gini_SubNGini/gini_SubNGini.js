@@ -1,9 +1,10 @@
 global.gini_SubNGini = class { //[WIP] - Finish class body
 	static bf = `${h1}/gini_SubNGini`;
 	static input_subnational_raster = `${this.bf}/rast_adm1_gini_disp_1990_2023.tif`;
-	static intermediate_subnational_masks_folder = `${h2}/gini_SubNGini/subnational_gini_masks/`;
+	static intermediate_subnational_masks_folder = `${h2}/gini_SubNGini/subnational_masks/`;
 	static intermediate_subnational_rasters = `${h2}/gini_SubNGini/subnational_gini_rasters/`;
 	static output_areal_json = `${this.intermediate_subnational_masks_folder}areal_metadata.json`;
+	static output_areal_raster = `${this.intermediate_subnational_masks_folder}areal_masks.png`;
 	static years = Array.getFilledDomain(1990, 2023);
 	
 	static async A_convertToPNGs () {
@@ -100,7 +101,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 			
 			//3. Save the areal mask PNG (int32 encoding)
 			GeoPNG.saveNumberRasterImage({
-				file_path: `${this.intermediate_subnational_masks_folder}areal_masks.png`,
+				file_path: this.output_areal_raster,
 				format: "int32",
 				width,
 				height,

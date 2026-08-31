@@ -9,7 +9,7 @@
 	 * @param {number} arg1_lat
 	 * @param {Object} [arg2_options]
 	 *  @param {Object} [arg2_options.input_raster]
-	 *  @param {function} [arg2_options.special_function](arg0_raster:{@link Object}, arg1_x:number, arg2_y:number) | boolean - Returns true if condition is met
+	 *  @param {function} [arg2_options.special_function](arg0_raster:{@link Object}, arg1_x:number, arg2_y:number) | boolean - Returns true if condition is met.
 	 */
 	Geospatiale.getEquirectangularNearestPixelWith = function (arg0_lng, arg1_lat, arg2_options) {
 		let lng = parseFloat(arg0_lng);
