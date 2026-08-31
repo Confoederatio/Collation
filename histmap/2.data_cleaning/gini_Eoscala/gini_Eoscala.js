@@ -65,51 +65,52 @@ global.gini_Eoscala = class {
 	}
 	
 	static async B_normaliseOLSRasters () {
-		let years = this.years();
+		let target_years = this.years();
 		let src_dir = this.intermediate_ols_rasters;
 		let dest_dir = this.intermediate_normalised_rasters;
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
-		// 1. Calculate parent dataset min/max values for each domain
-		// Eoscala Gini Parent limits
+		// Load parent data sources
 		let eoscala_points = gini_OLS.getEoscalaGiniObject();
-		let eoscala_ginis = eoscala_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
-		let eoscala_min = Math.min(...eoscala_ginis);
-		let eoscala_max = Math.max(...eoscala_ginis);
-		console.log(eoscala_ginis, eoscala_min, eoscala_max);
-		
-		// Gapminder Gini Parent limits
 		let gapminder_data = gini_OLS.getGapminderGiniObject();
-		let gapminder_ginis = [];
+		let subngini_data = gini_OLS.getSubNGiniObject();
+		
+		// Load land area mask to properly isolate land pixels from ocean
+		let landarea_file = metadata_HYDE.input_raster_land_area;
+		let landarea_raster = GeoPNG.loadNumberRasterImage(landarea_file, { format: "int32" });
+		
+		// Calculate global fallbacks in case a specific year has no direct data points
+		let eoscala_global_ginis = eoscala_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
+		let eoscala_global_min = (eoscala_global_ginis.length > 0) ? Math.min(...eoscala_global_ginis) : 0;
+		let eoscala_global_max = (eoscala_global_ginis.length > 0) ? Math.max(...eoscala_global_ginis) : 1;
+		
+		let gapminder_global_ginis = [];
 		Object.iterate(gapminder_data, (country, years_obj) => {
 			Object.iterate(years_obj, (yr, val) => {
 				let parsed_val = parseFloat(val);
-				if (!isNaN(parsed_val)) gapminder_ginis.push(parsed_val);
+				if (!isNaN(parsed_val)) gapminder_global_ginis.push(parsed_val);
 			});
 		});
-		let gapminder_min = Math.min(...gapminder_ginis);
-		let gapminder_max = Math.max(...gapminder_ginis);
+		let gapminder_global_min = (gapminder_global_ginis.length > 0) ? Math.min(...gapminder_global_ginis) : 0;
+		let gapminder_global_max = (gapminder_global_ginis.length > 0) ? Math.max(...gapminder_global_ginis) : 1;
 		
-		// SubNGini Gini Parent limits
-		let subngini_data = gini_OLS.getSubNGiniObject();
-		let subngini_ginis = [];
+		let subngini_global_ginis = [];
 		Object.iterate(subngini_data, (region_key, years_obj) => {
 			Object.iterate(years_obj, (yr, val) => {
 				let parsed_val = parseFloat(val);
-				if (parsed_val !== 0 && !isNaN(parsed_val)) subngini_ginis.push(parsed_val);
+				if (parsed_val !== 0 && !isNaN(parsed_val)) subngini_global_ginis.push(parsed_val);
 			});
 		});
-		let subngini_min = Math.min(...subngini_ginis);
-		let subngini_max = Math.max(...subngini_ginis);
+		let subngini_global_min = (subngini_global_ginis.length > 0) ? Math.min(...subngini_global_ginis) : 0;
+		let subngini_global_max = (subngini_global_ginis.length > 0) ? Math.max(...subngini_global_ginis) : 1;
 		
 		let gapminder_domain = this.options.gapminder_domain;
 		let subngini_domain = this.options.subngini_domain;
 		
-		// 2. Loop through target years to normalise
-		for (let i = 0; i < years.length; i++) {
-			let year = years[i];
-			let source_path = `${src_dir}gini_OLS_${year}.png`;
-			let output_path = `${dest_dir}gini_OLS_normalised_${year}.png`;
+		for (let i = 0; i < target_years.length; i++) {
+			let local_year = target_years[i];
+			let source_path = `${src_dir}gini_OLS_${local_year}.png`;
+			let output_path = `${dest_dir}gini_OLS_normalised_${local_year}.png`;
 			
 			if (!fs.existsSync(source_path)) {
 				console.warn(`Source OLS raster not found: ${source_path}`);
@@ -117,53 +118,100 @@ global.gini_Eoscala = class {
 			}
 			
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
-			let min_val = Infinity;
-			let max_val = -Infinity;
-			let land_values = [];
+			let raw_min = Infinity;
+			let raw_max = -Infinity;
+			let has_land_pixels = false;
 			
 			for (let j = 0; j < raw_raster.data.length; j++) {
-				let val = raw_raster.data[j];
-				if (val < min_val) min_val = val;
-				if (val > max_val) max_val = val;
-				if (val !== 0) land_values.push(val);
+				if (landarea_raster.data[j] > 0) {
+					has_land_pixels = true;
+					let val = raw_raster.data[j];
+					if (val < raw_min) raw_min = val;
+					if (val > raw_max) raw_max = val;
+				}
 			}
 			
-			let needs_normalisation = (min_val < 0 || max_val > 1);
-			let pct_1 = min_val;
-			let pct_99 = max_val;
-			
-			// Resolve target min/max based on the domain of the current year
+			// Resolve target min/max based on the domain of the current year, specific to that year
 			let target_min = 0;
 			let target_max = 1;
-			let domain_name = "Global [0, 1]";
+			let domain_name = "Global";
 			
-			if (year < gapminder_domain[0]) {
-				target_min = eoscala_min;
-				target_max = eoscala_max;
+			if (local_year < gapminder_domain[0]) {
 				domain_name = "Eoscala";
-			} else if (year < subngini_domain[0]) {
-				target_min = gapminder_min;
-				target_max = gapminder_max;
-				domain_name = "Gapminder";
-			} else {
-				target_min = subngini_min;
-				target_max = subngini_max;
-				domain_name = "SubNGini";
-			}
-			
-			if (needs_normalisation && land_values.length > 0) {
-				land_values.sort((a, b) => a - b);
-				let p_index_1 = Math.floor(land_values.length*0.01);
-				let p_index_99 = Math.floor(land_values.length*0.99);
-				pct_1 = land_values[p_index_1];
-				pct_99 = land_values[p_index_99];
+				let year_points = eoscala_points.filter(p => parseInt(p.year) === local_year);
+				let year_ginis = year_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
 				
-				console.log(`Normalising year ${year} (${domain_name}) using 1st pct (${pct_1}) -> ${target_min} and 99th pct (${pct_99}) -> ${target_max}`);
+				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : eoscala_global_min;
+				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : eoscala_global_max;
+				
+				if (target_min === target_max) {
+					target_min = eoscala_global_min;
+					target_max = eoscala_global_max;
+				}
+			} else if (local_year < subngini_domain[0]) {
+				domain_name = "Gapminder";
+				let year_ginis = [];
+				Object.iterate(gapminder_data, (country, years_obj) => {
+					let val = years_obj[local_year];
+					if (val !== undefined && !isNaN(val)) year_ginis.push(val);
+				});
+				
+				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : gapminder_global_min;
+				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : gapminder_global_max;
+				
+				if (target_min === target_max) {
+					target_min = gapminder_global_min;
+					target_max = gapminder_global_max;
+				}
 			} else {
-				console.log(`Skipping normalisation for year ${year} (all values in [0, 1])`);
+				domain_name = "SubNGini";
+				let year_ginis = [];
+				Object.iterate(subngini_data, (region_key, years_obj) => {
+					let val = parseFloat(years_obj[local_year]);
+					if (val !== 0 && !isNaN(val)) year_ginis.push(val);
+				});
+				
+				target_min = (year_ginis.length > 0) ? Math.min(...year_ginis) : subngini_global_min;
+				target_max = (year_ginis.length > 0) ? Math.max(...year_ginis) : subngini_global_max;
+				
+				if (target_min === target_max) {
+					target_min = subngini_global_min;
+					target_max = subngini_global_max;
+				}
 			}
 			
-			let range = pct_99 - pct_1;
+			if (target_max < 0.75) target_max = 0.75; //Ensure that Gini clamping is not artificially low
+			
+			let normalised_map = new Float32Array(raw_raster.data.length);
+			
+			if (has_land_pixels) {
+				// Shift the dataset so that the minimum raw value maps strictly to 1.
+				// This allows us to safely use natural log, expanding the lower density cluster 
+				// while smoothly mapping extreme outliers without hard clamping.
+				let shift = 1 - raw_min;
+				let log_min = 0; // Math.log(raw_min + shift) is exactly Math.log(1) which is 0
+				let log_max = Math.log(raw_max + shift);
+				let log_range = log_max - log_min;
+				let target_range = target_max - target_min;
+				
+				for (let j = 0; j < raw_raster.data.length; j++) {
+					if (landarea_raster.data[j] > 0) {
+						let raw_val = raw_raster.data[j];
+						
+						if (log_range === 0) {
+							normalised_map[j] = target_min;
+						} else {
+							let log_val = Math.log(raw_val + shift);
+							let fraction = (log_val - log_min) / log_range;
+							normalised_map[j] = target_min + (fraction * target_range);
+						}
+					}
+				}
+				
+				console.log(`Normalising year ${local_year} (${domain_name}) using Logarithmic Min-Max mapped to parent bounds [${target_min}, ${target_max}]`);
+			} else {
+				console.log(`Skipping normalisation for year ${local_year} (no valid land pixels found)`);
+			}
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -171,14 +219,9 @@ global.gini_Eoscala = class {
 				width: 4320,
 				height: 2160,
 				function: (local_index) => {
-					let val = raw_raster.data[local_index];
-					if (val === 0) return 0; // Preserve background/ocean
-					
-					if (needs_normalisation) {
-						let scaled = (range === 0) ? target_min : target_min + ((val - pct_1) * (target_max - target_min)) / range;
-						return Math.min(target_max, Math.max(target_min, scaled));
-					}
-					return val;
+					let is_land = (landarea_raster.data[local_index] > 0);
+					if (!is_land) return 0; // Ocean is always 0
+					return normalised_map[local_index];
 				}
 			});
 			
