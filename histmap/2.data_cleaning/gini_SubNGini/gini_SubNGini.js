@@ -3,6 +3,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 	static input_subnational_raster = `${this.bf}/rast_adm1_gini_disp_1990_2023.tif`;
 	static intermediate_subnational_masks_folder = `${h2}/gini_SubNGini/subnational_gini_masks/`;
 	static intermediate_subnational_rasters = `${h2}/gini_SubNGini/subnational_gini_rasters/`;
+	static output_areal_json = `${this.intermediate_subnational_masks_folder}areal_metadata.json`;
 	static years = Array.getFilledDomain(1990, 2023);
 	
 	static async A_convertToPNGs () {
@@ -110,7 +111,7 @@ global.gini_SubNGini = class { //[WIP] - Finish class body
 			});
 			
 			//4. Save areal metadata JSON
-			fs.writeFileSync(`${this.intermediate_subnational_masks_folder}areal_metadata.json`, JSON.stringify(final_metadata));
+			fs.writeFileSync(this.output_areal_json, JSON.stringify(final_metadata));
 			console.log(`- Finished generating areal masks. Final unique regions: ${final_ids.size}.`);
 			
 			//Return statement
