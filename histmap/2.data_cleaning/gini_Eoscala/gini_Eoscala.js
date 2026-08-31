@@ -35,12 +35,29 @@ global.gini_Eoscala = class {
 			
 			let output_file_path = `${base_dir}gini_OLS_${year}.png`;
 			
+			// Load and parse the model to filter invalid coefficients
+			let model_obj = JSON.parse(fs.readFileSync(model_path, "utf8"));
+			let filtered_coefficients = {};
+			
+			Object.iterate(model_obj.coefficients, (local_key, local_value) => {
+				let parsed_val = parseFloat(local_value);
+				
+				// Drop the covariate if its coefficient exceeds 1
+				if (parsed_val < 1) {
+					filtered_coefficients[local_key] = parsed_val;
+				} else {
+					console.warn(`- Dropped covariate ${local_key} for year ${year} because coefficient ${parsed_val} exceeds 1.`);
+				}
+			});
+			
+			model_obj.coefficients = filtered_coefficients;
+			
 			console.log(`Generating OLS raster for year ${year} using model ${model_path}`);
 			await Statistics.generateOLSRaster(output_file_path, {
 				covariates_obj: this.input_covariates_obj(),
 				format: "float32",
 				formatting_parameters: [year],
-				model_obj: model_path
+				model_obj: model_obj
 			});
 			
 			await Blacktraffic.yield();
