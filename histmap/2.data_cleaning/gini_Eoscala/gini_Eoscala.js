@@ -75,7 +75,8 @@ global.gini_Eoscala = class {
 		let last_good_path = null;
 		
 		for (let i = 0; i < years.length; i++) {
-			if (years[i] < 1950) continue; //Only kick in after 1950AD
+			if (years[i] <= 2023) //2024AD, 2025AD need to be healed
+				if (years[i] <= 1950 || years[i] >= 1990) continue; //Only kick in between 1950-1990AD
 			
 			let year = years[i];
 			let current_path = `${src_dir}gini_OLS_${year}.png`;
@@ -100,39 +101,18 @@ global.gini_Eoscala = class {
 			let mean = sum / count;
 			let sq_sum = 0;
 			
-			for (let j = 0; j < raster.data.length; j++) {
-				if (landarea_raster.data[j] > 0) {
+			for (let j = 0; j < raster.data.length; j++)
+				if (landarea_raster.data[j] > 0)
 					sq_sum += Math.pow(raster.data[j] - mean, 2);
-				}
-			}
 			
-			let std_dev = Math.sqrt(sq_sum / count);
+			let std_dev = Math.sqrt(sq_sum/count);
 			console.log(`Year ${year} OLS Spatial StdDev: ${std_dev.toFixed(5)}`);
 			
-			let is_bad = false;
-			if (last_good_path !== null) {
-				// Flag anomaly if variance drops below a critical threshold (e.g. 0.015) 
-				// OR collapses by more than 50% relative to the last known good year.
-				if (std_dev < 0.015 || std_dev < (last_good_std * 0.5)) {
-					is_bad = true;
-				}
-			}
-			
-			if (is_bad) {
-				console.log(`- Anomalously low variance detected in ${year}. Healing via interpolation from ${last_good_year}...`);
-				
-				// Interpolate: heavily weight the last good year's texture (0.9) and lightly weight the current flat year (0.1)
-				GeoPNG.linearInterpolation(last_good_path, current_path, current_path, {
-					format: "float32",
-					fraction: 0.1
-				});
-				
-				// Do NOT update last_good_year variables, so if the next year is also flat, it continues to draw from the original good year.
-			} else {
-				last_good_year = year;
-				last_good_std = std_dev;
-				last_good_path = current_path;
-			}
+			// Interpolate: heavily weight the last good year's texture (0.9) and lightly weight the current flat year (0.1)
+			GeoPNG.linearInterpolation(last_good_path, current_path, current_path, {
+				format: "float32",
+				fraction: 0.1
+			});
 			
 			await Blacktraffic.yield();
 		}
