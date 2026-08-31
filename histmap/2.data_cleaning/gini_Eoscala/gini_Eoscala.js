@@ -1,12 +1,12 @@
 global.gini_Eoscala = class {
-	static bf = `${h1}/gini_Eoscala/`;
+	static bf = `${h2}/gini_Eoscala/`;
 	static input_covariates_obj = () => {
 		//Return statement
 		return { ...gini_OLS.covariates_obj };
 	};
-	static input_eoscala_gini_json = `${gini_OLS.intermediate_ols_eoscala}geomean_OLS_Eoscala.json`;
-	static input_gapminder_gini_json = `${gini_OLS.intermediate_ols_gapminder}geomean_OLS_Gapminder.json`;
-	static input_subngini_json = `${gini_OLS.intermediate_ols_subngini}geomean_OLS_SubNGini.json`;
+	static input_eoscala_gini_json = () => `${gini_OLS.intermediate_ols_eoscala}geomean_OLS_Eoscala.json`;
+	static input_gapminder_gini_json = () => `${gini_OLS.intermediate_ols_gapminder}geomean_OLS_Gapminder.json`;
+	static input_subngini_json = () => `${gini_OLS.intermediate_ols_subngini}geomean_OLS_SubNGini.json`;
 	static intermediate_ols_rasters = `${this.bf}1.OLS_rasters/`;
 	static intermediate_normalised_rasters = `${this.bf}2.normalised_rasters/`;
 	static output_clamped_rasters = `${this.bf}3.clamped_rasters/`;
@@ -25,15 +25,16 @@ global.gini_Eoscala = class {
 		
 		for (let i = 0; i < years.length; i++) {
 			let year = years[i];
-			let model_path = this.input_eoscala_gini_json;
+			let model_path = this.input_eoscala_gini_json();
 			
 			if (year >= this.options.gapminder_domain[0] && year < this.options.subngini_domain[0]) {
-				model_path = this.input_gapminder_gini_json;
+				model_path = this.input_gapminder_gini_json();
 			} else if (year >= this.options.subngini_domain[0]) {
-				model_path = this.input_subngini_json;
+				model_path = this.input_subngini_json();
 			}
 			
 			let output_file_path = `${base_dir}gini_OLS_${year}.png`;
+			if (fs.existsSync(output_file_path)) continue;
 			
 			// Load and parse the model to filter invalid coefficients
 			let model_obj = JSON.parse(fs.readFileSync(model_path, "utf8"));
@@ -59,7 +60,6 @@ global.gini_Eoscala = class {
 				formatting_parameters: [year],
 				model_obj: model_obj
 			});
-			
 			await Blacktraffic.yield();
 		}
 	}
@@ -70,6 +70,42 @@ global.gini_Eoscala = class {
 		let dest_dir = this.intermediate_normalised_rasters;
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
+		// 1. Calculate parent dataset min/max values for each domain
+		// Eoscala Gini Parent limits
+		let eoscala_points = gini_OLS.getEoscalaGiniObject();
+		let eoscala_ginis = eoscala_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
+		let eoscala_min = Math.min(...eoscala_ginis);
+		let eoscala_max = Math.max(...eoscala_ginis);
+		console.log(eoscala_ginis, eoscala_min, eoscala_max);
+		
+		// Gapminder Gini Parent limits
+		let gapminder_data = gini_OLS.getGapminderGiniObject();
+		let gapminder_ginis = [];
+		Object.iterate(gapminder_data, (country, years_obj) => {
+			Object.iterate(years_obj, (yr, val) => {
+				let parsed_val = parseFloat(val);
+				if (!isNaN(parsed_val)) gapminder_ginis.push(parsed_val);
+			});
+		});
+		let gapminder_min = Math.min(...gapminder_ginis);
+		let gapminder_max = Math.max(...gapminder_ginis);
+		
+		// SubNGini Gini Parent limits
+		let subngini_data = gini_OLS.getSubNGiniObject();
+		let subngini_ginis = [];
+		Object.iterate(subngini_data, (region_key, years_obj) => {
+			Object.iterate(years_obj, (yr, val) => {
+				let parsed_val = parseFloat(val);
+				if (parsed_val !== 0 && !isNaN(parsed_val)) subngini_ginis.push(parsed_val);
+			});
+		});
+		let subngini_min = Math.min(...subngini_ginis);
+		let subngini_max = Math.max(...subngini_ginis);
+		
+		let gapminder_domain = this.options.gapminder_domain;
+		let subngini_domain = this.options.subngini_domain;
+		
+		// 2. Loop through target years to normalise
 		for (let i = 0; i < years.length; i++) {
 			let year = years[i];
 			let source_path = `${src_dir}gini_OLS_${year}.png`;
@@ -83,15 +119,51 @@ global.gini_Eoscala = class {
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			let min_val = Infinity;
 			let max_val = -Infinity;
+			let land_values = [];
 			
 			for (let j = 0; j < raw_raster.data.length; j++) {
 				let val = raw_raster.data[j];
 				if (val < min_val) min_val = val;
 				if (val > max_val) max_val = val;
+				if (val !== 0) land_values.push(val);
 			}
 			
-			let range = max_val - min_val;
-			console.log(`Normalising year ${year} with min ${min_val} and max ${max_val}`);
+			let needs_normalisation = (min_val < 0 || max_val > 1);
+			let pct_1 = min_val;
+			let pct_99 = max_val;
+			
+			// Resolve target min/max based on the domain of the current year
+			let target_min = 0;
+			let target_max = 1;
+			let domain_name = "Global [0, 1]";
+			
+			if (year < gapminder_domain[0]) {
+				target_min = eoscala_min;
+				target_max = eoscala_max;
+				domain_name = "Eoscala";
+			} else if (year < subngini_domain[0]) {
+				target_min = gapminder_min;
+				target_max = gapminder_max;
+				domain_name = "Gapminder";
+			} else {
+				target_min = subngini_min;
+				target_max = subngini_max;
+				domain_name = "SubNGini";
+			}
+			
+			if (needs_normalisation && land_values.length > 0) {
+				land_values.sort((a, b) => a - b);
+				let p_index_1 = Math.floor(land_values.length*0.01);
+				let p_index_99 = Math.floor(land_values.length*0.99);
+				pct_1 = land_values[p_index_1];
+				pct_99 = land_values[p_index_99];
+				
+				console.log(`Normalising year ${year} (${domain_name}) using 1st pct (${pct_1}) -> ${target_min} and 99th pct (${pct_99}) -> ${target_max}`);
+			} else {
+				console.log(`Skipping normalisation for year ${year} (all values in [0, 1])`);
+			}
+			
+			let range = pct_99 - pct_1;
 			
 			GeoPNG.saveNumberRasterImage({
 				file_path: output_path,
@@ -100,8 +172,13 @@ global.gini_Eoscala = class {
 				height: 2160,
 				function: (local_index) => {
 					let val = raw_raster.data[local_index];
-					let normalised = (range === 0) ? 0 : (val - min_val) / range;
-					return normalised;
+					if (val === 0) return 0; // Preserve background/ocean
+					
+					if (needs_normalisation) {
+						let scaled = (range === 0) ? target_min : target_min + ((val - pct_1) * (target_max - target_min)) / range;
+						return Math.min(target_max, Math.max(target_min, scaled));
+					}
+					return val;
 				}
 			});
 			

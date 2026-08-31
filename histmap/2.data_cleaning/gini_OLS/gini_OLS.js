@@ -124,6 +124,7 @@ global.gini_OLS = class {
 			
 			let local_coords = [gini_array[i]["Longitude"], gini_array[i]["Latitude"]];
 			let local_gini = (gini_array[i]["Income Gini"] || gini_array[i]["Wealth Gini"]); //Historically, these proxy the same thing
+				if (local_gini > 1) local_gini = parseFloat(`0.${local_gini}`); //I have no clue why this is happening
 			
 			//Push to processed_array
 			processed_array.push({
