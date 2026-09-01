@@ -34,6 +34,7 @@ global.gini_Eoscala = class {
 			}
 			
 			let output_file_path = `${base_dir}gini_OLS_${year}.png`;
+			if (fs.existsSync(output_file_path)) continue;
 			
 			// Load and parse the model to filter invalid coefficients
 			let model_obj = JSON.parse(fs.readFileSync(model_path, "utf8"));
@@ -42,7 +43,6 @@ global.gini_Eoscala = class {
 			Object.iterate(model_obj.coefficients, (local_key, local_value) => {
 				let parsed_val = parseFloat(local_value);
 				
-				// Drop the covariate if its coefficient exceeds 1
 				if (parsed_val < 1) {
 					filtered_coefficients[local_key] = parsed_val;
 				} else {
@@ -52,11 +52,14 @@ global.gini_Eoscala = class {
 			
 			model_obj.coefficients = filtered_coefficients;
 			
+			// Fix for 2024-2025 missing covariates: cap the covariate formatting pull at 2023
+			let format_year = year > 2023 ? 2023 : year;
+			
 			console.log(`Generating OLS raster for year ${year} using model ${model_path}`);
 			await Statistics.generateOLSRaster(output_file_path, {
 				covariates_obj: this.input_covariates_obj(),
 				format: "float32",
-				formatting_parameters: [year],
+				formatting_parameters: [format_year],
 				model_obj: model_obj
 			});
 			await Blacktraffic.yield();
@@ -115,26 +118,12 @@ global.gini_Eoscala = class {
 			
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			let popc_info = this.input_covariates_obj()["popc_"](local_year);
+			// Use covariates matching the capped formatting year for consistency
+			let format_year = local_year > 2023 ? 2023 : local_year;
+			let popc_info = this.input_covariates_obj()["popc_"](format_year);
 			let popc_file = popc_info[0];
 			let popc_format = popc_info[1];
 			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
-			
-			let raw_min = Infinity;
-			let raw_max = -Infinity;
-			let has_valid_pixels = false;
-			
-			for (let j = 0; j < raw_raster.data.length; j++) {
-				let is_land = (landarea_raster.data[j] > 0);
-				let has_pop = (popc_raster.data[j] > 0);
-				
-				if (is_land && has_pop) {
-					has_valid_pixels = true;
-					let val = raw_raster.data[j];
-					if (val < raw_min) raw_min = val;
-					if (val > raw_max) raw_max = val;
-				}
-			}
 			
 			let target_min = 0;
 			let target_max = 1;
@@ -149,11 +138,7 @@ global.gini_Eoscala = class {
 				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : eoscala_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : eoscala_global_max;
-				
-				if (target_min === target_max) {
-					target_min = eoscala_global_min;
-					target_max = eoscala_global_max;
-				}
+				if (target_min === target_max) { target_min = eoscala_global_min; target_max = eoscala_global_max; }
 			} else if (local_year < subngini_domain[0]) {
 				domain_name = "Gapminder";
 				let year_ginis = [];
@@ -165,11 +150,7 @@ global.gini_Eoscala = class {
 				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : gapminder_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : gapminder_global_max;
-				
-				if (target_min === target_max) {
-					target_min = gapminder_global_min;
-					target_max = gapminder_global_max;
-				}
+				if (target_min === target_max) { target_min = gapminder_global_min; target_max = gapminder_global_max; }
 			} else {
 				domain_name = "SubNGini";
 				let year_ginis = [];
@@ -181,49 +162,74 @@ global.gini_Eoscala = class {
 				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : subngini_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : subngini_global_max;
-				
-				if (target_min === target_max) {
-					target_min = subngini_global_min;
-					target_max = subngini_global_max;
-				}
+				if (target_min === target_max) { target_min = subngini_global_min; target_max = subngini_global_max; }
 			}
 			
+			// Expand target bounds smoothly based on sample size confidence
 			let uncertainty_weight = Math.exp(-sample_size / 15);
 			target_min = target_min - ((target_min - absolute_global_min) * uncertainty_weight);
 			target_max = target_max + ((absolute_global_max - target_max) * uncertainty_weight);
-			
 			target_min = Math.max(0, target_min);
 			target_max = Math.min(1, target_max);
 			
+			// 1. Extract and sort valid populated pixels to find extreme outlier thresholds
+			let valid_pixels = [];
+			for (let j = 0; j < raw_raster.data.length; j++) {
+				if (landarea_raster.data[j] > 0 && popc_raster.data[j] > 0) {
+					valid_pixels.push(raw_raster.data[j]);
+				}
+			}
+			
 			let normalised_map = new Float32Array(raw_raster.data.length);
 			
-			if (has_valid_pixels) {
-				let shift = 1 - raw_min;
-				let log_min = 0;
-				let log_max = Math.log(raw_max + shift);
-				let log_range = log_max - log_min;
-				let target_range = target_max - target_min;
+			if (valid_pixels.length > 0) {
+				valid_pixels.sort((a, b) => a - b);
+				
+				let raw_min = valid_pixels[0];
+				let raw_max = valid_pixels[valid_pixels.length - 1];
+				
+				// Identify the 98th percentile as the boundary between "normal" data and "extreme outliers"
+				let p98_idx = Math.floor(valid_pixels.length * 0.98);
+				let raw_98 = valid_pixels[p98_idx];
+				
+				// We allocate the bottom 98% of the target range to the linear bulk of the data
+				let target_98 = target_min + (target_max - target_min) * 0.98;
+				let m = 0; // Linear slope
+				
+				if (raw_98 > raw_min) {
+					m = (target_98 - target_min) / (raw_98 - raw_min);
+				} else if (raw_max > raw_min) {
+					// Fallback if 98% of the map is entirely flat, but a tiny tail exists
+					m = (target_max - target_min) / (raw_max - raw_min);
+					raw_98 = raw_max; // Disables the asymptotic tail
+				}
+				
+				let D_tgt = target_max - target_98; // Remaining target space for the asymptote
 				
 				for (let j = 0; j < raw_raster.data.length; j++) {
-					let is_land = (landarea_raster.data[j] > 0);
-					let has_pop = (popc_raster.data[j] > 0);
-					
-					if (is_land && has_pop) {
-						let raw_val = raw_raster.data[j];
+					if (landarea_raster.data[j] > 0 && popc_raster.data[j] > 0) {
+						let x = raw_raster.data[j];
 						
-						if (log_range === 0) {
-							normalised_map[j] = target_min;
+						if (x <= raw_98) {
+							// CORE REGIME: Pure linear mapping for 98% of the data. 
+							// Leaves relative variance 100% untouched.
+							normalised_map[j] = target_min + (x - raw_min) * m;
 						} else {
-							let log_val = Math.log(raw_val + shift);
-							let fraction = (log_val - log_min) / log_range;
-							normalised_map[j] = target_min + (fraction * target_range);
+							// TAIL REGIME: Asymptotic exponential soft-clip for the top 2% of outliers.
+							// Mathematically guaranteed to match the slope at raw_98 and asymptote smoothly to target_max.
+							if (D_tgt > 0) {
+								let exponent = -(m / D_tgt) * (x - raw_98);
+								normalised_map[j] = target_max - D_tgt * Math.exp(exponent);
+							} else {
+								normalised_map[j] = target_max;
+							}
 						}
 					} else {
 						normalised_map[j] = 0;
 					}
 				}
 				
-				console.log(`Normalising year ${local_year} (${domain_name}) using Logarithmic Min-Max. Limits expanded to [${target_min.toFixed(3)}, ${target_max.toFixed(3)}] (Sample size: ${sample_size})`);
+				console.log(`Normalising year ${local_year} (${domain_name}) using C1-Continuous Soft-Knee Limiter. Bulk data linear; outliers asymptoted to [${target_min.toFixed(3)}, ${target_max.toFixed(3)}].`);
 			} else {
 				console.log(`Skipping normalisation for year ${local_year} (no inhabited land pixels found)`);
 			}
@@ -271,12 +277,14 @@ global.gini_Eoscala = class {
 			
 			let normalised_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			let gdp_info = this.input_covariates_obj()["gdp_ppp"](year);
+			let format_year = year > 2023 ? 2023 : year;
+			
+			let gdp_info = this.input_covariates_obj()["gdp_ppp"](format_year);
 			let gdp_file = gdp_info[0];
 			let gdp_format = gdp_info[1];
 			let gdp_raster = GeoPNG.loadNumberRasterImage(gdp_file, { format: gdp_format });
 			
-			let popc_info = this.input_covariates_obj()["popc_"](year);
+			let popc_info = this.input_covariates_obj()["popc_"](format_year);
 			let popc_file = popc_info[0];
 			let popc_format = popc_info[1];
 			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
@@ -387,7 +395,7 @@ global.gini_Eoscala = class {
 				let var_target = target_unit * (1 - target_unit);
 				
 				let alpha = var_old / var_target;
-				alpha = Math.max(1.0, Math.min(10.0, alpha)); // Strict Non-Compression Rule
+				alpha = Math.max(1.0, Math.min(10.0, alpha)); // Strict Non-Compression Rule keeps variance robust
 				
 				let low = -20;
 				let high = 20;
