@@ -9,13 +9,17 @@ global.gini_Eoscala = class {
 	static input_subngini_json = () => `${gini_OLS.intermediate_ols_subngini}geomean_OLS_SubNGini.json`;
 	static intermediate_ols_rasters = `${this.bf}1.OLS_rasters/`;
 	static intermediate_normalised_rasters = `${this.bf}2.normalised_rasters/`;
-	static output_clamped_rasters = `${this.bf}3.clamped_rasters/`;
+	static intermediate_clamped_rasters = `${this.bf}3.clamped_rasters/`;
+	static output_rasters = `${this.bf}4.output_rasters/`;
 	static years = () => landuse_HYDE.sorted_hyde_years;
 	
 	static options = {
 		//Domains for dasymetric masking
 		gapminder_domain: [1800, 1990],
-		subngini_domain: [1990, 2023]
+		subngini_domain: [1990, 2023],
+		
+		interpolate_to_gapminder: [1700, 1800],
+		interpolate_to_subngini: [1950, 1990]
 	};
 	
 	static async A_generateOLSRasters () {
@@ -118,24 +122,18 @@ global.gini_Eoscala = class {
 			
 			let raw_raster = GeoPNG.loadNumberRasterImage(source_path, { format: "float32" });
 			
-			// Use covariates matching the capped formatting year for consistency
 			let format_year = local_year > 2023 ? 2023 : local_year;
 			let popc_info = this.input_covariates_obj()["popc_"](format_year);
-			let popc_file = popc_info[0];
-			let popc_format = popc_info[1];
-			let popc_raster = GeoPNG.loadNumberRasterImage(popc_file, { format: popc_format });
+			let popc_raster = GeoPNG.loadNumberRasterImage(popc_info[0], { format: popc_info[1] });
 			
-			let target_min = 0;
-			let target_max = 1;
-			let domain_name = "Global";
-			let sample_size = 0;
+			let target_min = 0, target_max = 1;
+			let domain_name = "Global", sample_size = 0;
 			
 			if (local_year < gapminder_domain[0]) {
 				domain_name = "Eoscala";
 				let year_points = eoscala_points.filter(p => parseInt(p.year) === local_year);
 				let year_ginis = year_points.map(p => p.gini).filter(g => g !== undefined && !isNaN(g));
 				sample_size = year_ginis.length;
-				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : eoscala_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : eoscala_global_max;
 				if (target_min === target_max) { target_min = eoscala_global_min; target_max = eoscala_global_max; }
@@ -147,7 +145,6 @@ global.gini_Eoscala = class {
 					if (val !== undefined && !isNaN(val)) year_ginis.push(val);
 				});
 				sample_size = year_ginis.length;
-				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : gapminder_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : gapminder_global_max;
 				if (target_min === target_max) { target_min = gapminder_global_min; target_max = gapminder_global_max; }
@@ -159,24 +156,26 @@ global.gini_Eoscala = class {
 					if (val !== 0 && !isNaN(val)) year_ginis.push(val);
 				});
 				sample_size = year_ginis.length;
-				
 				target_min = (sample_size > 0) ? Math.min(...year_ginis) : subngini_global_min;
 				target_max = (sample_size > 0) ? Math.max(...year_ginis) : subngini_global_max;
 				if (target_min === target_max) { target_min = subngini_global_min; target_max = subngini_global_max; }
 			}
 			
-			// Expand target bounds smoothly based on sample size confidence
+			// Dynamic Bounds Expansion
 			let uncertainty_weight = Math.exp(-sample_size / 15);
 			target_min = target_min - ((target_min - absolute_global_min) * uncertainty_weight);
 			target_max = target_max + ((absolute_global_max - target_max) * uncertainty_weight);
 			target_min = Math.max(0, target_min);
 			target_max = Math.min(1, target_max);
 			
-			// 1. Extract and sort valid populated pixels to find extreme outlier thresholds
+			// --- STEP 1: GATHER VALID DATA & CALCULATE ROBUST STATISTICS ---
 			let valid_pixels = [];
+			let sum = 0;
+			
 			for (let j = 0; j < raw_raster.data.length; j++) {
 				if (landarea_raster.data[j] > 0 && popc_raster.data[j] > 0) {
 					valid_pixels.push(raw_raster.data[j]);
+					sum += raw_raster.data[j];
 				}
 			}
 			
@@ -184,52 +183,66 @@ global.gini_Eoscala = class {
 			
 			if (valid_pixels.length > 0) {
 				valid_pixels.sort((a, b) => a - b);
+				let N = valid_pixels.length;
 				
+				let mean = sum / N;
+				let sq_sum = 0;
+				for (let j = 0; j < N; j++) sq_sum += Math.pow(valid_pixels[j] - mean, 2);
+				let std = Math.sqrt(sq_sum / N);
+				
+				// Tukey's Fences (Q1, Q3, and Interquartile Range)
+				let Q1 = valid_pixels[Math.floor(N * 0.25)];
+				let Q3 = valid_pixels[Math.floor(N * 0.75)];
+				let IQR = Q3 - Q1;
+				
+				// Scale alpha defines the strict linear bulk bounds. (Fallback to STD if IQR is completely flat)
+				let alpha = (IQR > 1e-5) ? IQR : ((std > 1e-5) ? std : 0.01);
+				
+				let T_lower = Q1 - (1.5 * alpha);
+				let T_upper = Q3 + (1.5 * alpha);
+				
+				// --- STEP 2: C1-CONTINUOUS LOG-TAIL REGULARISATION ---
+				// This guarantees a perfectly smooth curve that never flatlines at a hard ceiling.
+				const regularise = (x) => {
+					if (x > T_upper) {
+						// Upper Outlier: Logarithmic Compression
+						return T_upper + alpha * Math.log(1 + ((x - T_upper) / alpha));
+					} else if (x < T_lower) {
+						// Lower Outlier: Logarithmic Compression
+						return T_lower - alpha * Math.log(1 + ((T_lower - x) / alpha));
+					} else {
+						// The Bulk (99% of data): 100% Linear variance preservation
+						return x;
+					}
+				};
+				
+				// Because regularise(x) is strictly monotonically increasing, 
+				// the min/max of the raw array guarantees the true min/max of the regularised space.
 				let raw_min = valid_pixels[0];
-				let raw_max = valid_pixels[valid_pixels.length - 1];
+				let raw_max = valid_pixels[N - 1];
 				
-				// Identify the 98th percentile as the boundary between "normal" data and "extreme outliers"
-				let p98_idx = Math.floor(valid_pixels.length * 0.98);
-				let raw_98 = valid_pixels[p98_idx];
-				
-				// We allocate the bottom 98% of the target range to the linear bulk of the data
-				let target_98 = target_min + (target_max - target_min) * 0.98;
-				let m = 0; // Linear slope
-				
-				if (raw_98 > raw_min) {
-					m = (target_98 - target_min) / (raw_98 - raw_min);
-				} else if (raw_max > raw_min) {
-					// Fallback if 98% of the map is entirely flat, but a tiny tail exists
-					m = (target_max - target_min) / (raw_max - raw_min);
-					raw_98 = raw_max; // Disables the asymptotic tail
-				}
-				
-				let D_tgt = target_max - target_98; // Remaining target space for the asymptote
+				let reg_min = regularise(raw_min);
+				let reg_max = regularise(raw_max);
+				let reg_range = reg_max - reg_min;
+				let target_range = target_max - target_min;
 				
 				for (let j = 0; j < raw_raster.data.length; j++) {
 					if (landarea_raster.data[j] > 0 && popc_raster.data[j] > 0) {
 						let x = raw_raster.data[j];
+						let x_reg = regularise(x);
 						
-						if (x <= raw_98) {
-							// CORE REGIME: Pure linear mapping for 98% of the data. 
-							// Leaves relative variance 100% untouched.
-							normalised_map[j] = target_min + (x - raw_min) * m;
+						// Standard Linear Min-Max using the newly un-bunched, regularised data
+						if (reg_range === 0) {
+							normalised_map[j] = target_min;
 						} else {
-							// TAIL REGIME: Asymptotic exponential soft-clip for the top 2% of outliers.
-							// Mathematically guaranteed to match the slope at raw_98 and asymptote smoothly to target_max.
-							if (D_tgt > 0) {
-								let exponent = -(m / D_tgt) * (x - raw_98);
-								normalised_map[j] = target_max - D_tgt * Math.exp(exponent);
-							} else {
-								normalised_map[j] = target_max;
-							}
+							normalised_map[j] = target_min + ((x_reg - reg_min) / reg_range) * target_range;
 						}
 					} else {
 						normalised_map[j] = 0;
 					}
 				}
 				
-				console.log(`Normalising year ${local_year} (${domain_name}) using C1-Continuous Soft-Knee Limiter. Bulk data linear; outliers asymptoted to [${target_min.toFixed(3)}, ${target_max.toFixed(3)}].`);
+				console.log(`Normalising year ${local_year} (${domain_name}) using Log-Tail Regularisation. Un-bunched limits mapped to [${target_min.toFixed(3)}, ${target_max.toFixed(3)}].`);
 			} else {
 				console.log(`Skipping normalisation for year ${local_year} (no inhabited land pixels found)`);
 			}
@@ -251,7 +264,7 @@ global.gini_Eoscala = class {
 	static async C_clampOLSRasters () {
 		let years = this.years();
 		let src_dir = this.intermediate_normalised_rasters;
-		let dest_dir = this.output_clamped_rasters;
+		let dest_dir = this.intermediate_clamped_rasters;
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
 		let gapminder_obj = gini_OLS.getGapminderGiniObject();
@@ -460,6 +473,10 @@ global.gini_Eoscala = class {
 		}
 	}
 	
+	static async D_interpolateRasters () {
+		
+	}
+	
 	static async processRasters (arg0_options) {
 		let options = (arg0_options) ? arg0_options : {};
 		if (!options.exclude) options.exclude = [];
@@ -467,5 +484,6 @@ global.gini_Eoscala = class {
 		if (!options.exclude.includes("A")) await this.A_generateOLSRasters();
 		if (!options.exclude.includes("B")) await this.B_normaliseOLSRasters();
 		if (!options.exclude.includes("C")) await this.C_clampOLSRasters();
+		if (!options.exclude.includes("D")) await this.D_interpolateRasters();
 	}
 };
