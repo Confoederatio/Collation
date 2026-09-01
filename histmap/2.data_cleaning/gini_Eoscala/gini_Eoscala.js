@@ -473,8 +473,248 @@ global.gini_Eoscala = class {
 		}
 	}
 	
-	static async D_interpolateRasters () {
+	static _applySmartBorderBrush(target_data, pop_data, mask_data, width, height, radius = 64) {
+		let N = width * height;
 		
+		// 1. Precise Border Detection & Distance Transform
+		let dist = new Float32Array(N).fill(99999);
+		for (let y = 0; y < height; y++) {
+			for (let x = 0; x < width; x++) {
+				let idx = y * width + x;
+				let b_idx = idx * 4;
+				let c = (mask_data[b_idx] << 16) | (mask_data[b_idx+1] << 8) | mask_data[b_idx+2];
+				if (c === 0) continue;
+				
+				let is_border = false;
+				let neighbors = [
+					(y > 0) ? idx - width : -1,
+					(y < height - 1) ? idx + width : -1,
+					(x > 0) ? idx - 1 : -1,
+					(x < width - 1) ? idx + 1 : -1
+				];
+				
+				for (let n of neighbors) {
+					if (n !== -1) {
+						let n_byte = n * 4;
+						let nc = (mask_data[n_byte] << 16) | (mask_data[n_byte+1] << 8) | mask_data[n_byte+2];
+						if (nc !== c && nc !== 0) {
+							is_border = true;
+							break;
+						}
+					}
+				}
+				if (is_border) dist[idx] = 0;
+			}
+		}
+		
+		let d1 = 3, d2 = 4;
+		for (let y = 0; y < height; y++) {
+			for (let x = 0; x < width; x++) {
+				let idx = y * width + x;
+				if (x > 0) dist[idx] = Math.min(dist[idx], dist[idx - 1] + d1);
+				if (y > 0) dist[idx] = Math.min(dist[idx], dist[idx - width] + d1);
+				if (x > 0 && y > 0) dist[idx] = Math.min(dist[idx], dist[idx - width - 1] + d2);
+				if (x < width - 1 && y > 0) dist[idx] = Math.min(dist[idx], dist[idx - width + 1] + d2);
+			}
+		}
+		for (let y = height - 1; y >= 0; y--) {
+			for (let x = width - 1; x >= 0; x--) {
+				let idx = y * width + x;
+				if (x < width - 1) dist[idx] = Math.min(dist[idx], dist[idx + 1] + d1);
+				if (y < height - 1) dist[idx] = Math.min(dist[idx], dist[idx + width] + d1);
+				if (x < width - 1 && y < height - 1) dist[idx] = Math.min(dist[idx], dist[idx + width + 1] + d2);
+				if (x > 0 && y < height - 1) dist[idx] = Math.min(dist[idx], dist[idx + width - 1] + d2);
+			}
+		}
+		for (let i = 0; i < N; i++) dist[i] /= 3.0;
+		
+		// 2. Uniform Double-Box Blur (The "Brush")
+		let A = new Float32Array(N);
+		let B = new Float32Array(N);
+		for (let i = 0; i < N; i++) {
+			if (target_data[i] > 0) {
+				A[i] = target_data[i];
+				B[i] = 1.0;
+			}
+		}
+		
+		let blurPass = (in_A, in_B, r) => {
+			let out_A = new Float32Array(N), out_B = new Float32Array(N);
+			let temp_A = new Float32Array(N), temp_B = new Float32Array(N);
+			
+			for (let y = 0; y < height; y++) {
+				let offset = y * width, sum_A = 0, sum_B = 0;
+				for (let x = 0; x <= r && x < width; x++) { sum_A += in_A[offset+x]; sum_B += in_B[offset+x]; }
+				for (let x = 0; x < width; x++) {
+					temp_A[offset+x] = sum_A; temp_B[offset+x] = sum_B;
+					if (x + r + 1 < width) { sum_A += in_A[offset+x+r+1]; sum_B += in_B[offset+x+r+1]; }
+					if (x - r >= 0) { sum_A -= in_A[offset+x-r]; sum_B -= in_B[offset+x-r]; }
+				}
+			}
+			for (let x = 0; x < width; x++) {
+				let sum_A = 0, sum_B = 0;
+				for (let y = 0; y <= r && y < height; y++) { let idx = y*width+x; sum_A += temp_A[idx]; sum_B += temp_B[idx]; }
+				for (let y = 0; y < height; y++) {
+					let idx = y*width+x; out_A[idx] = sum_A; out_B[idx] = sum_B;
+					if (y + r + 1 < height) { let n_idx = (y+r+1)*width+x; sum_A += temp_A[n_idx]; sum_B += temp_B[n_idx]; }
+					if (y - r >= 0) { let p_idx = (y-r)*width+x; sum_A -= temp_A[p_idx]; sum_B -= temp_B[p_idx]; }
+				}
+			}
+			return {A: out_A, B: out_B};
+		};
+		
+		let pass1 = blurPass(A, B, radius);
+		let pass2 = blurPass(pass1.A, pass1.B, radius);
+		
+		// 3. Apply the Smart Brush (Interpolate Alpha via Distance & Population)
+		let output_data = new Float32Array(N);
+		
+		let log_min = Math.log10(5);
+		let log_max = Math.log10(5000);
+		
+		for (let i = 0; i < N; i++) {
+			if (target_data[i] === 0) {
+				output_data[i] = 0;
+				continue;
+			}
+			
+			let d = dist[i];
+			if (d >= radius) {
+				output_data[i] = target_data[i];
+			} else {
+				let V_raw = target_data[i];
+				let V_blur = (pass2.B[i] > 0) ? (pass2.A[i] / pass2.B[i]) : V_raw;
+				
+				let p = pop_data[i];
+				let log_p = Math.log10(Math.max(1, p));
+				
+				let a_pop = (log_p - log_min) / (log_max - log_min);
+				a_pop = Math.max(0, Math.min(1, a_pop));
+				
+				let a_dist = d / radius;
+				
+				// Raw factor approaches 1 in cities OR inland. Approaches 0 strictly near borders in wilderness.
+				let raw_factor = Math.max(a_pop, a_dist);
+				raw_factor = raw_factor * raw_factor * (3 - 2 * raw_factor); // Smoothstep
+				
+				output_data[i] = (V_raw * raw_factor) + (V_blur * (1.0 - raw_factor));
+			}
+		}
+		
+		return output_data;
+	}
+	
+	static async D_interpolateRasters (arg0_options = {}) {
+		let options = arg0_options;
+		let years = this.years();
+		let src_dir = this.intermediate_clamped_rasters;
+		let dest_dir = this.output_rasters;
+		
+		console.log(`[D_interpolateRasters] Generating final time-series...`);
+		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
+		
+		let gapminder_interp = this.options.interpolate_to_gapminder;
+		let subngini_interp = this.options.interpolate_to_subngini;
+		
+		let gapminder_gap = gapminder_interp[1] - gapminder_interp[0];
+		let subngini_gap = subngini_interp[1] - subngini_interp[0];
+		
+		// This strictly prepares the brushed target ONLY for the 1800 Gapminder endpoint.
+		const getBrushedGapminderTarget = async (year) => {
+			let clamped_path = `${src_dir}gini_clamped_${year}.png`;
+			let smoothed_path = `${src_dir}gini_clamped_${year}_brushed.png`;
+			
+			if (!fs.existsSync(clamped_path)) {
+				console.error(`[ERROR] Missing clamped source: ${clamped_path}`);
+				return null;
+			}
+			
+			if (!fs.existsSync(smoothed_path)) {
+				console.log(`- Synthesizing Population-Masked Brush for Gapminder Target (${year}) ...`);
+				try {
+					let gapminder_mask = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
+					let raw_target = GeoPNG.loadNumberRasterImage(clamped_path, { format: "float32" });
+					let format_year = year > 2023 ? 2023 : year;
+					let popc_info = this.input_covariates_obj()["popc_"](format_year);
+					let pop_raster = GeoPNG.loadNumberRasterImage(popc_info[0], { format: popc_info[1] });
+					
+					let brushed_data = this._applySmartBorderBrush(
+						raw_target.data, pop_raster.data, gapminder_mask.data,
+						raw_target.width, raw_target.height, 64
+					);
+					
+					GeoPNG.saveNumberRasterImage({
+						file_path: smoothed_path,
+						format: "float32",
+						width: raw_target.width,
+						height: raw_target.height,
+						function: (idx) => brushed_data[idx]
+					});
+				} catch (e) {
+					console.error(`[ERROR] Brush synthesis failed for ${year}:`, e);
+					return null;
+				}
+			}
+			return smoothed_path;
+		};
+		
+		// 1. Fetch brushed target for 1800.
+		let gapminder_target_path = await getBrushedGapminderTarget(gapminder_interp[1]);
+		
+		// 2. The SubNGini target is untouched (raw clamped).
+		let subngini_target_path = `${src_dir}gini_clamped_${subngini_interp[1]}.png`;
+		
+		if (!gapminder_target_path || !fs.existsSync(subngini_target_path)) {
+			console.error(`[ERROR] Critical endpoints missing. Aborting interpolation.`);
+			return;
+		}
+		
+		for (let i = 0; i < years.length; i++) {
+			let year = years[i];
+			let source_path = `${src_dir}gini_clamped_${year}.png`;
+			let output_path = `${dest_dir}gini_${year}.png`;
+			
+			if (fs.existsSync(output_path) && !options.overwrite) continue;
+			if (!fs.existsSync(source_path)) continue;
+			
+			try {
+				// Eoscala -> Gapminder (Target is BRUSHED to prevent 1800 borders bleeding back into 1760)
+				if (year >= gapminder_interp[0] && year < gapminder_interp[1]) {
+					let fraction = (year - gapminder_interp[0]) / gapminder_gap;
+					console.log(`- [Interpolating] ${year} Eoscala -> Gapminder [Phase: ${fraction.toFixed(3)}]`);
+					
+					GeoPNG.linearInterpolation(source_path, gapminder_target_path, output_path, {
+						format: "float32",
+						fraction: fraction,
+						lower_value_threshold: 0,
+						threshold_fraction: 0
+					});
+					
+					// Gapminder -> SubNGini (Standard unbrushed interpolation)
+				} else if (year >= subngini_interp[0] && year < subngini_interp[1]) {
+					let fraction = (year - subngini_interp[0]) / subngini_gap;
+					console.log(`- [Interpolating] ${year} Gapminder -> SubNGini [Phase: ${fraction.toFixed(3)}]`);
+					
+					GeoPNG.linearInterpolation(source_path, subngini_target_path, output_path, {
+						format: "float32",
+						fraction: fraction,
+						lower_value_threshold: 0,
+						threshold_fraction: 0
+					});
+					
+					// Static Domains (1940, 2020, <1700, etc.) are purely copied directly
+				} else {
+					console.log(`- [Copying] Final processed format for ${year}`);
+					fs.copyFileSync(source_path, output_path);
+				}
+			} catch (e) {
+				console.error(`[ERROR] Pass failed for year ${year}:`, e);
+			}
+			
+			await Blacktraffic.yield();
+		}
+		
+		console.log(`[D_interpolateRasters] Final Interpolation Pass Complete.`);
 	}
 	
 	static async processRasters (arg0_options) {
@@ -484,6 +724,6 @@ global.gini_Eoscala = class {
 		if (!options.exclude.includes("A")) await this.A_generateOLSRasters();
 		if (!options.exclude.includes("B")) await this.B_normaliseOLSRasters();
 		if (!options.exclude.includes("C")) await this.C_clampOLSRasters();
-		if (!options.exclude.includes("D")) await this.D_interpolateRasters();
+		if (!options.exclude.includes("D")) await this.D_interpolateRasters({ overwrite: true });
 	}
 };
