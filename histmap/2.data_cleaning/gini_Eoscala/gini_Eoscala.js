@@ -63,58 +63,6 @@ global.gini_Eoscala = class {
 		}
 	}
 	
-	static async A2_healOLSRasters () {
-		let years = this.years();
-		let src_dir = this.intermediate_ols_rasters;
-		
-		let landarea_file = metadata_HYDE.input_raster_land_area;
-		let landarea_raster = GeoPNG.loadNumberRasterImage(landarea_file, { format: "int32" });
-		let last_good_path = null;
-		
-		for (let i = 0; i < years.length; i++) {
-			if (years[i] <= 2023) //2024AD, 2025AD need to be healed
-				if (years[i] <= 1950 || years[i] >= 1990) continue; //Only kick in between 1950-1990AD
-			
-			let year = years[i];
-			let current_path = `${src_dir}gini_OLS_${year}.png`;
-			
-			if (!fs.existsSync(current_path)) continue;
-			
-			let raster = GeoPNG.loadNumberRasterImage(current_path, { format: "float32" });
-			
-			// Calculate standard deviation of valid land pixels to determine variance health
-			let sum = 0;
-			let count = 0;
-			
-			for (let j = 0; j < raster.data.length; j++) {
-				if (landarea_raster.data[j] > 0) {
-					sum += raster.data[j];
-					count++;
-				}
-			}
-			
-			if (count === 0) continue;
-			
-			let mean = sum / count;
-			let sq_sum = 0;
-			
-			for (let j = 0; j < raster.data.length; j++)
-				if (landarea_raster.data[j] > 0)
-					sq_sum += Math.pow(raster.data[j] - mean, 2);
-			
-			let std_dev = Math.sqrt(sq_sum/count);
-			console.log(`Year ${year} OLS Spatial StdDev: ${std_dev.toFixed(5)}`);
-			
-			// Interpolate: heavily weight the last good year's texture (0.9) and lightly weight the current flat year (0.1)
-			GeoPNG.linearInterpolation(last_good_path, current_path, current_path, {
-				format: "float32",
-				fraction: 0.1
-			});
-			
-			await Blacktraffic.yield();
-		}
-	}
-	
 	static async B_normaliseOLSRasters () {
 		let target_years = this.years();
 		let src_dir = this.intermediate_ols_rasters;
@@ -509,7 +457,6 @@ global.gini_Eoscala = class {
 		if (!options.exclude) options.exclude = [];
 		
 		if (!options.exclude.includes("A")) await this.A_generateOLSRasters();
-		if (!options.exclude.includes("A2")) await this.A2_healOLSRasters();
 		if (!options.exclude.includes("B")) await this.B_normaliseOLSRasters();
 		if (!options.exclude.includes("C")) await this.C_clampOLSRasters();
 	}
