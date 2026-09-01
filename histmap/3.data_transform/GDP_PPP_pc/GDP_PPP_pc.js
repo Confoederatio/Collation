@@ -340,78 +340,108 @@ global.GDP_PPP_pc = class {
 		let gdp_ppp_obj = GDP_PPP.getGDP_PPPObject();
 		let geocode_obj = admin_modern.getColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
+		let previous_max_pc = 0;
 		
 		//Iterate over all hyde_years
 		for (let i = 0; i < hyde_years.length; i++) {
-			let local_input_file_path = `${this.intermediate_gdp_ppp_interpolated}GDP_PPP_${hyde_years[i]}.png`;
-			if (!fs.existsSync(local_input_file_path)) continue; //Guard clause if nonexistent
+			let current_year = hyde_years[i];
+			let local_input_file_path = `${this.intermediate_gdp_ppp_interpolated}GDP_PPP_${current_year}.png`;
+			if (!fs.existsSync(local_input_file_path)) continue;
 			
-			//Load in local input raster
-			let local_gdp_ppp_scalars = {};
+			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, { format: "float32" });
+			let local_popc_file_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${current_year}.png`;
+			let local_popc_raster = GeoPNG.loadNumberRasterImage(local_popc_file_path, { format: "int32" });
+			let local_output_file = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${current_year}.png`;
+			
 			let local_gdp_ppp_sums = {};
-			let local_input_raster = GeoPNG.loadNumberRasterImage(local_input_file_path, {
-				format: "float32"
-			});
-			let local_output_file = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${hyde_years[i]}.png`;
+			let country_stats = {};
+			let current_max_pc = 0;
+			let local_threshold = (previous_max_pc > 0) ? Math.min(previous_max_pc * 4, 500000) : 500000;
 			
-			//1. Operate over file; populate local_gdp_ppp_sums; calculate local_gdp_ppp_scalars
-			GeoPNG.operateNumberRasterImage({
-				file_path: local_input_file_path,
-				format: "float32",
-				function: (local_index, local_value) => {
-					let local_colour_key = [
-						geocode_raster.data[local_index],
-						geocode_raster.data[local_index + 1],
-						geocode_raster.data[local_index + 2]
-					].join(",");
-					let local_geocodes = geocode_obj[local_colour_key];
-					
-					if (local_geocodes)
-						for (let x = 0; x < local_geocodes.length; x++)
-							Object.modifyValue(local_gdp_ppp_sums, local_geocodes[x], local_value);
-				}
-			});
-			Object.iterate(local_gdp_ppp_sums, (local_key, local_value) => {
-				let local_actual_gdp_ppp = gdp_ppp_obj[local_key]?.[hyde_years[i]];
+			//1. First pass: calculate raw sums per country
+			for (let x = 0; x < local_input_raster.data.length; x++) {
+				let byte_index = x * 4;
+				let local_colour_key = `${geocode_raster.data[byte_index]},${geocode_raster.data[byte_index+1]},${geocode_raster.data[byte_index+2]}`;
+				let local_geocodes = geocode_obj[local_colour_key];
 				
-				if (local_actual_gdp_ppp) {
-					local_gdp_ppp_scalars[local_key] = local_actual_gdp_ppp/local_value;
-				} else {
-					local_gdp_ppp_scalars[local_key] = 1;
-				}
-			});
-			console.log(`- Local GDP PPP object:`, local_gdp_ppp_sums);
-			console.log(`- Local GDP PPP scalars:`, local_gdp_ppp_scalars);
+				if (local_geocodes)
+					for (let y = 0; y < local_geocodes.length; y++)
+						Object.modifyValue(local_gdp_ppp_sums, local_geocodes[y], local_input_raster.data[x]);
+			}
 			
-			//2. Scale by local_gdp_ppp_scalars
+			//2. Set country targets
+			Object.iterate(local_gdp_ppp_sums, (local_key, local_value) => {
+				let local_target = gdp_ppp_obj[local_key]?.[current_year];
+				country_stats[local_key] = {
+					initial_scalar: (local_target) ? local_target / local_value : 1,
+					outlier_gdp: 0,
+					remaining_input_sum: 0,
+					target_gdp: local_target || local_value
+				};
+			});
+			
+			//3. Second pass: outlier identification using 4x rolling ceiling
+			for (let x = 0; x < local_input_raster.data.length; x++) {
+				let byte_index = x * 4;
+				let local_colour_key = `${geocode_raster.data[byte_index]},${geocode_raster.data[byte_index+1]},${geocode_raster.data[byte_index+2]}`;
+				let local_geocodes = geocode_obj[local_colour_key];
+				
+				if (local_geocodes) {
+					let local_val = local_input_raster.data[x];
+					let local_pop = local_popc_raster.data[x];
+					let local_stats = country_stats[local_geocodes[0]];
+					
+					if (local_stats) {
+						let projected_pc = (local_pop > 0) ? (local_val * local_stats.initial_scalar) / local_pop : 0;
+						
+						if (projected_pc > local_threshold) {
+							local_stats.outlier_gdp += local_threshold * local_pop;
+						} else {
+							local_stats.remaining_input_sum += local_val;
+						}
+					}
+				}
+			}
+			
+			//4. Set redistribution scalars
+			Object.iterate(country_stats, (local_key, local_stats) => {
+				let remaining_target = local_stats.target_gdp - local_stats.outlier_gdp;
+				local_stats.final_scalar = (local_stats.remaining_input_sum > 0) ? remaining_target / local_stats.remaining_input_sum : local_stats.initial_scalar;
+			});
+			
+			//5. Third pass: Write scaled raster and update Rolling max
 			GeoPNG.saveNumberRasterImage({
 				file_path: local_output_file,
 				format: "float32",
 				height: 2160,
 				width: 4320,
 				function: (local_index) => {
-					let byte_index = local_index*4;
-					let local_colour_key = [
-						geocode_raster.data[byte_index],
-						geocode_raster.data[byte_index + 1],
-						geocode_raster.data[byte_index + 2]
-					].join(",");
+					let byte_index = local_index * 4;
+					let local_colour_key = `${geocode_raster.data[byte_index]},${geocode_raster.data[byte_index+1]},${geocode_raster.data[byte_index+2]}`;
 					let local_geocodes = geocode_obj[local_colour_key];
-					let local_value = local_input_raster.data[local_index];
+					let local_val = local_input_raster.data[local_index];
+					let local_pop = local_popc_raster.data[local_index];
 					
-					//Iterate over local_geocodes
-					if (local_geocodes)
-						for (let x = 0; x < local_geocodes.length; x++) {
-							let local_gdp_ppp = gdp_ppp_obj[local_geocodes[x]]?.[hyde_years[i]];
+					if (local_geocodes) {
+						let local_stats = country_stats[local_geocodes[0]];
+						if (local_stats) {
+							let result_gdp = local_val * local_stats.final_scalar;
+							let result_pc = (local_pop > 0) ? result_gdp / local_pop : 0;
 							
-							//Return statement
-							if (local_gdp_ppp)
-								return local_value*local_gdp_ppp_scalars[local_geocodes[x]];
+							if (result_pc > local_threshold) {
+								return local_threshold * local_pop;
+							} else {
+								if (result_pc > current_max_pc) current_max_pc = result_pc;
+								return result_gdp;
+							}
 						}
-					return local_value;
+					}
+					return local_val;
 				}
 			});
-			console.log(`Processed ${local_output_file}.`);
+			
+			previous_max_pc = current_max_pc;
+			console.log(`- Finished GDP PPP ${current_year}. Healthy max PC: ${current_max_pc} (Threshold: ${local_threshold})`);
 			await Blacktraffic.yield();
 		}
 	}
@@ -419,11 +449,15 @@ global.GDP_PPP_pc = class {
 	static async I_recalculateGDP_PPP_pcRasters () {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		let previous_max_pc = 0;
 		
 		for (let i = 0; i < hyde_years.length; i++) {
-			let total_file_path = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${hyde_years[i]}.png`;
-			let popc_file_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${hyde_years[i]}.png`;
-			let output_file_path = `${this.output_gdp_ppp_pc_folder}GDP_PPP_pc_${hyde_years[i]}.png`;
+			let current_year = hyde_years[i];
+			let total_file_path = `${this.intermediate_gdp_ppp_scaled_to_national}GDP_PPP_${current_year}.png`;
+			let popc_file_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${current_year}.png`;
+			let output_file_path = `${this.output_gdp_ppp_pc_folder}GDP_PPP_pc_${current_year}.png`;
+			let current_max_pc = 0;
+			let local_threshold = (previous_max_pc > 0) ? Math.min(previous_max_pc * 4, 500000) : 500000;
 			
 			if (fs.existsSync(total_file_path) && fs.existsSync(popc_file_path)) {
 				let total_raster = GeoPNG.loadNumberRasterImage(total_file_path, { format: "float32" });
@@ -436,12 +470,18 @@ global.GDP_PPP_pc = class {
 					height: 2160,
 					function: (local_index) => {
 						let local_pop = popc_raster.data[local_index];
-						let local_val = (local_pop > 0) ? total_raster.data[local_index] / local_pop : 0;
+						let local_pc = (local_pop > 0) ? total_raster.data[local_index] / local_pop : 0;
 						
-						return (isNaN(local_val)) ? 0 : local_val;
+						if (isNaN(local_pc)) return 0;
+						if (local_pc > local_threshold) return local_threshold;
+						
+						if (local_pc > current_max_pc) current_max_pc = local_pc;
+						return local_pc;
 					}
 				});
-				console.log(`- Finalized top-down GDP PPP pc: ${output_file_path}`);
+				
+				previous_max_pc = current_max_pc;
+				console.log(`- Finalized GDP PPP pc for ${current_year}. Healthy max: ${current_max_pc}`);
 				await Blacktraffic.yield();
 			}
 		}

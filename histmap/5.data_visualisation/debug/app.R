@@ -34,17 +34,19 @@ decodeGeoPng = function(png_path, format_str) {
 
 ui = fluidPage(
   tags$head(
-    tags$style(
-      "
-      #click_info_panel {
-        background-color: rgba(255, 255, 255, 0.85);
-        border: 2px solid #000;
-        padding-left: 4px;
-        pointer-events: none;
-        z-index: 999;
-        font-family: monospace;
-      }
-      "
+    tags$head(
+      tags$style(
+        "
+        #click_info_panel {
+          background-color: rgba(255, 255, 255, 0.85);
+          border: 2px solid #000;
+          padding-left: 4px;
+          pointer-events: none;
+          z-index: 999;
+          font-family: monospace;
+        }
+        "
+      )
     )
   ),
   titlePanel("GeoPNG Viewer"),
@@ -52,17 +54,22 @@ ui = fluidPage(
     sidebarPanel(
       fileInput("geo_file", "Select GeoPNG File", accept = c(".png")),
       selectInput("data_format", "Encoding Format", choices = c("int32", "float32"), selected = "float32"),
-      selectInput("projection", "Spatial Projection", 
-                  choices = c("Equirectangular", "Mercator", "Equal Earth"), selected = "Equal Earth"),
-      selectInput("scale_type", "Scale Transformation", 
-                  choices = c("linear", "pseudo-log"), selected = "pseudo-log"),
+      selectInput("projection", "Spatial Projection", choices = c("Equirectangular", "Mercator", "Equal Earth"), selected = "Equal Earth"),
+      selectInput("scale_type", "Scale Transformation", choices = c("linear", "pseudo-log"), selected = "pseudo-log"),
       numericInput("log_sigma", "Pseudo-log Sigma (Steepness)", value = 1, min = 0.001, step = 0.5),
-      selectInput("color_palette", "Color Palette", 
-                  choices = c("Plasma", "Viridis", "Magma", "Inferno", "Cividis", "Turbo", "Spectral", "Heat")),
+      selectInput("color_palette", "Color Palette", choices = c("Plasma", "Viridis", "Magma", "Inferno", "Cividis", "Turbo", "Spectral", "Heat")),
       hr(),
       h4("Visual Bounds"),
-      numericInput("min_val", "Min Value Override", value = NA),
-      numericInput("max_val", "Max Value Override", value = NA),
+      selectInput("bounds_mode", "Bounds Mode", choices = c("Manual", "Percentile"), selected = "Manual"),
+      conditionalPanel(
+        condition = "input.bounds_mode == 'Manual'",
+        numericInput("min_val", "Min Value Override", value = NA),
+        numericInput("max_val", "Max Value Override", value = NA)
+      ),
+      conditionalPanel(
+        condition = "input.bounds_mode == 'Percentile'",
+        textInput("percentile_list", "Percentile Breaks (0-100)", value = "0, 25, 50, 75, 100")
+      ),
       hr(),
       selectInput("downsample_method", "Downsampling Method", choices = c("maximum", "minimum", "average", "near"), selected = "maximum"),
       checkboxInput("use_filename_title", "Use Filename as Title", value = TRUE),
@@ -205,34 +212,23 @@ server = function(input, output, session) {
     let_vals = values(let_r, mat = FALSE)
     let_vals = let_vals[is.finite(let_vals)]
     
-    if (is.na(input$min_val)) {
-      let_min = min(let_vals, na.rm = TRUE)
+    let_trans = if (input$scale_type == "pseudo-log") pseudo_log_trans(sigma = input$log_sigma) else identity_trans()
+    
+    if (input$bounds_mode == "Percentile") {
+      let_probs_vec = as.numeric(trimws(unlist(strsplit(input$percentile_list, ",")))) / 100
+      let_probs_vec = let_probs_vec[!is.na(let_probs_vec)]
+      let_brks = as.numeric(quantile(let_vals, probs = sort(let_probs_vec), na.rm = TRUE))
+      let_min = min(let_brks, na.rm = TRUE)
+      let_max = max(let_brks, na.rm = TRUE)
     } else {
-      let_min = input$min_val
+      let_min = if (is.na(input$min_val)) min(let_vals, na.rm = TRUE) else input$min_val
+      let_max = if (is.na(input$max_val)) max(let_vals, na.rm = TRUE) else input$max_val
+      let_brk_low = let_trans$transform(let_min)
+      let_brk_high = let_trans$transform(let_max)
+      let_brks = let_trans$inverse(seq(let_brk_low, let_brk_high, length.out = 8))
     }
     
-    if (is.na(input$max_val)) {
-      let_max = max(let_vals, na.rm = TRUE)
-    } else {
-      let_max = input$max_val
-    }
-    
-    if (input$scale_type == "pseudo-log") {
-      let_trans = pseudo_log_trans(sigma = input$log_sigma)
-    } else {
-      let_trans = identity_trans()
-    }
-    
-    let_brk_low = let_trans$transform(let_min)
-    let_brk_high = let_trans$transform(let_max)
-    let_brks = let_trans$inverse(seq(let_brk_low, let_brk_high, length.out = 8))
-    
-    if (input$use_filename_title && !is.null(input$geo_file)) {
-      let_display_title = input$geo_file$name
-    } else {
-      let_display_title = input$plot_title
-    }
-    
+    let_display_title = if (input$use_filename_title && !is.null(input$geo_file)) input$geo_file$name else input$plot_title
     let_legend_label = paste0(input$legend_title, "\n[", tools::toTitleCase(input$downsample_method), "]")
     let_subtitle_label = paste0(input$plot_subtitle, " (", input$downsample_method, ")")
     
@@ -267,13 +263,8 @@ server = function(input, output, session) {
         guide = guide_colorbar(frame.colour = "black", ticks.colour = "black")
       )
     } else {
-      if (input$color_palette == "Spectral") {
-        let_pal = "Spectral"
-        let_dir = -1
-      } else {
-        let_pal = "YlOrRd"
-        let_dir = 1
-      }
+      let_pal = if (input$color_palette == "Spectral") "Spectral" else "YlOrRd"
+      let_dir = if (input$color_palette == "Spectral") -1 else 1
       let_gg = let_gg + scale_fill_distiller(
         palette = let_pal, direction = let_dir,
         trans = let_trans, na.value = NA,
