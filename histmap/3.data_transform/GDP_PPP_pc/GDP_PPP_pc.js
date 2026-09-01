@@ -151,6 +151,7 @@ global.GDP_PPP_pc = class {
 	static async D_normaliseGDP_PPP_pcRasters () {
 		//Declare local instance variables
 		let years = landuse_HYDE.sorted_hyde_years;
+		let global_prev_max = 0;
 		
 		//Iterate over all years
 		for (let i = 0; i < years.length; i++) {
@@ -166,6 +167,7 @@ global.GDP_PPP_pc = class {
 			});
 			
 			let output_path = `${this.intermediate_pc_estimates_folder}GDP_PPP_pc_${years[i]}.png`;
+			let current_iteration_max = 0;
 			
 			//Fetch first_pass_domain, second_pass_domain
 			for (let x = 0; x < first_pass_raster.data.length; x++) {
@@ -203,10 +205,22 @@ global.GDP_PPP_pc = class {
 					let second_pass_fraction = (second_pass_range !== 0) ?
 						second_pass_value/second_pass_range : 0;
 					
-					return first_pass_value + (first_pass_range*second_pass_fraction);
+					let result_value = first_pass_value + (first_pass_range*second_pass_fraction);
+					
+					//Clamp extreme outliers: if value > 10x the previous year's max, set it to the previous max
+					if (i > 0 && global_prev_max > 0)
+						if (result_value > global_prev_max * 10) result_value = global_prev_max;
+					
+					//Track the max value for this current iteration/year
+					if (result_value > current_iteration_max) current_iteration_max = result_value;
+					
+					return result_value;
 				}
 			});
-			console.log(`- Saved ${output_path}.`);
+			
+			//Update global_prev_max for the next year in the loop
+			global_prev_max = current_iteration_max;
+			console.log(`- Saved ${output_path}. Max observed: ${current_iteration_max}`);
 			await Blacktraffic.yield();
 		}
 	}
