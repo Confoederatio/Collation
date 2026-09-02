@@ -211,6 +211,7 @@ global.l4p = "./livemap/4.view/politics/";
 			"core/framework/actions",
 			"!core/ui/rightbar/ui_wiki.css",
 			"histmap",
+			"!histmap/1.data_raw",
 			"livemap",
 		],
 		special_function: function () {
