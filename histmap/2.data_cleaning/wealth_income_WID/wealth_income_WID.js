@@ -21,13 +21,12 @@ global.wealth_income_WID = class {
 		//Income
 		net_income: ["aptinc"],
 		disposable_income: ["adiinc"],
-		discretionary_income: ["asavho", "aindgo"],
+		discretionary_income: ["asavho", "aindgo"], //Savings rate + social services
 		
 		//Wealth
 		net_wealth: ["ahweal"],
 		
 		//Currency Conversion (Market Exchange Rate: Local Currency per EUR)
-		//Accounts for inconsistencies across WID country files
 		exchange_rate: ["xlceuxi", "alceuxi"]
 	};
 	
@@ -52,12 +51,12 @@ global.wealth_income_WID = class {
 					let csv_row = csv_array[x];
 					let v = csv_row.variable;
 					
-					// 1. Capture Macroeconomic Exchange Rates (xlceuxi / alceuxi)
+					// 1. Capture Macroeconomic Exchange Rates
 					for (let e = 0; e < exchange_rates.length; e++) {
 						if (v.startsWith(exchange_rates[e])) {
 							if (!local_obj[csv_row.year]) local_obj[csv_row.year] = {};
 							local_obj[csv_row.year].exchange_rate = parseFloat(csv_row.value);
-							break; // Found the exchange rate, stop checking other prefixes for this row
+							break;
 						}
 					}
 					
@@ -65,13 +64,11 @@ global.wealth_income_WID = class {
 					for (let y = 0; y < prefix_array.length; y++) {
 						let current_prefix = prefix_array[y];
 						
-						// Target exact matches to base prefixes
 						if (v.startsWith(current_prefix)) {
 							if (csv_row.percentile === "p0p100") {
 								if (!local_obj[csv_row.year]) local_obj[csv_row.year] = {};
 								if (!local_obj[csv_row.year][current_prefix]) local_obj[csv_row.year][current_prefix] = {};
 								
-								// Extract pop/age suffix (e.g. 'j992')
 								let suffix = v.replace(current_prefix, "");
 								local_obj[csv_row.year][current_prefix][suffix] = parseFloat(csv_row.value);
 							}
@@ -90,10 +87,20 @@ global.wealth_income_WID = class {
 			let year_data = return_obj[current_iso];
 			let flattened_year_map = {};
 			
+			// WID variables are in Constant Base-Year Currency. 
+			// We must find the most recent year's exchange rate to act as our Base Rate.
+			let base_exchange_rate = 1;
+			let available_years = Object.keys(year_data).map(Number).sort((a, b) => b - a); // Descending order
+			
+			for (let yr of available_years) {
+				if (year_data[yr] && year_data[yr].exchange_rate) {
+					base_exchange_rate = year_data[yr].exchange_rate;
+					break;
+				}
+			}
+			
 			for (let current_year in year_data) {
 				let data = year_data[current_year];
-				// Fallback to 1 if no exchange rate is found (e.g., if natively reported in EUR already)
-				let exchange_rate = data.exchange_rate || 1;
 				let year_sum = 0;
 				let valid_year = false;
 				
@@ -105,8 +112,8 @@ global.wealth_income_WID = class {
 						if (best_suffix) {
 							let raw_value = data[pref][best_suffix];
 							
-							// Transform: (LCU / (LCU per EUR)) * Universal Deflator
-							year_sum += (raw_value / exchange_rate) * this.options.deflator;
+							// Transform: (Base LCU / Base LCU per EUR) * Universal Deflator
+							year_sum += (raw_value / base_exchange_rate) * this.options.deflator;
 							valid_year = true;
 						}
 					}
@@ -123,7 +130,6 @@ global.wealth_income_WID = class {
 	static async A_cacheWIDObjects () {
 		let options = this.options;
 		
-		// Ensure export directory exists
 		if (!fs.existsSync(this.input_json)) fs.mkdirSync(this.input_json, { recursive: true });
 		
 		for (let i = 0; i < options.variables.length; i++) {
