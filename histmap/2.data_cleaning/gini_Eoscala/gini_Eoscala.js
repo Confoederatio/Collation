@@ -268,7 +268,7 @@ global.gini_Eoscala = class {
 		if (!fs.existsSync(dest_dir)) fs.mkdirSync(dest_dir, { recursive: true });
 		
 		let gapminder_obj = gini_OLS.getGapminderGiniObject();
-		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
 		let subngini_obj = gini_OLS.getSubNGiniObject();

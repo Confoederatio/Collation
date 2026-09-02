@@ -381,7 +381,7 @@ global.GDP_PPP_pc = class {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let gdp_ppp_obj = GDP_PPP.getGDP_PPPObject();
-		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		let previous_max_pc = 0;
 		

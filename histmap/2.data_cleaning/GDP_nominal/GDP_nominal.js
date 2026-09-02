@@ -115,7 +115,7 @@ global.GDP_nominal = class {
 		//Declare local instance variables
 		let hyde_years = landuse_HYDE.sorted_hyde_years;
 		let gdp_obj = this.getGDPObject();
-		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
 		//Iterate over all hyde_years

@@ -7,7 +7,7 @@ global.GDP_nominal_SEDAC = class {
 		//Declare local instance variables
 		let all_ppp_files = await File.getAllFiles(GDP_PPP_SEDAC.bf);
 		let gdp_obj = GDP_nominal.getGDPObject();
-		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		let world_gdp_obj = GDP_nominal.getWorldGDPObject();
 		let years = GDP_PPP_SEDAC.years;

@@ -282,7 +282,7 @@ global.gini_OLS = class {
 		let target_years = hyde_years.filter(y => y >= domain[0] && y <= domain[1]);
 		
 		let gapminder_obj = this.getGapminderGiniObject();
-		let geocode_obj = admin_modern.getColourcodesObject();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
 		let base_dir = this.intermediate_ols_gapminder;
