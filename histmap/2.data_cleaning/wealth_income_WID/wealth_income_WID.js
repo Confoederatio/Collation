@@ -43,20 +43,53 @@ global.wealth_income_WID = class { //[WIP] - Finish class body
 					.replace(this.options.file_suffix, "");
 				
 				if (!return_obj[iso_code]) return_obj[iso_code] = {};
-					let local_obj = return_obj[iso_code];
+				let local_obj = return_obj[iso_code];
 				
 				for (let x = 0; x < csv_array.length; x++) {
-					let is_included = false;
+					let csv_row = csv_array[x];
 					
-					for (let y = 0; y < prefix_array.length; y++)
-						if (csv_array[x].variable.startsWith(prefix_array[y]))
-							is_included = true;
-					if (is_included)
-						Object.modifyValue(local_obj, csv_array[x].year, parseFloat(csv_array[x].value));
+					for (let y = 0; y < prefix_array.length; y++) {
+						let current_prefix = prefix_array[y];
+						
+						if (csv_row.variable.startsWith(current_prefix) && csv_row.percentile === "p0p100") {
+							//Initialise year and prefix arrays if they do not exist
+							if (!local_obj[csv_row.year]) local_obj[csv_row.year] = {};
+							if (!local_obj[csv_row.year][current_prefix]) local_obj[csv_row.year][current_prefix] = [];
+							
+							let local_value = parseFloat(csv_row.value)*this.options.deflator;
+							local_obj[csv_row.year][current_prefix].push(local_value);
+						}
+					}
 				}
 			}
 			console.log(`- Finished scanning ${i + 1}/${all_files.length} .csv files ...`);
 			await Blacktraffic.yield();
+		}
+		
+		//Post-processing logic to handle weighted geometric means and prefix summation
+		let iso_codes = Object.keys(return_obj);
+		for (let i = 0; i < iso_codes.length; i++) {
+			let current_iso = iso_codes[i];
+			let year_data = return_obj[current_iso];
+			let flattened_year_map = {};
+			let years = Object.keys(year_data);
+			
+			for (let y = 0; y < years.length; y++) {
+				let current_year = years[y];
+				let prefix_map = year_data[current_year];
+				let prefixes = Object.keys(prefix_map);
+				let year_total = 0;
+				
+				for (let p = 0; p < prefixes.length; p++) {
+					let value_array = prefix_map[prefixes[p]];
+					
+					//Calculate weighted geometric mean for this prefix's values and add to year sum
+					year_total += Math.weightedGeometricMean(value_array);
+				}
+				flattened_year_map[current_year] = year_total;
+			}
+			// Replace the temporary nested structure with the flat year map
+			return_obj[current_iso] = flattened_year_map;
 		}
 		
 		//Return statement
