@@ -57,10 +57,13 @@
 			}
 			return {A: out_A, B: out_B};
 		};
+		let height = options.height;
 		let N = options.width*options.height;
 		let mask_data = options.mask_data;
+		let radius = options.radius;
 		let pop_data = options.pop_data;
 		let target_data = options.target_data;
+		let width = options.width;
 		
 		// 1. Precise Border Detection & Distance Transform
 		let dist = new Float32Array(N).fill(99999);
