@@ -13,15 +13,15 @@ global.wealth_income_WID = class {
 		deflator: (174.6/326.031)*0.9004, //(CPI_$2000/CPI_$2025)*EUR_USD_2000
 		file_prefix: "WID_data_",
 		file_suffix: ".csv",
-		variables: ["net_income", "disposable_income", "discretionary_income", "net_wealth"],
+		variables: ["disposable_income", "net_income", "discretionary_income", "net_wealth"],
 		
 		// Priority suffixes: Equal-split adults (j996) is the gold standard, followed by individual adults (j992)
 		priority_suffixes: ["j996", "i996", "j992", "i992", "j999", "i999"],
 		
 		//Income
 		net_income: ["aptinc"],
-		disposable_income: ["adiinc"],
-		discretionary_income: ["asavho", "aindgo"], //Savings rate + social services
+		disposable_income: ["aconhn", "asavhn"], //Cash Disposable Income = Household Consumption + Household Saving
+		discretionary_income: ["asavho", "aindgo"], //Savings Rate + Social Transfers
 		
 		//Wealth
 		net_wealth: ["ahweal"],
