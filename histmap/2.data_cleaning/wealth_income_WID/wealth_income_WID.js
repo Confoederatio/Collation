@@ -164,7 +164,13 @@ global.wealth_income_WID = class {
 			
 			//Iterate over all years
 			for (let x = 0; x < years.length; x++) {
+				let has_data = false;
 				let local_output_file_path  = `${local_folder_path}${options.variables[i]}_${years[x]}.png`;
+				
+				Object.iterate(local_json_obj, (local_key, local_value) =>  {
+					if (local_value[years[x]]) has_data = true;
+				});
+				if (!has_data) continue; //Internal guard clause if there is no data for the given year
 				
 				GeoPNG.saveNumberRasterImage({
 					file_path: local_output_file_path,
@@ -182,11 +188,10 @@ global.wealth_income_WID = class {
 						let local_value;
 						
 						//Iterate over all local_geocodes
-						for (let y = 0; y < local_geocodes.length; y++)
-							if (local_json_obj[local_geocodes[y]]?.[years[x]]) {
-								local_value = local_json_obj[local_geocodes[y]][years[x]];
-								break;
-							}
+						if (local_geocodes)
+							for (let y = 0; y < local_geocodes.length; y++)
+								if (local_json_obj[local_geocodes[y]]?.[years[x]])
+									local_value = local_json_obj[local_geocodes[y]][years[x]];
 						
 						//Return statement
 						return local_value;
