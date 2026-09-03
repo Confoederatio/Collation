@@ -57,7 +57,7 @@ global.wealth_income_OLS = class {
 		
 		//Initialise options
 		if (!options.lambda) options.lambda = 1e6;
-		if (!options.weighting_function) options.weighting_function = (value) => Math.abs(value); //Keep coefficients positive to align with multiplicative updates constraints
+		if (!options.weighting_function) options.weighting_function = (value) => Math.abs(value);
 		
 		//Declare local instance variables
 		let variables = wealth_income_WID.options.variables;
@@ -85,7 +85,7 @@ global.wealth_income_OLS = class {
 						formatting_parameters: [current_year]
 					});
 					
-					//Crucial step: Filter out Zero Values (Missing Data) to prevent them skewing OLS regression
+					//Crucial step: Filter out Zero Values (Missing WID Data) to prevent them skewing OLS regression
 					let filtered_X = [];
 					let filtered_Y = [];
 					
@@ -120,7 +120,24 @@ global.wealth_income_OLS = class {
 		}
 	}
 	
-	static async B_generateOLSRasters () {
+	static async B_geomeanWIDModels (arg0_options) {
+		let options = (arg0_options) ? arg0_options : {};
+		let variables = wealth_income_WID.options.variables;
+		
+		for (let i = 0; i < variables.length; i++) {
+			let current_variable = variables[i];
+			let local_models_folder = `${this.intermediate_ols_models_folder}${current_variable}/`;
+			
+			if (fs.existsSync(local_models_folder)) {
+				console.log(`\n--- Aggregating Temporal Models (Geometric Mean) for ${current_variable} ---`);
+				
+				//Using the trailing underscore prefix isolates the correct target jsons and results in a clean format_slug: geomean_OLS_${current_variable}.json
+				await Statistics.geomeanOLSModels(local_models_folder, `OLS_${current_variable}_`, options);
+			}
+		}
+	}
+	
+	static async C_generateOLSRasters () {
 		//Declare local instance variables
 		let variables = wealth_income_WID.options.variables;
 		let years = landuse_HYDE.sorted_hyde_years;
@@ -135,25 +152,26 @@ global.wealth_income_OLS = class {
 			
 			if (!fs.existsSync(local_rasters_folder)) fs.mkdirSync(local_rasters_folder, { recursive: true });
 			
-			console.log(`Generating Rasters for ${current_variable}.`);
+			console.log(`Generating OLS Rasters for ${current_variable}.`);
 			
-			//Iterate over all HYDE years
+			//Load the unified geomean model for the variable
+			let geomean_model_path = `${local_models_folder}geomean_OLS_${current_variable}.json`;
+			if (!fs.existsSync(geomean_model_path)) {
+				console.warn(`- Missing Geomean model for ${current_variable} at ${geomean_model_path}. Skipping raster generation.`);
+				continue;
+			}
+			let model_obj = JSON.parse(fs.readFileSync(geomean_model_path, "utf8"));
+			
+			//Iterate over all HYDE years applying the unified structural coefficients
 			for (let x = 0; x < years.length; x++) {
 				let current_year = years[x];
-				let local_input_path = `${local_models_folder}OLS_${current_variable}_${current_year}.json`;
-				
-				if (!fs.existsSync(local_input_path)) {
-					console.warn(`- Could not load trained OLS model for ${local_input_path}. Skipping.`);
-					continue;
-				}
-				
 				let local_output_path = `${local_rasters_folder}OLS_${current_variable}_${current_year}.png`;
 				
 				await Statistics.generateOLSRaster(local_output_path, {
 					covariates_obj: this.covariates_obj,
 					format: "float32",
 					formatting_parameters: [current_year],
-					model_obj: JSON.parse(fs.readFileSync(local_input_path, "utf8")),
+					model_obj: model_obj, // Pass the static, averaged JSON
 					
 					guard_clause: (local_index, rasters_obj) => {
 						//Skip calculating values over unpopulated areas and ocean pixels
@@ -173,10 +191,13 @@ global.wealth_income_OLS = class {
 		//Initialise options
 		if (!options.exclude) options.exclude = [];
 		
-		//1. Train OLS Variable Models
+		//1. Train annual OLS Variable Models
 		if (!options.exclude.includes("A")) await this.A_trainWIDModels(options);
 		
-		//2. Raster Generation Phase
-		if (!options.exclude.includes("B")) await this.B_generateOLSRasters();
+		//2. Compress annual models into a single, temporal model per variable
+		if (!options.exclude.includes("B")) await this.B_geomeanWIDModels(options);
+		
+		//3. Raster Generation Phase (Backcalculating all years using unified model)
+		if (!options.exclude.includes("C")) await this.C_generateOLSRasters();
 	}
 };

@@ -31,7 +31,7 @@
 				for (let k = j; k < K; k++) {
 					XT_X[j][k] += x_j * rowX[k];
 				}
-			}
+			}	
 		}
 		
 		//Mirror the computed lower half logic to the upper half logic
