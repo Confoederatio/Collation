@@ -15,6 +15,7 @@ global.wealth_income = class {
 		interpolate_to_WID_domain: [1700, 1800]
 	};
 	
+	//[QUARANTINE]
 	static getOutputFolder (arg0_variable) {
 		switch (arg0_variable) {
 			case "discretionary_income": return this.output_discretionary_income_folder;
