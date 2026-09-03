@@ -145,7 +145,7 @@ global.wealth_income_WID = class {
 	
 	static async B_generateWIDRasters () {
 		//Declare local instance variables
-		let iso2_obj = admin_modern.getISO2ColourcodesObject();
+		let iso2_obj = admin_modern.getWIDColourcodesObject();
 		let iso2_raster = GeoPNG.loadImage(admin_modern.input_iso2_geocodes_raster);
 		let options = this.options;
 		let years = landuse_HYDE.sorted_hyde_years;
@@ -190,8 +190,10 @@ global.wealth_income_WID = class {
 						//Iterate over all local_geocodes
 						if (local_geocodes)
 							for (let y = 0; y < local_geocodes.length; y++)
-								if (local_json_obj[local_geocodes[y]]?.[years[x]])
+								if (local_json_obj[local_geocodes[y]]?.[years[x]]) {
 									local_value = local_json_obj[local_geocodes[y]][years[x]];
+									break;
+								}
 						
 						//Return statement
 						return local_value;

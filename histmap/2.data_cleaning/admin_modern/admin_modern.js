@@ -4,6 +4,7 @@ global.admin_modern = class {
 	static input_geocodes_raster = `${this.bf}geocodes.png`;
 	static input_iso2_geocodes_csv = `${this.bf}iso2_geocodes.csv`;
 	static input_iso2_geocodes_raster = `${this.bf}iso2.png`;
+	static input_regional_geocodes_csv = `${this.bf}iso2_regions.csv`;
 	
 	/**
 	 * Returns a map of <r,g,b,a>: {@link Array}<{@link string}> - Ordered in terms of precedence; latter indices are fallbacks.
@@ -76,6 +77,55 @@ global.admin_modern = class {
 		});
 		
 		//Return statement
+		return colourcodes_obj;
+	}
+	
+	/**
+	 * Returns a map of <r,g,b,a>: Array<string>
+	 * Inherits ISO2 base mappings and appends regional fallbacks by looking up which colours
+	 * represent the member countries (and their sub-entities like Prussia or States).
+	 *
+	 * @returns {Object}
+	 */
+	static getWIDColourcodesObject () {
+		//Fetch the base ISO2 mapping to ensure we have all sub-national colours (Prussia, US States)
+		let colourcodes_obj = admin_modern.getISO2ColourcodesObject();
+		
+		//Load the regional CSV which contains aggregate definitions
+		let regional_csv = File.loadCSVAsJSON(admin_modern.input_regional_geocodes_csv, {
+			delimiter: ";",
+			mode: "vertical"
+		});
+		
+		//Iterate over each regional aggregate (e.g., QE-MER, XL-MER)
+		Object.iterate(regional_csv, (regional_key, local_value) => {
+			let member_geocodes_str = local_value["Other Geocodes"][0];
+			
+			if (member_geocodes_str !== "") {
+				let members_list = member_geocodes_str.split(",");
+				
+				//For every color in our base map, check if any of the geocodes in its array 
+				//are members of the current region.
+				Object.iterate(colourcodes_obj, (pixel_colour, geocode_array) => {
+					let is_member = false;
+					
+					//Check if the primary geocode or its fallbacks (like 'DE' for 'DD') match
+					for (let i = 0; i < members_list.length; i++) {
+						let check_code = members_list[i].trim();
+						if (geocode_array.includes(check_code)) {
+							is_member = true;
+							break;
+						}
+					}
+					
+					//If this colour represents a member of the region, push the region as a fallback
+					if (is_member && !geocode_array.includes(regional_key)) {
+						geocode_array.push(regional_key);
+					}
+				});
+			}
+		});
+		
 		return colourcodes_obj;
 	}
 };
