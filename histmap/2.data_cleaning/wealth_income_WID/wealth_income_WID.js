@@ -1,5 +1,4 @@
 global.wealth_income_WID = class {
-	
 	static bf = `${h2}/wealth_income_WID/`;
 	static input_folder = `${h1}/wealth_income_WID/`;
 	static input_json = `${this.input_folder}json/`;
@@ -142,5 +141,72 @@ global.wealth_income_WID = class {
 			fs.writeFileSync(output_file_path, JSON.stringify(variable_obj, null, 2));
 			console.log(`Saved cache file to ${output_file_path}.`);
 		}
+	}
+	
+	static async B_generateWIDRasters () {
+		//Declare local instance variables
+		let iso2_obj = admin_modern.getISO2ColourcodesObject();
+		let iso2_raster = GeoPNG.loadImage(admin_modern.input_iso2_geocodes_raster);
+		let options = this.options;
+		let years = landuse_HYDE.sorted_hyde_years;
+		
+		//Create folders
+		for (let i = 0; i < options.variables.length; i++) {
+			let local_folder_path = `${this.bf}${options.variables[i]}/`;
+			let local_json_obj = JSON.parse(fs.readFileSync(`${this.input_json}${options.variables[i]}.json`,  "utf8"));
+			
+			if (!fs.existsSync(local_folder_path))
+				fs.mkdirSync(local_folder_path, { recursive: true });
+			
+			//local_json_obj needs to be processed for years
+			Object.iterate(local_json_obj, (local_key, local_value) => 
+				Object.cubicSplineInterpolation(local_value, { years }));
+			
+			//Iterate over all years
+			for (let x = 0; x < years.length; x++) {
+				let local_output_file_path  = `${local_folder_path}${options.variables[i]}_${years[x]}.png`;
+				
+				GeoPNG.saveNumberRasterImage({
+					file_path: local_output_file_path,
+					format: "float32",
+					height: 2160,
+					width: 4320,
+					function: (local_index) => {
+						let byte_index = local_index*4;
+						let local_colour_key = [
+							iso2_raster.data[byte_index],
+							iso2_raster.data[byte_index + 1],
+							iso2_raster.data[byte_index + 2]
+						].join(",");
+						let local_geocodes = iso2_obj[local_colour_key];
+						let local_value;
+						
+						//Iterate over all local_geocodes
+						for (let y = 0; y < local_geocodes.length; y++)
+							if (local_json_obj[local_geocodes[y]]?.[years[x]]) {
+								local_value = local_json_obj[local_geocodes[y]][years[x]];
+								break;
+							}
+						
+						//Return statement
+						return local_value;
+					}
+				});
+				await Blacktraffic.yield();
+				console.log(`- Saved ${local_output_file_path}.`);
+			}
+		}
+	}
+	
+	static async processRasters (arg0_options) {
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		if (!options.exclude) options.exclude = [];
+		
+		//Process WID
+		if (!options.exclude.includes("A")) await this.A_cacheWIDObjects();
+		if (!options.exclude.includes("B")) await this.B_generateWIDRasters();
 	}
 };
