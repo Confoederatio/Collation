@@ -4,6 +4,7 @@ global.age_sex_UNWPP = class {
 	static input_male_csv = `${h1}/age_sex_UNWPP/male_age_cohorts.csv`;
 	static intermediate_worldpop_backcalculated = `${this.bf}/1.backcalculated_from_worldpop/`;
 	static output_clamped_to_stadester = `${this.bf}/2.clamped_to_stadester/`;
+	static unwpp_years = [1950, 1951, 1952, 1953, 1954, 1955, 1956, 1957, 1958, 1959, 1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020];
 	
 	static async A_getUNWPPGroups () {
 		//Declare local instance variables
@@ -82,7 +83,7 @@ global.age_sex_UNWPP = class {
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
 		//UNWPP historical boundary 1950-2020
-		let unwpp_years = Array.from({length: 2020 - 1950 + 1}, (_, i) => (1950 + i).toString());
+		let unwpp_years = this.unwpp_years;
 		
 		//Iterate over all_worldpop_files
 		for (let i = 0; i < all_worldpop_files.length; i++) {
@@ -184,7 +185,7 @@ global.age_sex_UNWPP = class {
 		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
 		//Establish temporal bounds (1950 - 2020)
-		let unwpp_years = Array.from({length: 2020 - 1950 + 1}, (_, i) => (1950 + i).toString());
+		let unwpp_years = this.unwpp_years;
 		
 		//Generate standard WorldPop 1/5-year cohort keys programmatically
 		let age_groups = ["00", "01"];
@@ -201,7 +202,7 @@ global.age_sex_UNWPP = class {
 			let local_year = unwpp_years[y];
 			let pop_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${local_year}.png`;
 			
-			//Guard clause if no Statester temporal anchor exists for this year
+			//Guard clause if no Stadestér temporal anchor exists for this year
 			if (!fs.existsSync(pop_path)) continue;
 			
 			console.log(`Processing Stadester dasymetric clamping for year: ${local_year}`);
@@ -249,7 +250,7 @@ global.age_sex_UNWPP = class {
 				}
 			}
 			
-			//3. Dasymetrically scale UNWPP groups to match local Statester totals
+			//3. Dasymetrically scale UNWPP groups to match local Stadestér totals
 			for (let c = 0; c < all_cohorts.length; c++) {
 				let cohort_key = all_cohorts[c];
 				let backcalc_path = `${this.intermediate_worldpop_backcalculated}global_${cohort_key}_${local_year}.png`;
@@ -312,6 +313,14 @@ global.age_sex_UNWPP = class {
 	}
 	
 	static async processRasters (arg0_options) {
-		//...
+		//Convert from parameters
+		let options = (arg0_options) ? arg0_options : {};
+		
+		//Initialise options
+		if (!options.exclude) options.exclude = [];
+		
+		//Process to Stadestér
+		if (!options.exclude.includes("A")) await this.A_generateUNWPPRasters();
+		if (!options.exclude.includes("B")) await this.B_clampToStadester();
 	}
 };
