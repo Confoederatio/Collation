@@ -6,14 +6,312 @@ global.age_sex_UNWPP = class {
 	static output_clamped_to_stadester = `${this.bf}/2.clamped_to_stadester/`;
 	
 	static async A_getUNWPPGroups () {
+		//Declare local instance variables
+		let unwpp_data = {};
 		
+		//Load the CSVs using the provided utility
+		let female_csv = File.loadCSVAsArray(this.input_female_csv, { delimiter: ";" });
+		let male_csv = File.loadCSVAsArray(this.input_male_csv, { delimiter: ";" });
+		
+		//Helper function to parse UNWPP strings and multiply by 1000
+		const parseUNNumber = function (val) {
+			if (!val) return 0;
+			return Number(val.toString().replace(/\s/g, '')) * 1000;
+		};
+		
+		//Helper function to aggregate 1-year columns into flat WorldPop cohorts (f_00, f_01, etc.)
+		const processRowToCohorts = function (row, prefix) {
+			let cohorts = {};
+			
+			cohorts[`${prefix}00`] = parseUNNumber(row["0"]);
+			
+			cohorts[`${prefix}01`] = 0;
+			for (let i = 1; i <= 4; i++) cohorts[`${prefix}01`] += parseUNNumber(row[i.toString()]);
+			
+			for (let base = 5; base <= 75; base += 5) {
+				let key = base.toString().padStart(2, "0");
+				cohorts[`${prefix}${key}`] = 0;
+				for (let i = 0; i <= 4; i++) {
+					cohorts[`${prefix}${key}`] += parseUNNumber(row[(base + i).toString()]);
+				}
+			}
+			
+			cohorts[`${prefix}80`] = 0;
+			for (let i = 80; i <= 99; i++) cohorts[`${prefix}80`] += parseUNNumber(row[i.toString()]);
+			cohorts[`${prefix}80`] += parseUNNumber(row["100+"]);
+			
+			return cohorts;
+		};
+		
+		//Process Female Data
+		for (let i = 0; i < female_csv.length; i++) {
+			let row = female_csv[i];
+			let iso3 = row["ISO3 Alpha-code"];
+			let year = row["Year"] ? row["Year"].toString().trim() : null;
+			
+			if (iso3 && year) {
+				if (!unwpp_data[iso3]) unwpp_data[iso3] = {};
+				if (!unwpp_data[iso3][year]) unwpp_data[iso3][year] = {};
+				Object.assign(unwpp_data[iso3][year], processRowToCohorts(row, "f_"));
+			}
+		}
+		
+		//Process Male Data
+		for (let i = 0; i < male_csv.length; i++) {
+			let row = male_csv[i];
+			let iso3 = row["ISO3 Alpha-code"];
+			let year = row["Year"] ? row["Year"].toString().trim() : null;
+			
+			if (iso3 && year) {
+				if (!unwpp_data[iso3]) unwpp_data[iso3] = {};
+				if (!unwpp_data[iso3][year]) unwpp_data[iso3][year] = {};
+				Object.assign(unwpp_data[iso3][year], processRowToCohorts(row, "m_"));
+			}
+		}
+		
+		//Save to the class as a static variable and return
+		this.unwpp_data = unwpp_data;
+		return unwpp_data;
 	}
 	
 	static async A_generateUNWPPRasters () {
+		//Declare local instance variables
+		let unwpp_data = this.unwpp_data || await this.A_getUNWPPGroups();
+		let all_worldpop_files = await File.getAllFiles(`${h1}/age_sex_WorldPop/rasters/`);
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
+		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
 		
+		//UNWPP historical boundary 1950-2020
+		let unwpp_years = Array.from({length: 2020 - 1950 + 1}, (_, i) => (1950 + i).toString());
+		
+		//Iterate over all_worldpop_files
+		for (let i = 0; i < all_worldpop_files.length; i++) {
+			let local_file_path = all_worldpop_files[i];
+			let local_basename = path.basename(local_file_path);
+			
+			//We strictly want to grab the 2015 rasters to use as spatial bases
+			if (!local_basename.includes("_2015_")) continue;
+			
+			//Regex match for cohort, e.g., matching "f_00" or "m_80"
+			let cohort_match = local_basename.match(/(f|m)_([0-9]{2})_2015/);
+			if (!cohort_match) continue;
+			
+			let local_cohort_key = `${cohort_match[1]}_${cohort_match[2]}`;
+			
+			//1. Load in the 2015 base raster and operate over it to capture 2015 pop sums
+			let local_base_sums = {};
+			let local_base_raster = GeoPNG.loadNumberRasterImage(local_file_path, {
+				format: "float32"
+			});
+			
+			GeoPNG.operateNumberRasterImage({
+				file_path: local_file_path,
+				format: "float32",
+				function: (local_index, local_value) => {
+					//Convert float32 layout to Uint8 RGBA layout
+					let byte_index = local_index;
+					let local_colour_key = [
+						geocode_raster.data[byte_index],
+						geocode_raster.data[byte_index + 1],
+						geocode_raster.data[byte_index + 2]
+					].join(",");
+					let local_geocodes = geocode_obj[local_colour_key];
+					
+					if (local_geocodes)
+						for (let x = 0; x < local_geocodes.length; x++)
+							Object.modifyValue(local_base_sums, local_geocodes[x], local_value);
+				}
+			});
+			
+			console.log(`- Loaded base spatial mask for cohort: ${local_cohort_key}`);
+			
+			//2. Backcalculate iteration over the 1950-2020 time frame
+			for (let y = 0; y < unwpp_years.length; y++) {
+				let local_year = unwpp_years[y];
+				let local_scalars = {};
+				
+				//Determine specific scaling ratio mapping
+				Object.iterate(local_base_sums, (local_iso, local_2015_pop) => {
+					let local_actual_pop = unwpp_data[local_iso]?.[local_year]?.[local_cohort_key];
+					
+					if (local_actual_pop !== undefined) {
+						local_scalars[local_iso] = (local_2015_pop !== 0) ? (local_actual_pop / local_2015_pop) : 0;
+					} else {
+						//If a state goes unrecognized (i.e. micro-nations), assume stable population and copy 2015 natively via 1.0 scalar
+						local_scalars[local_iso] = 1;
+					}
+				});
+				
+				let local_output_file = `${this.intermediate_worldpop_backcalculated}global_${local_cohort_key}_${local_year}.png`;
+				
+				//3. Dump raster output cleanly clamping out to file system directly 
+				GeoPNG.saveNumberRasterImage({
+					file_path: local_output_file,
+					format: "float32",
+					width: local_base_raster.width,
+					height: local_base_raster.height,
+					function: (local_index) => {
+						let byte_index = local_index * 4;
+						let local_colour_key = [
+							geocode_raster.data[byte_index],
+							geocode_raster.data[byte_index + 1],
+							geocode_raster.data[byte_index + 2]
+						].join(",");
+						let local_geocodes = geocode_obj[local_colour_key];
+						let local_value = local_base_raster.data[local_index];
+						
+						if (local_geocodes) {
+							for (let x = 0; x < local_geocodes.length; x++) {
+								let local_scalar = local_scalars[local_geocodes[x]];
+								if (local_scalar !== undefined)
+									return local_value * local_scalar;
+							}
+						}
+						return local_value;
+					}
+				});
+				
+				console.log(`Processed backcalculation: ${local_output_file}`);
+				await Blacktraffic.yield();
+			}
+		}
+	}
+	
+	static async B_clampToStadester () {
+		//Declare local instance variables
+		let unwpp_data = this.unwpp_data || await this.A_getUNWPPGroups();
+		let geocode_obj = admin_modern.getISO3ColourcodesObject();
+		let geocode_raster = GeoPNG.loadImage(admin_modern.input_geocodes_raster);
+		
+		//Establish temporal bounds (1950 - 2020)
+		let unwpp_years = Array.from({length: 2020 - 1950 + 1}, (_, i) => (1950 + i).toString());
+		
+		//Generate standard WorldPop 1/5-year cohort keys programmatically
+		let age_groups = ["00", "01"];
+		for (let i = 5; i <= 80; i += 5) age_groups.push(i.toString().padStart(2, "0"));
+		
+		let all_cohorts = [];
+		for (let i = 0; i < age_groups.length; i++) {
+			all_cohorts.push(`f_${age_groups[i]}`);
+			all_cohorts.push(`m_${age_groups[i]}`);
+		}
+		
+		//Iterate over temporal bounds
+		for (let y = 0; y < unwpp_years.length; y++) {
+			let local_year = unwpp_years[y];
+			let pop_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${local_year}.png`;
+			
+			//Guard clause if no Statester temporal anchor exists for this year
+			if (!fs.existsSync(pop_path)) continue;
+			
+			console.log(`Processing Stadester dasymetric clamping for year: ${local_year}`);
+			
+			//Pre-calculate national demographic fractions for empty-pixel fallbacks
+			let national_fractions = {};
+			Object.iterate(unwpp_data, (local_iso, local_year_data) => {
+				let local_data = local_year_data[local_year];
+				if (!local_data) return;
+				
+				let local_total = 0;
+				for (let c = 0; c < all_cohorts.length; c++)
+					local_total += (local_data[all_cohorts[c]] || 0);
+				
+				if (local_total > 0) {
+					national_fractions[local_iso] = {};
+					for (let c = 0; c < all_cohorts.length; c++) {
+						let cohort_key = all_cohorts[c];
+						national_fractions[local_iso][cohort_key] = (local_data[cohort_key] || 0) / local_total;
+					}
+				}
+			});
+			
+			//1. Load Stadester popc anchor raster
+			let stadester_raster = GeoPNG.loadNumberRasterImage(pop_path, {
+				format: "int32"
+			});
+			
+			//2. Compute aggregate total of backcalculated UNWPP groups across pixel space. 
+			//We use one Float32Array instead of caching rasters to prevent RAM overflow.
+			let total_backcalculated = new Float32Array(stadester_raster.width * stadester_raster.height);
+			
+			for (let c = 0; c < all_cohorts.length; c++) {
+				let cohort_key = all_cohorts[c];
+				let backcalc_path = `${this.intermediate_worldpop_backcalculated}global_${cohort_key}_${local_year}.png`;
+				
+				if (!fs.existsSync(backcalc_path)) continue;
+				
+				let local_cohort_raster = GeoPNG.loadNumberRasterImage(backcalc_path, {
+					format: "float32"
+				});
+				
+				for (let i = 0; i < total_backcalculated.length; i++) {
+					total_backcalculated[i] += local_cohort_raster.data[i];
+				}
+			}
+			
+			//3. Dasymetrically scale UNWPP groups to match local Statester totals
+			for (let c = 0; c < all_cohorts.length; c++) {
+				let cohort_key = all_cohorts[c];
+				let backcalc_path = `${this.intermediate_worldpop_backcalculated}global_${cohort_key}_${local_year}.png`;
+				let clamped_output_path = `${this.output_clamped_to_stadester}global_${cohort_key}_${local_year}.png`;
+				
+				if (!fs.existsSync(backcalc_path)) continue;
+				
+				let local_cohort_raster = GeoPNG.loadNumberRasterImage(backcalc_path, {
+					format: "float32"
+				});
+				
+				GeoPNG.saveNumberRasterImage({
+					file_path: clamped_output_path,
+					format: "float32",
+					width: stadester_raster.width,
+					height: stadester_raster.height,
+					function: (local_index) => {
+						let local_statester_pop = stadester_raster.data[local_index];
+						
+						//If Stadester explicitly states nobody lives here, strict clamp to 0
+						if (local_statester_pop <= 0) return 0;
+						
+						let local_backcalc_total = total_backcalculated[local_index];
+						let local_cohort_value = local_cohort_raster.data[local_index];
+						
+						//Scenario A: Pre-existing backcalculated population footprint
+						if (local_backcalc_total > 0) {
+							let local_cohort_fraction = local_cohort_value / local_backcalc_total;
+							return local_cohort_fraction * local_statester_pop;
+						}
+						
+						//Scenario B: Statester asserts population exists here, but Worldpop backcalculation says 0.
+						//Dasymetrically inject based on the national UNWPP fractions to prevent missing coastlines.
+						let byte_index = local_index * 4;
+						let local_colour_key = [
+							geocode_raster.data[byte_index],
+							geocode_raster.data[byte_index + 1],
+							geocode_raster.data[byte_index + 2]
+						].join(",");
+						
+						let local_geocodes = geocode_obj[local_colour_key];
+						if (local_geocodes) {
+							for (let x = 0; x < local_geocodes.length; x++) {
+								let local_iso = local_geocodes[x];
+								let local_fraction = national_fractions[local_iso]?.[cohort_key];
+								
+								if (local_fraction !== undefined)
+									return local_statester_pop * local_fraction;
+							}
+						}
+						
+						return 0; //Absolute fallback (e.g. ocean pixel mismatching with ghost Statester pop)
+					}
+				});
+				
+				console.log(`- Saved clamped demographic cohort: ${clamped_output_path}`);
+				await Blacktraffic.yield();
+			}
+		}
 	}
 	
 	static async processRasters (arg0_options) {
-		
+		//...
 	}
 };
