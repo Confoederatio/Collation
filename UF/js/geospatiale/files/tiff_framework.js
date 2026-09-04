@@ -81,7 +81,8 @@
 	 * @param {String} arg0_input_file_path
 	 * @param {String} arg1_output_base_path - The prefix for the output (e.g., 'map_data_').
 	 * @param {Object} [arg2_options]
-	 *  @param {string} [arg2_options.format="int32"] - Either 'float32'/'int32'
+	 *  @param {string} [arg2_options.format="int32"] - Either 'float32'/'int32'.
+	 *  @param {number[]} [arg2_options.ignore_values] - NO_DATA values to ignore.
 	 *  @param {number} [arg2_options.scalar=1] - The scalar to multiply or divide by.
 	 *  @param {string[]} [arg2_options.years] - The list of years to use for output file names.
 	 *
@@ -96,6 +97,7 @@
 		//Initialise options
 		if (!options.format) options.format = "int32";
 		options.scalar = Math.returnSafeNumber(options.scalar, 1);
+		if (!options.ignore_values) options.ignore_values = [];
 		
 		//Declare local instance variables
 		let tiff = await geotiff.fromFile(input_file_path);
@@ -126,6 +128,8 @@
 				for (let y = 0; y < image_width; y++) {
 					let local_index = x*image_width + y;
 					let local_value = original_data[local_index];
+					
+					if (options.ignore_values.includes(local_value)) local_value = 0;
 					
 					//Multiply local_value by scalar
 					local_value *= options.scalar;
