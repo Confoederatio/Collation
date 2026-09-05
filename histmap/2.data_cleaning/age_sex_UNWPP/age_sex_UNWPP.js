@@ -131,6 +131,10 @@ global.age_sex_UNWPP = class {
 				let local_year = unwpp_years[y];
 				let local_scalars = {};
 				
+				let local_output_file = `${this.intermediate_worldpop_backcalculated}global_${local_cohort_key}_${local_year}.png`;
+				
+				if (fs.existsSync(local_output_file)) continue;
+				
 				//Determine specific scaling ratio mapping
 				Object.iterate(local_base_sums, (local_iso, local_2015_pop) => {
 					let local_actual_pop = unwpp_data[local_iso]?.[local_year]?.[local_cohort_key];
@@ -142,8 +146,6 @@ global.age_sex_UNWPP = class {
 						local_scalars[local_iso] = 1;
 					}
 				});
-				
-				let local_output_file = `${this.intermediate_worldpop_backcalculated}global_${local_cohort_key}_${local_year}.png`;
 				
 				//3. Dump raster output cleanly clamping out to file system directly 
 				GeoPNG.saveNumberRasterImage({
