@@ -1,5 +1,7 @@
 global.admin_modern = class {
 	static bf = `${h1}/admin_modern/`;
+	static input_hmd_csv = `${this.bf}hmd_geocodes.csv`;
+	static input_hmd_raster = `${this.bf}hmd.png`;
 	static input_geocodes_csv = `${this.bf}geocodes.csv`;
 	static input_geocodes_raster = `${this.bf}geocodes.png`;
 	static input_iso2_geocodes_csv = `${this.bf}iso2_geocodes.csv`;
@@ -78,6 +80,46 @@ global.admin_modern = class {
 		
 		//Return statement
 		return colourcodes_obj;
+	}
+	
+	/**
+	 * Returns a map of <geocode>: {@link Object}
+	 * - `.colours`: {@link Array}<{@link string}> - RGB codes per geocode.
+	 * - `.domain`: {@link Array}<{@link number}, {@link number}> - If defined, these colourcodes are selected for the target year.
+	 * - `.name`: {@link string}
+	 */
+	static getHMDColourcodesObject () {
+		//Declare local instance variables
+		let csv_array = File.loadCSVAsArray(this.input_hmd_csv, { delimiter: ";" });
+		let last_year = landuse_HYDE.sorted_hyde_years[landuse_HYDE.sorted_hyde_years.length - 1];
+		let return_obj = {};
+		
+		//Iterate over csv_array
+		for (let i = 0; i < csv_array.length; i++) {
+			let local_domain;
+			let local_geocode = csv_array[i]["HMD Geocode"];
+			if (local_geocode.includes(".")) {
+				let split_geocode = local_geocode.split(".");
+				
+				let domain = split_geocode[1].split("-").map(Number);
+				if (domain.length === 2) {
+					if (domain[1] < domain[0])
+						local_domain = [domain[0], last_year];
+				} else if (domain.length === 1) {
+					local_domain = [domain[0], domain[0]];
+				}
+			}
+			
+			return_obj[csv_array[i]["HMD Geocode"]] = {
+				colours: csv_array[i]["Colour"].split(";"),
+				name: csv_array[i]["Name"]
+			};
+			let local_obj = return_obj[csv_array[i]["HMD Geocode"]];
+				if (local_domain) local_obj.domain = local_domain;
+		}
+		
+		//Return statement
+		return return_obj;
 	}
 	
 	/**

@@ -130,7 +130,7 @@
 	
 	/**
 	 * Writes a GeoJSON file to raster.
-	 * @alias GeoJSON.toRaster
+	 * @alias GeoJSON.toPNG
 	 * 
 	 * @param {string} arg0_input_file_path - `.geojson` input file to specify.
 	 * @param {string} arg1_output_file_path - `.png` output file path.
@@ -140,18 +140,17 @@
 	 *  @param {number} [arg2_options.height=2160]
 	 *  @param {number} [arg2_options.width=4320]
 	 */
-	GeoJSON.toRaster = async function (
-		arg0_input_file_path,
-		arg1_output_file_path,
-		arg2_options
-	) {
+	GeoJSON.toPNG = async function (arg0_input_file_path, arg1_output_file_path, arg2_options) {
+		//Convert from parameters
 		let input_file_path = arg0_input_file_path;
 		let output_file_path = arg1_output_file_path;
 		let options = arg2_options ? arg2_options : {};
 		
+		//Initialise options
 		options.height = Math.returnSafeNumber(options.height, 2160);
 		options.width = Math.returnSafeNumber(options.width, 4320);
 		
+		//Declare local instance variables
 		let geojson = JSON.parse(fs.readFileSync(input_file_path, "utf8"));
 		let property_key = (options.property_key) ? 
 			options.property_key : "ID_UC_G0";
