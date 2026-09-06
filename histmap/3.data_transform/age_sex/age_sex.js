@@ -222,10 +222,10 @@
 				
 				// 4. Batched Gradient Descent natively handles large memory structures
 				await Statistics.trainMultinomialLogitModel(model_path, { keys: valid_keys, X, Y }, {
-					max_iterations: Math.returnSafeNumber(options.max_iterations, 1000),
+					max_iterations: Math.returnSafeNumber(options.max_iterations, 100),
 					learning_rate: Math.returnSafeNumber(options.learning_rate, 0.1),
-					lambda: Math.returnSafeNumber(options.lambda, 1e-3),
-					debug: false
+					lambda: Math.returnSafeNumber(options.lambda, 1e-4),
+					debug: true
 				});
 				
 				await Blacktraffic.yield();

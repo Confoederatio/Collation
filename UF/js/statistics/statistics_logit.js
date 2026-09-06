@@ -560,8 +560,8 @@
 			
 			iterations_run = iter + 1;
 			
-			if (options.debug && iter % 100 === 0)
-				console.log(`- Iteration ${iter}: NLL = ${(-log_likelihood/N).toFixed(6)}, max_update = ${max_update.toExponential(2)}`);
+			if (options.debug)
+				console.log(`- Iteration ${iter}/${max_iterations}: NLL = ${(-log_likelihood/N).toFixed(6)}, max_update = ${max_update.toExponential(2)}`);
 			
 			if (max_update < tolerance) {
 				converged = true;
