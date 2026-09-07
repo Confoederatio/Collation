@@ -302,6 +302,8 @@
 		 * Generates cohort probabilities. Uses specific temporal models where available,
 		 * and falls back to the Unified model for pre-1750 historical prediction.
 		 */
+		
+		//[QUARANTINE] - This is so slow, it should be multithreaded
 		static async D_generateMultinomialLogitRasters () {
 			if (!fs.existsSync(this.intermediate_logit_rasters)) fs.mkdirSync(this.intermediate_logit_rasters, { recursive: true });
 			
