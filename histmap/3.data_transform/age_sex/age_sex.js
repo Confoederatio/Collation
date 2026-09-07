@@ -320,7 +320,7 @@
 				// If year is out-of-bounds (e.g., 10000 BC), strictly use the global average transition model
 				let model_path = `${this.intermediate_logit_folder}multinomial_model_${year}.json`;
 				
-				if (year < 1750 || year > 2025 || !fs.existsSync(model_path)) {
+				if (year < 1950 || year > 2025 || !fs.existsSync(model_path)) {
 					model_path = `${this.intermediate_logit_folder}multinomial_model_unified.json`;
 					console.log(`Generating MNL distribution for ${year} using robust UNIFIED global model...`);
 				} else {

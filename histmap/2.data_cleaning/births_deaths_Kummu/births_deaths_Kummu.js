@@ -4,8 +4,11 @@ global.births_deaths_Kummu = class {
 	static input_deaths_raster = `${h1}/births_deaths_Kummu/raster_death_rate_2000_2019.tif`;
 	static intermediate_births_folder = `${this.bf}/subnational_birth_rasters/`;
 	static intermediate_deaths_folder = `${this.bf}/subnational_death_rasters/`;
-	static output_births_folder = `${this.bf}/subnational_birth_masks/`;
-	static output_deaths_folder = `${this.bf}/subnational_death_masks/`;
+	static intermediate_birthrate_folder = `${this.bf}/subnational_birth_masks/`;
+	static intermediate_deathrate_folder = `${this.bf}/subnational_death_masks/`;
+	static output_births_folder = `${this.bf}/output_birth_rasters/`;
+	static output_deaths_folder = `${this.bf}/output_death_rasters/`;
+	static scalar = 1000; //Birth and death rates are measured per 1000
 	static years = Array.getFilledDomain(2000, 2019);
 	
 	/**
@@ -34,11 +37,38 @@ global.births_deaths_Kummu = class {
 	 * @returns {Promise<Object>} An object containing metadata tracking lineage for births and deaths.
 	 */
 	static async B_generateArealMasks () {
+		//Poll to ensure A_convertToPNGs has finished writing all files to disk
+		let pending_disk_writes = true;
+		
+		while (pending_disk_writes) {
+			let all_files_exist = true;
+			
+			for (let i = 0; i < this.years.length; i++) {
+				let check_births_path = `${this.intermediate_births_folder}births_${this.years[i]}.png`;
+				let check_deaths_path = `${this.intermediate_deaths_folder}deaths_${this.years[i]}.png`;
+				
+				if (!fs.existsSync(check_births_path) || !fs.existsSync(check_deaths_path)) {
+					all_files_exist = false;
+					break;
+				}
+			}
+			
+			if (all_files_exist) {
+				pending_disk_writes = false;
+			} else {
+				console.log(`- [Polling] Waiting for intermediate PNG files to write to disk...`);
+				await new Promise(function (resolve) {
+					setTimeout(resolve, 2000);
+				});
+				await Blacktraffic.yield();
+			}
+		}
+		
 		//Declare local instance variables
 		let births_input_prefix = `${this.intermediate_births_folder}births_`;
-		let births_output_prefix = `${this.output_births_folder}births`;
+		let births_output_prefix = `${this.intermediate_birthrate_folder}births`;
 		let deaths_input_prefix = `${this.intermediate_deaths_folder}deaths_`;
-		let deaths_output_prefix = `${this.output_deaths_folder}deaths`;
+		let deaths_output_prefix = `${this.intermediate_deathrate_folder}deaths`;
 		
 		console.log(`- Shattering subnational births rasters into areal masks ..`);
 		let births_metadata = await GeoPNG.shatter(births_input_prefix, births_output_prefix, {
@@ -58,6 +88,72 @@ global.births_deaths_Kummu = class {
 	}
 	
 	/**
+	 * Computes and outputs absolute birth and death count rasters using true gridcell population data.
+	 * Formulates output values as: (rate / scalar) * population.
+	 *
+	 * @returns {Promise<void>}
+	 */
+	static async C_generateOutputRasters () {
+		let years_list = this.years;
+		let scalar_val = this.scalar;
+		
+		for (let i = 0; i < years_list.length; i++) {
+			let current_year = years_list[i];
+			let local_stadester_path = `${population_Stadester_Legacy.input_popc_folder}stadester_population_${current_year}.png`;
+			
+			let local_stadester_popc_raster = GeoPNG.loadNumberRasterImage(local_stadester_path, {
+				format: "int32"
+			});
+			
+			let local_births_path = `${this.intermediate_births_folder}births_${current_year}.png`;
+			let local_deaths_path = `${this.intermediate_deaths_folder}deaths_${current_year}.png`;
+			
+			let local_births_raster = GeoPNG.loadNumberRasterImage(local_births_path, {
+				format: "float32"
+			});
+			let local_deaths_raster = GeoPNG.loadNumberRasterImage(local_deaths_path, {
+				format: "float32"
+			});
+			
+			let birth_output_path = `${this.output_births_folder}births_${current_year}.png`;
+			let death_output_path = `${this.output_deaths_folder}deaths_${current_year}.png`;
+			
+			console.log(`- Generating absolute subnational output rasters for ${current_year} ..`);
+			
+			//Write out the absolute yearly births raster
+			GeoPNG.saveNumberRasterImage({
+				file_path: birth_output_path,
+				format: "float32",
+				width: local_stadester_popc_raster.width,
+				height: local_stadester_popc_raster.height,
+				function: function (local_index) {
+					let population_val = local_stadester_popc_raster.data[local_index];
+					let rate_val = local_births_raster.data[local_index];
+					
+					//Calculates absolute count: (rate / 1000) * total population
+					return (rate_val / scalar_val) * population_val;
+				}
+			});
+			
+			//Write out the absolute yearly deaths raster
+			GeoPNG.saveNumberRasterImage({
+				file_path: death_output_path,
+				format: "float32",
+				width: local_stadester_popc_raster.width,
+				height: local_stadester_popc_raster.height,
+				function: function (local_index) {
+					let population_val = local_stadester_popc_raster.data[local_index];
+					let rate_val = local_deaths_raster.data[local_index];
+					
+					//Calculates absolute count: (rate / 1000) * total population
+					return (rate_val / scalar_val) * population_val;
+				}
+			});
+			await Blacktraffic.yield();
+		}
+	}
+	
+	/**
 	 * Standard interface method to run the entire processing pipeline sequentially unless stages are specifically bypassed.
 	 *
 	 * @param {Object} [arg0_options] - Execution configuration parameters.
@@ -72,8 +168,9 @@ global.births_deaths_Kummu = class {
 		//Initialise options
 		if (!options.exclude) options.exclude = [];
 		
-		//Convert to PNGs, generate areal masks
+		//Execute steps sequentially unless skipped
 		if (!options.exclude.includes("A")) await this.A_convertToPNGs();
-		if (!options.exclude.includes("B")) await this.B_generateArealMasks();
+		//[WIP] - Remove deadweight - if (!options.exclude.includes("B")) await this.B_generateArealMasks(); //This doesn't actually make sense, since these rasters are disaggregated
+		if (!options.exclude.includes("C")) await this.C_generateOutputRasters();
 	}
 };

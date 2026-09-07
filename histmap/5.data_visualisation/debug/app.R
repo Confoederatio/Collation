@@ -52,7 +52,18 @@ ui = fluidPage(
   titlePanel("GeoPNG Viewer"),
   sidebarLayout(
     sidebarPanel(
-      fileInput("geo_file", "Select GeoPNG File", accept = c(".png")),
+      tabsetPanel(
+        id = "app_mode",
+        tabPanel("Single Image", value = "Single Image",
+                 br(),
+                 fileInput("geo_file", "Select GeoPNG File", accept = c(".png"))
+        ),
+        tabPanel("Image Difference", value = "Image Difference",
+                 br(),
+                 fileInput("geo_file_a", "Select First GeoPNG (A)", accept = c(".png")),
+                 fileInput("geo_file_b", "Select Second GeoPNG (B)", accept = c(".png"))
+        )
+      ),
       selectInput("data_format", "Encoding Format", choices = c("int32", "float32"), selected = "float32"),
       selectInput("projection", "Spatial Projection", choices = c("Equirectangular", "Mercator", "Equal Earth"), selected = "Equal Earth"),
       selectInput("scale_type", "Scale Transformation", choices = c("linear", "pseudo-log"), selected = "pseudo-log"),
@@ -117,11 +128,30 @@ server = function(input, output, session) {
   })
   
   baseRaster = reactive({
-    req(input$geo_file)
-    let_mat = decodeGeoPng(input$geo_file$datapath, input$data_format)
-    let_r = rast(let_mat, crs = "EPSG:4326", ext = ext(-180, 180, -90, 90))
-    let_r[let_r == 0] = NA
-    return(let_r)
+    if (input$app_mode == "Single Image") {
+      req(input$geo_file)
+      let_mat = decodeGeoPng(input$geo_file$datapath, input$data_format)
+      let_r = rast(let_mat, crs = "EPSG:4326", ext = ext(-180, 180, -90, 90))
+      let_r[let_r == 0] = NA
+      return(let_r)
+    } else {
+      req(input$geo_file_a, input$geo_file_b)
+      let_mat_a = decodeGeoPng(input$geo_file_a$datapath, input$data_format)
+      let_mat_b = decodeGeoPng(input$geo_file_b$datapath, input$data_format)
+      
+      let_r_a = rast(let_mat_a, crs = "EPSG:4326", ext = ext(-180, 180, -90, 90))
+      let_r_b = rast(let_mat_b, crs = "EPSG:4326", ext = ext(-180, 180, -90, 90))
+      
+      let_r_a[let_r_a == 0] = NA
+      let_r_b[let_r_b == 0] = NA
+      
+      if (any(dim(let_r_a) != dim(let_r_b))) {
+        let_r_b = resample(let_r_b, let_r_a, method = "near")
+      }
+      
+      let_diff = let_r_a - let_r_b
+      return(let_diff)
+    }
   })
   
   projectedData = reactive({
@@ -228,7 +258,20 @@ server = function(input, output, session) {
       let_brks = let_trans$inverse(seq(let_brk_low, let_brk_high, length.out = 8))
     }
     
-    let_display_title = if (input$use_filename_title && !is.null(input$geo_file)) input$geo_file$name else input$plot_title
+    let_display_title = if (input$use_filename_title) {
+      if (input$app_mode == "Single Image") {
+        if (!is.null(input$geo_file)) input$geo_file$name else input$plot_title
+      } else {
+        if (!is.null(input$geo_file_a) && !is.null(input$geo_file_b)) {
+          paste0(input$geo_file_a$name, " - ", input$geo_file_b$name)
+        } else {
+          input$plot_title
+        }
+      }
+    } else {
+      input$plot_title
+    }
+    
     let_legend_label = paste0(input$legend_title, "\n[", tools::toTitleCase(input$downsample_method), "]")
     let_subtitle_label = paste0(input$plot_subtitle, " (", input$downsample_method, ")")
     
