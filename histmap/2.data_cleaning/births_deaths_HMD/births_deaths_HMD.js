@@ -2,13 +2,38 @@ global.births_deaths_HMD = class {
 	static bf = `${h2}/births_deaths_HMD/`;
 	static input_HMD_births_file = `${h1}/age_sex_HMD/births/Births.txt`;
 	static input_HMD_female_deaths_file = `${h1}/age_sex_HMD/lt_female/fltper_1x1.txt`;
-	static input_HMD_male_deaths_file = `${h1}/age_sex_HMD/lt_male/fltper_1x1.txt`;
+	static input_HMD_male_deaths_file = `${h1}/age_sex_HMD/lt_male/mltper_1x1.txt`;
 	static intermediate_backcalculated_births_folder = `${this.bf}/0.backcalculated_births/`;
 	static intermediate_backcalculated_female_deaths_folder = `${this.bf}/0.backcalculated_female_deaths/`;
 	static intermediate_backcalculated_male_deaths_folder = `${this.bf}/0.backcalculated_male_deaths/`;
 	static output_crude_births_folder = `${this.bf}/1.crude_births/`;
 	static output_female_crude_deaths_folder = `${this.bf}/1.female_crude_deaths/`;
 	static output_male_crude_deaths_folder = `${this.bf}/1.male_crude_deaths/`;
+	
+	/**
+	 * Helper function to cubic-spline interpolate all HMD national series onto HYDE years,
+	 * mirroring the temporal alignment in age_sex_HMD.
+	 *
+	 * @returns {Object} An object containing interpolated births/female_deaths/male_deaths keyed by PopName -> HYDE year.
+	 */
+	static _getInterpolatedSeries () {
+		//Declare local instance variables
+		let groups = this.hmd_groups || this.A_getHMDGroups();
+		let hyde_years = landuse_HYDE.sorted_hyde_years;
+		let return_obj = {};
+		
+		//Interpolate each series independently onto the HYDE temporal domain
+		Object.iterate(groups, (series_key, series_obj) => {
+			return_obj[series_key] = {};
+			
+			Object.iterate(series_obj, (pop_name, year_obj) => {
+				return_obj[series_key][pop_name] = Object.cubicSplineInterpolation(year_obj, { years: hyde_years });
+			});
+		});
+		
+		//Return statement
+		return return_obj;
+	}
 	
 	/**
 	 * Parses HMD births, life tables, and population files into national yearly aggregates.
@@ -141,35 +166,11 @@ global.births_deaths_HMD = class {
 	}
 	
 	/**
-	 * Helper function to cubic-spline interpolate all HMD national series onto HYDE years,
-	 * mirroring the temporal alignment in age_sex_HMD.
-	 *
-	 * @returns {Object} An object containing interpolated births/female_deaths/male_deaths keyed by PopName -> HYDE year.
-	 */
-	static _getInterpolatedSeries () {
-		//Declare local instance variables
-		let groups = this.hmd_groups || this.A_getHMDGroups();
-		let hyde_years = landuse_HYDE.sorted_hyde_years;
-		let return_obj = {};
-		
-		//Interpolate each series independently onto the HYDE temporal domain
-		Object.iterate(groups, (series_key, series_obj) => {
-			return_obj[series_key] = {};
-			
-			Object.iterate(series_obj, (pop_name, year_obj) => {
-				return_obj[series_key][pop_name] = Object.cubicSplineInterpolation(year_obj, { years: hyde_years });
-			});
-		});
-		
-		//Return statement
-		return return_obj;
-	}
-	
-	/**
 	 * Backcalculates births/deaths over the pre-1950 HYDE domain using the UNWPP 1950
 	 * clamped rasters as the observed spatial base, scaled to interpolated HMD national
 	 * aggregates. HMD coverage is partial by design: regions or years without data
-	 * produce zero pixels natively.
+	 * produce zero pixels natively. Years in which no region has any data at all
+	 * (e.g. 10000 BC) produce no raster whatsoever.
 	 *
 	 * @returns {Promise<void>}
 	 */
@@ -252,6 +253,7 @@ global.births_deaths_HMD = class {
 				if (fs.existsSync(output_path)) continue;
 				
 				let scalars = {};
+				let has_data = false;
 				
 				//Calculate domain-restricted scalars
 				Object.iterate(geocode_obj, (geocode, data) => {
@@ -270,11 +272,19 @@ global.births_deaths_HMD = class {
 						target_val = (target_val !== undefined && target_val > 0) ? target_val : 0;
 						let base_pop = base_sums[geocode] || 0;
 						
-						scalars[geocode] = (target_val > 0 && base_pop > 0) ? (target_val / base_pop) : 0;
+						if (target_val > 0 && base_pop > 0) {
+							scalars[geocode] = target_val / base_pop;
+							has_data = true;
+						} else {
+							scalars[geocode] = 0;
+						}
 					} else {
 						scalars[geocode] = 0;
 					}
 				});
+				
+				//If no regions have data for this time period (e.g. 10000 BC), do not produce an output raster
+				if (!has_data) continue;
 				
 				//3. Dasymetrically save the historical raster. Regions without HMD coverage
 				//natively resolve to zero pixels, as partial coverage is expected.
@@ -320,6 +330,7 @@ global.births_deaths_HMD = class {
 	 * are injected at the national crude rate proportional to local population.
 	 *
 	 * Regions without HMD coverage resolve to zero pixels, as partial coverage is expected.
+	 * Years in which no backcalculated raster exists at all are skipped entirely.
 	 *
 	 * @returns {Promise<void>}
 	 */
@@ -361,6 +372,17 @@ global.births_deaths_HMD = class {
 			
 			//Guard clause if no Stadestér temporal anchor exists for this year
 			if (!fs.existsSync(pop_path)) continue;
+			
+			//Guard clause: if no backcalculated rasters exist for this year at all
+			//(i.e. no HMD coverage for the period), do not produce clamped outputs
+			let has_any_backcalc = false;
+			for (let s = 0; s < raster_series.length; s++) {
+				if (fs.existsSync(`${raster_series[s][0]}${raster_series[s][2]}_${year}.png`)) {
+					has_any_backcalc = true;
+					break;
+				}
+			}
+			if (!has_any_backcalc) continue;
 			
 			console.log(`Processing Stadester clamping of HMD births/deaths for year: ${year}`);
 			
