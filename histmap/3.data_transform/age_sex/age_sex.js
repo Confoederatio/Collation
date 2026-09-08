@@ -54,7 +54,8 @@
 		static standardised_targets_folder = `${this.cf}/0.standardised_targets/`;
 		static intermediate_logit_folder = `${this.cf}/1.multinomial_logit/`;
 		static intermediate_logit_rasters = `${this.cf}/2.logit_rasters/`;
-		static output_rasters = `${this.cf}/3.clamped_to_stadester/`;
+		static intermediate_clamped_rasters = `${this.cf}/3.clamped_to_stadester/`;
+		static output_rasters = `${this.cf}/4.composite_cohorts/`;
 		
 		/**
 		 * Helper function to generate standard WorldPop bucket names.
@@ -356,7 +357,7 @@
 		 * Probabilities are normalised per-pixel across all cohorts so that cohort sums exactly equal the Stadestér total.
 		 */
 		static async E_clampToStadester () {
-			if (!fs.existsSync(this.output_rasters)) fs.mkdirSync(this.output_rasters, { recursive: true });
+			if (!fs.existsSync(this.intermediate_clamped_rasters)) fs.mkdirSync(this.intermediate_clamped_rasters, { recursive: true });
 			
 			let years = landuse_HYDE.sorted_hyde_years;
 			let cohorts = this.getCohorts();
@@ -401,7 +402,7 @@
 				
 				for (let i = 0; i < cohorts.length; i++) {
 					let c = cohorts[i];
-					let out_path = `${this.output_rasters}global_${c}_${year}.png`;
+					let out_path = `${this.intermediate_clamped_rasters}global_${c}_${year}.png`;
 					
 					if (fs.existsSync(out_path)) continue;
 					
@@ -439,6 +440,69 @@
 			}
 		}
 		
+		static async F_compositeTimeseries () {
+			if (!fs.existsSync(this.output_rasters)) fs.mkdirSync(this.output_rasters, { recursive: true });
+			
+			let cohorts = this.getCohorts();
+			let years = landuse_HYDE.sorted_hyde_years;
+			
+			//Cache the WorldPop directory listing once to avoid repeated disk reads
+			let wp_files = [];
+			if (fs.existsSync(age_sex_WorldPop.output_rasters)) {
+				wp_files = fs.readdirSync(age_sex_WorldPop.output_rasters);
+			}
+			
+			//Iterate over the full temporal domain
+			for (let y = 0; y < years.length; y++) {
+				let year = years[y];
+				let has_composited = false;
+				
+				for (let c = 0; c < cohorts.length; c++) {
+					let cohort = cohorts[c];
+					let out_path = `${this.output_rasters}${cohort}_${year}.png`;
+					
+					if (fs.existsSync(out_path)) continue;
+					
+					let src_path = null;
+					
+					//1. UNWPP actuals take precedence for 1950-2014
+					if (year >= 1950 && year < 2015) {
+						let unwpp_path = `${age_sex_UNWPP.output_clamped_to_stadester}global_${cohort}_${year}.png`;
+						if (fs.existsSync(unwpp_path)) src_path = unwpp_path;
+					}
+					
+					//2. WorldPop actuals take precedence for 2015-2025
+					if (year >= 2015 && year <= 2025) {
+						let regex = new RegExp(`^.*${cohort}_${year}.*\\.png$`);
+						let wp_match = wp_files.find(f => regex.test(f));
+						
+						if (wp_match) {
+							src_path = `${age_sex_WorldPop.output_rasters}${wp_match}`;
+						} else {
+							//Fallback to UNWPP if the specific WorldPop year is missing
+							let unwpp_fallback = `${age_sex_UNWPP.output_clamped_to_stadester}global_${cohort}_${year}.png`;
+							if (fs.existsSync(unwpp_fallback)) src_path = unwpp_fallback;
+						}
+					}
+					
+					//3. Default to the clamped multinomial logit rasters for all other years (pre-1950, post-2025, or missing actuals)
+					if (!src_path) {
+						let clamped_path = `${this.intermediate_clamped_rasters}global_${cohort}_${year}.png`;
+						if (fs.existsSync(clamped_path)) src_path = clamped_path;
+					}
+					
+					if (src_path) {
+						fs.copyFileSync(src_path, out_path);
+						has_composited = true;
+					}
+				}
+				
+				if (has_composited) console.log(`Composited demographic cohort timeseries for year ${year}.`);
+				
+				await Blacktraffic.yield();
+			}
+		}
+		
 		static async processRasters (arg0_options) {
 			let options = (arg0_options) ? arg0_options : {};
 			if (!options.exclude) options.exclude = [];
@@ -448,6 +512,7 @@
 			if (!options.exclude.includes("C")) await this.C_mergeMultinomialLogitModels();
 			if (!options.exclude.includes("D")) await this.D_generateMultinomialLogitRasters();
 			if (!options.exclude.includes("E")) await this.E_clampToStadester();
+			if (!options.exclude.includes("F")) await this.F_compositeTimeseries();
 		}
 	};
 }
