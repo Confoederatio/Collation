@@ -6,7 +6,12 @@ global.admin_modern = class {
 	static input_geocodes_raster = `${this.bf}geocodes.png`;
 	static input_iso2_geocodes_csv = `${this.bf}iso2_geocodes.csv`;
 	static input_iso2_geocodes_raster = `${this.bf}iso2.png`;
+	static input_iso3_ilo_geocodes_csv = `${this.bf}iso3_ilo_geocodes.csv`;
 	static input_regional_geocodes_csv = `${this.bf}iso2_regions.csv`;
+	
+	static getILOColourcodesObject () { //[WIP] - Finish function body
+		
+	}
 	
 	/**
 	 * Returns a map of <r,g,b,a>: {@link Array}<{@link string}> - Ordered in terms of precedence; latter indices are fallbacks.
