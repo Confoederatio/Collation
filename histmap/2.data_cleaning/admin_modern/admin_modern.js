@@ -9,8 +9,36 @@ global.admin_modern = class {
 	static input_iso3_ilo_geocodes_csv = `${this.bf}iso3_ilo_geocodes.csv`;
 	static input_regional_geocodes_csv = `${this.bf}iso2_regions.csv`;
 	
-	static getILOColourcodesObject () { //[WIP] - Finish function body
+	static getILOColourcodesObject () {
+		//Declare local instance variables
+		let geocodes_csv = File.loadCSVAsJSON(admin_modern.input_iso3_ilo_geocodes_csv, {
+			delimiter: ",",
+			mode: "vertical"
+		});
+		let iso3_colourcodes_obj = this.getISO3ColourcodesObject();
+		let ref_area_labels_obj = {};
+		let return_obj = {};
 		
+		//.ref_area for geocodes_csv is ISO3; populate ref_area_labels_obj with a lookup of ref_area: ref_area.label
+		Object.iterate(geocodes_csv, (local_key, local_value) => {
+			let local_ref_area = local_value["ref_area"][0];
+			
+			if (!ref_area_labels_obj[local_ref_area])
+				ref_area_labels_obj[local_ref_area] = local_value["ref_area.label"][0];
+		});
+		
+		//Iterate over iso3_colourcodes_obj to populate return_obj with ref_area labels
+		Object.iterate(iso3_colourcodes_obj, (local_key, local_value) => {
+			return_obj[local_key] = [];
+			
+			//Iterate over all local_value geocodes, mapping ISO3 to ref_area.label
+			for (let i = 0; i < local_value.length; i++)
+				if (ref_area_labels_obj[local_value[i]])
+					return_obj[local_key].push(ref_area_labels_obj[local_value[i]]);
+		});
+		
+		//Return statement
+		return return_obj;
 	}
 	
 	/**
