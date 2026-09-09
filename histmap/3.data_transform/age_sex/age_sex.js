@@ -74,7 +74,7 @@ global.age_sex = class {
 	/**
 	 * Standardises HMD, UNWPP, and WorldPop datasets into a unified target pool (1750-2025).
 	 */
-	static async A_standardiseTargets() {
+	static async A_standardiseTargets () {
 		if (!fs.existsSync(this.standardised_targets_folder)) fs.mkdirSync(this.standardised_targets_folder, { recursive: true });
 		
 		let cohorts = this.getCohorts();
