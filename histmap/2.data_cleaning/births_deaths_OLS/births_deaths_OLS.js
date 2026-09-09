@@ -531,7 +531,7 @@ global.births_deaths_OLS = class {
 	
 	static async E_clampToStadester () {
 		let variables_obj = this._getVariablesObj();
-		let years = [0]; //landuse_HYDE.sorted_hyde_years; //0 is a test year
+		let years = landuse_HYDE.sorted_hyde_years; //0 is a test year
 		let sf = age_sex.sf();
 		
 		let geocode_obj = admin_modern.getISO3ColourcodesObject();
@@ -545,21 +545,26 @@ global.births_deaths_OLS = class {
 			let popc_raster = GeoPNG.loadNumberRasterImage(popc_path, { format: "int32" });
 			let denominator_cache = {};
 			
+			// 1. Process all variables into memory first to get the RAW working aggregates
+			let raw_data = {};
+			let skip_year = false;
+			
 			let variable_keys = Object.keys(variables_obj);
 			for (let v = 0; v < variable_keys.length; v++) {
-				let variable_obj = variables_obj[variable_keys[v]];
+				let v_key = variable_keys[v];
+				let variable_obj = variables_obj[v_key];
 				let normalised_path = `${variable_obj.normalised_folder}normalised_${variable_obj.actual_prefix}_${year}.png`;
 				let bounds_path = `${this.intermediate_bounds}bounds_${variable_obj.actual_prefix}_${year}.json`;
 				let output_path = `${variable_obj.output_folder}${variable_obj.actual_prefix}_${year}.png`;
 				
-				if (!fs.existsSync(normalised_path) || !fs.existsSync(bounds_path)) continue;
+				if (!fs.existsSync(normalised_path) || !fs.existsSync(bounds_path)) { skip_year = true; break; }
 				if (fs.existsSync(output_path)) continue;
 				
 				if (!denominator_cache[variable_obj.denominator + (variable_obj.sex || "")]) {
 					denominator_cache[variable_obj.denominator + (variable_obj.sex || "")] = this._getDenominatorArray(variable_obj, year);
 				}
 				let denominator_array = denominator_cache[variable_obj.denominator + (variable_obj.sex || "")];
-				if (!denominator_array) continue;
+				if (!denominator_array) { skip_year = true; break; }
 				
 				let normalised_raster = GeoPNG.loadNumberRasterImage(normalised_path, { format: "float32" });
 				let bounds_obj = JSON.parse(fs.readFileSync(bounds_path, "utf8"));
@@ -577,7 +582,6 @@ global.births_deaths_OLS = class {
 					let local_denominator = denominator_array[i];
 					if (local_denominator <= 0) continue;
 					
-					// Maps back exactly to historically robust global fraction ranges
 					let local_fraction = target_min;
 					if (target_max > target_min) {
 						local_fraction = target_min + local_normalised * (target_max - target_min);
@@ -585,6 +589,53 @@ global.births_deaths_OLS = class {
 					
 					counts_array[i] = local_fraction * local_denominator;
 				}
+				
+				raw_data[v_key] = {
+					variable_obj: variable_obj,
+					counts_array: counts_array,
+					normalised_raster: normalised_raster,
+					output_path: output_path
+				};
+			}
+			
+			if (skip_year) continue;
+			
+			// 2. THE SEX-SANE REDISTRIBUTION (Intercepting the working aggregates)
+			if (raw_data.male_deaths && raw_data.female_deaths) {
+				let m_counts = raw_data.male_deaths.counts_array;
+				let f_counts = raw_data.female_deaths.counts_array;
+				let m_norm = raw_data.male_deaths.normalised_raster.data;
+				let f_norm = raw_data.female_deaths.normalised_raster.data;
+				
+				for (let i = 0; i < popc_raster.data.length; i++) {
+					if (popc_raster.data[i] <= 0) continue;
+					
+					let raw_m = m_counts[i] || 0;
+					let raw_f = f_counts[i] || 0;
+					let total = raw_m + raw_f;
+					
+					if (total > 0) {
+						let n_m = (isNaN(m_norm[i]) || m_norm[i] < 0) ? 0 : m_norm[i];
+						let n_f = (isNaN(f_norm[i]) || f_norm[i] < 0) ? 0 : f_norm[i];
+						let norm_sum = n_m + n_f;
+						
+						// Apportion the perfectly constrained total using the OLS's normalized relative intensity
+						let ratio_m = (norm_sum > 0) ? (n_m / norm_sum) : 0.5;
+						
+						m_counts[i] = total * ratio_m;
+						f_counts[i] = total * (1.0 - ratio_m);
+					}
+				}
+			}
+			
+			// 3. Apply actuals-anchoring and write to disk for all variables
+			let loaded_keys = Object.keys(raw_data);
+			for (let v = 0; v < loaded_keys.length; v++) {
+				let v_key = loaded_keys[v];
+				let data = raw_data[v_key];
+				let variable_obj = data.variable_obj;
+				let counts_array = data.counts_array;
+				let output_path = data.output_path;
 				
 				let actual_path = this._getActualPath(variable_obj, year);
 				let actual_raster = null;
@@ -658,8 +709,8 @@ global.births_deaths_OLS = class {
 				});
 				
 				console.log(`- Saved clamped raster: ${output_path}`);
-				await Blacktraffic.yield();
 			}
+			await Blacktraffic.yield();
 		}
 	}
 	
