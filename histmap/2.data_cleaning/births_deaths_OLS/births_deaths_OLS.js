@@ -744,7 +744,7 @@ global.births_deaths_OLS = class {
 			let delta_popc_raster = null;
 			
 			if (fs.existsSync(delta_popc_path)) {
-				let raw_delta = GeoPNG.loadNumberRasterImage(delta_popc_path, { format: "int32" });
+				let raw_delta = GeoPNG.loadNumberRasterImage(delta_popc_path, { format: "float32" });
 				delta_popc_raster = {
 					width: raw_delta.width,
 					height: raw_delta.height,
